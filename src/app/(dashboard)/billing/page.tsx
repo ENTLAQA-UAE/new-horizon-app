@@ -13,7 +13,7 @@ async function getBillingStats() {
     .select(`
       id,
       name,
-      status,
+      subscription_status,
       created_at,
       subscription_tiers (
         name,
@@ -21,7 +21,6 @@ async function getBillingStats() {
         price_yearly
       )
     `)
-    .eq("status", "active")
 
   // Get all tiers for revenue calculation
   const { data: tiers } = await supabase
@@ -241,7 +240,9 @@ export default async function BillingPage() {
                       {formatCurrency(org.subscription_tiers?.price_monthly || 0)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="default">Active</Badge>
+                      <Badge variant={org.subscription_status === "active" ? "default" : "secondary"}>
+                        {org.subscription_status || "trial"}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(org.created_at).toLocaleDateString()}
