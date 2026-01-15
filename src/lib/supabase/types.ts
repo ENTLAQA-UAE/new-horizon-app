@@ -238,6 +238,585 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          name_ar: string | null
+          description: string | null
+          parent_id: string | null
+          head_user_id: string | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          parent_id?: string | null
+          head_user_id?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          parent_id?: string | null
+          head_user_id?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      job_locations: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          name_ar: string | null
+          city: string | null
+          country: string
+          country_code: string | null
+          is_remote: boolean | null
+          address: string | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          name_ar?: string | null
+          city?: string | null
+          country: string
+          country_code?: string | null
+          is_remote?: boolean | null
+          address?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          name_ar?: string | null
+          city?: string | null
+          country?: string
+          country_code?: string | null
+          is_remote?: boolean | null
+          address?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pipeline_stages: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          name_ar: string | null
+          description: string | null
+          color: string | null
+          sort_order: number
+          is_default: boolean | null
+          auto_reject_after_days: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          color?: string | null
+          sort_order: number
+          is_default?: boolean | null
+          auto_reject_after_days?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          color?: string | null
+          sort_order?: number
+          is_default?: boolean | null
+          auto_reject_after_days?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          id: string
+          org_id: string
+          department_id: string | null
+          location_id: string | null
+          title: string
+          title_ar: string | null
+          slug: string
+          description: string | null
+          description_ar: string | null
+          requirements: string | null
+          requirements_ar: string | null
+          responsibilities: string | null
+          responsibilities_ar: string | null
+          benefits: string | null
+          benefits_ar: string | null
+          job_type: Database["public"]["Enums"]["job_type"]
+          experience_level: Database["public"]["Enums"]["experience_level"]
+          status: Database["public"]["Enums"]["job_status"]
+          is_remote: boolean | null
+          salary_min: number | null
+          salary_max: number | null
+          salary_currency: string | null
+          show_salary: boolean | null
+          education_requirement: string | null
+          years_experience_min: number | null
+          years_experience_max: number | null
+          skills: Json | null
+          languages: Json | null
+          published_at: string | null
+          closing_date: string | null
+          positions_count: number | null
+          is_featured: boolean | null
+          allow_internal_applications: boolean | null
+          require_cover_letter: boolean | null
+          custom_questions: Json | null
+          views_count: number | null
+          applications_count: number | null
+          created_by: string | null
+          hiring_manager_id: string | null
+          nationality_preference: Json | null
+          saudization_applicable: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          department_id?: string | null
+          location_id?: string | null
+          title: string
+          title_ar?: string | null
+          slug: string
+          description?: string | null
+          description_ar?: string | null
+          requirements?: string | null
+          requirements_ar?: string | null
+          responsibilities?: string | null
+          responsibilities_ar?: string | null
+          benefits?: string | null
+          benefits_ar?: string | null
+          job_type?: Database["public"]["Enums"]["job_type"]
+          experience_level?: Database["public"]["Enums"]["experience_level"]
+          status?: Database["public"]["Enums"]["job_status"]
+          is_remote?: boolean | null
+          salary_min?: number | null
+          salary_max?: number | null
+          salary_currency?: string | null
+          show_salary?: boolean | null
+          education_requirement?: string | null
+          years_experience_min?: number | null
+          years_experience_max?: number | null
+          skills?: Json | null
+          languages?: Json | null
+          published_at?: string | null
+          closing_date?: string | null
+          positions_count?: number | null
+          is_featured?: boolean | null
+          allow_internal_applications?: boolean | null
+          require_cover_letter?: boolean | null
+          custom_questions?: Json | null
+          views_count?: number | null
+          applications_count?: number | null
+          created_by?: string | null
+          hiring_manager_id?: string | null
+          nationality_preference?: Json | null
+          saudization_applicable?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          department_id?: string | null
+          location_id?: string | null
+          title?: string
+          title_ar?: string | null
+          slug?: string
+          description?: string | null
+          description_ar?: string | null
+          requirements?: string | null
+          requirements_ar?: string | null
+          responsibilities?: string | null
+          responsibilities_ar?: string | null
+          benefits?: string | null
+          benefits_ar?: string | null
+          job_type?: Database["public"]["Enums"]["job_type"]
+          experience_level?: Database["public"]["Enums"]["experience_level"]
+          status?: Database["public"]["Enums"]["job_status"]
+          is_remote?: boolean | null
+          salary_min?: number | null
+          salary_max?: number | null
+          salary_currency?: string | null
+          show_salary?: boolean | null
+          education_requirement?: string | null
+          years_experience_min?: number | null
+          years_experience_max?: number | null
+          skills?: Json | null
+          languages?: Json | null
+          published_at?: string | null
+          closing_date?: string | null
+          positions_count?: number | null
+          is_featured?: boolean | null
+          allow_internal_applications?: boolean | null
+          require_cover_letter?: boolean | null
+          custom_questions?: Json | null
+          views_count?: number | null
+          applications_count?: number | null
+          created_by?: string | null
+          hiring_manager_id?: string | null
+          nationality_preference?: Json | null
+          saudization_applicable?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      candidates: {
+        Row: {
+          id: string
+          org_id: string
+          first_name: string
+          last_name: string
+          email: string
+          phone: string | null
+          phone_secondary: string | null
+          headline: string | null
+          summary: string | null
+          avatar_url: string | null
+          city: string | null
+          country: string | null
+          nationality: string | null
+          current_company: string | null
+          current_title: string | null
+          years_of_experience: number | null
+          expected_salary: number | null
+          salary_currency: string | null
+          notice_period_days: number | null
+          skills: Json | null
+          languages: Json | null
+          education: Json | null
+          experience: Json | null
+          certifications: Json | null
+          resume_url: string | null
+          resume_parsed_data: Json | null
+          linkedin_url: string | null
+          portfolio_url: string | null
+          source: Database["public"]["Enums"]["candidate_source"] | null
+          source_details: string | null
+          referred_by: string | null
+          tags: Json | null
+          ai_overall_score: number | null
+          ai_score_breakdown: Json | null
+          ai_parsed_at: string | null
+          is_blacklisted: boolean | null
+          blacklist_reason: string | null
+          consent_given: boolean | null
+          consent_date: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          first_name: string
+          last_name: string
+          email: string
+          phone?: string | null
+          phone_secondary?: string | null
+          headline?: string | null
+          summary?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          nationality?: string | null
+          current_company?: string | null
+          current_title?: string | null
+          years_of_experience?: number | null
+          expected_salary?: number | null
+          salary_currency?: string | null
+          notice_period_days?: number | null
+          skills?: Json | null
+          languages?: Json | null
+          education?: Json | null
+          experience?: Json | null
+          certifications?: Json | null
+          resume_url?: string | null
+          resume_parsed_data?: Json | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          source?: Database["public"]["Enums"]["candidate_source"] | null
+          source_details?: string | null
+          referred_by?: string | null
+          tags?: Json | null
+          ai_overall_score?: number | null
+          ai_score_breakdown?: Json | null
+          ai_parsed_at?: string | null
+          is_blacklisted?: boolean | null
+          blacklist_reason?: string | null
+          consent_given?: boolean | null
+          consent_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          first_name?: string
+          last_name?: string
+          email?: string
+          phone?: string | null
+          phone_secondary?: string | null
+          headline?: string | null
+          summary?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          nationality?: string | null
+          current_company?: string | null
+          current_title?: string | null
+          years_of_experience?: number | null
+          expected_salary?: number | null
+          salary_currency?: string | null
+          notice_period_days?: number | null
+          skills?: Json | null
+          languages?: Json | null
+          education?: Json | null
+          experience?: Json | null
+          certifications?: Json | null
+          resume_url?: string | null
+          resume_parsed_data?: Json | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          source?: Database["public"]["Enums"]["candidate_source"] | null
+          source_details?: string | null
+          referred_by?: string | null
+          tags?: Json | null
+          ai_overall_score?: number | null
+          ai_score_breakdown?: Json | null
+          ai_parsed_at?: string | null
+          is_blacklisted?: boolean | null
+          blacklist_reason?: string | null
+          consent_given?: boolean | null
+          consent_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      applications: {
+        Row: {
+          id: string
+          org_id: string
+          job_id: string
+          candidate_id: string
+          status: Database["public"]["Enums"]["application_status"]
+          stage_id: string | null
+          cover_letter: string | null
+          custom_answers: Json | null
+          ai_match_score: number | null
+          ai_score_details: Json | null
+          manual_score: number | null
+          scored_by: string | null
+          source: Database["public"]["Enums"]["candidate_source"] | null
+          source_details: string | null
+          applied_at: string | null
+          last_activity_at: string | null
+          moved_to_stage_at: string | null
+          rejection_reason: string | null
+          rejection_template_id: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          hired_at: string | null
+          hire_salary: number | null
+          start_date: string | null
+          assigned_to: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          job_id: string
+          candidate_id: string
+          status?: Database["public"]["Enums"]["application_status"]
+          stage_id?: string | null
+          cover_letter?: string | null
+          custom_answers?: Json | null
+          ai_match_score?: number | null
+          ai_score_details?: Json | null
+          manual_score?: number | null
+          scored_by?: string | null
+          source?: Database["public"]["Enums"]["candidate_source"] | null
+          source_details?: string | null
+          applied_at?: string | null
+          last_activity_at?: string | null
+          moved_to_stage_at?: string | null
+          rejection_reason?: string | null
+          rejection_template_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          hired_at?: string | null
+          hire_salary?: number | null
+          start_date?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          job_id?: string
+          candidate_id?: string
+          status?: Database["public"]["Enums"]["application_status"]
+          stage_id?: string | null
+          cover_letter?: string | null
+          custom_answers?: Json | null
+          ai_match_score?: number | null
+          ai_score_details?: Json | null
+          manual_score?: number | null
+          scored_by?: string | null
+          source?: Database["public"]["Enums"]["candidate_source"] | null
+          source_details?: string | null
+          applied_at?: string | null
+          last_activity_at?: string | null
+          moved_to_stage_at?: string | null
+          rejection_reason?: string | null
+          rejection_template_id?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          hired_at?: string | null
+          hire_salary?: number | null
+          start_date?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      interviews: {
+        Row: {
+          id: string
+          org_id: string
+          application_id: string
+          title: string
+          interview_type: string
+          scheduled_at: string
+          duration_minutes: number
+          timezone: string | null
+          location: string | null
+          meeting_link: string | null
+          meeting_password: string | null
+          interviewer_ids: Json | null
+          organizer_id: string | null
+          status: string | null
+          candidate_confirmed: boolean | null
+          candidate_confirmed_at: string | null
+          overall_rating: number | null
+          feedback: Json | null
+          recommendation: string | null
+          internal_notes: string | null
+          candidate_notes: string | null
+          reminder_sent: boolean | null
+          reminder_sent_at: string | null
+          completed_at: string | null
+          cancelled_at: string | null
+          cancellation_reason: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          application_id: string
+          title: string
+          interview_type?: string
+          scheduled_at: string
+          duration_minutes?: number
+          timezone?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          meeting_password?: string | null
+          interviewer_ids?: Json | null
+          organizer_id?: string | null
+          status?: string | null
+          candidate_confirmed?: boolean | null
+          candidate_confirmed_at?: string | null
+          overall_rating?: number | null
+          feedback?: Json | null
+          recommendation?: string | null
+          internal_notes?: string | null
+          candidate_notes?: string | null
+          reminder_sent?: boolean | null
+          reminder_sent_at?: string | null
+          completed_at?: string | null
+          cancelled_at?: string | null
+          cancellation_reason?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          application_id?: string
+          title?: string
+          interview_type?: string
+          scheduled_at?: string
+          duration_minutes?: number
+          timezone?: string | null
+          location?: string | null
+          meeting_link?: string | null
+          meeting_password?: string | null
+          interviewer_ids?: Json | null
+          organizer_id?: string | null
+          status?: string | null
+          candidate_confirmed?: boolean | null
+          candidate_confirmed_at?: string | null
+          overall_rating?: number | null
+          feedback?: Json | null
+          recommendation?: string | null
+          internal_notes?: string | null
+          candidate_notes?: string | null
+          reminder_sent?: boolean | null
+          reminder_sent_at?: string | null
+          completed_at?: string | null
+          cancelled_at?: string | null
+          cancellation_reason?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -267,6 +846,43 @@ export type Database = {
         | "recruiter"
         | "hiring_manager"
         | "interviewer"
+      job_status:
+        | "draft"
+        | "open"
+        | "paused"
+        | "closed"
+        | "filled"
+      job_type:
+        | "full_time"
+        | "part_time"
+        | "contract"
+        | "temporary"
+        | "internship"
+        | "freelance"
+      experience_level:
+        | "entry"
+        | "junior"
+        | "mid"
+        | "senior"
+        | "lead"
+        | "executive"
+      application_status:
+        | "new"
+        | "screening"
+        | "interview"
+        | "assessment"
+        | "offer"
+        | "hired"
+        | "rejected"
+        | "withdrawn"
+      candidate_source:
+        | "career_page"
+        | "linkedin"
+        | "indeed"
+        | "referral"
+        | "agency"
+        | "direct"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
