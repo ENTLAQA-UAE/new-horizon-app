@@ -8,15 +8,22 @@ import Link from "next/link"
 async function getStats() {
   const supabase = await createClient()
 
-  // Get organizations count by status
+  // Get organizations count
   const { count: orgsCount } = await supabase
     .from("organizations")
     .select("*", { count: "exact", head: true })
 
+  // Get active organizations count
   const { count: activeOrgsCount } = await supabase
     .from("organizations")
     .select("*", { count: "exact", head: true })
-    .eq("status", "active")
+    .eq("subscription_status", "active")
+
+  // Get trial organizations count
+  const { count: trialOrgsCount } = await supabase
+    .from("organizations")
+    .select("*", { count: "exact", head: true })
+    .eq("subscription_status", "trial")
 
   // Get subscription tiers
   const { data: tiers } = await supabase
@@ -29,13 +36,32 @@ async function getStats() {
     .from("profiles")
     .select("*", { count: "exact", head: true })
 
+  // Get organizations with tiers for MRR calculation
+  const { data: orgsWithTiers } = await supabase
+    .from("organizations")
+    .select(`
+      id,
+      subscription_tiers (
+        price_monthly
+      )
+    `)
+    .eq("subscription_status", "active")
+
+  // Calculate MRR
+  let mrr = 0
+  orgsWithTiers?.forEach((org) => {
+    if (org.subscription_tiers?.price_monthly) {
+      mrr += org.subscription_tiers.price_monthly
+    }
+  })
+
   // Get recent organizations
   const { data: recentOrgs } = await supabase
     .from("organizations")
     .select(`
       id,
       name,
-      status,
+      subscription_status,
       created_at,
       subscription_tiers (name)
     `)
@@ -45,10 +71,11 @@ async function getStats() {
   return {
     organizations: orgsCount || 0,
     activeOrganizations: activeOrgsCount || 0,
+    trialOrganizations: trialOrgsCount || 0,
     tiers: tiers?.length || 0,
     activeUsers: usersCount || 0,
     recentOrganizations: recentOrgs || [],
-    monthlyRevenue: 0,
+    monthlyRevenue: mrr,
   }
 }
 
@@ -91,23 +118,25 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Subscription Tiers</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Trial Organizations</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.tiers}</div>
-            <p className="text-xs text-muted-foreground">Active pricing plans</p>
+            <div className="text-2xl font-bold">{stats.trialOrganizations}</div>
+            <p className="text-xs text-muted-foreground">On free trial</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Monthly Revenue (MRR)</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.monthlyRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Current MRR</p>
+            <div className="text-2xl font-bold">
+              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stats.monthlyRevenue)}
+            </div>
+            <p className="text-xs text-muted-foreground">From {stats.activeOrganizations} paying orgs</p>
           </CardContent>
         </Card>
       </div>
@@ -171,13 +200,13 @@ export default async function DashboardPage() {
                     <TableCell className="font-medium">{org.name}</TableCell>
                     <TableCell>{org.subscription_tiers?.name || "N/A"}</TableCell>
                     <TableCell>
-                      <Badge variant={org.status === "active" ? "default" : "secondary"}>
-                        {org.status === "active" ? (
+                      <Badge variant={org.subscription_status === "active" ? "default" : "secondary"}>
+                        {org.subscription_status === "active" ? (
                           <CheckCircle className="h-3 w-3 mr-1" />
                         ) : (
                           <Clock className="h-3 w-3 mr-1" />
                         )}
-                        {org.status}
+                        {org.subscription_status || "trial"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
