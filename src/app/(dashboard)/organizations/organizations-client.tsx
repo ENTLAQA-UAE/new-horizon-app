@@ -684,15 +684,30 @@ export function OrganizationsClient({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openViewDialog(org)}>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            openViewDialog(org)
+                          }}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEditDialog(org)}>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            openEditDialog(org)
+                          }}
+                        >
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openChangeTierDialog(org)}>
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            openChangeTierDialog(org)
+                          }}
+                        >
                           <ArrowUpDown className="mr-2 h-4 w-4" />
                           Change Tier
                         </DropdownMenuItem>
@@ -700,7 +715,7 @@ export function OrganizationsClient({
                         {org.subscription_status === "active" && (
                           <DropdownMenuItem
                             className="text-yellow-600"
-                            onClick={() => handleStatusChange(org.id, "suspended")}
+                            onSelect={() => handleStatusChange(org.id, "suspended")}
                           >
                             <RefreshCw className="mr-2 h-4 w-4" />
                             Suspend
@@ -709,7 +724,7 @@ export function OrganizationsClient({
                         {org.subscription_status === "suspended" && (
                           <DropdownMenuItem
                             className="text-green-600"
-                            onClick={() => handleStatusChange(org.id, "active")}
+                            onSelect={() => handleStatusChange(org.id, "active")}
                           >
                             <RefreshCw className="mr-2 h-4 w-4" />
                             Reactivate
@@ -718,7 +733,7 @@ export function OrganizationsClient({
                         {org.subscription_status === "trial" && (
                           <DropdownMenuItem
                             className="text-green-600"
-                            onClick={() => handleStatusChange(org.id, "active")}
+                            onSelect={() => handleStatusChange(org.id, "active")}
                           >
                             <RefreshCw className="mr-2 h-4 w-4" />
                             Activate
@@ -726,7 +741,10 @@ export function OrganizationsClient({
                         )}
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => openDeleteDialog(org)}
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            openDeleteDialog(org)
+                          }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
