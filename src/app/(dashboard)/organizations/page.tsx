@@ -9,8 +9,10 @@ async function getOrganizations() {
     .select(`
       *,
       subscription_tiers (
+        id,
         name,
-        name_ar
+        name_ar,
+        price_monthly
       )
     `)
     .order("created_at", { ascending: false })

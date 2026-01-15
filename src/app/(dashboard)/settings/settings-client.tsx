@@ -75,6 +75,13 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
 
     // System
     maintenance_mode: initialSettings.maintenance_mode ?? false,
+
+    // Localization
+    arabic_enabled: initialSettings.arabic_enabled ?? true,
+    date_format: initialSettings.date_format || "DD/MM/YYYY",
+    currency: initialSettings.currency || "SAR",
+    number_format: initialSettings.number_format || "1,234.56",
+    week_start: initialSettings.week_start || "sunday",
   })
 
   const handleSave = async () => {
@@ -182,7 +189,11 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                   onValueChange={(value) => updateSetting("default_language", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select language">
+                      {settings.default_language === "en" ? "English" :
+                       settings.default_language === "ar" ? "Arabic (العربية)" :
+                       "Select language"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="en">English</SelectItem>
@@ -197,12 +208,21 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                   onValueChange={(value) => updateSetting("default_timezone", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select timezone">
+                      {settings.default_timezone === "Asia/Riyadh" ? "Riyadh (GMT+3)" :
+                       settings.default_timezone === "Asia/Dubai" ? "Dubai (GMT+4)" :
+                       settings.default_timezone === "Africa/Cairo" ? "Cairo (GMT+2)" :
+                       settings.default_timezone === "UTC" ? "UTC" :
+                       "Select timezone"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Asia/Riyadh">Riyadh (GMT+3)</SelectItem>
                     <SelectItem value="Asia/Dubai">Dubai (GMT+4)</SelectItem>
                     <SelectItem value="Africa/Cairo">Cairo (GMT+2)</SelectItem>
+                    <SelectItem value="Asia/Kuwait">Kuwait (GMT+3)</SelectItem>
+                    <SelectItem value="Asia/Bahrain">Bahrain (GMT+3)</SelectItem>
+                    <SelectItem value="Asia/Qatar">Qatar (GMT+3)</SelectItem>
                     <SelectItem value="UTC">UTC</SelectItem>
                   </SelectContent>
                 </Select>
@@ -276,32 +296,114 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div
+                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                  settings.default_language === "en" ? "bg-primary/10 border-primary" : "bg-muted/50"
+                }`}
+                onClick={() => updateSetting("default_language", "en")}
+              >
                 <div>
                   <p className="font-medium">English (EN)</p>
                   <p className="text-sm text-muted-foreground">Left-to-right layout</p>
                 </div>
-                <Badge variant="default">Default</Badge>
+                <Badge variant={settings.default_language === "en" ? "default" : "secondary"}>
+                  {settings.default_language === "en" ? "Default" : "Enabled"}
+                </Badge>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div
+                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                  settings.default_language === "ar" ? "bg-primary/10 border-primary" : "bg-muted/50"
+                }`}
+                onClick={() => updateSetting("default_language", "ar")}
+              >
                 <div>
                   <p className="font-medium">Arabic (العربية)</p>
                   <p className="text-sm text-muted-foreground">Right-to-left layout</p>
                 </div>
-                <Badge variant="secondary">Enabled</Badge>
+                <Badge variant={settings.default_language === "ar" ? "default" : "secondary"}>
+                  {settings.default_language === "ar" ? "Default" : "Enabled"}
+                </Badge>
               </div>
             </div>
 
             <Separator />
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <p className="text-sm font-medium">Regional Format</p>
-              <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-                <div>Date: DD/MM/YYYY</div>
-                <div>Currency: SAR</div>
-                <div>Number: 1,234.56</div>
-                <div>Week Start: Sunday</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Date Format</Label>
+                  <Select
+                    value={settings.date_format}
+                    onValueChange={(value) => updateSetting("date_format", value)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue>{settings.date_format}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Currency</Label>
+                  <Select
+                    value={settings.currency}
+                    onValueChange={(value) => updateSetting("currency", value)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue>{settings.currency}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
+                      <SelectItem value="AED">AED (UAE Dirham)</SelectItem>
+                      <SelectItem value="EGP">EGP (Egyptian Pound)</SelectItem>
+                      <SelectItem value="KWD">KWD (Kuwaiti Dinar)</SelectItem>
+                      <SelectItem value="QAR">QAR (Qatari Riyal)</SelectItem>
+                      <SelectItem value="BHD">BHD (Bahraini Dinar)</SelectItem>
+                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Number Format</Label>
+                  <Select
+                    value={settings.number_format}
+                    onValueChange={(value) => updateSetting("number_format", value)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue>{settings.number_format}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1,234.56">1,234.56 (Comma/Period)</SelectItem>
+                      <SelectItem value="1.234,56">1.234,56 (Period/Comma)</SelectItem>
+                      <SelectItem value="1 234.56">1 234.56 (Space/Period)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Week Starts</Label>
+                  <Select
+                    value={settings.week_start}
+                    onValueChange={(value) => updateSetting("week_start", value)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue>
+                        {settings.week_start === "sunday" ? "Sunday" :
+                         settings.week_start === "monday" ? "Monday" :
+                         settings.week_start === "saturday" ? "Saturday" : "Sunday"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sunday">Sunday</SelectItem>
+                      <SelectItem value="monday">Monday</SelectItem>
+                      <SelectItem value="saturday">Saturday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </CardContent>
