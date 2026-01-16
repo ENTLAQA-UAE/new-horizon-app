@@ -261,39 +261,6 @@ export default function DepartmentsPage() {
     }
   }
 
-  const DepartmentForm = () => (
-    <div className="space-y-4 py-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Name (English) *</Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Engineering"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="name_ar">Name (Arabic)</Label>
-        <Input
-          id="name_ar"
-          value={formData.name_ar}
-          onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-          placeholder="الهندسة"
-          dir="rtl"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Input
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Engineering and development team"
-        />
-      </div>
-    </div>
-  )
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -452,7 +419,36 @@ export default function DepartmentsPage() {
               Create a new department for your organization
             </DialogDescription>
           </DialogHeader>
-          <DepartmentForm />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Name (English) *</Label>
+              <Input
+                id="create-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Engineering"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-name_ar">Name (Arabic)</Label>
+              <Input
+                id="create-name_ar"
+                value={formData.name_ar}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                placeholder="الهندسة"
+                dir="rtl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-description">Description</Label>
+              <Input
+                id="create-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Engineering and development team"
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancel
@@ -474,7 +470,36 @@ export default function DepartmentsPage() {
               Update department information
             </DialogDescription>
           </DialogHeader>
-          <DepartmentForm />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name (English) *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Engineering"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-name_ar">Name (Arabic)</Label>
+              <Input
+                id="edit-name_ar"
+                value={formData.name_ar}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                placeholder="الهندسة"
+                dir="rtl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Engineering and development team"
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel

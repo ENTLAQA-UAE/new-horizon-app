@@ -382,22 +382,23 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
     }
   }
 
-  const CandidateForm = () => (
+  // Render form fields inline to prevent focus loss on state change
+  const renderCandidateFormFields = (idPrefix: string) => (
     <div className="space-y-4 py-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="first_name">First Name *</Label>
+          <Label htmlFor={`${idPrefix}-first_name`}>First Name *</Label>
           <Input
-            id="first_name"
+            id={`${idPrefix}-first_name`}
             value={formData.first_name}
             onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
             placeholder="Ahmed"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="last_name">Last Name *</Label>
+          <Label htmlFor={`${idPrefix}-last_name`}>Last Name *</Label>
           <Input
-            id="last_name"
+            id={`${idPrefix}-last_name`}
             value={formData.last_name}
             onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
             placeholder="Al-Hassan"
@@ -407,9 +408,9 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email *</Label>
+          <Label htmlFor={`${idPrefix}-email`}>Email *</Label>
           <Input
-            id="email"
+            id={`${idPrefix}-email`}
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -417,9 +418,9 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor={`${idPrefix}-phone`}>Phone</Label>
           <Input
-            id="phone"
+            id={`${idPrefix}-phone`}
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             placeholder="+966 50 123 4567"
@@ -431,27 +432,27 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="city">City</Label>
+          <Label htmlFor={`${idPrefix}-city`}>City</Label>
           <Input
-            id="city"
+            id={`${idPrefix}-city`}
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             placeholder="Riyadh"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="country">Country</Label>
+          <Label htmlFor={`${idPrefix}-country`}>Country</Label>
           <Input
-            id="country"
+            id={`${idPrefix}-country`}
             value={formData.country}
             onChange={(e) => setFormData({ ...formData, country: e.target.value })}
             placeholder="Saudi Arabia"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="nationality">Nationality</Label>
+          <Label htmlFor={`${idPrefix}-nationality`}>Nationality</Label>
           <Input
-            id="nationality"
+            id={`${idPrefix}-nationality`}
             value={formData.nationality}
             onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
             placeholder="Saudi"
@@ -463,18 +464,18 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="current_job_title">Current Job Title</Label>
+          <Label htmlFor={`${idPrefix}-current_job_title`}>Current Job Title</Label>
           <Input
-            id="current_job_title"
+            id={`${idPrefix}-current_job_title`}
             value={formData.current_job_title}
             onChange={(e) => setFormData({ ...formData, current_job_title: e.target.value })}
             placeholder="Software Engineer"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="current_company">Current Company</Label>
+          <Label htmlFor={`${idPrefix}-current_company`}>Current Company</Label>
           <Input
-            id="current_company"
+            id={`${idPrefix}-current_company`}
             value={formData.current_company}
             onChange={(e) => setFormData({ ...formData, current_company: e.target.value })}
             placeholder="Tech Corp"
@@ -484,9 +485,9 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="years_of_experience">Years of Experience</Label>
+          <Label htmlFor={`${idPrefix}-years_of_experience`}>Years of Experience</Label>
           <Input
-            id="years_of_experience"
+            id={`${idPrefix}-years_of_experience`}
             type="number"
             value={formData.years_of_experience}
             onChange={(e) => setFormData({ ...formData, years_of_experience: parseInt(e.target.value) || 0 })}
@@ -494,7 +495,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="highest_education">Highest Education</Label>
+          <Label htmlFor={`${idPrefix}-highest_education`}>Highest Education</Label>
           <Select
             value={formData.highest_education}
             onValueChange={(value) => setFormData({ ...formData, highest_education: value })}
@@ -514,9 +515,9 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="skills">Skills (comma separated)</Label>
+        <Label htmlFor={`${idPrefix}-skills`}>Skills (comma separated)</Label>
         <Textarea
-          id="skills"
+          id={`${idPrefix}-skills`}
           value={formData.skills}
           onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
           placeholder="JavaScript, React, Node.js, Python"
@@ -525,7 +526,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="source">Source</Label>
+        <Label htmlFor={`${idPrefix}-source`}>Source</Label>
         <Select
           value={formData.source}
           onValueChange={(value) => setFormData({ ...formData, source: value })}
@@ -569,7 +570,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
                 Add a new candidate to your talent pool.
               </DialogDescription>
             </DialogHeader>
-            <CandidateForm />
+            {renderCandidateFormFields("create")}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
@@ -830,7 +831,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
               Update candidate information.
             </DialogDescription>
           </DialogHeader>
-          <CandidateForm />
+          {renderCandidateFormFields("edit")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
