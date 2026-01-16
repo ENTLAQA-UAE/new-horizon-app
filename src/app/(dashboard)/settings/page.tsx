@@ -21,10 +21,16 @@ async function getSettings() {
 export default async function SettingsPage() {
   const settings = await getSettings()
 
-  // Convert array to object for easier access
+  // Convert array to object for easier access, parsing JSON values
   const settingsMap: Record<string, any> = {}
   settings.forEach((s) => {
-    settingsMap[s.key] = s.value
+    try {
+      // Parse the JSON value - values are stored as JSON strings
+      settingsMap[s.key] = typeof s.value === 'string' ? JSON.parse(s.value) : s.value
+    } catch {
+      // If parsing fails, use the raw value
+      settingsMap[s.key] = s.value
+    }
   })
 
   return <SettingsClient initialSettings={settingsMap} settingsRecords={settings} />
