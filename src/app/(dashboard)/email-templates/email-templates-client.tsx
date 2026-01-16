@@ -41,20 +41,15 @@ import { Json } from "@/lib/supabase/types"
 
 interface EmailTemplate {
   id: string
-  org_id: string | null
   name: string
   slug: string
   subject: string
   subject_ar: string | null
   body_html: string
   body_html_ar: string | null
-  body_text: string | null
-  body_text_ar: string | null
   variables: Json | null
   category: string | null
-  is_system: boolean | null
   is_active: boolean | null
-  created_by: string | null
   created_at: string | null
   updated_at: string | null
 }
@@ -162,8 +157,6 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
       body_html_ar: formData.body_html_ar || null,
       category: formData.category,
       is_active: formData.is_active,
-      is_system: true,
-      org_id: null,
     }
 
     if (selectedTemplate) {
@@ -232,13 +225,9 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
         subject_ar: template.subject_ar,
         body_html: template.body_html,
         body_html_ar: template.body_html_ar,
-        body_text: template.body_text,
-        body_text_ar: template.body_text_ar,
         variables: template.variables,
         category: template.category,
-        is_system: true,
         is_active: false,
-        org_id: null,
       })
       .select()
       .single()
