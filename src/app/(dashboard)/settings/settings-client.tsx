@@ -89,12 +89,18 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     const supabase = createClient()
 
     try {
-      // Update each setting
+      // Upsert each setting (insert or update)
       const updates = Object.entries(settings).map(async ([key, value]) => {
         const { error } = await supabase
           .from("platform_settings")
-          .update({ value: JSON.stringify(value) })
-          .eq("key", key)
+          .upsert(
+            {
+              key,
+              value: JSON.stringify(value),
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: 'key' }
+          )
 
         if (error) throw error
       })
