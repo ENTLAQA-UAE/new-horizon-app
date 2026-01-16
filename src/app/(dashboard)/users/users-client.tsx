@@ -103,7 +103,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
+  const [isOrgDialogOpen, setIsOrgDialogOpen] = useState(false)
   const [newRole, setNewRole] = useState<string>("")
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("")
 
   // Filter users
   const filteredUsers = users.filter((user) => {
@@ -207,6 +209,35 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
           : u
       ))
       toast.success("Role removed successfully")
+    }
+    setIsLoading(false)
+  }
+
+  const assignOrganization = async () => {
+    if (!selectedUser) return
+
+    setIsLoading(true)
+    const supabase = createClient()
+
+    const orgId = selectedOrgId === "none" ? null : selectedOrgId
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ organization_id: orgId })
+      .eq("id", selectedUser.id)
+
+    if (error) {
+      toast.error("Failed to assign organization")
+    } else {
+      const org = orgId ? organizations.find((o) => o.id === orgId) : null
+      setUsers(users.map((u) =>
+        u.id === selectedUser.id
+          ? { ...u, organizations: org ? { id: org.id, name: org.name } : null }
+          : u
+      ))
+      toast.success(org ? `Assigned to ${org.name}` : "Removed from organization")
+      setIsOrgDialogOpen(false)
+      setSelectedOrgId("")
     }
     setIsLoading(false)
   }
@@ -482,6 +513,17 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                             <UserCog className="mr-2 h-4 w-4" />
                             Manage Roles
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setSelectedOrgId(user.organizations?.id || "none")
+                              setIsOrgDialogOpen(true)
+                            }}
+                          >
+                            <Building2 className="mr-2 h-4 w-4" />
+                            Assign Organization
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => toggleUserStatus(user)}>
                             {user.is_active ? (
                               <>
@@ -572,6 +614,67 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Organization Dialog */}
+      <Dialog open={isOrgDialogOpen} onOpenChange={setIsOrgDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Organization</DialogTitle>
+            <DialogDescription>
+              {selectedUser && `Assign ${selectedUser.first_name} ${selectedUser.last_name} to an organization`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedUser && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={selectedUser.avatar_url || ""} />
+                  <AvatarFallback>
+                    {selectedUser.first_name[0]}{selectedUser.last_name[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{selectedUser.first_name} {selectedUser.last_name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Organization</Label>
+                <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Organization</SelectItem>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedUser.organizations && selectedOrgId !== selectedUser.organizations.id && (
+                <p className="text-sm text-amber-600">
+                  This will remove the user from &quot;{selectedUser.organizations.name}&quot;
+                </p>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOrgDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={assignOrganization} disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
