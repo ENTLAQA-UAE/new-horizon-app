@@ -42,18 +42,12 @@ import { Json } from "@/lib/supabase/types"
 interface AuditLog {
   id: string
   user_id: string | null
-  org_id: string | null
   action: string
-  entity_type: string
+  entity_type: string | null
   entity_id: string | null
-  old_values: Json | null
-  new_values: Json | null
+  details: Json | null
   ip_address: string | null
-  user_agent: string | null
-  metadata: Json | null
   created_at: string | null
-  profiles: { first_name: string; last_name: string; email: string } | null
-  organizations: { name: string } | null
 }
 
 interface AuditLogsClientProps {
@@ -95,11 +89,9 @@ export function AuditLogsClient({
   // Filter logs
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
-      log.profiles?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.profiles?.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.profiles?.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.entity_type.toLowerCase().includes(searchQuery.toLowerCase())
+      log.entity_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.entity_id?.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesAction = actionFilter === "all" || log.action === actionFilter
     const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter
@@ -125,12 +117,11 @@ export function AuditLogsClient({
 
   const exportLogs = () => {
     const csvContent = [
-      ["Timestamp", "User", "Action", "Entity Type", "Entity ID", "IP Address"],
+      ["Timestamp", "Action", "Entity Type", "Entity ID", "IP Address"],
       ...filteredLogs.map((log) => [
         log.created_at ? new Date(log.created_at).toISOString() : "",
-        log.profiles ? `${log.profiles.first_name} ${log.profiles.last_name}` : "System",
         log.action,
-        log.entity_type,
+        log.entity_type || "",
         log.entity_id || "",
         log.ip_address || "",
       ]),
@@ -299,17 +290,16 @@ export function AuditLogsClient({
             <TableHeader>
               <TableRow>
                 <TableHead>Timestamp</TableHead>
-                <TableHead>User</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Entity</TableHead>
-                <TableHead>Organization</TableHead>
+                <TableHead>IP Address</TableHead>
                 <TableHead className="text-right">Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No audit logs found
                   </TableCell>
                 </TableRow>
@@ -325,23 +315,6 @@ export function AuditLogsClient({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {log.profiles ? (
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <div className="font-medium">
-                                {log.profiles.first_name} {log.profiles.last_name}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {log.profiles.email}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">System</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
                         <Badge
                           variant="secondary"
                           className={`${getActionColor(log.action)} text-white`}
@@ -352,7 +325,7 @@ export function AuditLogsClient({
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{formatEntityType(log.entity_type)}</div>
+                          <div className="font-medium">{formatEntityType(log.entity_type || "unknown")}</div>
                           {log.entity_id && (
                             <div className="text-xs text-muted-foreground font-mono">
                               {log.entity_id.slice(0, 8)}...
@@ -361,14 +334,9 @@ export function AuditLogsClient({
                         </div>
                       </TableCell>
                       <TableCell>
-                        {log.organizations ? (
-                          <div className="flex items-center gap-1">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            {log.organizations.name}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <span className="text-muted-foreground font-mono text-sm">
+                          {log.ip_address || "—"}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -416,16 +384,6 @@ export function AuditLogsClient({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    User
-                  </label>
-                  <p className="mt-1">
-                    {selectedLog.profiles
-                      ? `${selectedLog.profiles.first_name} ${selectedLog.profiles.last_name} (${selectedLog.profiles.email})`
-                      : "System"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
                     Action
                   </label>
                   <p className="mt-1">{formatAction(selectedLog.action)}</p>
@@ -434,7 +392,7 @@ export function AuditLogsClient({
                   <label className="text-sm font-medium text-muted-foreground">
                     Entity Type
                   </label>
-                  <p className="mt-1">{formatEntityType(selectedLog.entity_type)}</p>
+                  <p className="mt-1">{formatEntityType(selectedLog.entity_type || "unknown")}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
@@ -442,14 +400,6 @@ export function AuditLogsClient({
                   </label>
                   <p className="mt-1 font-mono text-sm">
                     {selectedLog.entity_id || "—"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Organization
-                  </label>
-                  <p className="mt-1">
-                    {selectedLog.organizations?.name || "—"}
                   </p>
                 </div>
                 <div>
@@ -468,47 +418,14 @@ export function AuditLogsClient({
                 </div>
               </div>
 
-              {selectedLog.old_values && (
+              {selectedLog.details && Object.keys(selectedLog.details as object).length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Old Values
+                    Details
                   </label>
                   <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
-                    {JSON.stringify(selectedLog.old_values, null, 2)}
+                    {JSON.stringify(selectedLog.details, null, 2)}
                   </pre>
-                </div>
-              )}
-
-              {selectedLog.new_values && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    New Values
-                  </label>
-                  <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
-                    {JSON.stringify(selectedLog.new_values, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {selectedLog.metadata && Object.keys(selectedLog.metadata as object).length > 0 && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Metadata
-                  </label>
-                  <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
-                    {JSON.stringify(selectedLog.metadata, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {selectedLog.user_agent && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    User Agent
-                  </label>
-                  <p className="mt-1 text-sm text-muted-foreground break-all">
-                    {selectedLog.user_agent}
-                  </p>
                 </div>
               )}
             </div>

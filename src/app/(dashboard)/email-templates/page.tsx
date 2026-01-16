@@ -7,8 +7,6 @@ async function getEmailTemplates() {
   const { data: templates, error } = await supabase
     .from("email_templates")
     .select("*")
-    .is("org_id", null)
-    .eq("is_system", true)
     .order("category")
     .order("name")
 
