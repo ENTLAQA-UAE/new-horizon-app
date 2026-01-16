@@ -59,6 +59,7 @@ import {
   Users,
   Calendar,
   Globe,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -135,6 +136,25 @@ const statusStyles: Record<string, string> = {
   published: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   paused: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   closed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+}
+
+// Helper to calculate days until deadline
+const getDaysUntilDeadline = (closesAt: string | null) => {
+  if (!closesAt) return null
+  const deadline = new Date(closesAt)
+  const now = new Date()
+  const diffTime = deadline.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+}
+
+// Helper to get deadline badge style
+const getDeadlineBadgeStyle = (daysLeft: number | null) => {
+  if (daysLeft === null) return null
+  if (daysLeft < 0) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+  if (daysLeft <= 3) return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+  if (daysLeft <= 7) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+  return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
 }
 
 const employmentTypes = [
@@ -287,8 +307,9 @@ export function JobsClient({
       setJobs([data, ...jobs])
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success("Job created successfully")
-      router.refresh()
+      toast.success("Job created successfully! Configure settings...")
+      // Redirect to settings page to configure form sections, stages, and team
+      router.push(`/org/jobs/${data.id}/settings`)
     } catch {
       toast.error("An unexpected error occurred")
     } finally {
@@ -914,9 +935,27 @@ export function JobsClient({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Badge className={cn("capitalize", statusStyles[job.status || "draft"])}>
-                      {job.status || "draft"}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge className={cn("capitalize w-fit", statusStyles[job.status || "draft"])}>
+                        {job.status || "draft"}
+                      </Badge>
+                      {job.status === "published" && job.closes_at && (() => {
+                        const daysLeft = getDaysUntilDeadline(job.closes_at)
+                        if (daysLeft === null) return null
+                        const badgeStyle = getDeadlineBadgeStyle(daysLeft)
+                        return (
+                          <Badge variant="outline" className={cn("text-xs w-fit", badgeStyle)}>
+                            {daysLeft < 0
+                              ? "Expired"
+                              : daysLeft === 0
+                              ? "Closes today"
+                              : daysLeft === 1
+                              ? "1 day left"
+                              : `${daysLeft} days left`}
+                          </Badge>
+                        )
+                      })()}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -943,6 +982,12 @@ export function JobsClient({
                         >
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => router.push(`/org/jobs/${job.id}/settings`)}
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={() => handleDuplicate(job)}

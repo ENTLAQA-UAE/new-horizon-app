@@ -1,0 +1,327 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Card } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { toast } from "sonner"
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react"
+
+interface JobType {
+  id: string
+  name: string
+  name_ar: string | null
+  is_active: boolean
+}
+
+export default function JobTypesPage() {
+  const supabase = createClient()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [jobTypes, setJobTypes] = useState<JobType[]>([])
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [editingType, setEditingType] = useState<JobType | null>(null)
+  const [deletingType, setDeletingType] = useState<JobType | null>(null)
+
+  const [formData, setFormData] = useState({
+    name: "",
+    name_ar: "",
+  })
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single()
+
+      const orgId = profile?.organization_id
+      if (!orgId) {
+        setIsLoading(false)
+        return
+      }
+
+      setOrganizationId(orgId)
+
+      const { data, error } = await supabase
+        .from("job_types")
+        .select("*")
+        .eq("org_id", orgId)
+        .order("name")
+
+      if (error) throw error
+      setJobTypes(data || [])
+    } catch (error) {
+      console.error("Error loading job types:", error)
+      toast.error("Failed to load job types")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const openDialog = (type?: JobType) => {
+    if (type) {
+      setEditingType(type)
+      setFormData({
+        name: type.name,
+        name_ar: type.name_ar || "",
+      })
+    } else {
+      setEditingType(null)
+      setFormData({ name: "", name_ar: "" })
+    }
+    setIsDialogOpen(true)
+  }
+
+  const handleSave = async () => {
+    if (!formData.name || !organizationId) {
+      toast.error("Please enter a job type name")
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      if (editingType) {
+        const { error } = await supabase
+          .from("job_types")
+          .update({
+            name: formData.name,
+            name_ar: formData.name_ar || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingType.id)
+
+        if (error) throw error
+        toast.success("Job type updated successfully")
+      } else {
+        const { error } = await supabase.from("job_types").insert({
+          org_id: organizationId,
+          name: formData.name,
+          name_ar: formData.name_ar || null,
+          is_active: true,
+        })
+
+        if (error) throw error
+        toast.success("Job type created successfully")
+      }
+
+      setIsDialogOpen(false)
+      loadData()
+    } catch (error) {
+      console.error("Error saving job type:", error)
+      toast.error("Failed to save job type")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleToggleActive = async (type: JobType) => {
+    try {
+      const { error } = await supabase
+        .from("job_types")
+        .update({ is_active: !type.is_active })
+        .eq("id", type.id)
+
+      if (error) throw error
+      setJobTypes(jobTypes.map(t => t.id === type.id ? { ...t, is_active: !t.is_active } : t))
+      toast.success(`Job type ${!type.is_active ? "activated" : "deactivated"}`)
+    } catch (error) {
+      toast.error("Failed to update job type")
+    }
+  }
+
+  const openDeleteDialog = (type: JobType) => {
+    setDeletingType(type)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deletingType) return
+
+    setIsSaving(true)
+    try {
+      const { error } = await supabase
+        .from("job_types")
+        .delete()
+        .eq("id", deletingType.id)
+
+      if (error) throw error
+      toast.success("Job type deleted successfully")
+      setIsDeleteDialogOpen(false)
+      setDeletingType(null)
+      loadData()
+    } catch (error) {
+      toast.error("Failed to delete job type")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Job Type</h2>
+          <p className="text-muted-foreground">
+            Configure job types for your organization
+          </p>
+        </div>
+        <Button onClick={() => openDialog()}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Job Type
+        </Button>
+      </div>
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Arabic Name</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {jobTypes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  No job types found. Add your first job type.
+                </TableCell>
+              </TableRow>
+            ) : (
+              jobTypes.map((type) => (
+                <TableRow key={type.id}>
+                  <TableCell className="font-medium">{type.name}</TableCell>
+                  <TableCell dir="rtl">{type.name_ar || "—"}</TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={type.is_active}
+                      onCheckedChange={() => handleToggleActive(type)}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => openDialog(type)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(type)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingType ? "Edit Job Type" : "Add Job Type"}</DialogTitle>
+            <DialogDescription>
+              {editingType ? "Update job type details" : "Create a new job type"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="type-name">Name (English) *</Label>
+              <Input
+                id="type-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Full Time"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="type-name-ar">Name (Arabic)</Label>
+              <Input
+                id="type-name-ar"
+                value={formData.name_ar}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                placeholder="دوام كامل"
+                dir="rtl"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingType ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Job Type</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this job type?
+            </DialogDescription>
+          </DialogHeader>
+          {deletingType && (
+            <div className="py-4">
+              <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                <p className="font-medium text-destructive">{deletingType.name}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isSaving}>
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
