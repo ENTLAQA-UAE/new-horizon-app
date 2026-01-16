@@ -46,6 +46,7 @@ export default function BrandingPage() {
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [settings, setSettings] = useState<BrandingSettings>({
     company_name: "",
     company_name_ar: "",
@@ -62,51 +63,51 @@ export default function BrandingPage() {
   useEffect(() => {
     async function loadBranding() {
       try {
-        // In a real app, this would load from the organization's settings
-        // For now, we'll simulate with platform_settings
-        const { data, error } = await supabase
-          .from("platform_settings")
-          .select("*")
-          .in("key", [
-            "org_company_name",
-            "org_company_name_ar",
-            "org_tagline",
-            "org_tagline_ar",
-            "org_logo_url",
-            "org_favicon_url",
-            "org_primary_color",
-            "org_secondary_color",
-            "org_website_url",
-            "org_careers_page_url",
-          ])
+        // Get current user's organization
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single()
+
+        const orgId = profile?.organization_id
+        if (!orgId) {
+          console.error("User has no organization")
+          setIsLoading(false)
+          return
+        }
+
+        setOrganizationId(orgId)
+
+        // Load organization branding
+        const { data: org, error } = await supabase
+          .from("organizations")
+          .select("name, name_ar, tagline, tagline_ar, logo_url, favicon_url, primary_color, secondary_color, website_url, careers_page_url")
+          .eq("id", orgId)
+          .single()
 
         if (error) throw error
 
-        if (data) {
-          const settingsMap: Record<string, string> = {}
-          data.forEach((s) => {
-            try {
-              settingsMap[s.key] = typeof s.value === "string" ? JSON.parse(s.value) : s.value
-            } catch {
-              settingsMap[s.key] = s.value
-            }
-          })
-
+        if (org) {
           setSettings({
-            company_name: settingsMap["org_company_name"] || "",
-            company_name_ar: settingsMap["org_company_name_ar"] || "",
-            tagline: settingsMap["org_tagline"] || "",
-            tagline_ar: settingsMap["org_tagline_ar"] || "",
-            logo_url: settingsMap["org_logo_url"] || "",
-            favicon_url: settingsMap["org_favicon_url"] || "",
-            primary_color: settingsMap["org_primary_color"] || "#3B82F6",
-            secondary_color: settingsMap["org_secondary_color"] || "#10B981",
-            website_url: settingsMap["org_website_url"] || "",
-            careers_page_url: settingsMap["org_careers_page_url"] || "",
+            company_name: org.name || "",
+            company_name_ar: org.name_ar || "",
+            tagline: org.tagline || "",
+            tagline_ar: org.tagline_ar || "",
+            logo_url: org.logo_url || "",
+            favicon_url: org.favicon_url || "",
+            primary_color: org.primary_color || "#3B82F6",
+            secondary_color: org.secondary_color || "#10B981",
+            website_url: org.website_url || "",
+            careers_page_url: org.careers_page_url || "",
           })
         }
       } catch (error) {
         console.error("Error loading branding:", error)
+        toast.error("Failed to load branding settings")
       } finally {
         setIsLoading(false)
       }
@@ -116,32 +117,31 @@ export default function BrandingPage() {
   }, [supabase])
 
   const handleSave = async () => {
+    if (!organizationId) {
+      toast.error("Organization not found")
+      return
+    }
+
     setIsSaving(true)
     try {
-      const updates = [
-        { key: "org_company_name", value: settings.company_name },
-        { key: "org_company_name_ar", value: settings.company_name_ar },
-        { key: "org_tagline", value: settings.tagline },
-        { key: "org_tagline_ar", value: settings.tagline_ar },
-        { key: "org_logo_url", value: settings.logo_url },
-        { key: "org_favicon_url", value: settings.favicon_url },
-        { key: "org_primary_color", value: settings.primary_color },
-        { key: "org_secondary_color", value: settings.secondary_color },
-        { key: "org_website_url", value: settings.website_url },
-        { key: "org_careers_page_url", value: settings.careers_page_url },
-      ]
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          name: settings.company_name,
+          name_ar: settings.company_name_ar || null,
+          tagline: settings.tagline || null,
+          tagline_ar: settings.tagline_ar || null,
+          logo_url: settings.logo_url || null,
+          favicon_url: settings.favicon_url || null,
+          primary_color: settings.primary_color,
+          secondary_color: settings.secondary_color,
+          website_url: settings.website_url || null,
+          careers_page_url: settings.careers_page_url || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", organizationId)
 
-      for (const update of updates) {
-        const { error } = await supabase.from("platform_settings").upsert(
-          {
-            key: update.key,
-            value: JSON.stringify(update.value),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        )
-        if (error) throw error
-      }
+      if (error) throw error
 
       toast.success("Branding settings saved successfully")
     } catch (error) {
