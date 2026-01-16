@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,11 +16,14 @@ import {
   Building2,
   Image as ImageIcon,
   Check,
+  X,
+  Link as LinkIcon,
 } from "lucide-react"
 
 interface BrandingSettings {
   company_name: string
   company_name_ar: string
+  slug: string
   tagline: string
   tagline_ar: string
   logo_url: string
@@ -46,9 +49,15 @@ export default function BrandingPage() {
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingFavicon, setIsUploadingFavicon] = useState(false)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const faviconInputRef = useRef<HTMLInputElement>(null)
   const [settings, setSettings] = useState<BrandingSettings>({
     company_name: "",
     company_name_ar: "",
+    slug: "",
     tagline: "",
     tagline_ar: "",
     logo_url: "",
@@ -59,54 +68,63 @@ export default function BrandingPage() {
     careers_page_url: "",
   })
 
+  // Generate careers page URL based on slug
+  const getCareersPageUrl = (slug: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/careers/${slug}`
+    }
+    return `/careers/${slug}`
+  }
+
   useEffect(() => {
     async function loadBranding() {
       try {
-        // In a real app, this would load from the organization's settings
-        // For now, we'll simulate with platform_settings
-        const { data, error } = await supabase
-          .from("platform_settings")
-          .select("*")
-          .in("key", [
-            "org_company_name",
-            "org_company_name_ar",
-            "org_tagline",
-            "org_tagline_ar",
-            "org_logo_url",
-            "org_favicon_url",
-            "org_primary_color",
-            "org_secondary_color",
-            "org_website_url",
-            "org_careers_page_url",
-          ])
+        // Get current user's organization
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single()
+
+        const orgId = profile?.organization_id
+        if (!orgId) {
+          console.error("User has no organization")
+          setIsLoading(false)
+          return
+        }
+
+        setOrganizationId(orgId)
+
+        // Load organization branding
+        const { data: org, error } = await supabase
+          .from("organizations")
+          .select("name, name_ar, slug, tagline, tagline_ar, logo_url, favicon_url, primary_color, secondary_color, website_url, careers_page_url")
+          .eq("id", orgId)
+          .single()
 
         if (error) throw error
 
-        if (data) {
-          const settingsMap: Record<string, string> = {}
-          data.forEach((s) => {
-            try {
-              settingsMap[s.key] = typeof s.value === "string" ? JSON.parse(s.value) : s.value
-            } catch {
-              settingsMap[s.key] = s.value
-            }
-          })
-
+        if (org) {
           setSettings({
-            company_name: settingsMap["org_company_name"] || "",
-            company_name_ar: settingsMap["org_company_name_ar"] || "",
-            tagline: settingsMap["org_tagline"] || "",
-            tagline_ar: settingsMap["org_tagline_ar"] || "",
-            logo_url: settingsMap["org_logo_url"] || "",
-            favicon_url: settingsMap["org_favicon_url"] || "",
-            primary_color: settingsMap["org_primary_color"] || "#3B82F6",
-            secondary_color: settingsMap["org_secondary_color"] || "#10B981",
-            website_url: settingsMap["org_website_url"] || "",
-            careers_page_url: settingsMap["org_careers_page_url"] || "",
+            company_name: org.name || "",
+            company_name_ar: org.name_ar || "",
+            slug: org.slug || "",
+            tagline: org.tagline || "",
+            tagline_ar: org.tagline_ar || "",
+            logo_url: org.logo_url || "",
+            favicon_url: org.favicon_url || "",
+            primary_color: org.primary_color || "#3B82F6",
+            secondary_color: org.secondary_color || "#10B981",
+            website_url: org.website_url || "",
+            careers_page_url: org.careers_page_url || getCareersPageUrl(org.slug || ""),
           })
         }
       } catch (error) {
         console.error("Error loading branding:", error)
+        toast.error("Failed to load branding settings")
       } finally {
         setIsLoading(false)
       }
@@ -115,33 +133,126 @@ export default function BrandingPage() {
     loadBranding()
   }, [supabase])
 
+  // Handle logo file upload
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !organizationId) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file")
+      return
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB")
+      return
+    }
+
+    setIsUploadingLogo(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${organizationId}/logo.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('organization-assets')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('organization-assets')
+        .getPublicUrl(fileName)
+
+      setSettings({ ...settings, logo_url: publicUrl })
+      toast.success("Logo uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading logo:", error)
+      toast.error("Failed to upload logo")
+    } finally {
+      setIsUploadingLogo(false)
+    }
+  }
+
+  // Handle favicon file upload
+  const handleFaviconUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !organizationId) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/') && file.type !== 'image/x-icon') {
+      toast.error("Please upload an image or .ico file")
+      return
+    }
+
+    // Validate file size (max 500KB)
+    if (file.size > 500 * 1024) {
+      toast.error("Favicon must be less than 500KB")
+      return
+    }
+
+    setIsUploadingFavicon(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${organizationId}/favicon.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('organization-assets')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('organization-assets')
+        .getPublicUrl(fileName)
+
+      setSettings({ ...settings, favicon_url: publicUrl })
+      toast.success("Favicon uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading favicon:", error)
+      toast.error("Failed to upload favicon")
+    } finally {
+      setIsUploadingFavicon(false)
+    }
+  }
+
+  // Remove logo
+  const handleRemoveLogo = () => {
+    setSettings({ ...settings, logo_url: "" })
+  }
+
+  // Remove favicon
+  const handleRemoveFavicon = () => {
+    setSettings({ ...settings, favicon_url: "" })
+  }
+
   const handleSave = async () => {
+    if (!organizationId) {
+      toast.error("Organization not found")
+      return
+    }
+
     setIsSaving(true)
     try {
-      const updates = [
-        { key: "org_company_name", value: settings.company_name },
-        { key: "org_company_name_ar", value: settings.company_name_ar },
-        { key: "org_tagline", value: settings.tagline },
-        { key: "org_tagline_ar", value: settings.tagline_ar },
-        { key: "org_logo_url", value: settings.logo_url },
-        { key: "org_favicon_url", value: settings.favicon_url },
-        { key: "org_primary_color", value: settings.primary_color },
-        { key: "org_secondary_color", value: settings.secondary_color },
-        { key: "org_website_url", value: settings.website_url },
-        { key: "org_careers_page_url", value: settings.careers_page_url },
-      ]
+      const { error } = await supabase
+        .from("organizations")
+        .update({
+          name: settings.company_name,
+          name_ar: settings.company_name_ar || null,
+          tagline: settings.tagline || null,
+          tagline_ar: settings.tagline_ar || null,
+          logo_url: settings.logo_url || null,
+          favicon_url: settings.favicon_url || null,
+          primary_color: settings.primary_color,
+          secondary_color: settings.secondary_color,
+          website_url: settings.website_url || null,
+          careers_page_url: settings.careers_page_url || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", organizationId)
 
-      for (const update of updates) {
-        const { error } = await supabase.from("platform_settings").upsert(
-          {
-            key: update.key,
-            value: JSON.stringify(update.value),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        )
-        if (error) throw error
-      }
+      if (error) throw error
 
       toast.success("Branding settings saved successfully")
     } catch (error) {
@@ -250,50 +361,172 @@ export default function BrandingPage() {
               Logo & Favicon
             </CardTitle>
             <CardDescription>
-              Upload your company logo and favicon
+              Upload your company logo and favicon or provide a URL
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="logo_url">Logo URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="logo_url"
-                  value={settings.logo_url}
-                  onChange={(e) =>
-                    setSettings({ ...settings, logo_url: e.target.value })
-                  }
-                  placeholder="https://example.com/logo.png"
-                />
-                <Button variant="outline" size="icon" disabled>
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </div>
-              {settings.logo_url && (
-                <div className="mt-2 p-4 bg-muted rounded-lg flex items-center justify-center">
+          <CardContent className="space-y-6">
+            {/* Hidden file inputs */}
+            <input
+              type="file"
+              ref={logoInputRef}
+              onChange={handleLogoUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <input
+              type="file"
+              ref={faviconInputRef}
+              onChange={handleFaviconUpload}
+              accept="image/*,.ico"
+              className="hidden"
+            />
+
+            {/* Logo Section */}
+            <div className="space-y-3">
+              <Label>Company Logo</Label>
+              {settings.logo_url ? (
+                <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
                   <img
                     src={settings.logo_url}
                     alt="Logo preview"
-                    className="max-h-16 object-contain"
+                    className="max-h-16 max-w-32 object-contain"
                   />
+                  <div className="flex-1" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                  >
+                    {isUploadingLogo ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Replace
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveLogo}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    {isUploadingLogo ? (
+                      <Loader2 className="h-8 w-8 mx-auto text-muted-foreground animate-spin" />
+                    ) : (
+                      <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                    )}
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Click to upload logo (max 2MB)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={settings.logo_url}
+                      onChange={(e) =>
+                        setSettings({ ...settings, logo_url: e.target.value })
+                      }
+                      placeholder="Enter logo URL"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="favicon_url">Favicon URL</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="favicon_url"
-                  value={settings.favicon_url}
-                  onChange={(e) =>
-                    setSettings({ ...settings, favicon_url: e.target.value })
-                  }
-                  placeholder="https://example.com/favicon.ico"
-                />
-                <Button variant="outline" size="icon" disabled>
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </div>
+
+            {/* Favicon Section */}
+            <div className="space-y-3">
+              <Label>Favicon</Label>
+              {settings.favicon_url ? (
+                <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                  <img
+                    src={settings.favicon_url}
+                    alt="Favicon preview"
+                    className="h-8 w-8 object-contain"
+                  />
+                  <span className="text-sm text-muted-foreground truncate flex-1">
+                    {settings.favicon_url.split('/').pop()}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => faviconInputRef.current?.click()}
+                    disabled={isUploadingFavicon}
+                  >
+                    {isUploadingFavicon ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="mr-2 h-4 w-4" />
+                    )}
+                    Replace
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRemoveFavicon}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div
+                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => faviconInputRef.current?.click()}
+                  >
+                    {isUploadingFavicon ? (
+                      <Loader2 className="h-6 w-6 mx-auto text-muted-foreground animate-spin" />
+                    ) : (
+                      <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Click to upload favicon (max 500KB)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={settings.favicon_url}
+                      onChange={(e) =>
+                        setSettings({ ...settings, favicon_url: e.target.value })
+                      }
+                      placeholder="Enter favicon URL"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => faviconInputRef.current?.click()}
+                      disabled={isUploadingFavicon}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -405,17 +638,33 @@ export default function BrandingPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="careers_page_url">Careers Page URL</Label>
-              <Input
-                id="careers_page_url"
-                type="url"
-                value={settings.careers_page_url}
-                onChange={(e) =>
-                  setSettings({ ...settings, careers_page_url: e.target.value })
-                }
-                placeholder="https://www.example.com/careers"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Input
+                    id="careers_page_url"
+                    type="url"
+                    value={settings.slug ? getCareersPageUrl(settings.slug) : ""}
+                    readOnly
+                    className="bg-muted pr-10"
+                  />
+                  <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (settings.slug) {
+                      navigator.clipboard.writeText(getCareersPageUrl(settings.slug))
+                      toast.success("Careers URL copied to clipboard")
+                    }
+                  }}
+                  disabled={!settings.slug}
+                >
+                  Copy
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
-                This URL will be used for your public job listings page
+                This URL is auto-generated based on your organization slug. Share this link for your public job listings page.
               </p>
             </div>
           </CardContent>
