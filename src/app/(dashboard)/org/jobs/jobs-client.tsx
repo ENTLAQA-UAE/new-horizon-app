@@ -69,9 +69,12 @@ interface Job {
   description: string | null
   description_ar: string | null
   department_id: string | null
+  location_id: string | null
   location: string | null
   location_ar: string | null
+  job_type_id: string | null
   employment_type: string | null
+  job_grade_id: string | null
   experience_level: string | null
   salary_min: number | null
   salary_max: number | null
@@ -89,9 +92,42 @@ interface Department {
   name_ar: string | null
 }
 
+interface JobType {
+  id: string
+  name: string
+  name_ar: string | null
+}
+
+interface JobGrade {
+  id: string
+  name: string
+  name_ar: string | null
+  level: number
+}
+
+interface Location {
+  id: string
+  name: string
+  name_ar: string | null
+  city: string | null
+  country: string | null
+}
+
+interface HiringStage {
+  id: string
+  name: string
+  name_ar: string | null
+  color: string
+  sort_order: number
+}
+
 interface JobsClientProps {
   jobs: Job[]
   departments: Department[]
+  jobTypes: JobType[]
+  jobGrades: JobGrade[]
+  locations: Location[]
+  hiringStages: HiringStage[]
 }
 
 const statusStyles: Record<string, string> = {
@@ -118,7 +154,14 @@ const experienceLevels = [
   { value: "executive", label: "Executive" },
 ]
 
-export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) {
+export function JobsClient({
+  jobs: initialJobs,
+  departments,
+  jobTypes,
+  jobGrades,
+  locations,
+  hiringStages,
+}: JobsClientProps) {
   const router = useRouter()
   const supabase = createClient()
   const [jobs, setJobs] = useState(initialJobs)
@@ -143,9 +186,12 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
     description: "",
     description_ar: "",
     department_id: "",
+    location_id: "",
     location: "",
     location_ar: "",
+    job_type_id: "",
     employment_type: "full_time",
+    job_grade_id: "",
     experience_level: "mid",
     salary_min: 0,
     salary_max: 0,
@@ -184,9 +230,12 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
       description: "",
       description_ar: "",
       department_id: "",
+      location_id: "",
       location: "",
       location_ar: "",
+      job_type_id: "",
       employment_type: "full_time",
+      job_grade_id: "",
       experience_level: "mid",
       salary_min: 0,
       salary_max: 0,
@@ -213,10 +262,13 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
           description: formData.description || null,
           description_ar: formData.description_ar || null,
           department_id: formData.department_id || null,
+          location_id: formData.location_id || null,
           location: formData.location || null,
           location_ar: formData.location_ar || null,
-          employment_type: formData.employment_type,
-          experience_level: formData.experience_level,
+          job_type_id: formData.job_type_id || null,
+          employment_type: formData.job_type_id ? null : formData.employment_type,
+          job_grade_id: formData.job_grade_id || null,
+          experience_level: formData.job_grade_id ? null : formData.experience_level,
           salary_min: formData.salary_min || null,
           salary_max: formData.salary_max || null,
           salary_currency: formData.salary_currency,
@@ -253,9 +305,12 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
       description: job.description || "",
       description_ar: job.description_ar || "",
       department_id: job.department_id || "",
+      location_id: job.location_id || "",
       location: job.location || "",
       location_ar: job.location_ar || "",
+      job_type_id: job.job_type_id || "",
       employment_type: job.employment_type || "full_time",
+      job_grade_id: job.job_grade_id || "",
       experience_level: job.experience_level || "mid",
       salary_min: job.salary_min || 0,
       salary_max: job.salary_max || 0,
@@ -282,10 +337,13 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
           description: formData.description || null,
           description_ar: formData.description_ar || null,
           department_id: formData.department_id || null,
+          location_id: formData.location_id || null,
           location: formData.location || null,
           location_ar: formData.location_ar || null,
-          employment_type: formData.employment_type,
-          experience_level: formData.experience_level,
+          job_type_id: formData.job_type_id || null,
+          employment_type: formData.job_type_id ? null : formData.employment_type,
+          job_grade_id: formData.job_grade_id || null,
+          experience_level: formData.job_grade_id ? null : formData.experience_level,
           salary_min: formData.salary_min || null,
           salary_max: formData.salary_max || null,
           salary_currency: formData.salary_currency,
@@ -511,28 +569,56 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="location">Location (English)</Label>
-          <Input
-            id="location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Riyadh, Saudi Arabia"
-          />
+          <Label htmlFor="location_id">Location</Label>
+          {locations.length > 0 ? (
+            <Select
+              value={formData.location_id}
+              onValueChange={(value) => {
+                const loc = locations.find(l => l.id === value)
+                setFormData({
+                  ...formData,
+                  location_id: value,
+                  location: loc ? `${loc.name}${loc.city ? `, ${loc.city}` : ''}` : '',
+                  location_ar: loc?.name_ar || '',
+                })
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map((loc) => (
+                  <SelectItem key={loc.id} value={loc.id}>
+                    {loc.name} {loc.city && `(${loc.city})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              id="location"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Riyadh, Saudi Arabia"
+            />
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="location_ar">Location (Arabic)</Label>
-          <Input
-            id="location_ar"
-            value={formData.location_ar}
-            onChange={(e) => setFormData({ ...formData, location_ar: e.target.value })}
-            placeholder="الرياض، المملكة العربية السعودية"
-            dir="rtl"
-          />
-        </div>
-        <div className="space-y-2 flex items-end">
+        {locations.length === 0 && (
+          <div className="space-y-2">
+            <Label htmlFor="location_ar">Location (Arabic)</Label>
+            <Input
+              id="location_ar"
+              value={formData.location_ar}
+              onChange={(e) => setFormData({ ...formData, location_ar: e.target.value })}
+              placeholder="الرياض، المملكة العربية السعودية"
+              dir="rtl"
+            />
+          </div>
+        )}
+        <div className={cn("space-y-2 flex items-end", locations.length > 0 && "col-span-2")}>
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -553,38 +639,54 @@ export function JobsClient({ jobs: initialJobs, departments }: JobsClientProps) 
       {/* Employment Details */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="employment_type">Employment Type</Label>
+          <Label htmlFor="job_type_id">Job Type</Label>
           <Select
-            value={formData.employment_type}
-            onValueChange={(value) => setFormData({ ...formData, employment_type: value })}
+            value={formData.job_type_id}
+            onValueChange={(value) => setFormData({ ...formData, job_type_id: value })}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select job type" />
             </SelectTrigger>
             <SelectContent>
-              {employmentTypes.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>
-              ))}
+              {jobTypes.length > 0 ? (
+                jobTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))
+              ) : (
+                employmentTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="experience_level">Experience Level</Label>
+          <Label htmlFor="job_grade_id">Job Grade</Label>
           <Select
-            value={formData.experience_level}
-            onValueChange={(value) => setFormData({ ...formData, experience_level: value })}
+            value={formData.job_grade_id}
+            onValueChange={(value) => setFormData({ ...formData, job_grade_id: value })}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select job grade" />
             </SelectTrigger>
             <SelectContent>
-              {experienceLevels.map((level) => (
-                <SelectItem key={level.value} value={level.value}>
-                  {level.label}
-                </SelectItem>
-              ))}
+              {jobGrades.length > 0 ? (
+                jobGrades.map((grade) => (
+                  <SelectItem key={grade.id} value={grade.id}>
+                    {grade.name} (Level {grade.level})
+                  </SelectItem>
+                ))
+              ) : (
+                experienceLevels.map((level) => (
+                  <SelectItem key={level.value} value={level.value}>
+                    {level.label}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>

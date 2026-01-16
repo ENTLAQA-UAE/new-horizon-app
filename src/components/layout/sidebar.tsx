@@ -20,6 +20,7 @@ import {
   History,
   Palette,
   FolderTree,
+  SlidersHorizontal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
@@ -50,6 +51,7 @@ const orgAdminLinks = [
   { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
   { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
   { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
+  { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
   { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
   { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
 ]
