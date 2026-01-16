@@ -20,9 +20,14 @@ import {
   Shield,
   Mail,
   History,
+  Palette,
+  FolderTree,
+  ArrowLeftRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useI18n } from "@/lib/i18n"
+import { useState } from "react"
 
 interface SidebarProps {
   collapsed?: boolean
@@ -41,21 +46,23 @@ const superAdminLinks = [
 ]
 
 const orgAdminLinks = [
-  { href: "/", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
-  { href: "/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
-  { href: "/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
-  { href: "/team", label: "Team", labelAr: "الفريق", icon: Users },
-  { href: "/analytics", label: "Analytics", labelAr: "التحليلات", icon: BarChart3 },
-  { href: "/reports", label: "Reports", labelAr: "التقارير", icon: FileText },
-  { href: "/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
+  { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
+  { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
+  { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
+  { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
+  { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
+  { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
+  { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
 ]
 
 export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
   const pathname = usePathname()
   const { language, isRTL } = useI18n()
+  const [viewMode, setViewMode] = useState<"super" | "org">("super")
 
-  // TODO: Determine links based on user role
-  const links = superAdminLinks
+  // Determine links based on view mode
+  const links = viewMode === "super" ? superAdminLinks : orgAdminLinks
 
   const CollapseIcon = isRTL ? ChevronRight : ChevronLeft
   const ExpandIcon = isRTL ? ChevronLeft : ChevronRight
@@ -119,6 +126,38 @@ export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
           })}
         </nav>
       </ScrollArea>
+
+      {/* View Mode Switcher */}
+      <div className={cn("border-t border-border", collapsed ? "p-2" : "p-3")}>
+        {!collapsed ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-between"
+            onClick={() => setViewMode(viewMode === "super" ? "org" : "super")}
+          >
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="h-4 w-4" />
+              <span className="text-xs">
+                {viewMode === "super" ? "Switch to Org View" : "Switch to Admin"}
+              </span>
+            </div>
+            <Badge variant="secondary" className="text-[10px]">
+              {viewMode === "super" ? "Admin" : "Org"}
+            </Badge>
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-full h-8"
+            onClick={() => setViewMode(viewMode === "super" ? "org" : "super")}
+            title={viewMode === "super" ? "Switch to Org View" : "Switch to Admin"}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
 
       {/* Collapse button (when collapsed) */}
       {collapsed && onCollapse && (
