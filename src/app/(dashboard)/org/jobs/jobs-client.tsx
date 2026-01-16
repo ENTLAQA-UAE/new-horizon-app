@@ -498,23 +498,24 @@ export function JobsClient({
     return `Up to ${cur} ${max?.toLocaleString()}`
   }
 
-  const JobForm = () => (
+  // Render form fields inline to prevent focus loss on state change
+  const renderJobFormFields = (idPrefix: string) => (
     <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
       {/* Basic Info */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Job Title (English) *</Label>
+          <Label htmlFor={`${idPrefix}-title`}>Job Title (English) *</Label>
           <Input
-            id="title"
+            id={`${idPrefix}-title`}
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             placeholder="Software Engineer"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="title_ar">Job Title (Arabic)</Label>
+          <Label htmlFor={`${idPrefix}-title_ar`}>Job Title (Arabic)</Label>
           <Input
-            id="title_ar"
+            id={`${idPrefix}-title_ar`}
             value={formData.title_ar}
             onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
             placeholder="مهندس برمجيات"
@@ -524,9 +525,9 @@ export function JobsClient({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description (English)</Label>
+        <Label htmlFor={`${idPrefix}-description`}>Description (English)</Label>
         <Textarea
-          id="description"
+          id={`${idPrefix}-description`}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Job responsibilities and requirements..."
@@ -535,9 +536,9 @@ export function JobsClient({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description_ar">Description (Arabic)</Label>
+        <Label htmlFor={`${idPrefix}-description_ar`}>Description (Arabic)</Label>
         <Textarea
-          id="description_ar"
+          id={`${idPrefix}-description_ar`}
           value={formData.description_ar}
           onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
           placeholder="المسؤوليات والمتطلبات..."
@@ -551,7 +552,7 @@ export function JobsClient({
       {/* Location & Department */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="department_id">Department</Label>
+          <Label htmlFor={`${idPrefix}-department_id`}>Department</Label>
           <Select
             value={formData.department_id}
             onValueChange={(value) => setFormData({ ...formData, department_id: value })}
@@ -569,7 +570,7 @@ export function JobsClient({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="location_id">Location</Label>
+          <Label htmlFor={`${idPrefix}-location_id`}>Location</Label>
           {locations.length > 0 ? (
             <Select
               value={formData.location_id}
@@ -596,7 +597,7 @@ export function JobsClient({
             </Select>
           ) : (
             <Input
-              id="location"
+              id={`${idPrefix}-location`}
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               placeholder="Riyadh, Saudi Arabia"
@@ -608,9 +609,9 @@ export function JobsClient({
       <div className="grid grid-cols-2 gap-4">
         {locations.length === 0 && (
           <div className="space-y-2">
-            <Label htmlFor="location_ar">Location (Arabic)</Label>
+            <Label htmlFor={`${idPrefix}-location_ar`}>Location (Arabic)</Label>
             <Input
-              id="location_ar"
+              id={`${idPrefix}-location_ar`}
               value={formData.location_ar}
               onChange={(e) => setFormData({ ...formData, location_ar: e.target.value })}
               placeholder="الرياض، المملكة العربية السعودية"
@@ -622,12 +623,12 @@ export function JobsClient({
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="is_remote"
+              id={`${idPrefix}-is_remote`}
               checked={formData.is_remote}
               onChange={(e) => setFormData({ ...formData, is_remote: e.target.checked })}
               className="h-4 w-4"
             />
-            <Label htmlFor="is_remote" className="font-normal">
+            <Label htmlFor={`${idPrefix}-is_remote`} className="font-normal">
               Remote work available
             </Label>
           </div>
@@ -639,7 +640,7 @@ export function JobsClient({
       {/* Employment Details */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="job_type_id">Job Type</Label>
+          <Label htmlFor={`${idPrefix}-job_type_id`}>Job Type</Label>
           <Select
             value={formData.job_type_id}
             onValueChange={(value) => setFormData({ ...formData, job_type_id: value })}
@@ -665,7 +666,7 @@ export function JobsClient({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="job_grade_id">Job Grade</Label>
+          <Label htmlFor={`${idPrefix}-job_grade_id`}>Job Grade</Label>
           <Select
             value={formData.job_grade_id}
             onValueChange={(value) => setFormData({ ...formData, job_grade_id: value })}
@@ -697,9 +698,9 @@ export function JobsClient({
       {/* Salary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="salary_min">Min Salary</Label>
+          <Label htmlFor={`${idPrefix}-salary_min`}>Min Salary</Label>
           <Input
-            id="salary_min"
+            id={`${idPrefix}-salary_min`}
             type="number"
             value={formData.salary_min || ""}
             onChange={(e) => setFormData({ ...formData, salary_min: parseInt(e.target.value) || 0 })}
@@ -707,9 +708,9 @@ export function JobsClient({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="salary_max">Max Salary</Label>
+          <Label htmlFor={`${idPrefix}-salary_max`}>Max Salary</Label>
           <Input
-            id="salary_max"
+            id={`${idPrefix}-salary_max`}
             type="number"
             value={formData.salary_max || ""}
             onChange={(e) => setFormData({ ...formData, salary_max: parseInt(e.target.value) || 0 })}
@@ -717,7 +718,7 @@ export function JobsClient({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="salary_currency">Currency</Label>
+          <Label htmlFor={`${idPrefix}-salary_currency`}>Currency</Label>
           <Select
             value={formData.salary_currency}
             onValueChange={(value) => setFormData({ ...formData, salary_currency: value })}
@@ -737,9 +738,9 @@ export function JobsClient({
 
       {/* Closing Date */}
       <div className="space-y-2">
-        <Label htmlFor="closes_at">Application Deadline</Label>
+        <Label htmlFor={`${idPrefix}-closes_at`}>Application Deadline</Label>
         <Input
-          id="closes_at"
+          id={`${idPrefix}-closes_at`}
           type="date"
           value={formData.closes_at}
           onChange={(e) => setFormData({ ...formData, closes_at: e.target.value })}
@@ -1015,7 +1016,7 @@ export function JobsClient({
               Create a new job posting for your organization
             </DialogDescription>
           </DialogHeader>
-          <JobForm />
+          {renderJobFormFields("create")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancel
@@ -1037,7 +1038,7 @@ export function JobsClient({
               Update job posting details
             </DialogDescription>
           </DialogHeader>
-          <JobForm />
+          {renderJobFormFields("edit")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
