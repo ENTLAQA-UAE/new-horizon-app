@@ -13,25 +13,23 @@ import {
   Users,
   Briefcase,
   UserSearch,
-  BarChart3,
   FileText,
   ChevronLeft,
   ChevronRight,
-  Shield,
   Mail,
   History,
   Palette,
   FolderTree,
-  ArrowLeftRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { useI18n } from "@/lib/i18n"
-import { useState } from "react"
+
+export type UserRole = "super_admin" | "org_admin" | "hr_manager" | "recruiter" | "hiring_manager" | "interviewer"
 
 interface SidebarProps {
   collapsed?: boolean
   onCollapse?: (collapsed: boolean) => void
+  userRole?: UserRole
 }
 
 const superAdminLinks = [
@@ -56,16 +54,43 @@ const orgAdminLinks = [
   { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
 ]
 
-export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
+// Links for HR Manager, Recruiter, etc. (subset of org admin)
+const staffLinks = [
+  { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
+  { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
+  { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
+]
+
+function getLinksForRole(role?: UserRole) {
+  switch (role) {
+    case "super_admin":
+      return superAdminLinks
+    case "org_admin":
+      return orgAdminLinks
+    case "hr_manager":
+    case "recruiter":
+    case "hiring_manager":
+    case "interviewer":
+      return staffLinks
+    default:
+      // Default to staff links for unknown roles
+      return staffLinks
+  }
+}
+
+export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProps) {
   const pathname = usePathname()
   const { language, isRTL } = useI18n()
-  const [viewMode, setViewMode] = useState<"super" | "org">("super")
 
-  // Determine links based on view mode
-  const links = viewMode === "super" ? superAdminLinks : orgAdminLinks
+  // Get links based on actual user role
+  const links = getLinksForRole(userRole)
 
   const CollapseIcon = isRTL ? ChevronRight : ChevronLeft
   const ExpandIcon = isRTL ? ChevronLeft : ChevronRight
+
+  // Determine the home link based on role
+  const homeHref = userRole === "super_admin" ? "/" : "/org"
 
   return (
     <aside
@@ -78,7 +103,7 @@ export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-border">
         {!collapsed && (
-          <Link href="/" className="flex items-center gap-2">
+          <Link href={homeHref} className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Building2 className="w-4 h-4 text-primary-foreground" />
             </div>
@@ -86,9 +111,9 @@ export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
           </Link>
         )}
         {collapsed && (
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
+          <Link href={homeHref} className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
             <Building2 className="w-4 h-4 text-primary-foreground" />
-          </div>
+          </Link>
         )}
         {onCollapse && !collapsed && (
           <Button
@@ -106,7 +131,8 @@ export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
       <ScrollArea className="flex-1 py-4">
         <nav className="space-y-1 px-2">
           {links.map((link) => {
-            const isActive = pathname === link.href
+            const isActive = pathname === link.href ||
+              (link.href !== "/" && link.href !== "/org" && pathname.startsWith(link.href))
             const label = language === "ar" ? link.labelAr : link.label
             return (
               <Link
@@ -126,38 +152,6 @@ export function Sidebar({ collapsed = false, onCollapse }: SidebarProps) {
           })}
         </nav>
       </ScrollArea>
-
-      {/* View Mode Switcher */}
-      <div className={cn("border-t border-border", collapsed ? "p-2" : "p-3")}>
-        {!collapsed ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-between"
-            onClick={() => setViewMode(viewMode === "super" ? "org" : "super")}
-          >
-            <div className="flex items-center gap-2">
-              <ArrowLeftRight className="h-4 w-4" />
-              <span className="text-xs">
-                {viewMode === "super" ? "Switch to Org View" : "Switch to Admin"}
-              </span>
-            </div>
-            <Badge variant="secondary" className="text-[10px]">
-              {viewMode === "super" ? "Admin" : "Org"}
-            </Badge>
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-full h-8"
-            onClick={() => setViewMode(viewMode === "super" ? "org" : "super")}
-            title={viewMode === "super" ? "Switch to Org View" : "Switch to Admin"}
-          >
-            <ArrowLeftRight className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
 
       {/* Collapse button (when collapsed) */}
       {collapsed && onCollapse && (
