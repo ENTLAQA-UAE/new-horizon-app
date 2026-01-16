@@ -57,6 +57,7 @@ export default function DepartmentsPage() {
   const supabase = createClient()
   const [departments, setDepartments] = useState<Department[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -72,9 +73,24 @@ export default function DepartmentsPage() {
     description: "",
   })
 
-  // Fetch departments
+  // Fetch organization and departments
   useEffect(() => {
-    async function fetchDepartments() {
+    async function fetchData() {
+      // Get current user's organization
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single()
+
+      const orgId = profile?.organization_id
+      if (orgId) {
+        setOrganizationId(orgId)
+      }
+
       const { data, error } = await supabase
         .from("departments")
         .select("*")
@@ -89,7 +105,7 @@ export default function DepartmentsPage() {
       setIsLoading(false)
     }
 
-    fetchDepartments()
+    fetchData()
   }, [supabase])
 
   const resetForm = () => {
@@ -103,6 +119,11 @@ export default function DepartmentsPage() {
       return
     }
 
+    if (!organizationId) {
+      toast.error("Organization not found")
+      return
+    }
+
     setIsSaving(true)
     try {
       const { data, error } = await supabase
@@ -112,6 +133,7 @@ export default function DepartmentsPage() {
           name_ar: formData.name_ar || null,
           description: formData.description || null,
           is_active: true,
+          org_id: organizationId,
         })
         .select()
         .single()
