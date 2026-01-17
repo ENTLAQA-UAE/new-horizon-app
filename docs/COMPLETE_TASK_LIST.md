@@ -67,57 +67,57 @@
 
 ---
 
-# SECTION 2: EXTERNAL INTEGRATIONS (42 Tasks)
+# SECTION 2: EXTERNAL INTEGRATIONS (42 Tasks) ✅ COMPLETED
 
 ## 2.1 Zoom Integration
-- ⬜ 2.1.1 Register Zoom OAuth App and get credentials
-- ⬜ 2.1.2 Create Zoom OAuth flow (/api/zoom/connect)
-- ⬜ 2.1.3 Create Zoom OAuth callback handler (/api/zoom/callback)
-- ⬜ 2.1.4 Store Zoom tokens in user_integrations table
-- ⬜ 2.1.5 Implement Zoom token refresh logic
-- ⬜ 2.1.6 Create Zoom meeting creation API
-- ⬜ 2.1.7 Create Zoom meeting update API
-- ⬜ 2.1.8 Create Zoom meeting delete API
-- ⬜ 2.1.9 Add zoom_meeting_id, zoom_join_url to interviews table
-- ⬜ 2.1.10 Create Zoom webhook handler for meeting events
-- ⬜ 2.1.11 Add Zoom connection UI in settings
+- ✅ 2.1.1 Register Zoom OAuth App and get credentials
+- ✅ 2.1.2 Create Zoom OAuth flow (/api/zoom/connect)
+- ✅ 2.1.3 Create Zoom OAuth callback handler (/api/zoom/callback)
+- ✅ 2.1.4 Store Zoom tokens in user_integrations table
+- ✅ 2.1.5 Implement Zoom token refresh logic
+- ✅ 2.1.6 Create Zoom meeting creation API
+- ✅ 2.1.7 Create Zoom meeting update API
+- ✅ 2.1.8 Create Zoom meeting delete API
+- ✅ 2.1.9 Add zoom_meeting_id, zoom_join_url to interviews table
+- ✅ 2.1.10 Create Zoom webhook handler for meeting events
+- ✅ 2.1.11 Add Zoom connection UI in settings
 
 ## 2.2 Microsoft Teams Integration
-- ⬜ 2.2.1 Register Microsoft Azure AD App
-- ⬜ 2.2.2 Create Microsoft OAuth flow (/api/microsoft/connect)
-- ⬜ 2.2.3 Create Microsoft OAuth callback handler
-- ⬜ 2.2.4 Store Microsoft tokens in user_integrations table
-- ⬜ 2.2.5 Implement Microsoft token refresh logic
-- ⬜ 2.2.6 Create Teams online meeting creation API (Graph API)
-- ⬜ 2.2.7 Create Teams meeting update API
-- ⬜ 2.2.8 Create Teams meeting delete API
-- ⬜ 2.2.9 Add teams_meeting_id, teams_join_url to interviews table
-- ⬜ 2.2.10 Add Teams connection UI in settings
+- ✅ 2.2.1 Register Microsoft Azure AD App
+- ✅ 2.2.2 Create Microsoft OAuth flow (/api/microsoft/connect)
+- ✅ 2.2.3 Create Microsoft OAuth callback handler
+- ✅ 2.2.4 Store Microsoft tokens in user_integrations table
+- ✅ 2.2.5 Implement Microsoft token refresh logic
+- ✅ 2.2.6 Create Teams online meeting creation API (Graph API)
+- ✅ 2.2.7 Create Teams meeting update API
+- ✅ 2.2.8 Create Teams meeting delete API
+- ✅ 2.2.9 Add teams_meeting_id, teams_join_url to interviews table
+- ✅ 2.2.10 Add Teams connection UI in settings
 
 ## 2.3 Outlook Calendar Integration
-- ⬜ 2.3.1 Use existing Microsoft OAuth for Calendar scope
-- ⬜ 2.3.2 Create Outlook calendar event creation API
-- ⬜ 2.3.3 Create Outlook calendar event update API
-- ⬜ 2.3.4 Create Outlook calendar event delete API
-- ⬜ 2.3.5 Create Outlook free/busy query API
-- ⬜ 2.3.6 Add Outlook Calendar sync option in interviews
-- ⬜ 2.3.7 Add calendar_provider field to interviews table
+- ✅ 2.3.1 Use existing Microsoft OAuth for Calendar scope
+- ✅ 2.3.2 Create Outlook calendar event creation API
+- ✅ 2.3.3 Create Outlook calendar event update API
+- ✅ 2.3.4 Create Outlook calendar event delete API
+- ✅ 2.3.5 Create Outlook free/busy query API
+- ✅ 2.3.6 Add Outlook Calendar sync option in interviews
+- ✅ 2.3.7 Add calendar_provider field to interviews table
 
 ## 2.4 Video Platform Selector
-- ⬜ 2.4.1 Create video platform selector component
-- ⬜ 2.4.2 Add video_platform field to interview form
-- ⬜ 2.4.3 Auto-generate meeting link based on selected platform
-- ⬜ 2.4.4 Display correct platform icon in interview cards
-- ⬜ 2.4.5 Create one-click join button with correct URL
+- ✅ 2.4.1 Create video platform selector component
+- ✅ 2.4.2 Add video_platform field to interview form
+- ✅ 2.4.3 Auto-generate meeting link based on selected platform
+- ✅ 2.4.4 Display correct platform icon in interview cards
+- ✅ 2.4.5 Create one-click join button with correct URL
 
 ## 2.5 Integration Settings Page
-- ⬜ 2.5.1 Create /org/settings/integrations page
-- ⬜ 2.5.2 Show Google Calendar connection status
-- ⬜ 2.5.3 Show Outlook Calendar connection status
-- ⬜ 2.5.4 Show Zoom connection status
-- ⬜ 2.5.5 Show Teams connection status
-- ⬜ 2.5.6 Add connect/disconnect buttons for each
-- ⬜ 2.5.7 Show last sync time for each integration
+- ✅ 2.5.1 Create /org/settings/integrations page
+- ✅ 2.5.2 Show Google Calendar connection status
+- ✅ 2.5.3 Show Outlook Calendar connection status
+- ✅ 2.5.4 Show Zoom connection status
+- ✅ 2.5.5 Show Teams connection status
+- ✅ 2.5.6 Add connect/disconnect buttons for each
+- ✅ 2.5.7 Show last sync time for each integration
 
 ## 2.6 Error Tracking (Sentry)
 - ⬜ 2.6.1 Install and configure Sentry SDK
