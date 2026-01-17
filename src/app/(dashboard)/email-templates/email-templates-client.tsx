@@ -35,6 +35,11 @@ import {
   XCircle,
   Code,
   Languages,
+  Sparkles,
+  Wand2,
+  Loader2,
+  RefreshCw,
+  Globe,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Json } from "@/lib/supabase/types"
@@ -76,15 +81,38 @@ const categoryColors: Record<string, string> = {
   general: "bg-gray-500",
 }
 
+const templateTypes = [
+  { value: "application_received", label: "Application Received" },
+  { value: "interview_invitation", label: "Interview Invitation" },
+  { value: "interview_reminder", label: "Interview Reminder" },
+  { value: "offer_letter", label: "Offer Letter" },
+  { value: "rejection", label: "Rejection Notice" },
+  { value: "onboarding_welcome", label: "Onboarding Welcome" },
+  { value: "status_update", label: "Status Update" },
+  { value: "custom", label: "Custom Template" },
+]
+
 export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>(initialTemplates)
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isAIGenerateOpen, setIsAIGenerateOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isAILoading, setIsAILoading] = useState(false)
   const [previewLanguage, setPreviewLanguage] = useState<"en" | "ar">("en")
+
+  // AI Generation state
+  const [aiForm, setAiForm] = useState({
+    templateType: "application_received",
+    companyName: "",
+    jobTitle: "",
+    tone: "professional" as "formal" | "friendly" | "professional",
+    includeArabic: true,
+    customInstructions: "",
+  })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -245,6 +273,133 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
     setIsPreviewOpen(true)
   }
 
+  // AI Generate Template
+  const handleAIGenerate = async () => {
+    setIsAILoading(true)
+    try {
+      const response = await fetch("/api/ai/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generate",
+          templateType: aiForm.templateType,
+          context: {
+            companyName: aiForm.companyName || undefined,
+            jobTitle: aiForm.jobTitle || undefined,
+            tone: aiForm.tone,
+            includeArabic: aiForm.includeArabic,
+            customInstructions: aiForm.customInstructions || undefined,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate template")
+      }
+
+      // Populate the form with generated data
+      setFormData({
+        name: data.data.name,
+        slug: data.data.slug,
+        subject: data.data.subject,
+        subject_ar: data.data.subject_ar || "",
+        body_html: data.data.body_html,
+        body_html_ar: data.data.body_html_ar || "",
+        category: data.data.category,
+        is_active: true,
+      })
+
+      setIsAIGenerateOpen(false)
+      setIsEditOpen(true)
+      toast.success("Template generated! Review and save it.")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate template")
+    } finally {
+      setIsAILoading(false)
+    }
+  }
+
+  // AI Translate to Arabic
+  const handleAITranslate = async () => {
+    if (!formData.subject || !formData.body_html) {
+      toast.error("Please fill in the English template first")
+      return
+    }
+
+    setIsAILoading(true)
+    try {
+      const response = await fetch("/api/ai/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "translate",
+          subject: formData.subject,
+          body_html: formData.body_html,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to translate")
+      }
+
+      setFormData({
+        ...formData,
+        subject_ar: data.data.subject_ar,
+        body_html_ar: data.data.body_html_ar,
+      })
+
+      toast.success("Arabic translation generated!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to translate")
+    } finally {
+      setIsAILoading(false)
+    }
+  }
+
+  // AI Improve Template
+  const handleAIImprove = async (improvement: string) => {
+    if (!formData.subject || !formData.body_html) {
+      toast.error("Please fill in the template first")
+      return
+    }
+
+    setIsAILoading(true)
+    try {
+      const response = await fetch("/api/ai/generate-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "improve",
+          subject: formData.subject,
+          body_html: formData.body_html,
+          improvement,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to improve template")
+      }
+
+      setFormData({
+        ...formData,
+        subject: data.data.subject,
+        body_html: data.data.body_html,
+      })
+
+      toast.success("Template improved!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to improve template")
+    } finally {
+      setIsAILoading(false)
+    }
+  }
+
   // Get unique categories
   const categories = [...new Set(templates.map((t) => t.category).filter(Boolean))]
 
@@ -258,10 +413,16 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
             Manage system email templates for notifications
           </p>
         </div>
-        <Button onClick={() => openEditDialog(null)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Template
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsAIGenerateOpen(true)}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            AI Generate
+          </Button>
+          <Button onClick={() => openEditDialog(null)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Template
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -546,6 +707,23 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
             </TabsContent>
 
             <TabsContent value="arabic" className="space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAITranslate}
+                  disabled={isAILoading || !formData.subject || !formData.body_html}
+                >
+                  {isAILoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Globe className="mr-2 h-4 w-4" />
+                  )}
+                  Auto-translate with AI
+                </Button>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="subject_ar">Subject (Arabic)</Label>
                 <Input
@@ -637,6 +815,135 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generate Dialog */}
+      <Dialog open={isAIGenerateOpen} onOpenChange={setIsAIGenerateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-violet-500" />
+              AI Template Generator
+            </DialogTitle>
+            <DialogDescription>
+              Generate a professional email template using AI
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Template Type</Label>
+              <Select
+                value={aiForm.templateType}
+                onValueChange={(value) =>
+                  setAiForm({ ...aiForm, templateType: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Company Name (optional)</Label>
+                <Input
+                  value={aiForm.companyName}
+                  onChange={(e) =>
+                    setAiForm({ ...aiForm, companyName: e.target.value })
+                  }
+                  placeholder="Your Company"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Job Title (optional)</Label>
+                <Input
+                  value={aiForm.jobTitle}
+                  onChange={(e) =>
+                    setAiForm({ ...aiForm, jobTitle: e.target.value })
+                  }
+                  placeholder="Software Engineer"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tone</Label>
+              <Select
+                value={aiForm.tone}
+                onValueChange={(value) =>
+                  setAiForm({
+                    ...aiForm,
+                    tone: value as "formal" | "friendly" | "professional",
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="formal">Formal</SelectItem>
+                  <SelectItem value="friendly">Friendly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Additional Instructions (optional)</Label>
+              <Textarea
+                value={aiForm.customInstructions}
+                onChange={(e) =>
+                  setAiForm({ ...aiForm, customInstructions: e.target.value })
+                }
+                placeholder="Any specific requirements or content to include..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="includeArabic"
+                checked={aiForm.includeArabic}
+                onChange={(e) =>
+                  setAiForm({ ...aiForm, includeArabic: e.target.checked })
+                }
+                className="rounded"
+              />
+              <Label htmlFor="includeArabic" className="cursor-pointer">
+                Include Arabic translation
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAIGenerateOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAIGenerate} disabled={isAILoading}>
+              {isAILoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Generate Template
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
