@@ -3,6 +3,21 @@ import { InterviewsClient } from "./interviews-client"
 
 export default async function InterviewsPage() {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Check if user has Google Calendar connected
+  let hasCalendarConnected = false
+  if (user) {
+    const { data: integration } = await supabase
+      .from("user_integrations")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("provider", "google_calendar")
+      .single()
+    hasCalendarConnected = !!integration
+  }
 
   // Fetch interviews with related data
   const { data: interviews } = await supabase
@@ -58,6 +73,7 @@ export default async function InterviewsPage() {
       interviews={interviews || []}
       teamMembers={teamMembers || []}
       applications={applications || []}
+      hasCalendarConnected={hasCalendarConnected}
     />
   )
 }
