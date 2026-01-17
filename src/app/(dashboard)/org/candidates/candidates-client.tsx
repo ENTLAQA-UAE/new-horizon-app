@@ -60,6 +60,8 @@ import {
   Users,
   FileText,
   Download,
+  Upload,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -129,10 +131,16 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Selected candidate
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
+  const [selectedJobId, setSelectedJobId] = useState<string>("")
+
+  // Resume upload state
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [isUploadingResume, setIsUploadingResume] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -187,6 +195,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       skills: "",
       source: "direct",
     })
+    setResumeFile(null)
   }
 
   // CREATE
@@ -228,6 +237,21 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
         return
       }
 
+      // Upload resume if provided
+      let resumeUrl = null
+      if (resumeFile) {
+        setIsUploadingResume(true)
+        resumeUrl = await uploadResume(resumeFile, data.id)
+        if (resumeUrl) {
+          await supabase
+            .from("candidates")
+            .update({ resume_url: resumeUrl })
+            .eq("id", data.id)
+          data.resume_url = resumeUrl
+        }
+        setIsUploadingResume(false)
+      }
+
       setCandidates([data, ...candidates])
       setIsCreateDialogOpen(false)
       resetForm()
@@ -237,6 +261,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       toast.error("An unexpected error occurred")
     } finally {
       setIsLoading(false)
+      setIsUploadingResume(false)
     }
   }
 
@@ -378,6 +403,122 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
+    }
+  }
+
+  // APPLY TO JOB
+  const openApplyDialog = (candidate: Candidate) => {
+    setSelectedCandidate(candidate)
+    setSelectedJobId("")
+    setIsApplyDialogOpen(true)
+  }
+
+  const handleApplyToJob = async () => {
+    if (!selectedCandidate || !selectedJobId) {
+      toast.error("Please select a job")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      // Check if application already exists
+      const { data: existingApp } = await supabase
+        .from("applications")
+        .select("id")
+        .eq("candidate_id", selectedCandidate.id)
+        .eq("job_id", selectedJobId)
+        .single()
+
+      if (existingApp) {
+        toast.error("This candidate has already applied to this job")
+        setIsLoading(false)
+        return
+      }
+
+      // Get the first stage (usually "new" or "applied")
+      const { data: stages } = await supabase
+        .from("hiring_stages")
+        .select("id")
+        .order("sort_order", { ascending: true })
+        .limit(1)
+
+      const firstStageId = stages?.[0]?.id || null
+
+      // Create the application
+      const { error } = await supabase
+        .from("applications")
+        .insert({
+          candidate_id: selectedCandidate.id,
+          job_id: selectedJobId,
+          stage: firstStageId,
+          status: "new",
+          source: selectedCandidate.source || "direct",
+          applied_at: new Date().toISOString(),
+        })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      setIsApplyDialogOpen(false)
+      setSelectedCandidate(null)
+      setSelectedJobId("")
+      toast.success("Candidate applied to job successfully")
+      router.push("/org/applications")
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Filter published jobs for apply dialog
+  const publishedJobs = jobs.filter(j => j.status === "published" || j.status === "open")
+
+  // Resume upload handler
+  const uploadResume = async (file: File, candidateId: string): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${candidateId}-${Date.now()}.${fileExt}`
+      const filePath = `${candidateId}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("resumes")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        })
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError)
+        return null
+      }
+
+      const { data } = supabase.storage.from("resumes").getPublicUrl(filePath)
+      return data.publicUrl
+    } catch (error) {
+      console.error("Resume upload failed:", error)
+      return null
+    }
+  }
+
+  // Handle resume file selection
+  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const validTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+      if (!validTypes.includes(file.type)) {
+        toast.error("Please upload a PDF or Word document")
+        return
+      }
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File size must be less than 10MB")
+        return
+      }
+      setResumeFile(file)
     }
   }
 
@@ -541,6 +682,46 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}-resume`}>Resume (PDF or Word)</Label>
+        {resumeFile ? (
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+            <FileText className="h-5 w-5 text-primary" />
+            <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setResumeFile(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="relative">
+            <input
+              id={`${idPrefix}-resume`}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleResumeChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
+              <Upload className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Click or drag to upload resume (PDF, DOC, DOCX - Max 10MB)
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -759,11 +940,24 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
                           Edit
                         </DropdownMenuItem>
                         {candidate.resume_url && (
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => window.open(candidate.resume_url!, "_blank")}
+                          >
                             <Download className="mr-2 h-4 w-4" />
                             Download Resume
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            openApplyDialog(candidate)
+                          }}
+                          className="text-primary"
+                        >
+                          <Briefcase className="mr-2 h-4 w-4" />
+                          Apply to Job
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onSelect={() => handleStatusChange(candidate.id, "screening")}
@@ -990,6 +1184,72 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete Candidate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Apply to Job Dialog */}
+      <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Apply Candidate to Job</DialogTitle>
+            <DialogDescription>
+              Select a job to create an application for this candidate.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCandidate && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-primary">
+                    {selectedCandidate.first_name[0]}{selectedCandidate.last_name[0]}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-medium">
+                    {selectedCandidate.first_name} {selectedCandidate.last_name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedCandidate.current_job_title || "No title"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="apply-job">Select Job *</Label>
+                {publishedJobs.length > 0 ? (
+                  <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a job position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {publishedJobs.map((job) => (
+                        <SelectItem key={job.id} value={job.id}>
+                          {job.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground border border-dashed rounded-lg">
+                    <p>No published jobs available</p>
+                    <p className="text-sm">Publish a job first to apply candidates</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsApplyDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApplyToJob}
+              disabled={isLoading || !selectedJobId || publishedJobs.length === 0}
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Application
             </Button>
           </DialogFooter>
         </DialogContent>
