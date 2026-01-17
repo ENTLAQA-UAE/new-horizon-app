@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { IntegrationsClient } from "./integrations-client"
+import { IntegrationsSettingsClient } from "./integrations-settings-client"
 
-export default async function IntegrationsPage() {
+export default async function IntegrationsSettingsPage() {
   const supabase = await createClient()
 
   const {
@@ -13,41 +13,45 @@ export default async function IntegrationsPage() {
     redirect("/login")
   }
 
-  // Get user's connected integrations
-  const { data: integrations } = await supabase
-    .from("user_integrations")
-    .select("provider, metadata, created_at, updated_at, expires_at")
-    .eq("user_id", user.id)
-
-  // Get org integration settings
+  // Get user's organization membership
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("org_id, role")
+    .select("org_id, role, organizations(id, name)")
     .eq("user_id", user.id)
     .single()
 
-  let orgIntegrations = null
-  if (membership) {
-    const { data } = await supabase
-      .from("org_integrations")
-      .select("*")
-      .eq("org_id", membership.org_id)
-
-    orgIntegrations = data
+  if (!membership) {
+    redirect("/org")
   }
 
-  const connectedProviders = integrations?.map((i) => ({
-    provider: i.provider,
-    metadata: i.metadata as Record<string, unknown>,
-    connectedAt: i.created_at,
-    expiresAt: i.expires_at,
-  })) || []
+  // Check if user is admin
+  const isAdmin = membership.role === "owner" || membership.role === "admin"
+
+  if (!isAdmin) {
+    redirect("/org")
+  }
+
+  const orgId = membership.org_id
+
+  // Get organization integrations
+  const { data: integrations } = await supabase
+    .from("organization_integrations")
+    .select("*")
+    .eq("org_id", orgId)
+
+  // Get email configuration
+  const { data: emailConfig } = await supabase
+    .from("organization_email_config")
+    .select("*")
+    .eq("org_id", orgId)
+    .single()
 
   return (
-    <IntegrationsClient
-      connectedProviders={connectedProviders}
-      orgIntegrations={orgIntegrations || []}
-      isOrgAdmin={membership?.role === "owner" || membership?.role === "admin"}
+    <IntegrationsSettingsClient
+      orgId={orgId}
+      orgName={(membership.organizations as { name: string })?.name || "Organization"}
+      integrations={integrations || []}
+      emailConfig={emailConfig}
     />
   )
 }
