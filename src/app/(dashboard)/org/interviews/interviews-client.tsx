@@ -54,7 +54,9 @@ import {
   Briefcase,
   Sparkles,
   Copy,
+  ExternalLink,
 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { format, addHours, startOfDay, isSameDay, isAfter, isBefore } from "date-fns"
 import { useAI } from "@/hooks/use-ai"
@@ -122,6 +124,7 @@ interface InterviewsClientProps {
   interviews: Interview[]
   teamMembers: TeamMember[]
   applications: Application[]
+  hasCalendarConnected?: boolean
 }
 
 const interviewTypes = [
@@ -152,6 +155,7 @@ export function InterviewsClient({
   interviews: initialInterviews,
   teamMembers,
   applications,
+  hasCalendarConnected = false,
 }: InterviewsClientProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -185,6 +189,8 @@ export function InterviewsClient({
     meeting_link: "",
     interviewer_ids: [] as string[],
     internal_notes: "",
+    syncToCalendar: hasCalendarConnected,
+    addMeetLink: true,
   })
 
   const filteredInterviews = interviews.filter((interview) => {
@@ -227,6 +233,8 @@ export function InterviewsClient({
       meeting_link: "",
       interviewer_ids: [],
       internal_notes: "",
+      syncToCalendar: hasCalendarConnected,
+      addMeetLink: true,
     })
   }
 
@@ -285,10 +293,51 @@ export function InterviewsClient({
         return
       }
 
+      // Sync to Google Calendar if enabled
+      if (formData.syncToCalendar && hasCalendarConnected) {
+        try {
+          const app = applications.find((a) => a.id === formData.application_id)
+          const endTime = new Date(scheduledAt)
+          endTime.setMinutes(endTime.getMinutes() + formData.duration_minutes)
+
+          const calendarResponse = await fetch("/api/google/calendar/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              summary: formData.title,
+              description: `Interview for ${app?.jobs.title} position.\n\nCandidate: ${app?.candidates.first_name} ${app?.candidates.last_name} (${app?.candidates.email})`,
+              location: formData.location || undefined,
+              startTime: scheduledAt.toISOString(),
+              endTime: endTime.toISOString(),
+              attendees: app
+                ? [{ email: app.candidates.email, name: `${app.candidates.first_name} ${app.candidates.last_name}` }]
+                : [],
+              addMeetLink: formData.addMeetLink && formData.interview_type === "video",
+              interviewId: data.id,
+            }),
+          })
+
+          if (calendarResponse.ok) {
+            const calendarData = await calendarResponse.json()
+            // Update local state with calendar link
+            if (calendarData.event?.hangoutLink) {
+              data.meeting_link = calendarData.event.hangoutLink
+            }
+            toast.success("Interview scheduled and synced to Google Calendar")
+          } else {
+            toast.success("Interview scheduled (Calendar sync failed)")
+          }
+        } catch (calendarError) {
+          console.error("Calendar sync error:", calendarError)
+          toast.success("Interview scheduled (Calendar sync failed)")
+        }
+      } else {
+        toast.success("Interview scheduled successfully")
+      }
+
       setInterviews([data, ...interviews])
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success("Interview scheduled successfully")
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -763,14 +812,59 @@ export function InterviewsClient({
             </div>
 
             {formData.interview_type === "video" && (
-              <div className="space-y-2">
-                <Label htmlFor="meeting_link">Meeting Link</Label>
-                <Input
-                  id="meeting_link"
-                  value={formData.meeting_link}
-                  onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
-                  placeholder="https://meet.google.com/..."
+              <div className="space-y-4">
+                {!hasCalendarConnected && (
+                  <div className="space-y-2">
+                    <Label htmlFor="meeting_link">Meeting Link</Label>
+                    <Input
+                      id="meeting_link"
+                      value={formData.meeting_link}
+                      onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
+                      placeholder="https://meet.google.com/..."
+                    />
+                  </div>
+                )}
+                {hasCalendarConnected && formData.syncToCalendar && (
+                  <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
+                    <Checkbox
+                      id="addMeetLink"
+                      checked={formData.addMeetLink}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, addMeetLink: checked as boolean })
+                      }
+                    />
+                    <label
+                      htmlFor="addMeetLink"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Auto-generate Google Meet link
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {hasCalendarConnected && (
+              <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                <Checkbox
+                  id="syncToCalendar"
+                  checked={formData.syncToCalendar}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, syncToCalendar: checked as boolean })
+                  }
                 />
+                <div className="flex-1">
+                  <label
+                    htmlFor="syncToCalendar"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Sync to Google Calendar
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Creates a calendar event and sends invites to attendees
+                  </p>
+                </div>
+                <CalendarIcon className="h-5 w-5 text-blue-600" />
               </div>
             )}
 
