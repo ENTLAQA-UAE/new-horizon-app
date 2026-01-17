@@ -201,42 +201,75 @@ ALTER TABLE organization_email_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organization_email_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE integration_webhook_logs ENABLE ROW LEVEL SECURITY;
 
--- Organization integrations: Only org admins can manage
-CREATE POLICY "Org admins can manage integrations"
-  ON organization_integrations FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM organization_members
-      WHERE organization_members.org_id = organization_integrations.org_id
-      AND organization_members.user_id = auth.uid()
-      AND organization_members.role IN ('owner', 'admin')
-    )
-  );
-
--- Org members can view (not credentials)
-CREATE POLICY "Org members can view integration status"
+-- Organization integrations: Org members can view
+CREATE POLICY "Org members can view integrations"
   ON organization_integrations FOR SELECT
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM organization_members
-      WHERE organization_members.org_id = organization_integrations.org_id
-      AND organization_members.user_id = auth.uid()
-    )
+    org_id = public.get_user_org_id(auth.uid())
+    OR public.is_super_admin(auth.uid())
   );
 
--- Email config: Only org admins
-CREATE POLICY "Org admins can manage email config"
-  ON organization_email_config FOR ALL
+-- Organization integrations: Only org admins can insert
+CREATE POLICY "Org admins can insert integrations"
+  ON organization_integrations FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Organization integrations: Only org admins can update
+CREATE POLICY "Org admins can update integrations"
+  ON organization_integrations FOR UPDATE
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM organization_members
-      WHERE organization_members.org_id = organization_email_config.org_id
-      AND organization_members.user_id = auth.uid()
-      AND organization_members.role IN ('owner', 'admin')
-    )
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
+  )
+  WITH CHECK (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Organization integrations: Only org admins can delete
+CREATE POLICY "Org admins can delete integrations"
+  ON organization_integrations FOR DELETE
+  TO authenticated
+  USING (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Email config: Org members can view
+CREATE POLICY "Org members can view email config"
+  ON organization_email_config FOR SELECT
+  TO authenticated
+  USING (
+    org_id = public.get_user_org_id(auth.uid())
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Email config: Only org admins can insert
+CREATE POLICY "Org admins can insert email config"
+  ON organization_email_config FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Email config: Only org admins can update
+CREATE POLICY "Org admins can update email config"
+  ON organization_email_config FOR UPDATE
+  TO authenticated
+  USING (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
+  )
+  WITH CHECK (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
   );
 
 -- Email logs: Org members can view
@@ -244,11 +277,26 @@ CREATE POLICY "Org members can view email logs"
   ON organization_email_logs FOR SELECT
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM organization_members
-      WHERE organization_members.org_id = organization_email_logs.org_id
-      AND organization_members.user_id = auth.uid()
-    )
+    org_id = public.get_user_org_id(auth.uid())
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Email logs: System can insert (via service role)
+CREATE POLICY "System can insert email logs"
+  ON organization_email_logs FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    org_id = public.get_user_org_id(auth.uid())
+    OR public.is_super_admin(auth.uid())
+  );
+
+-- Webhook logs: Org admins can view
+CREATE POLICY "Org admins can view webhook logs"
+  ON integration_webhook_logs FOR SELECT
+  TO authenticated
+  USING (
+    (org_id = public.get_user_org_id(auth.uid()) AND public.has_role(auth.uid(), 'org_admin'))
+    OR public.is_super_admin(auth.uid())
   );
 
 -- =====================================================
