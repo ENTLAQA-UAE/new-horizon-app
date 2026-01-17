@@ -62,7 +62,10 @@ import {
   Download,
   Upload,
   X,
+  Sparkles,
+  Wand2,
 } from "lucide-react"
+import { useAI } from "@/hooks/use-ai"
 import { cn } from "@/lib/utils"
 
 interface Candidate {
@@ -121,6 +124,7 @@ const sourceOptions = [
 export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: OrgCandidatesClientProps) {
   const router = useRouter()
   const supabase = createClient()
+  const { parseResume, isLoading: isAiLoading, error: aiError } = useAI()
   const [candidates, setCandidates] = useState(initialCandidates)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -141,6 +145,8 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
   // Resume upload state
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [isUploadingResume, setIsUploadingResume] = useState(false)
+  const [resumeText, setResumeText] = useState<string>("")
+  const [isParsing, setIsParsing] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -196,6 +202,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       source: "direct",
     })
     setResumeFile(null)
+    setResumeText("")
   }
 
   // CREATE
@@ -504,7 +511,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
   }
 
   // Handle resume file selection
-  const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       // Validate file type
@@ -519,7 +526,120 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
         return
       }
       setResumeFile(file)
+
+      // Extract text from PDF for AI parsing
+      if (file.type === "application/pdf") {
+        try {
+          const text = await extractTextFromPDF(file)
+          setResumeText(text)
+        } catch {
+          console.log("Could not extract text for AI parsing")
+        }
+      } else {
+        // For Word docs, we'll need to extract text differently
+        try {
+          const text = await file.text()
+          setResumeText(text)
+        } catch {
+          console.log("Could not extract text for AI parsing")
+        }
+      }
     }
+  }
+
+  // Extract text from PDF file
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    // Using FileReader to read the file
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        try {
+          // For now, we'll use a simple approach - send the base64 to API
+          // In production, you might use pdf-parse or pdf.js
+          const base64 = btoa(
+            new Uint8Array(reader.result as ArrayBuffer).reduce(
+              (data, byte) => data + String.fromCharCode(byte),
+              ''
+            )
+          )
+          resolve(`[PDF Content - Base64 Encoded]\n${base64.substring(0, 50000)}`)
+        } catch (error) {
+          reject(error)
+        }
+      }
+      reader.onerror = reject
+      reader.readAsArrayBuffer(file)
+    })
+  }
+
+  // AI Parse resume handler
+  const handleAIParseResume = async () => {
+    if (!resumeText && !resumeFile) {
+      toast.error("Please upload a resume first")
+      return
+    }
+
+    setIsParsing(true)
+    try {
+      let textToParse = resumeText
+
+      // If we don't have text yet but have a file, try to extract
+      if (!textToParse && resumeFile) {
+        try {
+          textToParse = await resumeFile.text()
+        } catch {
+          toast.error("Could not read resume file. Please try a different format.")
+          setIsParsing(false)
+          return
+        }
+      }
+
+      if (!textToParse) {
+        toast.error("Could not extract text from resume")
+        setIsParsing(false)
+        return
+      }
+
+      const result = await parseResume(textToParse)
+
+      if (result) {
+        // Auto-fill the form with parsed data
+        setFormData({
+          first_name: result.firstName || formData.first_name,
+          last_name: result.lastName || formData.last_name,
+          email: result.email || formData.email,
+          phone: result.phone || formData.phone,
+          city: result.location?.city || formData.city,
+          country: result.location?.country || formData.country,
+          nationality: result.nationality || formData.nationality,
+          current_job_title: result.experience?.[0]?.title || formData.current_job_title,
+          current_company: result.experience?.[0]?.company || formData.current_company,
+          years_of_experience: result.totalYearsExperience || formData.years_of_experience,
+          highest_education: mapEducationLevel(result.education?.[0]?.degree) || formData.highest_education,
+          skills: result.skills?.join(", ") || formData.skills,
+          source: formData.source,
+        })
+        toast.success("Resume parsed successfully! Form has been auto-filled.")
+      } else if (aiError) {
+        toast.error(aiError)
+      }
+    } catch {
+      toast.error("Failed to parse resume")
+    } finally {
+      setIsParsing(false)
+    }
+  }
+
+  // Map education degree to our dropdown values
+  const mapEducationLevel = (degree?: string): string => {
+    if (!degree) return ""
+    const lowerDegree = degree.toLowerCase()
+    if (lowerDegree.includes("phd") || lowerDegree.includes("doctorate")) return "phd"
+    if (lowerDegree.includes("master") || lowerDegree.includes("mba") || lowerDegree.includes("msc") || lowerDegree.includes("ma")) return "masters"
+    if (lowerDegree.includes("bachelor") || lowerDegree.includes("bsc") || lowerDegree.includes("ba") || lowerDegree.includes("beng")) return "bachelors"
+    if (lowerDegree.includes("diploma") || lowerDegree.includes("associate")) return "diploma"
+    if (lowerDegree.includes("high school") || lowerDegree.includes("secondary")) return "high_school"
+    return ""
   }
 
   // Render form fields inline to prevent focus loss on state change
@@ -687,23 +807,53 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       <Separator />
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-resume`}>Resume (PDF or Word)</Label>
-        {resumeFile ? (
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <FileText className="h-5 w-5 text-primary" />
-            <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
-            <span className="text-xs text-muted-foreground">
-              {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
-            </span>
+        <div className="flex items-center justify-between">
+          <Label htmlFor={`${idPrefix}-resume`}>Resume (PDF or Word)</Label>
+          {resumeFile && (
             <Button
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setResumeFile(null)}
+              variant="outline"
+              size="sm"
+              onClick={handleAIParseResume}
+              disabled={isParsing || isAiLoading}
+              className="h-7 text-xs gap-1.5"
             >
-              <X className="h-4 w-4" />
+              {isParsing || isAiLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}
+              Parse with AI
             </Button>
+          )}
+        </div>
+        {resumeFile ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <FileText className="h-5 w-5 text-primary" />
+              <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => {
+                  setResumeFile(null)
+                  setResumeText("")
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-lg">
+              <Wand2 className="h-4 w-4 text-violet-500" />
+              <p className="text-xs text-muted-foreground">
+                Click <span className="font-medium text-violet-600">&quot;Parse with AI&quot;</span> to auto-fill candidate details from this resume
+              </p>
+            </div>
           </div>
         ) : (
           <div className="relative">
