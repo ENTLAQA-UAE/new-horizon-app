@@ -1,0 +1,61 @@
+import { createClient } from "@/lib/supabase/server"
+import { RolesManagementClient } from "./roles-client"
+import { redirect } from "next/navigation"
+
+export default async function RolesPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  // Check if user has permission to manage roles
+  const { data: hasPermission } = await supabase.rpc("has_permission", {
+    p_user_id: user.id,
+    p_permission_code: "users.roles.manage",
+    p_org_id: null,
+  })
+
+  if (!hasPermission) {
+    redirect("/org")
+  }
+
+  // Fetch all roles
+  const { data: roles } = await supabase
+    .from("roles")
+    .select("*")
+    .order("is_system_role", { ascending: false })
+    .order("name")
+
+  // Fetch all permissions
+  const { data: permissions } = await supabase
+    .from("permissions")
+    .select("*")
+    .eq("is_active", true)
+    .order("category")
+    .order("code")
+
+  // Fetch role permissions
+  const { data: rolePermissions } = await supabase
+    .from("role_permissions")
+    .select(`
+      role_id,
+      permission_id,
+      permissions (
+        code,
+        name,
+        category
+      )
+    `)
+
+  return (
+    <RolesManagementClient
+      roles={roles || []}
+      permissions={permissions || []}
+      rolePermissions={rolePermissions || []}
+    />
+  )
+}

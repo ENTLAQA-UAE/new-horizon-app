@@ -1,0 +1,5 @@
+export { SuperAdminDashboard } from "./super-admin-dashboard"
+export { OrgAdminDashboard } from "./org-admin-dashboard"
+export { RecruiterDashboard } from "./recruiter-dashboard"
+export { HiringManagerDashboard } from "./hiring-manager-dashboard"
+export { CandidateDashboard } from "./candidate-dashboard"
