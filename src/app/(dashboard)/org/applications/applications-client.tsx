@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -29,9 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -60,9 +59,9 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
-  Clock,
   User,
   Briefcase,
+  GripVertical,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -254,6 +253,14 @@ export function ApplicationsClient({
 
   // STAGE CHANGE
   const handleStageChange = async (applicationId: string, newStage: string) => {
+    // Optimistically update UI
+    const previousApplications = [...applications]
+    setApplications(
+      applications.map((a) =>
+        a.id === applicationId ? { ...a, stage: newStage } : a
+      )
+    )
+
     try {
       const { error } = await supabase
         .from("applications")
@@ -264,20 +271,39 @@ export function ApplicationsClient({
         .eq("id", applicationId)
 
       if (error) {
+        // Revert on error
+        setApplications(previousApplications)
         toast.error(error.message)
         return
       }
 
-      setApplications(
-        applications.map((a) =>
-          a.id === applicationId ? { ...a, stage: newStage } : a
-        )
-      )
-      toast.success(`Moved to ${newStage}`)
-      router.refresh()
+      const stageName = stages.find(s => s.id === newStage)?.name || newStage
+      toast.success(`Moved to ${stageName}`)
     } catch {
+      // Revert on error
+      setApplications(previousApplications)
       toast.error("An unexpected error occurred")
     }
+  }
+
+  // Handle drag end for Kanban
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result
+
+    // Dropped outside a valid area
+    if (!destination) return
+
+    // Dropped in the same position
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return
+    }
+
+    // Update the stage
+    const newStage = destination.droppableId
+    handleStageChange(draggableId, newStage)
   }
 
   const formatDate = (date: string | null) => {
@@ -289,15 +315,21 @@ export function ApplicationsClient({
     })
   }
 
-  const ApplicationCard = ({ app }: { app: Application }) => (
-    <Card className="mb-3 cursor-pointer hover:shadow-md transition-shadow">
+  const ApplicationCard = ({ app, index, isDragging }: { app: Application; index: number; isDragging?: boolean }) => (
+    <Card className={cn(
+      "mb-3 cursor-grab hover:shadow-md transition-shadow",
+      isDragging && "shadow-lg ring-2 ring-primary rotate-2"
+    )}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-sm font-semibold text-primary">
-                {app.candidates?.first_name?.[0] || "?"}{app.candidates?.last_name?.[0] || "?"}
-              </span>
+            <div className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-semibold text-primary">
+                  {app.candidates?.first_name?.[0] || "?"}{app.candidates?.last_name?.[0] || "?"}
+                </span>
+              </div>
             </div>
             <div>
               <p className="font-medium text-sm">
@@ -504,44 +536,74 @@ export function ApplicationsClient({
         </Select>
       </div>
 
-      {/* Pipeline View */}
+      {/* Pipeline View with Drag and Drop */}
       {viewMode === "pipeline" && (
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-4 min-w-max">
-            {stages.map((stage) => {
-              const stageApps = getApplicationsByStage(stage.id)
-              return (
-                <div key={stage.id} className="w-80 flex-shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: stage.color }}
-                      />
-                      <h3 className="font-semibold">{stage.name}</h3>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-4 min-w-max">
+              {stages.map((stage) => {
+                const stageApps = getApplicationsByStage(stage.id)
+                return (
+                  <div key={stage.id} className="w-80 flex-shrink-0">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: stage.color }}
+                        />
+                        <h3 className="font-semibold">{stage.name}</h3>
+                      </div>
+                      <Badge variant="secondary">{stageApps.length}</Badge>
                     </div>
-                    <Badge variant="secondary">{stageApps.length}</Badge>
+                    <Droppable droppableId={stage.id}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={cn(
+                            "min-h-[200px] rounded-lg transition-colors p-2",
+                            snapshot.isDraggingOver && "bg-primary/5 ring-2 ring-primary/20"
+                          )}
+                        >
+                          <ScrollArea className="h-[calc(100vh-420px)]">
+                            {stageApps.length === 0 && !snapshot.isDraggingOver ? (
+                              <Card className="border-dashed">
+                                <CardContent className="py-8 text-center">
+                                  <p className="text-sm text-muted-foreground">
+                                    Drop applications here
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            ) : (
+                              stageApps.map((app, index) => (
+                                <Draggable key={app.id} draggableId={app.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                    >
+                                      <ApplicationCard
+                                        app={app}
+                                        index={index}
+                                        isDragging={snapshot.isDragging}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))
+                            )}
+                            {provided.placeholder}
+                          </ScrollArea>
+                        </div>
+                      )}
+                    </Droppable>
                   </div>
-                  <ScrollArea className="h-[calc(100vh-400px)] pr-2">
-                    {stageApps.length === 0 ? (
-                      <Card className="border-dashed">
-                        <CardContent className="py-8 text-center">
-                          <p className="text-sm text-muted-foreground">
-                            No applications
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      stageApps.map((app) => (
-                        <ApplicationCard key={app.id} app={app} />
-                      ))
-                    )}
-                  </ScrollArea>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </DragDropContext>
       )}
 
       {/* Table View */}
