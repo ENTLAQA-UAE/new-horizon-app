@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -313,11 +314,17 @@ export function IntegrationsSettingsClient({
                 const config = PROVIDER_CONFIG[provider]
                 const integration = getIntegration(provider)
                 const Icon = config.icon
+                const isEnabled = integration?.is_enabled ?? false
+                const isConfigured = integration?.is_configured ?? false
+                const isVerified = integration?.is_verified ?? false
 
                 return (
                   <div
                     key={provider}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className={cn(
+                      "flex items-center justify-between p-4 border rounded-lg transition-colors",
+                      isEnabled ? "border-primary/50 bg-primary/5" : "border-border"
+                    )}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`p-2 rounded-lg ${config.bgColor}`}>
@@ -326,7 +333,17 @@ export function IntegrationsSettingsClient({
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium">{config.name}</h3>
-                          {integration?.is_verified && (
+                          {isEnabled && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              Active
+                            </Badge>
+                          )}
+                          {!isConfigured && (
+                            <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                              Not Configured
+                            </Badge>
+                          )}
+                          {isConfigured && isVerified && (
                             <Badge variant="secondary" className="bg-green-100 text-green-700">
                               <Check className="h-3 w-3 mr-1" />
                               Verified
@@ -348,31 +365,38 @@ export function IntegrationsSettingsClient({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {integration?.is_configured && (
-                        <>
-                          <Switch
-                            checked={integration?.is_enabled ?? false}
-                            onCheckedChange={(checked) => handleToggleIntegration(provider, checked)}
-                          />
-                          {integration?.is_verified && !integration?.is_default_meeting_provider && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSetDefaultProvider(provider)}
-                            >
-                              Set Default
-                            </Button>
-                          )}
-                        </>
+                    <div className="flex items-center gap-3">
+                      {/* Enable/Disable Toggle - Always visible */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {isEnabled ? "Enabled" : "Disabled"}
+                        </span>
+                        <Switch
+                          checked={isEnabled}
+                          onCheckedChange={(checked) => handleToggleIntegration(provider, checked)}
+                          disabled={!isConfigured}
+                        />
+                      </div>
+
+                      {/* Set as Default button */}
+                      {isEnabled && isVerified && !integration?.is_default_meeting_provider && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSetDefaultProvider(provider)}
+                        >
+                          Set Default
+                        </Button>
                       )}
+
+                      {/* Configure button */}
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleConfigureClick(provider)}
                       >
                         <Settings2 className="h-4 w-4 mr-1" />
-                        {integration?.is_configured ? "Update" : "Configure"}
+                        {isConfigured ? "Update" : "Configure"}
                       </Button>
                     </div>
                   </div>
