@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import type { Json } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -257,9 +258,9 @@ export function ScorecardsClient({ templates: initialTemplates }: ScorecardsClie
           description: formData.description || null,
           description_ar: formData.description_ar || null,
           template_type: formData.template_type,
-          criteria: formData.criteria,
+          criteria: formData.criteria as unknown as Json,
           rating_scale_type: formData.rating_scale_type,
-          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type],
+          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
           is_default: formData.is_default,
           require_notes_per_criteria: formData.require_notes_per_criteria,
         })
@@ -307,9 +308,9 @@ export function ScorecardsClient({ templates: initialTemplates }: ScorecardsClie
           description: formData.description || null,
           description_ar: formData.description_ar || null,
           template_type: formData.template_type,
-          criteria: formData.criteria,
+          criteria: formData.criteria as unknown as Json,
           rating_scale_type: formData.rating_scale_type,
-          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type],
+          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
           is_default: formData.is_default,
           require_notes_per_criteria: formData.require_notes_per_criteria,
         })
@@ -375,9 +376,9 @@ export function ScorecardsClient({ templates: initialTemplates }: ScorecardsClie
           description: template.description,
           description_ar: template.description_ar,
           template_type: template.template_type,
-          criteria: template.criteria,
+          criteria: template.criteria as unknown as Json,
           rating_scale_type: template.rating_scale_type,
-          rating_scale_labels: template.rating_scale_labels,
+          rating_scale_labels: template.rating_scale_labels as unknown as Json,
           is_default: false,
           require_notes_per_criteria: template.require_notes_per_criteria,
         })
