@@ -57,6 +57,7 @@ const orgAdminLinks = [
   { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
   { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
   { href: "/org/settings/integrations", label: "Integrations", labelAr: "التكاملات", icon: Plug },
+  { href: "/org/settings/email", label: "Email", labelAr: "البريد الإلكتروني", icon: Mail },
   { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
 ]
 
@@ -142,7 +143,9 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
             const isExactMatch = pathname === link.href
             const isChildRoute = link.href !== "/" &&
               link.href !== "/org" &&
-              link.href !== "/org/settings" && // Don't match /org/settings for child routes like /org/settings/integrations
+              link.href !== "/org/settings" && // Don't match /org/settings for child routes
+              link.href !== "/org/settings/email" && // Don't match /org/settings/email for child routes
+              link.href !== "/org/settings/integrations" && // Don't match /org/settings/integrations for child routes
               pathname.startsWith(link.href + "/")
             const isActive = isExactMatch || isChildRoute
             const label = language === "ar" ? link.labelAr : link.label
