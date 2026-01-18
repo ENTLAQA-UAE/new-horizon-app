@@ -1012,6 +1012,372 @@ export type Database = {
         }
         Relationships: []
       }
+      scorecard_templates: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          name_ar: string | null
+          description: string | null
+          description_ar: string | null
+          template_type: string
+          criteria: Json
+          rating_scale_type: string
+          rating_scale_labels: Json
+          rating_scale_labels_ar: Json | null
+          is_default: boolean | null
+          is_active: boolean | null
+          require_notes_per_criteria: boolean | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          template_type?: string
+          criteria?: Json
+          rating_scale_type?: string
+          rating_scale_labels?: Json
+          rating_scale_labels_ar?: Json | null
+          is_default?: boolean | null
+          is_active?: boolean | null
+          require_notes_per_criteria?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          template_type?: string
+          criteria?: Json
+          rating_scale_type?: string
+          rating_scale_labels?: Json
+          rating_scale_labels_ar?: Json | null
+          is_default?: boolean | null
+          is_active?: boolean | null
+          require_notes_per_criteria?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      interview_scorecards: {
+        Row: {
+          id: string
+          org_id: string
+          interview_id: string
+          template_id: string | null
+          interviewer_id: string
+          criteria_scores: Json
+          overall_score: number | null
+          weighted_score: number | null
+          recommendation: string
+          strengths: string | null
+          strengths_ar: string | null
+          weaknesses: string | null
+          weaknesses_ar: string | null
+          additional_notes: string | null
+          additional_notes_ar: string | null
+          status: string | null
+          submitted_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          interview_id: string
+          template_id?: string | null
+          interviewer_id: string
+          criteria_scores?: Json
+          overall_score?: number | null
+          weighted_score?: number | null
+          recommendation?: string
+          strengths?: string | null
+          strengths_ar?: string | null
+          weaknesses?: string | null
+          weaknesses_ar?: string | null
+          additional_notes?: string | null
+          additional_notes_ar?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          interview_id?: string
+          template_id?: string | null
+          interviewer_id?: string
+          criteria_scores?: Json
+          overall_score?: number | null
+          weighted_score?: number | null
+          recommendation?: string
+          strengths?: string | null
+          strengths_ar?: string | null
+          weaknesses?: string | null
+          weaknesses_ar?: string | null
+          additional_notes?: string | null
+          additional_notes_ar?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      offer_templates: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          name_ar: string | null
+          description: string | null
+          subject: string | null
+          subject_ar: string | null
+          body_html: string
+          body_html_ar: string | null
+          merge_fields: Json | null
+          is_default: boolean | null
+          is_active: boolean | null
+          requires_approval: boolean | null
+          approval_chain: Json | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          subject?: string | null
+          subject_ar?: string | null
+          body_html: string
+          body_html_ar?: string | null
+          merge_fields?: Json | null
+          is_default?: boolean | null
+          is_active?: boolean | null
+          requires_approval?: boolean | null
+          approval_chain?: Json | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          subject?: string | null
+          subject_ar?: string | null
+          body_html?: string
+          body_html_ar?: string | null
+          merge_fields?: Json | null
+          is_default?: boolean | null
+          is_active?: boolean | null
+          requires_approval?: boolean | null
+          approval_chain?: Json | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      offers: {
+        Row: {
+          id: string
+          org_id: string
+          application_id: string
+          template_id: string | null
+          job_title: string
+          job_title_ar: string | null
+          department: string | null
+          location: string | null
+          salary_amount: number
+          salary_currency: string | null
+          salary_period: string | null
+          signing_bonus: number | null
+          annual_bonus_percentage: number | null
+          equity_shares: number | null
+          equity_type: string | null
+          benefits: Json | null
+          start_date: string
+          offer_expiry_date: string | null
+          probation_period_months: number | null
+          employment_type: string | null
+          work_hours_per_week: number | null
+          remote_policy: string | null
+          notice_period_days: number | null
+          offer_letter_html: string | null
+          offer_letter_pdf_url: string | null
+          status: string | null
+          candidate_response: string | null
+          candidate_response_at: string | null
+          candidate_response_notes: string | null
+          decline_reason: string | null
+          counter_offer_details: Json | null
+          counter_offer_at: string | null
+          signature_requested: boolean | null
+          signature_provider: string | null
+          signature_document_id: string | null
+          signed_at: string | null
+          signed_document_url: string | null
+          sent_at: string | null
+          sent_by: string | null
+          viewed_at: string | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          application_id: string
+          template_id?: string | null
+          job_title: string
+          job_title_ar?: string | null
+          department?: string | null
+          location?: string | null
+          salary_amount: number
+          salary_currency?: string | null
+          salary_period?: string | null
+          signing_bonus?: number | null
+          annual_bonus_percentage?: number | null
+          equity_shares?: number | null
+          equity_type?: string | null
+          benefits?: Json | null
+          start_date: string
+          offer_expiry_date?: string | null
+          probation_period_months?: number | null
+          employment_type?: string | null
+          work_hours_per_week?: number | null
+          remote_policy?: string | null
+          notice_period_days?: number | null
+          offer_letter_html?: string | null
+          offer_letter_pdf_url?: string | null
+          status?: string | null
+          candidate_response?: string | null
+          candidate_response_at?: string | null
+          candidate_response_notes?: string | null
+          decline_reason?: string | null
+          counter_offer_details?: Json | null
+          counter_offer_at?: string | null
+          signature_requested?: boolean | null
+          signature_provider?: string | null
+          signature_document_id?: string | null
+          signed_at?: string | null
+          signed_document_url?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          viewed_at?: string | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          application_id?: string
+          template_id?: string | null
+          job_title?: string
+          job_title_ar?: string | null
+          department?: string | null
+          location?: string | null
+          salary_amount?: number
+          salary_currency?: string | null
+          salary_period?: string | null
+          signing_bonus?: number | null
+          annual_bonus_percentage?: number | null
+          equity_shares?: number | null
+          equity_type?: string | null
+          benefits?: Json | null
+          start_date?: string
+          offer_expiry_date?: string | null
+          probation_period_months?: number | null
+          employment_type?: string | null
+          work_hours_per_week?: number | null
+          remote_policy?: string | null
+          notice_period_days?: number | null
+          offer_letter_html?: string | null
+          offer_letter_pdf_url?: string | null
+          status?: string | null
+          candidate_response?: string | null
+          candidate_response_at?: string | null
+          candidate_response_notes?: string | null
+          decline_reason?: string | null
+          counter_offer_details?: Json | null
+          counter_offer_at?: string | null
+          signature_requested?: boolean | null
+          signature_provider?: string | null
+          signature_document_id?: string | null
+          signed_at?: string | null
+          signed_document_url?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          viewed_at?: string | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      offer_approvals: {
+        Row: {
+          id: string
+          offer_id: string
+          approver_id: string
+          approval_order: number
+          status: string | null
+          responded_at: string | null
+          comments: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          offer_id: string
+          approver_id: string
+          approval_order?: number
+          status?: string | null
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          offer_id?: string
+          approver_id?: string
+          approval_order?: number
+          status?: string | null
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
