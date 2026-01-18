@@ -1,0 +1,139 @@
+{
+  "appName": "جدارات",
+  "tagline": "نظام تتبع المتقدمين",
+  "loading": "جاري التحميل...",
+  "saving": "جاري الحفظ...",
+  "processing": "جاري المعالجة...",
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "add": "إضافة",
+    "remove": "إزالة",
+    "submit": "إرسال",
+    "confirm": "تأكيد",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "refresh": "تحديث",
+    "download": "تحميل",
+    "upload": "رفع",
+    "export": "تصدير",
+    "import": "استيراد",
+    "view": "عرض",
+    "viewAll": "عرض الكل",
+    "copy": "نسخ",
+    "share": "مشاركة",
+    "print": "طباعة",
+    "reset": "إعادة تعيين",
+    "apply": "تطبيق",
+    "clearAll": "مسح الكل",
+    "selectAll": "تحديد الكل",
+    "deselectAll": "إلغاء تحديد الكل",
+    "showMore": "عرض المزيد",
+    "showLess": "عرض أقل",
+    "learnMore": "معرفة المزيد"
+  },
+  "status": {
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "pending": "معلق",
+    "approved": "موافق عليه",
+    "rejected": "مرفوض",
+    "draft": "مسودة",
+    "published": "منشور",
+    "archived": "مؤرشف",
+    "completed": "مكتمل",
+    "inProgress": "قيد التنفيذ",
+    "cancelled": "ملغي"
+  },
+  "time": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "tomorrow": "غداً",
+    "thisWeek": "هذا الأسبوع",
+    "lastWeek": "الأسبوع الماضي",
+    "thisMonth": "هذا الشهر",
+    "lastMonth": "الشهر الماضي",
+    "thisYear": "هذا العام",
+    "lastYear": "العام الماضي",
+    "daysAgo": "منذ {count} يوم",
+    "hoursAgo": "منذ {count} ساعة",
+    "minutesAgo": "منذ {count} دقيقة",
+    "justNow": "الآن"
+  },
+  "pagination": {
+    "page": "صفحة",
+    "of": "من",
+    "showing": "عرض",
+    "to": "إلى",
+    "results": "نتائج",
+    "itemsPerPage": "عناصر لكل صفحة",
+    "first": "الأولى",
+    "last": "الأخيرة",
+    "next": "التالي",
+    "previous": "السابق"
+  },
+  "table": {
+    "noData": "لا توجد بيانات",
+    "loading": "جاري تحميل البيانات...",
+    "actions": "الإجراءات",
+    "selected": "{count} محدد",
+    "sortAsc": "ترتيب تصاعدي",
+    "sortDesc": "ترتيب تنازلي"
+  },
+  "form": {
+    "required": "مطلوب",
+    "optional": "اختياري",
+    "selectOption": "اختر خياراً",
+    "noOptions": "لا توجد خيارات",
+    "searchPlaceholder": "بحث...",
+    "dragAndDrop": "اسحب وأفلت الملفات هنا",
+    "or": "أو",
+    "browseFiles": "تصفح الملفات"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "email": "يرجى إدخال بريد إلكتروني صالح",
+    "minLength": "يجب أن يكون على الأقل {min} أحرف",
+    "maxLength": "يجب ألا يتجاوز {max} حرف",
+    "passwordMatch": "كلمات المرور غير متطابقة",
+    "invalidFormat": "تنسيق غير صالح"
+  },
+  "confirmation": {
+    "delete": "هل أنت متأكد من الحذف؟",
+    "unsavedChanges": "لديك تغييرات غير محفوظة. هل تريد المغادرة؟",
+    "cancel": "هل أنت متأكد من الإلغاء؟"
+  },
+  "success": {
+    "saved": "تم الحفظ بنجاح",
+    "created": "تم الإنشاء بنجاح",
+    "updated": "تم التحديث بنجاح",
+    "deleted": "تم الحذف بنجاح",
+    "copied": "تم النسخ إلى الحافظة"
+  },
+  "error": {
+    "general": "حدث خطأ ما",
+    "tryAgain": "يرجى المحاولة مرة أخرى",
+    "notFound": "غير موجود",
+    "unauthorized": "غير مصرح",
+    "forbidden": "ممنوع",
+    "networkError": "خطأ في الشبكة"
+  },
+  "language": {
+    "english": "English",
+    "arabic": "العربية",
+    "switchTo": "التبديل إلى {language}"
+  },
+  "theme": {
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  }
+}

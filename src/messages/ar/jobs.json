@@ -1,0 +1,145 @@
+{
+  "title": "الوظائف",
+  "allJobs": "كل الوظائف",
+  "myJobs": "وظائفي",
+  "createJob": "إنشاء وظيفة",
+  "editJob": "تعديل وظيفة",
+  "viewJob": "عرض الوظيفة",
+  "jobDetails": "تفاصيل الوظيفة",
+  "fields": {
+    "title": "المسمى الوظيفي",
+    "titleAr": "المسمى الوظيفي (عربي)",
+    "department": "القسم",
+    "location": "الموقع",
+    "type": "نوع الوظيفة",
+    "experience": "الخبرة",
+    "salary": "الراتب",
+    "description": "الوصف",
+    "descriptionAr": "الوصف (عربي)",
+    "requirements": "المتطلبات",
+    "responsibilities": "المسؤوليات",
+    "benefits": "المميزات",
+    "skills": "المهارات",
+    "education": "التعليم",
+    "deadline": "تاريخ الإغلاق",
+    "openings": "عدد الشواغر",
+    "status": "الحالة",
+    "visibility": "الرؤية",
+    "hiringManager": "مدير التوظيف"
+  },
+  "types": {
+    "fullTime": "دوام كامل",
+    "partTime": "دوام جزئي",
+    "contract": "عقد",
+    "temporary": "مؤقت",
+    "internship": "تدريب",
+    "remote": "عن بعد",
+    "hybrid": "هجين"
+  },
+  "experience": {
+    "entry": "مبتدئ",
+    "junior": "مبتدئ (1-2 سنة)",
+    "mid": "متوسط (3-5 سنوات)",
+    "senior": "خبير (5-8 سنوات)",
+    "lead": "قيادي (8+ سنوات)",
+    "executive": "تنفيذي"
+  },
+  "status": {
+    "draft": "مسودة",
+    "published": "منشور",
+    "closed": "مغلق",
+    "onHold": "معلق",
+    "archived": "مؤرشف",
+    "internal": "داخلي"
+  },
+  "visibility": {
+    "public": "عام",
+    "internal": "داخلي",
+    "private": "خاص"
+  },
+  "actions": {
+    "publish": "نشر",
+    "unpublish": "إلغاء النشر",
+    "close": "إغلاق",
+    "reopen": "إعادة فتح",
+    "duplicate": "نسخ",
+    "archive": "أرشفة",
+    "delete": "حذف",
+    "share": "مشاركة",
+    "preview": "معاينة"
+  },
+  "tabs": {
+    "details": "التفاصيل",
+    "applications": "الطلبات",
+    "pipeline": "خط السير",
+    "analytics": "التحليلات",
+    "settings": "الإعدادات"
+  },
+  "pipeline": {
+    "title": "خط سير التوظيف",
+    "stages": "المراحل",
+    "addStage": "إضافة مرحلة",
+    "editStage": "تعديل مرحلة",
+    "deleteStage": "حذف مرحلة",
+    "defaultStages": {
+      "new": "جديد",
+      "screening": "فرز",
+      "interview": "مقابلة",
+      "offer": "عرض",
+      "hired": "تم التوظيف"
+    }
+  },
+  "screening": {
+    "title": "أسئلة الفرز",
+    "addQuestion": "إضافة سؤال",
+    "questionTypes": {
+      "text": "نص",
+      "yesNo": "نعم/لا",
+      "multiChoice": "اختيار متعدد",
+      "number": "رقم",
+      "date": "تاريخ"
+    },
+    "required": "مطلوب",
+    "knockout": "إقصائي"
+  },
+  "scorecard": {
+    "title": "بطاقة التقييم",
+    "criteria": "معايير التقييم",
+    "addCriteria": "إضافة معيار",
+    "weight": "الوزن"
+  },
+  "analytics": {
+    "views": "المشاهدات",
+    "applications": "الطلبات",
+    "conversionRate": "معدل التحويل",
+    "averageTimeInStage": "متوسط الوقت في كل مرحلة",
+    "sourcePerformance": "أداء المصادر",
+    "diversityMetrics": "مقاييس التنوع"
+  },
+  "messages": {
+    "created": "تم إنشاء الوظيفة بنجاح",
+    "updated": "تم تحديث الوظيفة",
+    "published": "تم نشر الوظيفة",
+    "closed": "تم إغلاق الوظيفة",
+    "deleted": "تم حذف الوظيفة",
+    "duplicated": "تم نسخ الوظيفة"
+  },
+  "confirmations": {
+    "delete": "هل أنت متأكد من حذف هذه الوظيفة؟",
+    "close": "هل أنت متأكد من إغلاق هذه الوظيفة؟",
+    "archive": "هل أنت متأكد من أرشفة هذه الوظيفة؟"
+  },
+  "emptyState": {
+    "title": "لا توجد وظائف",
+    "description": "أنشئ أول وظيفة لبدء استقبال الطلبات",
+    "createFirst": "إنشاء وظيفة"
+  },
+  "filters": {
+    "status": "الحالة",
+    "department": "القسم",
+    "location": "الموقع",
+    "type": "النوع",
+    "hiringManager": "مدير التوظيف",
+    "datePosted": "تاريخ النشر"
+  }
+}

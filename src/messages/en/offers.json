@@ -1,0 +1,134 @@
+{
+  "title": "Offers",
+  "createOffer": "Create Offer",
+  "editOffer": "Edit Offer",
+  "viewOffer": "View Offer",
+  "sendOffer": "Send Offer",
+  "offerDetails": "Offer Details",
+  "fields": {
+    "candidate": "Candidate",
+    "job": "Job",
+    "salary": "Salary",
+    "baseSalary": "Base Salary",
+    "currency": "Currency",
+    "payPeriod": "Pay Period",
+    "bonus": "Signing Bonus",
+    "equity": "Equity",
+    "startDate": "Start Date",
+    "expirationDate": "Expiration Date",
+    "status": "Status",
+    "benefits": "Benefits",
+    "additionalTerms": "Additional Terms"
+  },
+  "status": {
+    "draft": "Draft",
+    "pending": "Pending Approval",
+    "approved": "Approved",
+    "sent": "Sent",
+    "viewed": "Viewed",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "expired": "Expired",
+    "withdrawn": "Withdrawn",
+    "negotiating": "Negotiating"
+  },
+  "payPeriods": {
+    "hourly": "Hourly",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "biweekly": "Bi-weekly",
+    "monthly": "Monthly",
+    "annual": "Annual"
+  },
+  "compensation": {
+    "title": "Compensation",
+    "base": "Base Salary",
+    "bonus": "Bonus",
+    "commission": "Commission",
+    "equity": "Equity/Stock Options",
+    "total": "Total Compensation"
+  },
+  "benefits": {
+    "title": "Benefits Package",
+    "health": "Health Insurance",
+    "dental": "Dental Insurance",
+    "vision": "Vision Insurance",
+    "life": "Life Insurance",
+    "disability": "Disability Insurance",
+    "retirement": "Retirement Plan",
+    "pto": "Paid Time Off",
+    "remote": "Remote Work",
+    "flexible": "Flexible Hours",
+    "education": "Education Allowance",
+    "transport": "Transportation Allowance",
+    "meals": "Meal Allowance",
+    "phone": "Phone Allowance",
+    "gym": "Gym Membership",
+    "other": "Other Benefits"
+  },
+  "approval": {
+    "title": "Offer Approval",
+    "requestApproval": "Request Approval",
+    "approve": "Approve Offer",
+    "reject": "Reject Offer",
+    "approvedBy": "Approved by",
+    "rejectedBy": "Rejected by",
+    "pendingApproval": "Pending approval from {name}",
+    "comments": "Approval Comments"
+  },
+  "negotiation": {
+    "title": "Negotiation",
+    "counterOffer": "Counter Offer",
+    "originalOffer": "Original Offer",
+    "candidateRequest": "Candidate's Request",
+    "acceptCounter": "Accept Counter Offer",
+    "rejectCounter": "Reject Counter Offer",
+    "makeNewOffer": "Make New Offer"
+  },
+  "letter": {
+    "title": "Offer Letter",
+    "preview": "Preview Letter",
+    "download": "Download PDF",
+    "customize": "Customize Letter",
+    "template": "Letter Template",
+    "signature": "Signature Required"
+  },
+  "actions": {
+    "duplicate": "Duplicate Offer",
+    "withdraw": "Withdraw Offer",
+    "extend": "Extend Expiration",
+    "resend": "Resend Offer",
+    "viewHistory": "View History"
+  },
+  "messages": {
+    "created": "Offer created successfully",
+    "updated": "Offer updated",
+    "sent": "Offer sent to candidate",
+    "accepted": "Offer has been accepted",
+    "declined": "Offer was declined",
+    "withdrawn": "Offer withdrawn",
+    "expired": "This offer has expired",
+    "approvalRequested": "Approval request sent",
+    "approved": "Offer approved",
+    "rejected": "Offer rejected"
+  },
+  "confirmations": {
+    "send": "Are you sure you want to send this offer to the candidate?",
+    "withdraw": "Are you sure you want to withdraw this offer?",
+    "delete": "Are you sure you want to delete this offer?"
+  },
+  "emptyState": {
+    "title": "No offers yet",
+    "description": "Create an offer for a candidate to get started"
+  },
+  "timeline": {
+    "created": "Offer created",
+    "sent": "Offer sent to candidate",
+    "viewed": "Candidate viewed offer",
+    "accepted": "Candidate accepted offer",
+    "declined": "Candidate declined offer",
+    "negotiation": "Candidate requested negotiation",
+    "updated": "Offer terms updated",
+    "withdrawn": "Offer withdrawn"
+  }
+}

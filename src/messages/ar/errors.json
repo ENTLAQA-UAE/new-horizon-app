@@ -1,0 +1,140 @@
+{
+  "general": {
+    "somethingWentWrong": "حدث خطأ ما",
+    "unexpectedError": "حدث خطأ غير متوقع",
+    "tryAgain": "يرجى المحاولة مرة أخرى",
+    "contactSupport": "إذا استمرت المشكلة، يرجى التواصل مع الدعم",
+    "networkError": "خطأ في الشبكة. يرجى التحقق من اتصالك",
+    "serverError": "خطأ في الخادم. يرجى المحاولة لاحقاً",
+    "timeout": "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى",
+    "notFound": "المورد غير موجود",
+    "forbidden": "ليس لديك صلاحية للوصول إلى هذا المورد",
+    "unauthorized": "يرجى تسجيل الدخول للمتابعة"
+  },
+  "auth": {
+    "invalidCredentials": "بريد إلكتروني أو كلمة مرور غير صحيحة",
+    "emailNotFound": "لا يوجد حساب بهذا البريد الإلكتروني",
+    "emailExists": "يوجد حساب بهذا البريد الإلكتروني بالفعل",
+    "passwordMismatch": "كلمات المرور غير متطابقة",
+    "weakPassword": "كلمة المرور ضعيفة جداً",
+    "invalidEmail": "يرجى إدخال بريد إلكتروني صالح",
+    "sessionExpired": "انتهت جلستك. يرجى تسجيل الدخول مرة أخرى",
+    "accountDisabled": "تم تعطيل حسابك",
+    "accountLocked": "تم قفل حسابك بسبب محاولات كثيرة",
+    "invalidToken": "رمز غير صالح أو منتهي الصلاحية",
+    "verificationRequired": "يرجى التحقق من بريدك الإلكتروني",
+    "2faRequired": "مطلوب التحقق بخطوتين",
+    "invalid2faCode": "رمز التحقق غير صالح"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "minLength": "يجب أن يكون على الأقل {min} أحرف",
+    "maxLength": "يجب ألا يتجاوز {max} حرف",
+    "invalidFormat": "تنسيق غير صالح",
+    "invalidDate": "يرجى إدخال تاريخ صالح",
+    "invalidUrl": "يرجى إدخال رابط صالح",
+    "invalidPhone": "يرجى إدخال رقم هاتف صالح",
+    "numberOnly": "يرجى إدخال أرقام فقط",
+    "positiveNumber": "يرجى إدخال رقم موجب",
+    "futureDate": "يجب أن يكون التاريخ في المستقبل",
+    "pastDate": "يجب أن يكون التاريخ في الماضي",
+    "fileSize": "حجم الملف يجب أن يكون أقل من {size}",
+    "fileType": "نوع ملف غير صالح. المسموح: {types}",
+    "unique": "هذه القيمة موجودة بالفعل"
+  },
+  "jobs": {
+    "createFailed": "فشل في إنشاء الوظيفة",
+    "updateFailed": "فشل في تحديث الوظيفة",
+    "deleteFailed": "فشل في حذف الوظيفة",
+    "publishFailed": "فشل في نشر الوظيفة",
+    "notFound": "الوظيفة غير موجودة",
+    "alreadyPublished": "الوظيفة منشورة بالفعل",
+    "cannotDelete": "لا يمكن حذف وظيفة بها طلبات نشطة"
+  },
+  "candidates": {
+    "createFailed": "فشل في إضافة المتقدم",
+    "updateFailed": "فشل في تحديث المتقدم",
+    "deleteFailed": "فشل في حذف المتقدم",
+    "notFound": "المتقدم غير موجود",
+    "duplicateEmail": "يوجد متقدم بهذا البريد الإلكتروني بالفعل",
+    "resumeUploadFailed": "فشل في رفع السيرة الذاتية",
+    "parseResumeFailed": "فشل في تحليل السيرة الذاتية"
+  },
+  "applications": {
+    "createFailed": "فشل في إنشاء الطلب",
+    "updateFailed": "فشل في تحديث الطلب",
+    "moveFailed": "فشل في نقل الطلب",
+    "rejectFailed": "فشل في رفض الطلب",
+    "notFound": "الطلب غير موجود",
+    "alreadyApplied": "المتقدم تقدم لهذه الوظيفة بالفعل"
+  },
+  "interviews": {
+    "scheduleFailed": "فشل في جدولة المقابلة",
+    "rescheduleFailed": "فشل في إعادة جدولة المقابلة",
+    "cancelFailed": "فشل في إلغاء المقابلة",
+    "feedbackFailed": "فشل في إرسال التقييم",
+    "notFound": "المقابلة غير موجودة",
+    "conflict": "يوجد تعارض في الوقت مع مقابلة أخرى",
+    "pastDate": "لا يمكن جدولة مقابلة في الماضي"
+  },
+  "offers": {
+    "createFailed": "فشل في إنشاء العرض",
+    "updateFailed": "فشل في تحديث العرض",
+    "sendFailed": "فشل في إرسال العرض",
+    "withdrawFailed": "فشل في سحب العرض",
+    "notFound": "العرض غير موجود",
+    "alreadySent": "العرض تم إرساله بالفعل",
+    "expired": "انتهت صلاحية العرض"
+  },
+  "email": {
+    "sendFailed": "فشل في إرسال البريد الإلكتروني",
+    "invalidRecipient": "عنوان بريد إلكتروني غير صالح",
+    "configurationError": "خطأ في إعدادات البريد",
+    "templateNotFound": "قالب البريد غير موجود",
+    "smtpError": "خطأ في اتصال SMTP",
+    "imapError": "خطأ في اتصال IMAP",
+    "rateLimitExceeded": "تم تجاوز حد إرسال البريد"
+  },
+  "file": {
+    "uploadFailed": "فشل في رفع الملف",
+    "downloadFailed": "فشل في تحميل الملف",
+    "deleteFailed": "فشل في حذف الملف",
+    "notFound": "الملف غير موجود",
+    "tooLarge": "الملف كبير جداً",
+    "invalidType": "نوع ملف غير صالح"
+  },
+  "integration": {
+    "connectionFailed": "فشل في الاتصال بالتكامل",
+    "syncFailed": "فشل في مزامنة البيانات",
+    "authorizationFailed": "فشل التفويض",
+    "configurationError": "خطأ في إعدادات التكامل",
+    "apiError": "خطأ في API التكامل"
+  },
+  "team": {
+    "inviteFailed": "فشل في إرسال الدعوة",
+    "removeFailed": "فشل في إزالة عضو الفريق",
+    "updateRoleFailed": "فشل في تحديث الدور",
+    "cannotRemoveSelf": "لا يمكنك إزالة نفسك",
+    "cannotDemoteSelf": "لا يمكنك تغيير دورك",
+    "lastAdmin": "لا يمكن إزالة آخر مدير"
+  },
+  "settings": {
+    "saveFailed": "فشل في حفظ الإعدادات",
+    "invalidConfiguration": "إعدادات غير صالحة"
+  },
+  "http": {
+    "400": "طلب غير صالح",
+    "401": "غير مصرح",
+    "403": "ممنوع",
+    "404": "غير موجود",
+    "405": "الطريقة غير مسموحة",
+    "408": "انتهت مهلة الطلب",
+    "409": "تعارض",
+    "422": "كيان غير قابل للمعالجة",
+    "429": "طلبات كثيرة جداً",
+    "500": "خطأ داخلي في الخادم",
+    "502": "بوابة غير صالحة",
+    "503": "الخدمة غير متاحة",
+    "504": "انتهت مهلة البوابة"
+  }
+}

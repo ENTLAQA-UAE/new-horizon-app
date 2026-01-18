@@ -1,0 +1,143 @@
+{
+  "title": "Applications",
+  "allApplications": "All Applications",
+  "viewApplication": "View Application",
+  "applicationDetails": "Application Details",
+  "pipeline": "Pipeline",
+  "kanban": "Kanban View",
+  "list": "List View",
+  "fields": {
+    "candidate": "Candidate",
+    "job": "Job",
+    "stage": "Stage",
+    "status": "Status",
+    "appliedDate": "Applied Date",
+    "lastActivity": "Last Activity",
+    "source": "Source",
+    "rating": "Rating",
+    "assignee": "Assignee",
+    "notes": "Notes"
+  },
+  "stages": {
+    "new": "New",
+    "screening": "Screening",
+    "phoneInterview": "Phone Interview",
+    "technicalInterview": "Technical Interview",
+    "onsiteInterview": "On-site Interview",
+    "assessment": "Assessment",
+    "reference": "Reference Check",
+    "offer": "Offer",
+    "hired": "Hired",
+    "rejected": "Rejected"
+  },
+  "status": {
+    "active": "Active",
+    "onHold": "On Hold",
+    "rejected": "Rejected",
+    "withdrawn": "Withdrawn",
+    "hired": "Hired"
+  },
+  "actions": {
+    "moveStage": "Move to Stage",
+    "moveToNext": "Move to Next Stage",
+    "reject": "Reject",
+    "shortlist": "Shortlist",
+    "scheduleInterview": "Schedule Interview",
+    "sendEmail": "Send Email",
+    "addNote": "Add Note",
+    "requestFeedback": "Request Feedback",
+    "makeOffer": "Make Offer",
+    "assignReviewer": "Assign Reviewer",
+    "bulkActions": "Bulk Actions",
+    "export": "Export Applications"
+  },
+  "filters": {
+    "job": "Job",
+    "stage": "Stage",
+    "status": "Status",
+    "source": "Source",
+    "appliedDate": "Applied Date",
+    "rating": "Rating",
+    "assignee": "Assignee"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "resume": "Resume",
+    "screening": "Screening",
+    "interviews": "Interviews",
+    "feedback": "Feedback",
+    "offers": "Offers",
+    "emails": "Emails",
+    "notes": "Notes",
+    "activity": "Activity"
+  },
+  "screening": {
+    "title": "Screening Questions",
+    "responses": "Responses",
+    "score": "Score",
+    "passed": "Passed",
+    "failed": "Failed",
+    "pending": "Pending Review"
+  },
+  "feedback": {
+    "title": "Feedback",
+    "addFeedback": "Add Feedback",
+    "overallRating": "Overall Rating",
+    "recommendation": "Recommendation",
+    "strongYes": "Strong Yes",
+    "yes": "Yes",
+    "neutral": "Neutral",
+    "no": "No",
+    "strongNo": "Strong No",
+    "strengths": "Strengths",
+    "weaknesses": "Areas for Improvement",
+    "comments": "Comments",
+    "noFeedback": "No feedback yet"
+  },
+  "rejection": {
+    "title": "Reject Application",
+    "reason": "Rejection Reason",
+    "sendEmail": "Send rejection email to candidate",
+    "reasons": {
+      "underqualified": "Underqualified",
+      "overqualified": "Overqualified",
+      "noMatch": "Not a good fit",
+      "salary": "Salary expectations too high",
+      "withdrawn": "Candidate withdrew",
+      "noResponse": "No response from candidate",
+      "positionFilled": "Position filled",
+      "other": "Other"
+    }
+  },
+  "messages": {
+    "moved": "Application moved to {stage}",
+    "rejected": "Application rejected",
+    "shortlisted": "Application shortlisted",
+    "feedbackAdded": "Feedback added",
+    "noteAdded": "Note added",
+    "exported": "Applications exported"
+  },
+  "confirmations": {
+    "reject": "Are you sure you want to reject this application?",
+    "bulkReject": "Are you sure you want to reject {count} applications?",
+    "moveStage": "Move application to {stage}?"
+  },
+  "emptyState": {
+    "title": "No applications found",
+    "description": "Applications will appear here when candidates apply to your jobs",
+    "filterDescription": "Try adjusting your filters",
+    "stageDescription": "Drag applications here or click to add"
+  },
+  "timeline": {
+    "applied": "Applied for {job}",
+    "movedTo": "Moved to {stage}",
+    "interviewScheduled": "Interview scheduled",
+    "feedbackReceived": "Feedback received from {name}",
+    "emailSent": "Email sent",
+    "noteAdded": "Note added by {name}",
+    "offerSent": "Offer sent",
+    "offerAccepted": "Offer accepted",
+    "rejected": "Application rejected",
+    "hired": "Hired"
+  }
+}

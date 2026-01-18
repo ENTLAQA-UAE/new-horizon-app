@@ -1,0 +1,134 @@
+{
+  "title": "العروض",
+  "createOffer": "إنشاء عرض",
+  "editOffer": "تعديل العرض",
+  "viewOffer": "عرض العرض",
+  "sendOffer": "إرسال العرض",
+  "offerDetails": "تفاصيل العرض",
+  "fields": {
+    "candidate": "المتقدم",
+    "job": "الوظيفة",
+    "salary": "الراتب",
+    "baseSalary": "الراتب الأساسي",
+    "currency": "العملة",
+    "payPeriod": "فترة الدفع",
+    "bonus": "مكافأة التوقيع",
+    "equity": "الأسهم",
+    "startDate": "تاريخ البدء",
+    "expirationDate": "تاريخ انتهاء الصلاحية",
+    "status": "الحالة",
+    "benefits": "المميزات",
+    "additionalTerms": "شروط إضافية"
+  },
+  "status": {
+    "draft": "مسودة",
+    "pending": "بانتظار الموافقة",
+    "approved": "موافق عليه",
+    "sent": "تم الإرسال",
+    "viewed": "تم العرض",
+    "accepted": "مقبول",
+    "declined": "مرفوض",
+    "expired": "منتهي الصلاحية",
+    "withdrawn": "تم السحب",
+    "negotiating": "قيد التفاوض"
+  },
+  "payPeriods": {
+    "hourly": "بالساعة",
+    "daily": "يومياً",
+    "weekly": "أسبوعياً",
+    "biweekly": "كل أسبوعين",
+    "monthly": "شهرياً",
+    "annual": "سنوياً"
+  },
+  "compensation": {
+    "title": "التعويضات",
+    "base": "الراتب الأساسي",
+    "bonus": "المكافأة",
+    "commission": "العمولة",
+    "equity": "الأسهم/خيارات الأسهم",
+    "total": "إجمالي التعويضات"
+  },
+  "benefits": {
+    "title": "حزمة المميزات",
+    "health": "التأمين الصحي",
+    "dental": "تأمين الأسنان",
+    "vision": "تأمين البصر",
+    "life": "التأمين على الحياة",
+    "disability": "تأمين العجز",
+    "retirement": "خطة التقاعد",
+    "pto": "إجازة مدفوعة",
+    "remote": "العمل عن بعد",
+    "flexible": "ساعات مرنة",
+    "education": "بدل التعليم",
+    "transport": "بدل المواصلات",
+    "meals": "بدل الوجبات",
+    "phone": "بدل الهاتف",
+    "gym": "عضوية النادي الرياضي",
+    "other": "مميزات أخرى"
+  },
+  "approval": {
+    "title": "موافقة العرض",
+    "requestApproval": "طلب الموافقة",
+    "approve": "الموافقة على العرض",
+    "reject": "رفض العرض",
+    "approvedBy": "تمت الموافقة بواسطة",
+    "rejectedBy": "تم الرفض بواسطة",
+    "pendingApproval": "بانتظار موافقة {name}",
+    "comments": "تعليقات الموافقة"
+  },
+  "negotiation": {
+    "title": "التفاوض",
+    "counterOffer": "عرض مضاد",
+    "originalOffer": "العرض الأصلي",
+    "candidateRequest": "طلب المتقدم",
+    "acceptCounter": "قبول العرض المضاد",
+    "rejectCounter": "رفض العرض المضاد",
+    "makeNewOffer": "تقديم عرض جديد"
+  },
+  "letter": {
+    "title": "خطاب العرض",
+    "preview": "معاينة الخطاب",
+    "download": "تحميل PDF",
+    "customize": "تخصيص الخطاب",
+    "template": "قالب الخطاب",
+    "signature": "التوقيع مطلوب"
+  },
+  "actions": {
+    "duplicate": "نسخ العرض",
+    "withdraw": "سحب العرض",
+    "extend": "تمديد الصلاحية",
+    "resend": "إعادة إرسال العرض",
+    "viewHistory": "عرض السجل"
+  },
+  "messages": {
+    "created": "تم إنشاء العرض بنجاح",
+    "updated": "تم تحديث العرض",
+    "sent": "تم إرسال العرض للمتقدم",
+    "accepted": "تم قبول العرض",
+    "declined": "تم رفض العرض",
+    "withdrawn": "تم سحب العرض",
+    "expired": "انتهت صلاحية هذا العرض",
+    "approvalRequested": "تم إرسال طلب الموافقة",
+    "approved": "تمت الموافقة على العرض",
+    "rejected": "تم رفض العرض"
+  },
+  "confirmations": {
+    "send": "هل أنت متأكد من إرسال هذا العرض للمتقدم؟",
+    "withdraw": "هل أنت متأكد من سحب هذا العرض؟",
+    "delete": "هل أنت متأكد من حذف هذا العرض؟"
+  },
+  "emptyState": {
+    "title": "لا توجد عروض بعد",
+    "description": "أنشئ عرضاً لمتقدم للبدء"
+  },
+  "timeline": {
+    "created": "تم إنشاء العرض",
+    "sent": "تم إرسال العرض للمتقدم",
+    "viewed": "المتقدم عرض العرض",
+    "accepted": "المتقدم قبل العرض",
+    "declined": "المتقدم رفض العرض",
+    "negotiation": "المتقدم طلب التفاوض",
+    "updated": "تم تحديث شروط العرض",
+    "withdrawn": "تم سحب العرض"
+  }
+}

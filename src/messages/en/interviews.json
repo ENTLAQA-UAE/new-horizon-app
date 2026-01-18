@@ -1,0 +1,128 @@
+{
+  "title": "Interviews",
+  "schedule": "Schedule Interview",
+  "reschedule": "Reschedule Interview",
+  "cancel": "Cancel Interview",
+  "upcoming": "Upcoming Interviews",
+  "past": "Past Interviews",
+  "today": "Today's Interviews",
+  "calendar": "Interview Calendar",
+  "fields": {
+    "candidate": "Candidate",
+    "job": "Job",
+    "interviewer": "Interviewer",
+    "interviewers": "Interviewers",
+    "date": "Date",
+    "time": "Time",
+    "duration": "Duration",
+    "type": "Interview Type",
+    "location": "Location",
+    "meetingLink": "Meeting Link",
+    "notes": "Notes",
+    "feedback": "Feedback",
+    "status": "Status"
+  },
+  "types": {
+    "phone": "Phone Interview",
+    "video": "Video Interview",
+    "onsite": "On-site Interview",
+    "technical": "Technical Interview",
+    "behavioral": "Behavioral Interview",
+    "panel": "Panel Interview",
+    "final": "Final Interview"
+  },
+  "status": {
+    "scheduled": "Scheduled",
+    "confirmed": "Confirmed",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "noShow": "No Show",
+    "rescheduled": "Rescheduled"
+  },
+  "durations": {
+    "15min": "15 minutes",
+    "30min": "30 minutes",
+    "45min": "45 minutes",
+    "1hour": "1 hour",
+    "1.5hours": "1.5 hours",
+    "2hours": "2 hours"
+  },
+  "scheduling": {
+    "selectDate": "Select Date",
+    "selectTime": "Select Time",
+    "selectDuration": "Select Duration",
+    "selectInterviewers": "Select Interviewers",
+    "selectType": "Select Interview Type",
+    "availableSlots": "Available Slots",
+    "noAvailableSlots": "No available slots for this day",
+    "timezone": "Timezone",
+    "sendInvite": "Send calendar invite",
+    "reminderEmail": "Send reminder email",
+    "addToCalendar": "Add to Calendar"
+  },
+  "feedback": {
+    "title": "Interview Feedback",
+    "submit": "Submit Feedback",
+    "overallRating": "Overall Rating",
+    "recommendation": "Recommendation",
+    "technicalSkills": "Technical Skills",
+    "communication": "Communication",
+    "problemSolving": "Problem Solving",
+    "cultureFit": "Culture Fit",
+    "strengths": "Strengths",
+    "weaknesses": "Areas for Improvement",
+    "notes": "Additional Notes",
+    "strongHire": "Strong Hire",
+    "hire": "Hire",
+    "noHire": "No Hire",
+    "strongNoHire": "Strong No Hire"
+  },
+  "videoMeeting": {
+    "join": "Join Meeting",
+    "start": "Start Meeting",
+    "copyLink": "Copy Meeting Link",
+    "linkCopied": "Meeting link copied",
+    "zoom": "Zoom Meeting",
+    "teams": "Microsoft Teams",
+    "meet": "Google Meet"
+  },
+  "reminders": {
+    "title": "Interview Reminders",
+    "before24h": "24 hours before",
+    "before1h": "1 hour before",
+    "before15min": "15 minutes before"
+  },
+  "actions": {
+    "viewDetails": "View Details",
+    "editInterview": "Edit Interview",
+    "sendReminder": "Send Reminder",
+    "markComplete": "Mark as Completed",
+    "markNoShow": "Mark as No Show",
+    "addFeedback": "Add Feedback",
+    "viewFeedback": "View Feedback"
+  },
+  "messages": {
+    "scheduled": "Interview scheduled successfully",
+    "rescheduled": "Interview rescheduled",
+    "cancelled": "Interview cancelled",
+    "feedbackSubmitted": "Feedback submitted",
+    "reminderSent": "Reminder sent",
+    "inviteSent": "Calendar invite sent"
+  },
+  "confirmations": {
+    "cancel": "Are you sure you want to cancel this interview?",
+    "reschedule": "Are you sure you want to reschedule this interview?"
+  },
+  "emptyState": {
+    "title": "No interviews scheduled",
+    "description": "Schedule interviews with candidates to see them here",
+    "upcoming": "No upcoming interviews",
+    "past": "No past interviews"
+  },
+  "errors": {
+    "scheduleFailed": "Failed to schedule interview",
+    "conflictDetected": "Time conflict detected with another interview",
+    "interviewerUnavailable": "Interviewer is not available at this time"
+  }
+}

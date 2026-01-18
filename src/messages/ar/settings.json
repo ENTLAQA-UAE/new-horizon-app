@@ -1,0 +1,165 @@
+{
+  "title": "الإعدادات",
+  "general": {
+    "title": "الإعدادات العامة",
+    "companyName": "اسم الشركة",
+    "companyLogo": "شعار الشركة",
+    "website": "الموقع الإلكتروني",
+    "industry": "الصناعة",
+    "companySize": "حجم الشركة",
+    "description": "الوصف",
+    "timezone": "المنطقة الزمنية",
+    "dateFormat": "تنسيق التاريخ",
+    "language": "اللغة"
+  },
+  "profile": {
+    "title": "إعدادات الملف الشخصي",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الهاتف",
+    "avatar": "الصورة الشخصية",
+    "jobTitle": "المسمى الوظيفي",
+    "department": "القسم",
+    "bio": "نبذة"
+  },
+  "account": {
+    "title": "إعدادات الحساب",
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "twoFactor": "التحقق بخطوتين",
+    "enable2fa": "تفعيل التحقق بخطوتين",
+    "disable2fa": "تعطيل التحقق بخطوتين",
+    "sessions": "الجلسات النشطة",
+    "deleteAccount": "حذف الحساب"
+  },
+  "notifications": {
+    "title": "إعدادات الإشعارات",
+    "email": "إشعارات البريد الإلكتروني",
+    "push": "إشعارات الدفع",
+    "desktop": "إشعارات سطح المكتب",
+    "newApplication": "طلبات جديدة",
+    "interviewReminders": "تذكيرات المقابلات",
+    "feedbackReceived": "تقييمات مستلمة",
+    "offerUpdates": "تحديثات العروض",
+    "teamMentions": "إشارات الفريق",
+    "weeklyDigest": "الملخص الأسبوعي",
+    "marketingEmails": "رسائل التسويق"
+  },
+  "team": {
+    "title": "إعدادات الفريق",
+    "members": "أعضاء الفريق",
+    "inviteMember": "دعوة عضو",
+    "roles": "الأدوار والصلاحيات",
+    "departments": "الأقسام",
+    "inviteEmail": "البريد الإلكتروني",
+    "inviteRole": "الدور",
+    "pendingInvites": "الدعوات المعلقة",
+    "resendInvite": "إعادة إرسال الدعوة",
+    "cancelInvite": "إلغاء الدعوة",
+    "removeMember": "إزالة العضو"
+  },
+  "roles": {
+    "superAdmin": "مدير عام",
+    "orgAdmin": "مدير المنظمة",
+    "hiringManager": "مدير التوظيف",
+    "recruiter": "موظف توظيف",
+    "interviewer": "محاور",
+    "viewer": "مشاهد"
+  },
+  "integrations": {
+    "title": "التكاملات",
+    "connected": "متصل",
+    "notConnected": "غير متصل",
+    "connect": "اتصال",
+    "disconnect": "قطع الاتصال",
+    "configure": "إعداد",
+    "calendar": "تكامل التقويم",
+    "videoMeetings": "اجتماعات الفيديو",
+    "jobBoards": "مواقع التوظيف",
+    "hris": "أنظمة الموارد البشرية",
+    "backgroundCheck": "فحص الخلفية",
+    "assessments": "الاختبارات"
+  },
+  "email": {
+    "title": "إعدادات البريد الإلكتروني",
+    "provider": "مزود البريد",
+    "smtp": "إعدادات SMTP",
+    "imap": "إعدادات IMAP",
+    "templates": "قوالب البريد",
+    "signatures": "توقيعات البريد",
+    "fromName": "اسم المرسل",
+    "fromEmail": "بريد المرسل",
+    "replyTo": "الرد على"
+  },
+  "branding": {
+    "title": "العلامة التجارية",
+    "logo": "الشعار",
+    "favicon": "أيقونة الموقع",
+    "primaryColor": "اللون الأساسي",
+    "accentColor": "اللون الثانوي",
+    "careerPage": "صفحة الوظائف",
+    "customDomain": "النطاق المخصص"
+  },
+  "compliance": {
+    "title": "الامتثال",
+    "gdpr": "إعدادات GDPR",
+    "dataRetention": "الاحتفاظ بالبيانات",
+    "privacyPolicy": "سياسة الخصوصية",
+    "termsOfService": "شروط الخدمة",
+    "cookiePolicy": "سياسة الكوكيز",
+    "eeoc": "الامتثال EEOC",
+    "dataExport": "تصدير البيانات",
+    "dataDelete": "حذف كل البيانات"
+  },
+  "billing": {
+    "title": "الفواتير",
+    "plan": "الخطة الحالية",
+    "usage": "الاستخدام",
+    "invoices": "الفواتير",
+    "paymentMethod": "طريقة الدفع",
+    "upgrade": "ترقية الخطة",
+    "downgrade": "تخفيض الخطة",
+    "cancelSubscription": "إلغاء الاشتراك"
+  },
+  "security": {
+    "title": "الأمان",
+    "passwordPolicy": "سياسة كلمة المرور",
+    "sessionTimeout": "انتهاء الجلسة",
+    "ipWhitelist": "قائمة IP المسموحة",
+    "auditLog": "سجل التدقيق",
+    "sso": "تسجيل الدخول الموحد",
+    "apiKeys": "مفاتيح API"
+  },
+  "api": {
+    "title": "إعدادات API",
+    "keys": "مفاتيح API",
+    "createKey": "إنشاء مفتاح API",
+    "revokeKey": "إلغاء المفتاح",
+    "webhooks": "Webhooks",
+    "documentation": "وثائق API"
+  },
+  "actions": {
+    "save": "حفظ التغييرات",
+    "cancel": "إلغاء",
+    "reset": "إعادة التعيين",
+    "upload": "رفع",
+    "remove": "إزالة"
+  },
+  "messages": {
+    "saved": "تم حفظ الإعدادات بنجاح",
+    "updated": "تم تحديث الإعدادات",
+    "passwordChanged": "تم تغيير كلمة المرور بنجاح",
+    "inviteSent": "تم إرسال الدعوة",
+    "memberRemoved": "تم إزالة عضو الفريق",
+    "integrationConnected": "تم الاتصال بالتكامل",
+    "integrationDisconnected": "تم قطع الاتصال بالتكامل"
+  },
+  "confirmations": {
+    "deleteAccount": "هل أنت متأكد من حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء.",
+    "removeMember": "هل أنت متأكد من إزالة هذا العضو؟",
+    "disconnect": "هل أنت متأكد من قطع الاتصال بهذا التكامل؟"
+  }
+}

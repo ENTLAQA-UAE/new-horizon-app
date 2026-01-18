@@ -1,0 +1,98 @@
+{
+  "title": "لوحة التحكم",
+  "welcome": "مرحباً، {name}",
+  "overview": "نظرة عامة",
+  "stats": {
+    "totalJobs": "إجمالي الوظائف",
+    "activeJobs": "الوظائف النشطة",
+    "totalCandidates": "إجمالي المتقدمين",
+    "newCandidates": "متقدمون جدد",
+    "totalApplications": "إجمالي الطلبات",
+    "pendingApplications": "طلبات معلقة",
+    "scheduledInterviews": "مقابلات مجدولة",
+    "todayInterviews": "مقابلات اليوم",
+    "offersExtended": "عروض مقدمة",
+    "offersPending": "عروض معلقة",
+    "hiredThisMonth": "تم توظيفهم هذا الشهر",
+    "timeToHire": "متوسط وقت التوظيف"
+  },
+  "charts": {
+    "applicationsTrend": "اتجاه الطلبات",
+    "hiringPipeline": "خط سير التوظيف",
+    "sourceBreakdown": "توزيع المصادر",
+    "departmentHiring": "التوظيف حسب القسم",
+    "timeToHireChart": "اتجاه وقت التوظيف"
+  },
+  "recentActivity": {
+    "title": "النشاط الأخير",
+    "newApplication": "طلب جديد من {name}",
+    "interviewScheduled": "تم جدولة مقابلة مع {name}",
+    "offerSent": "تم إرسال عرض إلى {name}",
+    "candidateHired": "تم توظيف {name}",
+    "feedbackReceived": "تم استلام تقييم لـ {name}",
+    "jobPublished": "تم نشر وظيفة {title}",
+    "viewAll": "عرض كل النشاطات"
+  },
+  "upcomingInterviews": {
+    "title": "المقابلات القادمة",
+    "today": "اليوم",
+    "tomorrow": "غداً",
+    "thisWeek": "هذا الأسبوع",
+    "noInterviews": "لا توجد مقابلات قادمة",
+    "viewCalendar": "عرض التقويم"
+  },
+  "pendingTasks": {
+    "title": "المهام المعلقة",
+    "reviewApplications": "مراجعة الطلبات",
+    "scheduledInterviews": "مقابلات للجدولة",
+    "feedbackPending": "تقييمات معلقة",
+    "offersPending": "عروض معلقة للموافقة",
+    "viewAll": "عرض كل المهام"
+  },
+  "quickActions": {
+    "title": "إجراءات سريعة",
+    "postJob": "نشر وظيفة",
+    "addCandidate": "إضافة متقدم",
+    "scheduleInterview": "جدولة مقابلة",
+    "viewReports": "عرض التقارير"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "markAllRead": "تحديد الكل كمقروء",
+    "noNotifications": "لا توجد إشعارات جديدة",
+    "viewAll": "عرض كل الإشعارات"
+  },
+  "sidebar": {
+    "dashboard": "لوحة التحكم",
+    "jobs": "الوظائف",
+    "candidates": "المتقدمون",
+    "applications": "الطلبات",
+    "interviews": "المقابلات",
+    "offers": "العروض",
+    "reports": "التقارير",
+    "settings": "الإعدادات",
+    "help": "المساعدة",
+    "team": "الفريق",
+    "integrations": "التكاملات",
+    "email": "البريد الإلكتروني"
+  },
+  "header": {
+    "search": "بحث...",
+    "notifications": "الإشعارات",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج",
+    "help": "المساعدة"
+  },
+  "filters": {
+    "dateRange": "نطاق التاريخ",
+    "department": "القسم",
+    "location": "الموقع",
+    "jobType": "نوع الوظيفة"
+  },
+  "emptyState": {
+    "title": "مرحباً بك في جدارات",
+    "description": "ابدأ بإنشاء أول وظيفة لك",
+    "createJob": "إنشاء وظيفة"
+  }
+}

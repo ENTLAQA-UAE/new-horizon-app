@@ -1,0 +1,151 @@
+{
+  "title": "المتقدمون",
+  "allCandidates": "كل المتقدمين",
+  "addCandidate": "إضافة متقدم",
+  "editCandidate": "تعديل متقدم",
+  "viewCandidate": "عرض المتقدم",
+  "candidateProfile": "ملف المتقدم",
+  "fields": {
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "البريد الإلكتروني",
+    "phone": "رقم الهاتف",
+    "location": "الموقع",
+    "currentTitle": "المسمى الوظيفي الحالي",
+    "currentCompany": "الشركة الحالية",
+    "experience": "سنوات الخبرة",
+    "education": "التعليم",
+    "skills": "المهارات",
+    "resume": "السيرة الذاتية",
+    "linkedin": "LinkedIn",
+    "portfolio": "الأعمال",
+    "source": "المصدر",
+    "tags": "الوسوم",
+    "notes": "الملاحظات",
+    "salary": "الراتب المتوقع",
+    "noticePeriod": "فترة الإشعار",
+    "availability": "التوفر"
+  },
+  "sources": {
+    "directApplication": "تقديم مباشر",
+    "referral": "إحالة",
+    "linkedin": "LinkedIn",
+    "jobBoard": "موقع توظيف",
+    "agency": "وكالة توظيف",
+    "careerPage": "صفحة الوظائف",
+    "internal": "داخلي",
+    "socialMedia": "وسائل التواصل الاجتماعي",
+    "event": "حدث/معرض",
+    "other": "أخرى"
+  },
+  "tabs": {
+    "overview": "نظرة عامة",
+    "resume": "السيرة الذاتية",
+    "applications": "الطلبات",
+    "interviews": "المقابلات",
+    "feedback": "التقييمات",
+    "emails": "البريد الإلكتروني",
+    "notes": "الملاحظات",
+    "activity": "النشاط",
+    "documents": "المستندات"
+  },
+  "actions": {
+    "addToJob": "إضافة إلى وظيفة",
+    "sendEmail": "إرسال بريد إلكتروني",
+    "scheduleInterview": "جدولة مقابلة",
+    "addNote": "إضافة ملاحظة",
+    "addTag": "إضافة وسم",
+    "uploadDocument": "رفع مستند",
+    "downloadResume": "تحميل السيرة الذاتية",
+    "merge": "دمج المتقدمين",
+    "export": "تصدير"
+  },
+  "resume": {
+    "upload": "رفع السيرة الذاتية",
+    "parse": "تحليل السيرة الذاتية",
+    "download": "تحميل",
+    "view": "عرض",
+    "noResume": "لا توجد سيرة ذاتية",
+    "parsing": "جاري تحليل السيرة الذاتية...",
+    "parsed": "تم تحليل السيرة الذاتية"
+  },
+  "education": {
+    "degree": "الدرجة العلمية",
+    "field": "التخصص",
+    "institution": "المؤسسة التعليمية",
+    "graduationYear": "سنة التخرج",
+    "gpa": "المعدل التراكمي"
+  },
+  "experience": {
+    "title": "المسمى الوظيفي",
+    "company": "الشركة",
+    "startDate": "تاريخ البداية",
+    "endDate": "تاريخ النهاية",
+    "current": "حالي",
+    "description": "الوصف"
+  },
+  "skills": {
+    "title": "المهارات",
+    "addSkill": "إضافة مهارة",
+    "level": "المستوى",
+    "beginner": "مبتدئ",
+    "intermediate": "متوسط",
+    "advanced": "متقدم",
+    "expert": "خبير"
+  },
+  "rating": {
+    "title": "التقييم",
+    "overall": "التقييم العام",
+    "skills": "المهارات",
+    "experience": "الخبرة",
+    "communication": "التواصل",
+    "cultureFit": "الملاءمة الثقافية"
+  },
+  "status": {
+    "new": "جديد",
+    "active": "نشط",
+    "contacted": "تم التواصل",
+    "qualified": "مؤهل",
+    "inProcess": "قيد المعالجة",
+    "hired": "تم توظيفه",
+    "rejected": "مرفوض",
+    "withdrawn": "انسحب",
+    "onHold": "معلق",
+    "blacklisted": "محظور"
+  },
+  "messages": {
+    "created": "تم إضافة المتقدم بنجاح",
+    "updated": "تم تحديث المتقدم",
+    "deleted": "تم حذف المتقدم",
+    "merged": "تم دمج المتقدمين",
+    "addedToJob": "تم إضافة المتقدم إلى الوظيفة",
+    "emailSent": "تم إرسال البريد الإلكتروني",
+    "noteAdded": "تم إضافة الملاحظة"
+  },
+  "confirmations": {
+    "delete": "هل أنت متأكد من حذف هذا المتقدم؟",
+    "merge": "هل أنت متأكد من دمج هؤلاء المتقدمين؟",
+    "blacklist": "هل أنت متأكد من إضافة هذا المتقدم للقائمة السوداء؟"
+  },
+  "emptyState": {
+    "title": "لا يوجد متقدمون",
+    "description": "أضف متقدمين يدوياً أو انتظر الطلبات",
+    "addFirst": "إضافة متقدم"
+  },
+  "filters": {
+    "source": "المصدر",
+    "status": "الحالة",
+    "skills": "المهارات",
+    "experience": "الخبرة",
+    "location": "الموقع",
+    "tags": "الوسوم",
+    "rating": "التقييم"
+  },
+  "duplicateCheck": {
+    "title": "تحقق من التكرار",
+    "found": "تم العثور على متقدم مشابه",
+    "merge": "دمج",
+    "createNew": "إنشاء جديد",
+    "ignore": "تجاهل"
+  }
+}

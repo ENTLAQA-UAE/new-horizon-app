@@ -1,0 +1,139 @@
+{
+  "title": "Jobs",
+  "allJobs": "All Jobs",
+  "myJobs": "My Jobs",
+  "createJob": "Create Job",
+  "editJob": "Edit Job",
+  "duplicateJob": "Duplicate Job",
+  "deleteJob": "Delete Job",
+  "publishJob": "Publish Job",
+  "unpublishJob": "Unpublish Job",
+  "closeJob": "Close Job",
+  "reopenJob": "Reopen Job",
+  "archiveJob": "Archive Job",
+  "viewApplications": "View Applications",
+  "shareJob": "Share Job",
+  "jobDetails": "Job Details",
+  "jobDescription": "Job Description",
+  "requirements": "Requirements",
+  "responsibilities": "Responsibilities",
+  "benefits": "Benefits",
+  "fields": {
+    "title": "Job Title",
+    "titleAr": "Job Title (Arabic)",
+    "department": "Department",
+    "location": "Location",
+    "locationType": "Location Type",
+    "employmentType": "Employment Type",
+    "experienceLevel": "Experience Level",
+    "salaryRange": "Salary Range",
+    "salaryMin": "Minimum Salary",
+    "salaryMax": "Maximum Salary",
+    "currency": "Currency",
+    "showSalary": "Show salary on job posting",
+    "description": "Description",
+    "descriptionAr": "Description (Arabic)",
+    "requirements": "Requirements",
+    "requirementsAr": "Requirements (Arabic)",
+    "responsibilities": "Responsibilities",
+    "responsibilitiesAr": "Responsibilities (Arabic)",
+    "benefits": "Benefits",
+    "benefitsAr": "Benefits (Arabic)",
+    "skills": "Required Skills",
+    "education": "Education Requirements",
+    "yearsExperience": "Years of Experience",
+    "applicationDeadline": "Application Deadline",
+    "startDate": "Expected Start Date",
+    "positions": "Number of Positions",
+    "hiringManager": "Hiring Manager",
+    "recruiter": "Recruiter",
+    "pipeline": "Hiring Pipeline",
+    "tags": "Tags",
+    "internalNotes": "Internal Notes",
+    "visaSponsorship": "Visa Sponsorship Available",
+    "remoteAllowed": "Remote Work Allowed"
+  },
+  "locationTypes": {
+    "onsite": "On-site",
+    "remote": "Remote",
+    "hybrid": "Hybrid"
+  },
+  "employmentTypes": {
+    "fullTime": "Full-time",
+    "partTime": "Part-time",
+    "contract": "Contract",
+    "temporary": "Temporary",
+    "internship": "Internship",
+    "freelance": "Freelance"
+  },
+  "experienceLevels": {
+    "entry": "Entry Level",
+    "junior": "Junior",
+    "mid": "Mid-Level",
+    "senior": "Senior",
+    "lead": "Lead",
+    "manager": "Manager",
+    "director": "Director",
+    "executive": "Executive"
+  },
+  "status": {
+    "draft": "Draft",
+    "published": "Published",
+    "closed": "Closed",
+    "archived": "Archived",
+    "onHold": "On Hold"
+  },
+  "filters": {
+    "status": "Status",
+    "department": "Department",
+    "location": "Location",
+    "employmentType": "Employment Type",
+    "datePosted": "Date Posted",
+    "hiringManager": "Hiring Manager"
+  },
+  "stats": {
+    "totalApplications": "Total Applications",
+    "newApplications": "New Applications",
+    "inReview": "In Review",
+    "interviewed": "Interviewed",
+    "offered": "Offered",
+    "hired": "Hired",
+    "rejected": "Rejected",
+    "daysOpen": "Days Open",
+    "views": "Views",
+    "conversionRate": "Conversion Rate"
+  },
+  "actions": {
+    "preview": "Preview Job",
+    "copyLink": "Copy Job Link",
+    "viewOnCareerPage": "View on Career Page",
+    "exportApplications": "Export Applications"
+  },
+  "messages": {
+    "created": "Job created successfully",
+    "updated": "Job updated successfully",
+    "published": "Job published successfully",
+    "unpublished": "Job unpublished",
+    "closed": "Job closed",
+    "deleted": "Job deleted",
+    "duplicated": "Job duplicated successfully",
+    "archived": "Job archived",
+    "linkCopied": "Job link copied to clipboard"
+  },
+  "confirmations": {
+    "delete": "Are you sure you want to delete this job? This action cannot be undone.",
+    "close": "Are you sure you want to close this job? No new applications will be accepted.",
+    "archive": "Are you sure you want to archive this job?"
+  },
+  "emptyState": {
+    "title": "No jobs found",
+    "description": "Create your first job posting to start receiving applications",
+    "filterDescription": "Try adjusting your filters or search criteria"
+  },
+  "compliance": {
+    "requiresSaudization": "Requires Saudization",
+    "requiresEmiratization": "Requires Emiratization",
+    "nationalityPreference": "Nationality Preference",
+    "complianceImpact": "Compliance Impact"
+  }
+}
