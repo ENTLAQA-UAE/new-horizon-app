@@ -39,5 +39,6 @@ export default async function OrgCandidatesPage() {
     getJobs(),
   ])
 
-  return <OrgCandidatesClient candidates={candidates} jobs={jobs} />
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <OrgCandidatesClient candidates={candidates as any} jobs={jobs} />
 }

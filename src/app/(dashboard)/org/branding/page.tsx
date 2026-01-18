@@ -85,11 +85,11 @@ export default function BrandingPage() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("organization_id")
+          .select("org_id")
           .eq("id", user.id)
           .single()
 
-        const orgId = profile?.organization_id
+        const orgId = profile?.org_id
         if (!orgId) {
           console.error("User has no organization")
           setIsLoading(false)
@@ -101,7 +101,7 @@ export default function BrandingPage() {
         // Load organization branding
         const { data: org, error } = await supabase
           .from("organizations")
-          .select("name, name_ar, slug, tagline, tagline_ar, logo_url, favicon_url, primary_color, secondary_color, website_url, careers_page_url")
+          .select("name, name_ar, slug, logo_url, primary_color, secondary_color, custom_domain")
           .eq("id", orgId)
           .single()
 
@@ -112,14 +112,14 @@ export default function BrandingPage() {
             company_name: org.name || "",
             company_name_ar: org.name_ar || "",
             slug: org.slug || "",
-            tagline: org.tagline || "",
-            tagline_ar: org.tagline_ar || "",
+            tagline: "",
+            tagline_ar: "",
             logo_url: org.logo_url || "",
-            favicon_url: org.favicon_url || "",
+            favicon_url: "",
             primary_color: org.primary_color || "#3B82F6",
             secondary_color: org.secondary_color || "#10B981",
-            website_url: org.website_url || "",
-            careers_page_url: org.careers_page_url || getCareersPageUrl(org.slug || ""),
+            website_url: org.custom_domain || "",
+            careers_page_url: getCareersPageUrl(org.slug || ""),
           })
         }
       } catch (error) {
@@ -240,14 +240,10 @@ export default function BrandingPage() {
         .update({
           name: settings.company_name,
           name_ar: settings.company_name_ar || null,
-          tagline: settings.tagline || null,
-          tagline_ar: settings.tagline_ar || null,
           logo_url: settings.logo_url || null,
-          favicon_url: settings.favicon_url || null,
           primary_color: settings.primary_color,
           secondary_color: settings.secondary_color,
-          website_url: settings.website_url || null,
-          careers_page_url: settings.careers_page_url || null,
+          custom_domain: settings.website_url || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", organizationId)

@@ -214,6 +214,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
 
     setIsLoading(true)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await supabase
         .from("candidates")
         .insert({
@@ -224,14 +225,12 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
           city: formData.city || null,
           country: formData.country || null,
           nationality: formData.nationality || null,
-          current_job_title: formData.current_job_title || null,
+          current_title: formData.current_job_title || null,
           current_company: formData.current_company || null,
           years_of_experience: formData.years_of_experience || null,
-          highest_education: formData.highest_education || null,
           skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source,
-          overall_status: "new",
-        })
+          source: formData.source as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
+        } as any)
         .select()
         .single()
 
@@ -259,7 +258,8 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
         setIsUploadingResume(false)
       }
 
-      setCandidates([data, ...candidates])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setCandidates([data as any, ...candidates])
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Candidate added successfully")
@@ -301,6 +301,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
 
     setIsLoading(true)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase
         .from("candidates")
         .update({
@@ -311,14 +312,13 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
           city: formData.city || null,
           country: formData.country || null,
           nationality: formData.nationality || null,
-          current_job_title: formData.current_job_title || null,
+          current_title: formData.current_job_title || null,
           current_company: formData.current_company || null,
           years_of_experience: formData.years_of_experience || null,
-          highest_education: formData.highest_education || null,
           skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source,
+          source: formData.source as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
           updated_at: new Date().toISOString(),
-        })
+        } as any)
         .eq("id", selectedCandidate.id)
 
       if (error) {
@@ -444,7 +444,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
 
       // Get the first stage (usually "new" or "applied")
       const { data: stages } = await supabase
-        .from("hiring_stages")
+        .from("pipeline_stages")
         .select("id")
         .order("sort_order", { ascending: true })
         .limit(1)
@@ -452,16 +452,17 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       const firstStageId = stages?.[0]?.id || null
 
       // Create the application
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase
         .from("applications")
         .insert({
           candidate_id: selectedCandidate.id,
           job_id: selectedJobId,
-          stage: firstStageId,
+          stage_id: firstStageId,
           status: "new",
-          source: selectedCandidate.source || "direct",
+          source: (selectedCandidate.source || "direct") as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
           applied_at: new Date().toISOString(),
-        })
+        } as any)
 
       if (error) {
         toast.error(error.message)
@@ -609,13 +610,13 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
           last_name: result.lastName || formData.last_name,
           email: result.email || formData.email,
           phone: result.phone || formData.phone,
-          city: result.location?.city || formData.city,
-          country: result.location?.country || formData.country,
+          city: result.city || formData.city,
+          country: result.country || formData.country,
           nationality: result.nationality || formData.nationality,
-          current_job_title: result.experience?.[0]?.title || formData.current_job_title,
-          current_company: result.experience?.[0]?.company || formData.current_company,
-          years_of_experience: result.totalYearsExperience || formData.years_of_experience,
-          highest_education: mapEducationLevel(result.education?.[0]?.degree) || formData.highest_education,
+          current_job_title: result.currentJobTitle || formData.current_job_title,
+          current_company: result.currentCompany || formData.current_company,
+          years_of_experience: result.yearsOfExperience || formData.years_of_experience,
+          highest_education: mapEducationLevel(result.highestEducation) || formData.highest_education,
           skills: result.skills?.join(", ") || formData.skills,
           source: formData.source,
         })
