@@ -72,7 +72,8 @@ export function getNamespaceMessages<T extends MessageNamespace>(
   language: Language,
   namespace: T
 ): typeof messages.en[T] {
-  return messages[language][namespace]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (messages[language] as any)[namespace]
 }
 
 /**

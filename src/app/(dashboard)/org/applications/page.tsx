@@ -73,7 +73,8 @@ export default async function OrgApplicationsPage() {
 
   return (
     <ApplicationsClient
-      applications={applications}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      applications={applications as any}
       jobs={jobs}
       stages={stages}
     />

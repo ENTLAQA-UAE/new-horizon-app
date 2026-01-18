@@ -4,11 +4,6 @@ import { withSentryConfig } from "@sentry/nextjs"
 const nextConfig: NextConfig = {
   // Optimize for production
   reactStrictMode: true,
-
-  // Enable instrumentation hook for Sentry
-  experimental: {
-    instrumentationHook: true,
-  },
 }
 
 // Sentry configuration options

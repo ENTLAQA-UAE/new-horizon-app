@@ -7,17 +7,19 @@ export default async function InterviewsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Check if user has Google Calendar connected
-  let hasCalendarConnected = false
+  // Get user's org_id
+  let orgId: string | null = null
   if (user) {
-    const { data: integration } = await supabase
-      .from("user_integrations")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("provider", "google_calendar")
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
       .single()
-    hasCalendarConnected = !!integration
+    orgId = profile?.org_id || null
   }
+
+  // Calendar integration not yet available - table doesn't exist in schema
+  const hasCalendarConnected = false
 
   // Fetch interviews with related data
   const { data: interviews } = await supabase
@@ -70,10 +72,14 @@ export default async function InterviewsPage() {
 
   return (
     <InterviewsClient
-      interviews={interviews || []}
-      teamMembers={teamMembers || []}
-      applications={applications || []}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      interviews={(interviews || []) as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      teamMembers={(teamMembers || []) as any}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      applications={(applications || []) as any}
       hasCalendarConnected={hasCalendarConnected}
+      organizationId={orgId || ""}
     />
   )
 }

@@ -82,11 +82,11 @@ export default function DepartmentsPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("organization_id")
+        .select("org_id")
         .eq("id", user.id)
         .single()
 
-      const orgId = profile?.organization_id
+      const orgId = profile?.org_id
       if (orgId) {
         setOrganizationId(orgId)
       }

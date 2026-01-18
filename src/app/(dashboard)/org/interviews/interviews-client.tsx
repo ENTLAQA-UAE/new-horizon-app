@@ -125,6 +125,7 @@ interface InterviewsClientProps {
   teamMembers: TeamMember[]
   applications: Application[]
   hasCalendarConnected?: boolean
+  organizationId: string
 }
 
 const interviewTypes = [
@@ -156,6 +157,7 @@ export function InterviewsClient({
   teamMembers,
   applications,
   hasCalendarConnected = false,
+  organizationId,
 }: InterviewsClientProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -255,6 +257,7 @@ export function InterviewsClient({
       const { data, error } = await supabase
         .from("interviews")
         .insert({
+          org_id: organizationId,
           application_id: formData.application_id,
           title: formData.title,
           interview_type: formData.interview_type,
@@ -335,7 +338,7 @@ export function InterviewsClient({
         toast.success("Interview scheduled successfully")
       }
 
-      setInterviews([data, ...interviews])
+      setInterviews([data as unknown as Interview, ...interviews])
       setIsCreateDialogOpen(false)
       resetForm()
       router.refresh()

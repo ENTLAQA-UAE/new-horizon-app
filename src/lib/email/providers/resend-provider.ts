@@ -46,7 +46,7 @@ export class ResendProvider implements EmailProvider {
         subject: options.subject,
         html: options.html,
         text: options.text,
-        reply_to: options.replyTo || this.config.replyTo,
+        replyTo: options.replyTo || this.config.replyTo,
         cc: options.cc,
         bcc: options.bcc,
         attachments: options.attachments?.map((a) => ({

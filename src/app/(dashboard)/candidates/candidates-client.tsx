@@ -66,22 +66,46 @@ import { cn } from "@/lib/utils"
 
 interface Candidate {
   id: string
+  org_id: string
   first_name: string
   last_name: string
   email: string
   phone: string | null
+  phone_secondary: string | null
+  headline: string | null
+  summary: string | null
+  avatar_url: string | null
   city: string | null
   country: string | null
   nationality: string | null
-  current_job_title: string | null
+  current_title: string | null
   current_company: string | null
   years_of_experience: number | null
-  highest_education: string | null
-  skills: string[] | null
+  expected_salary: number | null
+  salary_currency: string | null
+  notice_period_days: number | null
+  skills: unknown
+  languages: unknown | null
+  education: unknown | null
+  experience: unknown | null
+  certifications: unknown | null
   resume_url: string | null
+  resume_parsed_data: unknown | null
+  linkedin_url: string | null
+  portfolio_url: string | null
   source: string | null
-  overall_status: string | null
+  source_details: string | null
+  referred_by: string | null
+  tags: unknown | null
+  ai_overall_score: number | null
+  ai_score_breakdown: unknown | null
+  ai_parsed_at: string | null
+  is_blacklisted: boolean | null
+  blacklist_reason: string | null
+  consent_given: boolean | null
+  consent_date: string | null
   created_at: string | null
+  updated_at: string | null
 }
 
 interface Job {
@@ -94,10 +118,12 @@ interface Job {
 interface CandidatesClientProps {
   candidates: Candidate[]
   jobs: Job[]
+  orgId: string
 }
 
 const statusStyles: Record<string, string> = {
   new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  scored: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   screening: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   interviewing: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   offered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -106,18 +132,19 @@ const statusStyles: Record<string, string> = {
   withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 }
 
-const sourceOptions = [
+type CandidateSource = "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other"
+
+const sourceOptions: { value: CandidateSource; label: string }[] = [
   { value: "direct", label: "Direct Application" },
   { value: "linkedin", label: "LinkedIn" },
   { value: "indeed", label: "Indeed" },
   { value: "referral", label: "Employee Referral" },
   { value: "agency", label: "Recruitment Agency" },
-  { value: "career_fair", label: "Career Fair" },
-  { value: "website", label: "Company Website" },
+  { value: "career_page", label: "Career Page" },
   { value: "other", label: "Other" },
 ]
 
-export function CandidatesClient({ candidates: initialCandidates, jobs }: CandidatesClientProps) {
+export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }: CandidatesClientProps) {
   const router = useRouter()
   const supabase = createClient()
   const [candidates, setCandidates] = useState(initialCandidates)
@@ -157,19 +184,16 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
     const matchesSearch =
       fullName.includes(searchQuery.toLowerCase()) ||
       candidate.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.current_job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      candidate.current_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       candidate.current_company?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || candidate.overall_status === statusFilter
     const matchesSource = sourceFilter === "all" || candidate.source === sourceFilter
-    return matchesSearch && matchesStatus && matchesSource
+    return matchesSearch && matchesSource
   })
 
   const stats = {
     total: candidates.length,
-    new: candidates.filter((c) => c.overall_status === "new").length,
-    screening: candidates.filter((c) => c.overall_status === "screening").length,
-    interviewing: candidates.filter((c) => c.overall_status === "interviewing").length,
-    hired: candidates.filter((c) => c.overall_status === "hired").length,
+    scored: candidates.filter((c) => c.ai_overall_score !== null).length,
+    unscored: candidates.filter((c) => c.ai_overall_score === null).length,
   }
 
   const resetForm = () => {
@@ -202,6 +226,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
       const { data, error } = await supabase
         .from("candidates")
         .insert({
+          org_id: orgId,
           first_name: formData.first_name,
           last_name: formData.last_name,
           email: formData.email,
@@ -209,13 +234,11 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
           city: formData.city || null,
           country: formData.country || null,
           nationality: formData.nationality || null,
-          current_job_title: formData.current_job_title || null,
+          current_title: formData.current_job_title || null,
           current_company: formData.current_company || null,
           years_of_experience: formData.years_of_experience || null,
-          highest_education: formData.highest_education || null,
           skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source,
-          overall_status: "new",
+          source: formData.source as CandidateSource,
         })
         .select()
         .single()
@@ -252,11 +275,11 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
       city: candidate.city || "",
       country: candidate.country || "",
       nationality: candidate.nationality || "",
-      current_job_title: candidate.current_job_title || "",
+      current_job_title: candidate.current_title || "",
       current_company: candidate.current_company || "",
       years_of_experience: candidate.years_of_experience || 0,
-      highest_education: candidate.highest_education || "",
-      skills: candidate.skills?.join(", ") || "",
+      highest_education: "",
+      skills: Array.isArray(candidate.skills) ? candidate.skills.join(", ") : "",
       source: candidate.source || "direct",
     })
     setIsEditDialogOpen(true)
@@ -280,12 +303,11 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
           city: formData.city || null,
           country: formData.country || null,
           nationality: formData.nationality || null,
-          current_job_title: formData.current_job_title || null,
+          current_title: formData.current_job_title || null,
           current_company: formData.current_company || null,
           years_of_experience: formData.years_of_experience || null,
-          highest_education: formData.highest_education || null,
           skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source,
+          source: formData.source as CandidateSource,
           updated_at: new Date().toISOString(),
         })
         .eq("id", selectedCandidate.id)
@@ -357,30 +379,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
     }
   }
 
-  // STATUS CHANGE
-  const handleStatusChange = async (candidateId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from("candidates")
-        .update({ overall_status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", candidateId)
-
-      if (error) {
-        toast.error(error.message)
-        return
-      }
-
-      setCandidates(
-        candidates.map((c) =>
-          c.id === candidateId ? { ...c, overall_status: newStatus } : c
-        )
-      )
-      toast.success(`Status updated to ${newStatus}`)
-      router.refresh()
-    } catch {
-      toast.error("An unexpected error occurred")
-    }
-  }
+  // Note: Candidate status is tracked via applications, not on the candidate record
 
   // Render form fields inline to prevent focus loss on state change
   const renderCandidateFormFields = (idPrefix: string) => (
@@ -585,10 +584,10 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Candidates</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -596,34 +595,18 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">New</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">AI Scored</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.scored}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Screening</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.screening}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Interviewing</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.interviewing}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Hired</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{stats.hired}</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.unscored}</div>
           </CardContent>
         </Card>
       </div>
@@ -724,7 +707,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
                   <TableCell>
                     <div>
                       <div className="font-medium text-sm">
-                        {candidate.current_job_title || "-"}
+                        {candidate.current_title || "-"}
                       </div>
                       {candidate.current_company && (
                         <div className="text-xs text-muted-foreground">
@@ -739,8 +722,8 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
                       : "-"}
                   </TableCell>
                   <TableCell>
-                    <Badge className={cn("capitalize", statusStyles[candidate.overall_status || "new"])}>
-                      {candidate.overall_status || "new"}
+                    <Badge className={cn("capitalize", statusStyles[candidate.ai_overall_score ? "scored" : "new"])}>
+                      {candidate.ai_overall_score ? "scored" : "new"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -773,33 +756,6 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
                         >
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "screening")}
-                        >
-                          <Star className="mr-2 h-4 w-4" />
-                          Move to Screening
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "interviewing")}
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          Move to Interview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "hired")}
-                          className="text-green-600"
-                        >
-                          <Briefcase className="mr-2 h-4 w-4" />
-                          Mark as Hired
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "rejected")}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Reject
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -863,12 +819,14 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
                     {selectedCandidate.first_name} {selectedCandidate.last_name}
                   </h3>
                   <p className="text-muted-foreground">
-                    {selectedCandidate.current_job_title || "No title"}
+                    {selectedCandidate.current_title || "No title"}
                     {selectedCandidate.current_company && ` at ${selectedCandidate.current_company}`}
                   </p>
-                  <Badge className={cn("capitalize mt-1", statusStyles[selectedCandidate.overall_status || "new"])}>
-                    {selectedCandidate.overall_status || "new"}
-                  </Badge>
+                  {selectedCandidate.ai_overall_score !== null && (
+                    <Badge className="mt-1">
+                      Score: {selectedCandidate.ai_overall_score}%
+                    </Badge>
+                  )}
                 </div>
               </div>
 
@@ -899,21 +857,21 @@ export function CandidatesClient({ candidates: initialCandidates, jobs }: Candid
                     <span>{selectedCandidate.years_of_experience} years experience</span>
                   </div>
                 )}
-                {selectedCandidate.highest_education && (
+                {selectedCandidate.education && (
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    <span className="capitalize">{selectedCandidate.highest_education.replace("_", " ")}</span>
+                    <span>Education on file</span>
                   </div>
                 )}
               </div>
 
-              {selectedCandidate.skills && selectedCandidate.skills.length > 0 && (
+              {Array.isArray(selectedCandidate.skills) && selectedCandidate.skills.length > 0 && (
                 <>
                   <Separator />
                   <div>
                     <p className="text-sm font-medium mb-2">Skills</p>
                     <div className="flex flex-wrap gap-2">
-                      {selectedCandidate.skills.map((skill, i) => (
+                      {(selectedCandidate.skills as string[]).map((skill, i) => (
                         <Badge key={i} variant="secondary">
                           {skill}
                         </Badge>
