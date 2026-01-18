@@ -21,6 +21,8 @@ import {
   Palette,
   FolderTree,
   SlidersHorizontal,
+  Plug,
+  CalendarDays,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
@@ -49,10 +51,12 @@ const orgAdminLinks = [
   { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
   { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
   { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
+  { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
   { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
   { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
   { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
   { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
+  { href: "/org/settings/integrations", label: "Integrations", labelAr: "التكاملات", icon: Plug },
   { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
 ]
 

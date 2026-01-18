@@ -13,25 +13,31 @@ export default async function IntegrationsSettingsPage() {
     redirect("/login")
   }
 
-  // Get user's organization membership
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("org_id, role, organizations(id, name)")
-    .eq("user_id", user.id)
+  // Get user's profile with organization
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id, organizations(id, name)")
+    .eq("id", user.id)
     .single()
 
-  if (!membership) {
+  if (!profile?.org_id) {
     redirect("/org")
   }
 
-  // Check if user is admin
-  const isAdmin = membership.role === "owner" || membership.role === "admin"
+  // Check if user has admin role
+  const { data: userRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  const isAdmin = userRole?.role === "org_admin" || userRole?.role === "super_admin"
 
   if (!isAdmin) {
     redirect("/org")
   }
 
-  const orgId = membership.org_id
+  const orgId = profile.org_id
 
   // Get organization integrations
   const { data: integrations } = await supabase
@@ -49,7 +55,7 @@ export default async function IntegrationsSettingsPage() {
   return (
     <IntegrationsSettingsClient
       orgId={orgId}
-      orgName={(membership.organizations as { name: string })?.name || "Organization"}
+      orgName={(profile.organizations as { name: string })?.name || "Organization"}
       integrations={integrations || []}
       emailConfig={emailConfig}
     />

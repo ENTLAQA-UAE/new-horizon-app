@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { verifyOrgAdmin } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -16,15 +17,10 @@ export async function POST(request: NextRequest) {
     const { orgId, provider } = await request.json()
 
     // Verify user is admin
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("org_id", orgId)
-      .eq("user_id", user.id)
-      .single()
+    const { authorized, error } = await verifyOrgAdmin(supabase, user.id, orgId)
 
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+    if (!authorized) {
+      return NextResponse.json({ error: error || "Not authorized" }, { status: 403 })
     }
 
     // First, unset all defaults for this org
@@ -35,7 +31,7 @@ export async function POST(request: NextRequest) {
       .in("provider", ["zoom", "microsoft", "google"])
 
     // Set the new default
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("organization_integrations")
       .update({
         is_default_meeting_provider: true,
@@ -44,7 +40,7 @@ export async function POST(request: NextRequest) {
       .eq("org_id", orgId)
       .eq("provider", provider)
 
-    if (error) {
+    if (updateError) {
       return NextResponse.json({ error: "Failed to set default" }, { status: 500 })
     }
 

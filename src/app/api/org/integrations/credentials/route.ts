@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { verifyOrgAdmin } from "@/lib/auth"
 import { encryptCredentials } from "@/lib/encryption"
 
 export async function POST(request: NextRequest) {
@@ -21,22 +22,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is admin of this org
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("org_id", orgId)
-      .eq("user_id", user.id)
-      .single()
+    const { authorized, error } = await verifyOrgAdmin(supabase, user.id, orgId)
 
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+    if (!authorized) {
+      return NextResponse.json({ error: error || "Not authorized" }, { status: 403 })
     }
 
     // Encrypt credentials
     const encryptedCredentials = encryptCredentials(credentials)
 
     // Upsert integration
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("organization_integrations")
       .upsert({
         org_id: orgId,
@@ -50,8 +46,8 @@ export async function POST(request: NextRequest) {
         onConflict: "org_id,provider",
       })
 
-    if (error) {
-      console.error("Error saving credentials:", error)
+    if (updateError) {
+      console.error("Error saving credentials:", updateError)
       return NextResponse.json({ error: "Failed to save credentials" }, { status: 500 })
     }
 

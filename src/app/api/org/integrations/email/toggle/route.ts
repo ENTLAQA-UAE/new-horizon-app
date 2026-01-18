@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { verifyOrgAdmin } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -16,18 +17,13 @@ export async function POST(request: NextRequest) {
     const { orgId, enabled } = await request.json()
 
     // Verify user is admin
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("org_id", orgId)
-      .eq("user_id", user.id)
-      .single()
+    const { authorized, error } = await verifyOrgAdmin(supabase, user.id, orgId)
 
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+    if (!authorized) {
+      return NextResponse.json({ error: error || "Not authorized" }, { status: 403 })
     }
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from("organization_email_config")
       .update({
         is_enabled: enabled,
@@ -35,7 +31,7 @@ export async function POST(request: NextRequest) {
       })
       .eq("org_id", orgId)
 
-    if (error) {
+    if (updateError) {
       return NextResponse.json({ error: "Failed to update" }, { status: 500 })
     }
 

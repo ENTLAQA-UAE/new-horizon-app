@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { verifyOrgAdmin } from "@/lib/auth"
 import { Resend } from "resend"
 
 export async function POST(request: NextRequest) {
@@ -17,15 +18,10 @@ export async function POST(request: NextRequest) {
     const { orgId, apiKey } = await request.json()
 
     // Verify user is admin
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("org_id", orgId)
-      .eq("user_id", user.id)
-      .single()
+    const { authorized, error } = await verifyOrgAdmin(supabase, user.id, orgId)
 
-    if (!membership || !["owner", "admin"].includes(membership.role)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+    if (!authorized) {
+      return NextResponse.json({ error: error || "Not authorized" }, { status: 403 })
     }
 
     if (!apiKey) {
@@ -34,10 +30,10 @@ export async function POST(request: NextRequest) {
 
     // Test by listing domains
     const resend = new Resend(apiKey)
-    const { error } = await resend.domains.list()
+    const { error: resendError } = await resend.domains.list()
 
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message })
+    if (resendError) {
+      return NextResponse.json({ success: false, error: resendError.message })
     }
 
     // Mark as verified
