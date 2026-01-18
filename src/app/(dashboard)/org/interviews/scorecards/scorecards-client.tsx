@@ -61,7 +61,7 @@ interface Criteria {
   weight: number
 }
 
-interface ScorecardTemplate {
+export interface ScorecardTemplate {
   id: string
   org_id: string
   name: string

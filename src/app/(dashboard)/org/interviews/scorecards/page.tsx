@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { ScorecardsClient } from "./scorecards-client"
+import { ScorecardsClient, ScorecardTemplate } from "./scorecards-client"
 
 export default async function ScorecardsPage() {
   const supabase = await createClient()
@@ -10,5 +10,8 @@ export default async function ScorecardsPage() {
     .select("*")
     .order("created_at", { ascending: false })
 
-  return <ScorecardsClient templates={templates || []} />
+  // Cast to proper type (Supabase returns Json for JSONB fields)
+  const typedTemplates = (templates || []) as unknown as ScorecardTemplate[]
+
+  return <ScorecardsClient templates={typedTemplates} />
 }
