@@ -137,8 +137,14 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
       <ScrollArea className="flex-1 py-4">
         <nav className="space-y-1 px-2">
           {links.map((link) => {
-            const isActive = pathname === link.href ||
-              (link.href !== "/" && link.href !== "/org" && pathname.startsWith(link.href))
+            // Check if this link is active
+            // For exact matches or child routes, but avoid parent routes matching child routes
+            const isExactMatch = pathname === link.href
+            const isChildRoute = link.href !== "/" &&
+              link.href !== "/org" &&
+              link.href !== "/org/settings" && // Don't match /org/settings for child routes like /org/settings/integrations
+              pathname.startsWith(link.href + "/")
+            const isActive = isExactMatch || isChildRoute
             const label = language === "ar" ? link.labelAr : link.label
             return (
               <Link
