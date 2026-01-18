@@ -120,11 +120,11 @@
 - ✅ 2.5.7 Show last sync time for each integration
 
 ## 2.6 Error Tracking (Sentry)
-- ⬜ 2.6.1 Install and configure Sentry SDK
-- ⬜ 2.6.2 Set up Sentry project and DSN
-- ⬜ 2.6.3 Add error boundary components
-- ⬜ 2.6.4 Configure source maps upload
-- ⬜ 2.6.5 Add user context to error reports
+- ✅ 2.6.1 Install and configure Sentry SDK
+- ✅ 2.6.2 Set up Sentry project and DSN
+- ✅ 2.6.3 Add error boundary components
+- ✅ 2.6.4 Configure source maps upload
+- ✅ 2.6.5 Add user context to error reports
 
 ---
 
