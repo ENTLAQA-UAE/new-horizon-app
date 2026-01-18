@@ -1,0 +1,94 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome back, {name}",
+  "welcomeSubtitle": "Here's what's happening with your hiring today",
+  "overview": "Overview",
+  "quickActions": "Quick Actions",
+  "recentActivity": "Recent Activity",
+  "upcomingInterviews": "Upcoming Interviews",
+  "pendingTasks": "Pending Tasks",
+  "stats": {
+    "totalJobs": "Total Jobs",
+    "activeJobs": "Active Jobs",
+    "totalCandidates": "Total Candidates",
+    "newCandidates": "New Candidates",
+    "totalApplications": "Total Applications",
+    "newApplications": "New Applications",
+    "scheduledInterviews": "Scheduled Interviews",
+    "todayInterviews": "Today's Interviews",
+    "pendingOffers": "Pending Offers",
+    "acceptedOffers": "Accepted Offers",
+    "hiredThisMonth": "Hired This Month",
+    "avgTimeToHire": "Avg. Time to Hire",
+    "openPositions": "Open Positions",
+    "filledPositions": "Filled Positions",
+    "applicationsThisWeek": "Applications This Week",
+    "interviewsThisWeek": "Interviews This Week"
+  },
+  "charts": {
+    "applicationsOverTime": "Applications Over Time",
+    "hiringFunnel": "Hiring Funnel",
+    "sourceBreakdown": "Source Breakdown",
+    "departmentHiring": "Hiring by Department",
+    "timeToHireTrend": "Time to Hire Trend",
+    "offerAcceptanceRate": "Offer Acceptance Rate"
+  },
+  "widgets": {
+    "recentApplications": "Recent Applications",
+    "topJobs": "Top Performing Jobs",
+    "urgentActions": "Urgent Actions",
+    "teamActivity": "Team Activity",
+    "compliance": "Compliance Status"
+  },
+  "actions": {
+    "postJob": "Post New Job",
+    "addCandidate": "Add Candidate",
+    "scheduleInterview": "Schedule Interview",
+    "viewAllJobs": "View All Jobs",
+    "viewAllCandidates": "View All Candidates",
+    "viewAllApplications": "View All Applications",
+    "viewReports": "View Reports"
+  },
+  "activity": {
+    "newApplication": "{name} applied for {job}",
+    "interviewScheduled": "Interview scheduled with {name}",
+    "offerSent": "Offer sent to {name}",
+    "offerAccepted": "{name} accepted the offer",
+    "candidateHired": "{name} was hired as {position}",
+    "candidateRejected": "{name} was rejected",
+    "jobPublished": "{job} was published",
+    "jobClosed": "{job} was closed",
+    "feedbackSubmitted": "Feedback submitted for {name}"
+  },
+  "notifications": {
+    "newApplications": "You have {count} new applications",
+    "upcomingInterviews": "You have {count} interviews today",
+    "pendingReviews": "You have {count} pending reviews",
+    "expiringOffers": "{count} offers expiring soon"
+  },
+  "emptyStates": {
+    "noJobs": "No active jobs",
+    "noJobsDesc": "Post your first job to start receiving applications",
+    "noCandidates": "No candidates yet",
+    "noCandidatesDesc": "Candidates will appear here when they apply",
+    "noInterviews": "No upcoming interviews",
+    "noInterviewsDesc": "Schedule interviews with candidates",
+    "noActivity": "No recent activity",
+    "noActivityDesc": "Activity will appear as you use the system"
+  },
+  "superAdmin": {
+    "platformStats": "Platform Statistics",
+    "totalOrganizations": "Total Organizations",
+    "activeOrganizations": "Active Organizations",
+    "totalUsers": "Total Users",
+    "monthlyRevenue": "Monthly Revenue",
+    "mrr": "MRR",
+    "arr": "ARR",
+    "churnRate": "Churn Rate",
+    "newSignups": "New Signups",
+    "systemHealth": "System Health",
+    "apiRequests": "API Requests",
+    "errorRate": "Error Rate",
+    "avgResponseTime": "Avg Response Time"
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "title": "المقابلات",
+  "schedule": "جدولة مقابلة",
+  "reschedule": "إعادة جدولة المقابلة",
+  "cancel": "إلغاء المقابلة",
+  "upcoming": "المقابلات القادمة",
+  "past": "المقابلات السابقة",
+  "today": "مقابلات اليوم",
+  "calendar": "تقويم المقابلات",
+  "fields": {
+    "candidate": "المتقدم",
+    "job": "الوظيفة",
+    "interviewer": "المحاور",
+    "interviewers": "المحاورون",
+    "date": "التاريخ",
+    "time": "الوقت",
+    "duration": "المدة",
+    "type": "نوع المقابلة",
+    "location": "الموقع",
+    "meetingLink": "رابط الاجتماع",
+    "notes": "الملاحظات",
+    "feedback": "التقييم",
+    "status": "الحالة"
+  },
+  "types": {
+    "phone": "مقابلة هاتفية",
+    "video": "مقابلة فيديو",
+    "onsite": "مقابلة حضورية",
+    "technical": "مقابلة تقنية",
+    "behavioral": "مقابلة سلوكية",
+    "panel": "مقابلة لجنة",
+    "final": "المقابلة النهائية"
+  },
+  "status": {
+    "scheduled": "مجدولة",
+    "confirmed": "مؤكدة",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتملة",
+    "cancelled": "ملغاة",
+    "noShow": "لم يحضر",
+    "rescheduled": "أعيدت جدولتها"
+  },
+  "durations": {
+    "15min": "15 دقيقة",
+    "30min": "30 دقيقة",
+    "45min": "45 دقيقة",
+    "1hour": "ساعة واحدة",
+    "1.5hours": "ساعة ونصف",
+    "2hours": "ساعتان"
+  },
+  "scheduling": {
+    "selectDate": "اختر التاريخ",
+    "selectTime": "اختر الوقت",
+    "selectDuration": "اختر المدة",
+    "selectInterviewers": "اختر المحاورين",
+    "selectType": "اختر نوع المقابلة",
+    "availableSlots": "الأوقات المتاحة",
+    "noAvailableSlots": "لا توجد أوقات متاحة لهذا اليوم",
+    "timezone": "المنطقة الزمنية",
+    "sendInvite": "إرسال دعوة التقويم",
+    "reminderEmail": "إرسال بريد تذكير",
+    "addToCalendar": "إضافة إلى التقويم"
+  },
+  "feedback": {
+    "title": "تقييم المقابلة",
+    "submit": "إرسال التقييم",
+    "overallRating": "التقييم العام",
+    "recommendation": "التوصية",
+    "technicalSkills": "المهارات التقنية",
+    "communication": "التواصل",
+    "problemSolving": "حل المشكلات",
+    "cultureFit": "الملاءمة الثقافية",
+    "strengths": "نقاط القوة",
+    "weaknesses": "نقاط التحسين",
+    "notes": "ملاحظات إضافية",
+    "strongHire": "توظيف بشدة",
+    "hire": "توظيف",
+    "noHire": "عدم التوظيف",
+    "strongNoHire": "عدم التوظيف بشدة"
+  },
+  "videoMeeting": {
+    "join": "الانضمام للاجتماع",
+    "start": "بدء الاجتماع",
+    "copyLink": "نسخ رابط الاجتماع",
+    "linkCopied": "تم نسخ رابط الاجتماع",
+    "zoom": "اجتماع Zoom",
+    "teams": "Microsoft Teams",
+    "meet": "Google Meet"
+  },
+  "reminders": {
+    "title": "تذكيرات المقابلة",
+    "before24h": "قبل 24 ساعة",
+    "before1h": "قبل ساعة واحدة",
+    "before15min": "قبل 15 دقيقة"
+  },
+  "actions": {
+    "viewDetails": "عرض التفاصيل",
+    "editInterview": "تعديل المقابلة",
+    "sendReminder": "إرسال تذكير",
+    "markComplete": "تحديد كمكتملة",
+    "markNoShow": "تحديد كلم يحضر",
+    "addFeedback": "إضافة تقييم",
+    "viewFeedback": "عرض التقييم"
+  },
+  "messages": {
+    "scheduled": "تم جدولة المقابلة بنجاح",
+    "rescheduled": "تم إعادة جدولة المقابلة",
+    "cancelled": "تم إلغاء المقابلة",
+    "feedbackSubmitted": "تم إرسال التقييم",
+    "reminderSent": "تم إرسال التذكير",
+    "inviteSent": "تم إرسال دعوة التقويم"
+  },
+  "confirmations": {
+    "cancel": "هل أنت متأكد من إلغاء هذه المقابلة؟",
+    "reschedule": "هل أنت متأكد من إعادة جدولة هذه المقابلة؟"
+  },
+  "emptyState": {
+    "title": "لا توجد مقابلات مجدولة",
+    "description": "جدول مقابلات مع المتقدمين لتظهر هنا",
+    "upcoming": "لا توجد مقابلات قادمة",
+    "past": "لا توجد مقابلات سابقة"
+  },
+  "errors": {
+    "scheduleFailed": "فشل في جدولة المقابلة",
+    "conflictDetected": "يوجد تعارض في الوقت مع مقابلة أخرى",
+    "interviewerUnavailable": "المحاور غير متاح في هذا الوقت"
+  }
+}

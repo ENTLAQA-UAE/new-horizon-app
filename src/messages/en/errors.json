@@ -1,0 +1,140 @@
+{
+  "general": {
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred",
+    "tryAgain": "Please try again",
+    "contactSupport": "If the problem persists, please contact support",
+    "networkError": "Network error. Please check your connection",
+    "serverError": "Server error. Please try again later",
+    "timeout": "Request timed out. Please try again",
+    "notFound": "Resource not found",
+    "forbidden": "You don't have permission to access this resource",
+    "unauthorized": "Please log in to continue"
+  },
+  "auth": {
+    "invalidCredentials": "Invalid email or password",
+    "emailNotFound": "No account found with this email",
+    "emailExists": "An account with this email already exists",
+    "passwordMismatch": "Passwords do not match",
+    "weakPassword": "Password is too weak",
+    "invalidEmail": "Please enter a valid email address",
+    "sessionExpired": "Your session has expired. Please log in again",
+    "accountDisabled": "Your account has been disabled",
+    "accountLocked": "Your account has been locked due to too many failed attempts",
+    "invalidToken": "Invalid or expired token",
+    "verificationRequired": "Please verify your email address",
+    "2faRequired": "Two-factor authentication required",
+    "invalid2faCode": "Invalid verification code"
+  },
+  "validation": {
+    "required": "This field is required",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be no more than {max} characters",
+    "invalidFormat": "Invalid format",
+    "invalidDate": "Please enter a valid date",
+    "invalidUrl": "Please enter a valid URL",
+    "invalidPhone": "Please enter a valid phone number",
+    "numberOnly": "Please enter numbers only",
+    "positiveNumber": "Please enter a positive number",
+    "futureDate": "Date must be in the future",
+    "pastDate": "Date must be in the past",
+    "fileSize": "File size must be less than {size}",
+    "fileType": "Invalid file type. Allowed: {types}",
+    "unique": "This value already exists"
+  },
+  "jobs": {
+    "createFailed": "Failed to create job",
+    "updateFailed": "Failed to update job",
+    "deleteFailed": "Failed to delete job",
+    "publishFailed": "Failed to publish job",
+    "notFound": "Job not found",
+    "alreadyPublished": "Job is already published",
+    "cannotDelete": "Cannot delete job with active applications"
+  },
+  "candidates": {
+    "createFailed": "Failed to create candidate",
+    "updateFailed": "Failed to update candidate",
+    "deleteFailed": "Failed to delete candidate",
+    "notFound": "Candidate not found",
+    "duplicateEmail": "A candidate with this email already exists",
+    "resumeUploadFailed": "Failed to upload resume",
+    "parseResumeFailed": "Failed to parse resume"
+  },
+  "applications": {
+    "createFailed": "Failed to create application",
+    "updateFailed": "Failed to update application",
+    "moveFailed": "Failed to move application",
+    "rejectFailed": "Failed to reject application",
+    "notFound": "Application not found",
+    "alreadyApplied": "Candidate has already applied to this job"
+  },
+  "interviews": {
+    "scheduleFailed": "Failed to schedule interview",
+    "rescheduleFailed": "Failed to reschedule interview",
+    "cancelFailed": "Failed to cancel interview",
+    "feedbackFailed": "Failed to submit feedback",
+    "notFound": "Interview not found",
+    "conflict": "Time slot conflicts with another interview",
+    "pastDate": "Cannot schedule interview in the past"
+  },
+  "offers": {
+    "createFailed": "Failed to create offer",
+    "updateFailed": "Failed to update offer",
+    "sendFailed": "Failed to send offer",
+    "withdrawFailed": "Failed to withdraw offer",
+    "notFound": "Offer not found",
+    "alreadySent": "Offer has already been sent",
+    "expired": "Offer has expired"
+  },
+  "email": {
+    "sendFailed": "Failed to send email",
+    "invalidRecipient": "Invalid recipient email address",
+    "configurationError": "Email configuration error",
+    "templateNotFound": "Email template not found",
+    "smtpError": "SMTP connection error",
+    "imapError": "IMAP connection error",
+    "rateLimitExceeded": "Email rate limit exceeded"
+  },
+  "file": {
+    "uploadFailed": "Failed to upload file",
+    "downloadFailed": "Failed to download file",
+    "deleteFailed": "Failed to delete file",
+    "notFound": "File not found",
+    "tooLarge": "File is too large",
+    "invalidType": "Invalid file type"
+  },
+  "integration": {
+    "connectionFailed": "Failed to connect integration",
+    "syncFailed": "Failed to sync data",
+    "authorizationFailed": "Authorization failed",
+    "configurationError": "Integration configuration error",
+    "apiError": "Integration API error"
+  },
+  "team": {
+    "inviteFailed": "Failed to send invitation",
+    "removeFailed": "Failed to remove team member",
+    "updateRoleFailed": "Failed to update role",
+    "cannotRemoveSelf": "You cannot remove yourself",
+    "cannotDemoteSelf": "You cannot change your own role",
+    "lastAdmin": "Cannot remove the last admin"
+  },
+  "settings": {
+    "saveFailed": "Failed to save settings",
+    "invalidConfiguration": "Invalid configuration"
+  },
+  "http": {
+    "400": "Bad request",
+    "401": "Unauthorized",
+    "403": "Forbidden",
+    "404": "Not found",
+    "405": "Method not allowed",
+    "408": "Request timeout",
+    "409": "Conflict",
+    "422": "Unprocessable entity",
+    "429": "Too many requests",
+    "500": "Internal server error",
+    "502": "Bad gateway",
+    "503": "Service unavailable",
+    "504": "Gateway timeout"
+  }
+}

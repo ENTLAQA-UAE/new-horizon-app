@@ -1,0 +1,165 @@
+{
+  "title": "Settings",
+  "general": {
+    "title": "General Settings",
+    "companyName": "Company Name",
+    "companyLogo": "Company Logo",
+    "website": "Website",
+    "industry": "Industry",
+    "companySize": "Company Size",
+    "description": "Description",
+    "timezone": "Timezone",
+    "dateFormat": "Date Format",
+    "language": "Language"
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "avatar": "Profile Picture",
+    "jobTitle": "Job Title",
+    "department": "Department",
+    "bio": "Bio"
+  },
+  "account": {
+    "title": "Account Settings",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "twoFactor": "Two-Factor Authentication",
+    "enable2fa": "Enable 2FA",
+    "disable2fa": "Disable 2FA",
+    "sessions": "Active Sessions",
+    "deleteAccount": "Delete Account"
+  },
+  "notifications": {
+    "title": "Notification Settings",
+    "email": "Email Notifications",
+    "push": "Push Notifications",
+    "desktop": "Desktop Notifications",
+    "newApplication": "New Applications",
+    "interviewReminders": "Interview Reminders",
+    "feedbackReceived": "Feedback Received",
+    "offerUpdates": "Offer Updates",
+    "teamMentions": "Team Mentions",
+    "weeklyDigest": "Weekly Digest",
+    "marketingEmails": "Marketing Emails"
+  },
+  "team": {
+    "title": "Team Settings",
+    "members": "Team Members",
+    "inviteMember": "Invite Member",
+    "roles": "Roles & Permissions",
+    "departments": "Departments",
+    "inviteEmail": "Email Address",
+    "inviteRole": "Role",
+    "pendingInvites": "Pending Invitations",
+    "resendInvite": "Resend Invitation",
+    "cancelInvite": "Cancel Invitation",
+    "removeMember": "Remove Member"
+  },
+  "roles": {
+    "superAdmin": "Super Admin",
+    "orgAdmin": "Organization Admin",
+    "hiringManager": "Hiring Manager",
+    "recruiter": "Recruiter",
+    "interviewer": "Interviewer",
+    "viewer": "Viewer"
+  },
+  "integrations": {
+    "title": "Integrations",
+    "connected": "Connected",
+    "notConnected": "Not Connected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "configure": "Configure",
+    "calendar": "Calendar Integration",
+    "videoMeetings": "Video Meetings",
+    "jobBoards": "Job Boards",
+    "hris": "HRIS Systems",
+    "backgroundCheck": "Background Check",
+    "assessments": "Assessments"
+  },
+  "email": {
+    "title": "Email Settings",
+    "provider": "Email Provider",
+    "smtp": "SMTP Configuration",
+    "imap": "IMAP Configuration",
+    "templates": "Email Templates",
+    "signatures": "Email Signatures",
+    "fromName": "From Name",
+    "fromEmail": "From Email",
+    "replyTo": "Reply-To Address"
+  },
+  "branding": {
+    "title": "Branding",
+    "logo": "Logo",
+    "favicon": "Favicon",
+    "primaryColor": "Primary Color",
+    "accentColor": "Accent Color",
+    "careerPage": "Career Page",
+    "customDomain": "Custom Domain"
+  },
+  "compliance": {
+    "title": "Compliance",
+    "gdpr": "GDPR Settings",
+    "dataRetention": "Data Retention",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "cookiePolicy": "Cookie Policy",
+    "eeoc": "EEOC Compliance",
+    "dataExport": "Export Data",
+    "dataDelete": "Delete All Data"
+  },
+  "billing": {
+    "title": "Billing",
+    "plan": "Current Plan",
+    "usage": "Usage",
+    "invoices": "Invoices",
+    "paymentMethod": "Payment Method",
+    "upgrade": "Upgrade Plan",
+    "downgrade": "Downgrade Plan",
+    "cancelSubscription": "Cancel Subscription"
+  },
+  "security": {
+    "title": "Security",
+    "passwordPolicy": "Password Policy",
+    "sessionTimeout": "Session Timeout",
+    "ipWhitelist": "IP Whitelist",
+    "auditLog": "Audit Log",
+    "sso": "Single Sign-On",
+    "apiKeys": "API Keys"
+  },
+  "api": {
+    "title": "API Settings",
+    "keys": "API Keys",
+    "createKey": "Create API Key",
+    "revokeKey": "Revoke Key",
+    "webhooks": "Webhooks",
+    "documentation": "API Documentation"
+  },
+  "actions": {
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "reset": "Reset to Default",
+    "upload": "Upload",
+    "remove": "Remove"
+  },
+  "messages": {
+    "saved": "Settings saved successfully",
+    "updated": "Settings updated",
+    "passwordChanged": "Password changed successfully",
+    "inviteSent": "Invitation sent",
+    "memberRemoved": "Team member removed",
+    "integrationConnected": "Integration connected",
+    "integrationDisconnected": "Integration disconnected"
+  },
+  "confirmations": {
+    "deleteAccount": "Are you sure you want to delete your account? This action cannot be undone.",
+    "removeMember": "Are you sure you want to remove this team member?",
+    "disconnect": "Are you sure you want to disconnect this integration?"
+  }
+}

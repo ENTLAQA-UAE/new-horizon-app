@@ -1,0 +1,143 @@
+{
+  "title": "الطلبات",
+  "allApplications": "كل الطلبات",
+  "viewApplication": "عرض الطلب",
+  "applicationDetails": "تفاصيل الطلب",
+  "pipeline": "خط السير",
+  "kanban": "عرض كانبان",
+  "list": "عرض القائمة",
+  "fields": {
+    "candidate": "المتقدم",
+    "job": "الوظيفة",
+    "stage": "المرحلة",
+    "status": "الحالة",
+    "appliedDate": "تاريخ التقديم",
+    "lastActivity": "آخر نشاط",
+    "source": "المصدر",
+    "rating": "التقييم",
+    "assignee": "المسؤول",
+    "notes": "الملاحظات"
+  },
+  "stages": {
+    "new": "جديد",
+    "screening": "فرز",
+    "phoneInterview": "مقابلة هاتفية",
+    "technicalInterview": "مقابلة تقنية",
+    "onsiteInterview": "مقابلة حضورية",
+    "assessment": "اختبار",
+    "reference": "التحقق من المراجع",
+    "offer": "عرض",
+    "hired": "تم التوظيف",
+    "rejected": "مرفوض"
+  },
+  "status": {
+    "active": "نشط",
+    "onHold": "معلق",
+    "rejected": "مرفوض",
+    "withdrawn": "انسحب",
+    "hired": "تم توظيفه"
+  },
+  "actions": {
+    "moveStage": "نقل إلى مرحلة",
+    "moveToNext": "نقل للمرحلة التالية",
+    "reject": "رفض",
+    "shortlist": "إضافة للقائمة المختصرة",
+    "scheduleInterview": "جدولة مقابلة",
+    "sendEmail": "إرسال بريد إلكتروني",
+    "addNote": "إضافة ملاحظة",
+    "requestFeedback": "طلب تقييم",
+    "makeOffer": "تقديم عرض",
+    "assignReviewer": "تعيين مراجع",
+    "bulkActions": "إجراءات جماعية",
+    "export": "تصدير الطلبات"
+  },
+  "filters": {
+    "job": "الوظيفة",
+    "stage": "المرحلة",
+    "status": "الحالة",
+    "source": "المصدر",
+    "appliedDate": "تاريخ التقديم",
+    "rating": "التقييم",
+    "assignee": "المسؤول"
+  },
+  "tabs": {
+    "overview": "نظرة عامة",
+    "resume": "السيرة الذاتية",
+    "screening": "الفرز",
+    "interviews": "المقابلات",
+    "feedback": "التقييمات",
+    "offers": "العروض",
+    "emails": "البريد الإلكتروني",
+    "notes": "الملاحظات",
+    "activity": "النشاط"
+  },
+  "screening": {
+    "title": "أسئلة الفرز",
+    "responses": "الإجابات",
+    "score": "الدرجة",
+    "passed": "ناجح",
+    "failed": "فاشل",
+    "pending": "بانتظار المراجعة"
+  },
+  "feedback": {
+    "title": "التقييم",
+    "addFeedback": "إضافة تقييم",
+    "overallRating": "التقييم العام",
+    "recommendation": "التوصية",
+    "strongYes": "نعم بشدة",
+    "yes": "نعم",
+    "neutral": "محايد",
+    "no": "لا",
+    "strongNo": "لا بشدة",
+    "strengths": "نقاط القوة",
+    "weaknesses": "نقاط التحسين",
+    "comments": "التعليقات",
+    "noFeedback": "لا يوجد تقييم بعد"
+  },
+  "rejection": {
+    "title": "رفض الطلب",
+    "reason": "سبب الرفض",
+    "sendEmail": "إرسال بريد الرفض للمتقدم",
+    "reasons": {
+      "underqualified": "غير مؤهل",
+      "overqualified": "مؤهل أكثر من المطلوب",
+      "noMatch": "غير مناسب",
+      "salary": "توقعات الراتب عالية",
+      "withdrawn": "انسحب المتقدم",
+      "noResponse": "لا يوجد رد من المتقدم",
+      "positionFilled": "تم شغل الوظيفة",
+      "other": "أخرى"
+    }
+  },
+  "messages": {
+    "moved": "تم نقل الطلب إلى {stage}",
+    "rejected": "تم رفض الطلب",
+    "shortlisted": "تم إضافة الطلب للقائمة المختصرة",
+    "feedbackAdded": "تم إضافة التقييم",
+    "noteAdded": "تم إضافة الملاحظة",
+    "exported": "تم تصدير الطلبات"
+  },
+  "confirmations": {
+    "reject": "هل أنت متأكد من رفض هذا الطلب؟",
+    "bulkReject": "هل أنت متأكد من رفض {count} طلب؟",
+    "moveStage": "نقل الطلب إلى {stage}؟"
+  },
+  "emptyState": {
+    "title": "لا توجد طلبات",
+    "description": "ستظهر الطلبات هنا عندما يتقدم المتقدمون لوظائفك",
+    "filterDescription": "حاول تعديل الفلاتر",
+    "stageDescription": "اسحب الطلبات هنا أو انقر للإضافة"
+  },
+  "timeline": {
+    "applied": "تقدم لـ {job}",
+    "movedTo": "تم النقل إلى {stage}",
+    "interviewScheduled": "تم جدولة مقابلة",
+    "feedbackReceived": "تم استلام تقييم من {name}",
+    "emailSent": "تم إرسال بريد إلكتروني",
+    "noteAdded": "تم إضافة ملاحظة بواسطة {name}",
+    "offerSent": "تم إرسال عرض",
+    "offerAccepted": "تم قبول العرض",
+    "rejected": "تم رفض الطلب",
+    "hired": "تم التوظيف"
+  }
+}
