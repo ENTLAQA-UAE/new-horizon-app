@@ -13,49 +13,70 @@ export default async function IntegrationsSettingsPage() {
     redirect("/login")
   }
 
-  // Get user's profile with organization
-  const { data: profile } = await supabase
+  // Get user's profile
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("org_id, organizations(id, name)")
+    .select("org_id")
     .eq("id", user.id)
     .single()
 
-  if (!profile?.org_id) {
-    redirect("/org")
-  }
-
-  // Check if user has admin role
-  const { data: userRole } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .single()
-
-  const isAdmin = userRole?.role === "org_admin" || userRole?.role === "super_admin"
-
-  if (!isAdmin) {
+  if (profileError || !profile?.org_id) {
+    console.error("Profile error:", profileError)
     redirect("/org")
   }
 
   const orgId = profile.org_id
 
+  // Get organization name separately
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", orgId)
+    .single()
+
+  // Check if user has admin role
+  const { data: userRole, error: roleError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  if (roleError) {
+    console.error("Role error:", roleError)
+  }
+
+  const role = userRole?.role as string
+  const isAdmin = role === "org_admin" || role === "super_admin"
+
+  if (!isAdmin) {
+    redirect("/org")
+  }
+
   // Get organization integrations
-  const { data: integrations } = await supabase
+  const { data: integrations, error: intError } = await supabase
     .from("organization_integrations")
     .select("*")
     .eq("org_id", orgId)
 
+  if (intError) {
+    console.error("Integrations error:", intError)
+  }
+
   // Get email configuration
-  const { data: emailConfig } = await supabase
+  const { data: emailConfig, error: emailError } = await supabase
     .from("organization_email_config")
     .select("*")
     .eq("org_id", orgId)
     .single()
 
+  if (emailError && emailError.code !== "PGRST116") {
+    console.error("Email config error:", emailError)
+  }
+
   return (
     <IntegrationsSettingsClient
       orgId={orgId}
-      orgName={(profile.organizations as { name: string })?.name || "Organization"}
+      orgName={org?.name || "Organization"}
       integrations={integrations || []}
       emailConfig={emailConfig}
     />
