@@ -25,6 +25,9 @@ import {
   CalendarDays,
   ClipboardList,
   Gift,
+  GitBranch,
+  HelpCircle,
+  FileCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
@@ -56,6 +59,9 @@ const orgAdminLinks = [
   { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
   { href: "/org/interviews/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
   { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
+  { href: "/org/pipelines", label: "Pipelines", labelAr: "مسارات التوظيف", icon: GitBranch },
+  { href: "/org/screening-questions", label: "Screening Questions", labelAr: "أسئلة الفحص", icon: HelpCircle },
+  { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
   { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
   { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
   { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },

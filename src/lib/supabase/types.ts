@@ -1378,6 +1378,306 @@ export type Database = {
         }
         Relationships: []
       }
+      pipelines: {
+        Row: {
+          id: string
+          org_id: string
+          name: string
+          name_ar: string | null
+          description: string | null
+          description_ar: string | null
+          is_default: boolean | null
+          is_active: boolean | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          is_default?: boolean | null
+          is_active?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          is_default?: boolean | null
+          is_active?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      stage_approval_requests: {
+        Row: {
+          id: string
+          org_id: string
+          application_id: string
+          stage_id: string
+          requested_by: string
+          requested_at: string | null
+          approver_id: string | null
+          status: string | null
+          responded_at: string | null
+          comments: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          application_id: string
+          stage_id: string
+          requested_by: string
+          requested_at?: string | null
+          approver_id?: string | null
+          status?: string | null
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          application_id?: string
+          stage_id?: string
+          requested_by?: string
+          requested_at?: string | null
+          approver_id?: string | null
+          status?: string | null
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      screening_questions: {
+        Row: {
+          id: string
+          org_id: string
+          job_id: string | null
+          question: string
+          question_ar: string | null
+          description: string | null
+          description_ar: string | null
+          question_type: string
+          options: Json | null
+          is_required: boolean | null
+          min_value: number | null
+          max_value: number | null
+          min_length: number | null
+          max_length: number | null
+          is_knockout: boolean | null
+          knockout_value: string | null
+          scoring_weight: number | null
+          ideal_answer: string | null
+          sort_order: number | null
+          is_active: boolean | null
+          created_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          job_id?: string | null
+          question: string
+          question_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          question_type?: string
+          options?: Json | null
+          is_required?: boolean | null
+          min_value?: number | null
+          max_value?: number | null
+          min_length?: number | null
+          max_length?: number | null
+          is_knockout?: boolean | null
+          knockout_value?: string | null
+          scoring_weight?: number | null
+          ideal_answer?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          job_id?: string | null
+          question?: string
+          question_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          question_type?: string
+          options?: Json | null
+          is_required?: boolean | null
+          min_value?: number | null
+          max_value?: number | null
+          min_length?: number | null
+          max_length?: number | null
+          is_knockout?: boolean | null
+          knockout_value?: string | null
+          scoring_weight?: number | null
+          ideal_answer?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      screening_responses: {
+        Row: {
+          id: string
+          application_id: string
+          question_id: string
+          answer: string | null
+          answer_json: Json | null
+          file_url: string | null
+          score: number | null
+          is_knockout_triggered: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          application_id: string
+          question_id: string
+          answer?: string | null
+          answer_json?: Json | null
+          file_url?: string | null
+          score?: number | null
+          is_knockout_triggered?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          application_id?: string
+          question_id?: string
+          answer?: string | null
+          answer_json?: Json | null
+          file_url?: string | null
+          score?: number | null
+          is_knockout_triggered?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      job_requisitions: {
+        Row: {
+          id: string
+          org_id: string
+          title: string
+          title_ar: string | null
+          department_id: string | null
+          location_id: string | null
+          justification: string | null
+          job_type: string | null
+          positions_count: number | null
+          salary_range_min: number | null
+          salary_range_max: number | null
+          salary_currency: string | null
+          status: string | null
+          job_id: string | null
+          requested_by: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          title: string
+          title_ar?: string | null
+          department_id?: string | null
+          location_id?: string | null
+          justification?: string | null
+          job_type?: string | null
+          positions_count?: number | null
+          salary_range_min?: number | null
+          salary_range_max?: number | null
+          salary_currency?: string | null
+          status?: string | null
+          job_id?: string | null
+          requested_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          title?: string
+          title_ar?: string | null
+          department_id?: string | null
+          location_id?: string | null
+          justification?: string | null
+          job_type?: string | null
+          positions_count?: number | null
+          salary_range_min?: number | null
+          salary_range_max?: number | null
+          salary_currency?: string | null
+          status?: string | null
+          job_id?: string | null
+          requested_by?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      requisition_approvals: {
+        Row: {
+          id: string
+          requisition_id: string
+          approver_id: string
+          approval_order: number
+          status: string | null
+          responded_at: string | null
+          comments: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          requisition_id: string
+          approver_id: string
+          approval_order?: number
+          status?: string | null
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          requisition_id?: string
+          approver_id?: string
+          approval_order?: number
+          status?: string | null
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
