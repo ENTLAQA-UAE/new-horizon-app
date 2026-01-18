@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getUserAuthInfo } from "@/lib/auth"
 import { triggerWorkflows } from "@/lib/workflows/workflow-engine"
 import { emails } from "@/lib/email/resend"
 
@@ -25,17 +26,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's organization
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("organization_id")
-      .eq("user_id", user.id)
-      .single()
+    // Get user's organization from auth helper
+    const authInfo = await getUserAuthInfo(supabase, user.id)
 
-    if (!membership) {
+    if (!authInfo?.orgId) {
       return NextResponse.json({ error: "Not a member of any organization" }, { status: 403 })
     }
 
+    const organizationId = authInfo.orgId
     let successCount = 0
     let failCount = 0
 
@@ -70,7 +68,7 @@ export async function POST(request: NextRequest) {
 
           // Trigger workflows
           triggerWorkflows(supabase, "status_changed", {
-            organizationId: membership.organization_id,
+            organizationId,
             applicationId: app.id,
             candidateId: app.candidate_id,
             jobId: app.job_id,

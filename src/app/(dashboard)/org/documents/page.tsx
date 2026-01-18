@@ -13,16 +13,18 @@ export default async function DocumentsPage() {
     redirect("/login")
   }
 
-  // Get user's organization
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id")
-    .eq("user_id", user.id)
+  // Get user's profile with organization
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
     .single()
 
-  if (!membership) {
-    redirect("/organizations")
+  if (!profile?.org_id) {
+    redirect("/org")
   }
+
+  const orgId = profile.org_id
 
   // Get documents
   const { data: documents } = await supabase
@@ -32,21 +34,21 @@ export default async function DocumentsPage() {
       candidates (id, first_name, last_name),
       applications (id, jobs (title))
     `)
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false })
 
   // Get candidates for filtering
   const { data: candidates } = await supabase
     .from("candidates")
     .select("id, first_name, last_name")
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .order("first_name", { ascending: true })
 
   return (
     <DocumentsClient
       documents={documents || []}
       candidates={candidates || []}
-      organizationId={membership.organization_id}
+      organizationId={orgId}
     />
   )
 }

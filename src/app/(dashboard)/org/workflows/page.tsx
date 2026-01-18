@@ -13,22 +13,24 @@ export default async function WorkflowsPage() {
     redirect("/login")
   }
 
-  // Get user's organization
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("organization_id, role")
-    .eq("user_id", user.id)
+  // Get user's profile with organization
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
     .single()
 
-  if (!membership) {
-    redirect("/organizations")
+  if (!profile?.org_id) {
+    redirect("/org")
   }
+
+  const orgId = profile.org_id
 
   // Get workflows
   const { data: workflows } = await supabase
     .from("workflows")
     .select("*")
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .order("created_at", { ascending: false })
 
   // Get email templates for workflow actions
@@ -41,14 +43,14 @@ export default async function WorkflowsPage() {
   const { data: stages } = await supabase
     .from("hiring_stages")
     .select("id, name")
-    .eq("organization_id", membership.organization_id)
+    .eq("organization_id", orgId)
     .order("sort_order", { ascending: true })
 
-  // Get team members
+  // Get team members from profiles
   const { data: teamMembers } = await supabase
-    .from("organization_members")
-    .select("user_id, users(id, email, full_name)")
-    .eq("organization_id", membership.organization_id)
+    .from("profiles")
+    .select("id, first_name, last_name, email")
+    .eq("org_id", orgId)
 
   return (
     <WorkflowsClient
@@ -57,8 +59,8 @@ export default async function WorkflowsPage() {
       stages={stages || []}
       teamMembers={
         teamMembers?.map((m) => ({
-          id: (m.users as { id: string })?.id || m.user_id,
-          name: (m.users as { full_name: string })?.full_name || (m.users as { email: string })?.email || "Unknown",
+          id: m.id,
+          name: m.first_name && m.last_name ? `${m.first_name} ${m.last_name}` : m.email || "Unknown",
         })) || []
       }
     />
