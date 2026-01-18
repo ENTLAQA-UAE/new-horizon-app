@@ -83,6 +83,7 @@ export interface ScorecardTemplate {
 
 interface ScorecardsClientProps {
   templates: ScorecardTemplate[]
+  organizationId: string
 }
 
 const templateTypes = [
@@ -120,7 +121,7 @@ const defaultRatingLabels: Record<string, Record<string, string>> = {
   },
 }
 
-export function ScorecardsClient({ templates: initialTemplates }: ScorecardsClientProps) {
+export function ScorecardsClient({ templates: initialTemplates, organizationId }: ScorecardsClientProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -253,6 +254,7 @@ export function ScorecardsClient({ templates: initialTemplates }: ScorecardsClie
       const { data, error } = await supabase
         .from("scorecard_templates")
         .insert({
+          org_id: organizationId,
           name: formData.name,
           name_ar: formData.name_ar || null,
           description: formData.description || null,
@@ -371,6 +373,7 @@ export function ScorecardsClient({ templates: initialTemplates }: ScorecardsClie
       const { data, error } = await supabase
         .from("scorecard_templates")
         .insert({
+          org_id: organizationId,
           name: `${template.name} (Copy)`,
           name_ar: template.name_ar,
           description: template.description,

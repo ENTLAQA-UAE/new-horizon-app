@@ -133,6 +133,7 @@ interface OffersClientProps {
   offers: Offer[]
   templates: OfferTemplate[]
   applications: Application[]
+  organizationId: string
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
@@ -173,6 +174,7 @@ export function OffersClient({
   offers: initialOffers,
   templates,
   applications,
+  organizationId,
 }: OffersClientProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -278,6 +280,7 @@ export function OffersClient({
       const { data, error } = await supabase
         .from("offers")
         .insert({
+          org_id: organizationId,
           application_id: formData.application_id,
           template_id: formData.template_id || null,
           job_title: formData.job_title,
