@@ -274,7 +274,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         return
       }
 
-      setTemplates([data, ...templates])
+      setTemplates([data as unknown as ScorecardTemplate, ...templates])
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Scorecard template created successfully")
@@ -325,7 +325,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         return
       }
 
-      setTemplates(templates.map((t) => (t.id === selectedTemplate.id ? data : t)))
+      setTemplates(templates.map((t) => (t.id === selectedTemplate.id ? data as unknown as ScorecardTemplate : t)))
       setIsEditDialogOpen(false)
       setSelectedTemplate(null)
       resetForm()
@@ -393,7 +393,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         return
       }
 
-      setTemplates([data, ...templates])
+      setTemplates([data as unknown as ScorecardTemplate, ...templates])
       toast.success("Scorecard template duplicated")
       router.refresh()
     } catch {
