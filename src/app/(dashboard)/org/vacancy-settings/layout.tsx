@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Settings, FileText, Layers, Briefcase, Award, MapPin, ChevronRight } from "lucide-react"
+import { Settings, FileText, Briefcase, Award, MapPin, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -10,11 +10,6 @@ const navItems = [
     title: "Application Form",
     href: "/org/vacancy-settings/application-form",
     icon: FileText,
-  },
-  {
-    title: "Hiring Stage",
-    href: "/org/vacancy-settings/hiring-stages",
-    icon: Layers,
   },
   {
     title: "Job Type",
