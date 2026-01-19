@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -21,12 +21,43 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+interface OrgBranding {
+  name: string
+  logo_url: string | null
+  login_image_url: string | null
+  primary_color: string
+  secondary_color: string
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [orgBranding, setOrgBranding] = useState<OrgBranding | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const orgSlug = searchParams.get("org")
+
+  // Fetch organization branding if org slug is provided
+  useEffect(() => {
+    async function fetchOrgBranding() {
+      if (!orgSlug) return
+
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("organizations")
+        .select("name, logo_url, login_image_url, primary_color, secondary_color")
+        .eq("slug", orgSlug)
+        .single()
+
+      if (data) {
+        setOrgBranding(data)
+      }
+    }
+
+    fetchOrgBranding()
+  }, [orgSlug])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,6 +91,12 @@ export default function LoginPage() {
     { icon: BarChart3, text: "Powerful analytics" },
   ]
 
+  // Dynamic colors based on org branding
+  const primaryColor = orgBranding?.primary_color || "#6366f1"
+  const secondaryColor = orgBranding?.secondary_color || "#8b5cf6"
+  const gradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
+  const hasCustomImage = !!orgBranding?.login_image_url
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Login Form */}
@@ -68,16 +105,42 @@ export default function LoginPage() {
           {/* Logo & Brand */}
           <div className="mb-10">
             <div className="flex items-center gap-3 mb-8">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
-                style={{ background: "var(--brand-gradient)" }}
-              >
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold gradient-text">Jadarat</h1>
-                <p className="text-sm text-muted-foreground">Applicant Tracking System</p>
-              </div>
+              {orgBranding?.logo_url ? (
+                <img
+                  src={orgBranding.logo_url}
+                  alt={orgBranding.name}
+                  className="h-12 object-contain"
+                />
+              ) : (
+                <>
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg"
+                    style={{ background: gradient }}
+                  >
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1
+                      className="text-2xl font-bold"
+                      style={{
+                        background: gradient,
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      {orgBranding?.name || "Jadarat"}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Applicant Tracking System
+                    </p>
+                  </div>
+                </>
+              )}
+              {orgBranding?.logo_url && (
+                <div className="ml-2">
+                  <h1 className="text-xl font-bold">{orgBranding.name}</h1>
+                </div>
+              )}
             </div>
 
             <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
@@ -101,9 +164,12 @@ export default function LoginPage() {
                 required
                 disabled={loading}
                 className={cn(
-                  "h-12 px-4 rounded-xl border-2 transition-all duration-200",
-                  "focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10"
+                  "h-12 px-4 rounded-xl border-2 transition-all duration-200"
                 )}
+                style={{
+                  // @ts-ignore
+                  "--tw-ring-color": `${primaryColor}20`,
+                }}
               />
             </div>
 
@@ -129,8 +195,7 @@ export default function LoginPage() {
                   required
                   disabled={loading}
                   className={cn(
-                    "h-12 px-4 pr-12 rounded-xl border-2 transition-all duration-200",
-                    "focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/10"
+                    "h-12 px-4 pr-12 rounded-xl border-2 transition-all duration-200"
                   )}
                 />
                 <button
@@ -147,10 +212,10 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className={cn(
-                "w-full h-12 rounded-xl text-base font-medium",
+                "w-full h-12 rounded-xl text-base font-medium text-white",
                 "transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
               )}
-              style={{ background: "var(--brand-gradient)" }}
+              style={{ background: gradient }}
             >
               {loading ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -167,9 +232,9 @@ export default function LoginPage() {
           <p className="text-center text-sm text-muted-foreground mt-8">
             Don&apos;t have an account?{" "}
             <Link
-              href="/signup"
+              href={orgSlug ? `/signup?org=${orgSlug}` : "/signup"}
               className="font-medium hover:underline"
-              style={{ color: "var(--brand-primary)" }}
+              style={{ color: primaryColor }}
             >
               Create account
             </Link>
@@ -180,14 +245,32 @@ export default function LoginPage() {
       {/* Right Side - Hero Image/Graphics */}
       <div
         className="hidden lg:flex lg:flex-1 relative overflow-hidden"
-        style={{ background: "var(--brand-gradient)" }}
+        style={{
+          background: hasCustomImage ? undefined : gradient,
+        }}
       >
-        {/* Decorative elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl" />
-        </div>
+        {/* Custom Image Background */}
+        {hasCustomImage && (
+          <>
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${orgBranding.login_image_url})` }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{ background: `${gradient}`, opacity: 0.7 }}
+            />
+          </>
+        )}
+
+        {/* Decorative elements (only when no custom image) */}
+        {!hasCustomImage && (
+          <div className="absolute inset-0">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl" />
+          </div>
+        )}
 
         {/* Grid pattern */}
         <div
@@ -201,44 +284,66 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white">
           <div className="max-w-lg">
             <h2 className="text-4xl xl:text-5xl font-bold leading-tight mb-6">
-              Hire the best talent with AI-powered recruitment
+              {orgBranding
+                ? `Welcome to ${orgBranding.name}`
+                : "Hire the best talent with AI-powered recruitment"
+              }
             </h2>
             <p className="text-lg text-white/80 mb-10">
-              Streamline your hiring process with intelligent automation,
-              collaborative tools, and data-driven insights.
+              {orgBranding
+                ? "Sign in to access your recruitment dashboard and manage your hiring process."
+                : "Streamline your hiring process with intelligent automation, collaborative tools, and data-driven insights."
+              }
             </p>
 
-            {/* Features */}
-            <div className="space-y-4">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                    <feature.icon className="h-5 w-5" />
-                  </div>
-                  <span className="font-medium">{feature.text}</span>
-                  <CheckCircle2 className="h-5 w-5 ml-auto text-white/60" />
+            {/* Features (only when no org branding) */}
+            {!orgBranding && (
+              <>
+                <div className="space-y-4">
+                  {features.map((feature, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                        <feature.icon className="h-5 w-5" />
+                      </div>
+                      <span className="font-medium">{feature.text}</span>
+                      <CheckCircle2 className="h-5 w-5 ml-auto text-white/60" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/20">
-              <div>
-                <div className="text-3xl font-bold">500+</div>
-                <div className="text-sm text-white/70">Companies</div>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/20">
+                  <div>
+                    <div className="text-3xl font-bold">500+</div>
+                    <div className="text-sm text-white/70">Companies</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold">50K+</div>
+                    <div className="text-sm text-white/70">Candidates</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold">95%</div>
+                    <div className="text-sm text-white/70">Satisfaction</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Org-specific branding badge */}
+            {orgBranding && (
+              <div className="mt-8 flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="font-medium">Powered by Jadarat</div>
+                  <div className="text-sm text-white/70">AI-Powered Recruitment Platform</div>
+                </div>
               </div>
-              <div>
-                <div className="text-3xl font-bold">50K+</div>
-                <div className="text-sm text-white/70">Candidates</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold">95%</div>
-                <div className="text-sm text-white/70">Satisfaction</div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

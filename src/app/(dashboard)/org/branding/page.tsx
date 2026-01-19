@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import {
   Loader2,
@@ -18,6 +18,9 @@ import {
   Check,
   X,
   Link as LinkIcon,
+  Monitor,
+  Sparkles,
+  Info,
 } from "lucide-react"
 
 interface BrandingSettings {
@@ -28,6 +31,7 @@ interface BrandingSettings {
   tagline_ar: string
   logo_url: string
   favicon_url: string
+  login_image_url: string
   primary_color: string
   secondary_color: string
   website_url: string
@@ -35,14 +39,14 @@ interface BrandingSettings {
 }
 
 const defaultColors = [
-  "#3B82F6", // Blue
-  "#10B981", // Green
+  "#6366F1", // Indigo
   "#8B5CF6", // Purple
+  "#3B82F6", // Blue
+  "#06B6D4", // Cyan
+  "#10B981", // Green
   "#F59E0B", // Amber
   "#EF4444", // Red
-  "#06B6D4", // Cyan
   "#EC4899", // Pink
-  "#6366F1", // Indigo
 ]
 
 export default function BrandingPage() {
@@ -51,9 +55,11 @@ export default function BrandingPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false)
+  const [isUploadingLoginImage, setIsUploadingLoginImage] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const faviconInputRef = useRef<HTMLInputElement>(null)
+  const loginImageInputRef = useRef<HTMLInputElement>(null)
   const [settings, setSettings] = useState<BrandingSettings>({
     company_name: "",
     company_name_ar: "",
@@ -62,8 +68,9 @@ export default function BrandingPage() {
     tagline_ar: "",
     logo_url: "",
     favicon_url: "",
-    primary_color: "#3B82F6",
-    secondary_color: "#10B981",
+    login_image_url: "",
+    primary_color: "#6366F1",
+    secondary_color: "#8B5CF6",
     website_url: "",
     careers_page_url: "",
   })
@@ -101,7 +108,7 @@ export default function BrandingPage() {
         // Load organization branding
         const { data: org, error } = await supabase
           .from("organizations")
-          .select("name, name_ar, slug, logo_url, primary_color, secondary_color, custom_domain")
+          .select("name, name_ar, slug, logo_url, login_image_url, primary_color, secondary_color, custom_domain")
           .eq("id", orgId)
           .single()
 
@@ -116,8 +123,9 @@ export default function BrandingPage() {
             tagline_ar: "",
             logo_url: org.logo_url || "",
             favicon_url: "",
-            primary_color: org.primary_color || "#3B82F6",
-            secondary_color: org.secondary_color || "#10B981",
+            login_image_url: org.login_image_url || "",
+            primary_color: org.primary_color || "#6366F1",
+            secondary_color: org.secondary_color || "#8B5CF6",
             website_url: org.custom_domain || "",
             careers_page_url: getCareersPageUrl(org.slug || ""),
           })
@@ -138,13 +146,11 @@ export default function BrandingPage() {
     const file = event.target.files?.[0]
     if (!file || !organizationId) return
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error("Please upload an image file")
       return
     }
 
-    // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast.error("File size must be less than 2MB")
       return
@@ -180,13 +186,11 @@ export default function BrandingPage() {
     const file = event.target.files?.[0]
     if (!file || !organizationId) return
 
-    // Validate file type
     if (!file.type.startsWith('image/') && file.type !== 'image/x-icon') {
       toast.error("Please upload an image or .ico file")
       return
     }
 
-    // Validate file size (max 500KB)
     if (file.size > 500 * 1024) {
       toast.error("Favicon must be less than 500KB")
       return
@@ -217,14 +221,57 @@ export default function BrandingPage() {
     }
   }
 
-  // Remove logo
+  // Handle login image upload
+  const handleLoginImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !organizationId) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file")
+      return
+    }
+
+    // Max 5MB for login image
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB")
+      return
+    }
+
+    setIsUploadingLoginImage(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${organizationId}/login-image.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('organization-assets')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('organization-assets')
+        .getPublicUrl(fileName)
+
+      setSettings({ ...settings, login_image_url: publicUrl })
+      toast.success("Login image uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading login image:", error)
+      toast.error("Failed to upload login image")
+    } finally {
+      setIsUploadingLoginImage(false)
+    }
+  }
+
   const handleRemoveLogo = () => {
     setSettings({ ...settings, logo_url: "" })
   }
 
-  // Remove favicon
   const handleRemoveFavicon = () => {
     setSettings({ ...settings, favicon_url: "" })
+  }
+
+  const handleRemoveLoginImage = () => {
+    setSettings({ ...settings, login_image_url: "" })
   }
 
   const handleSave = async () => {
@@ -241,6 +288,7 @@ export default function BrandingPage() {
           name: settings.company_name,
           name_ar: settings.company_name_ar || null,
           logo_url: settings.logo_url || null,
+          login_image_url: settings.login_image_url || null,
           primary_color: settings.primary_color,
           secondary_color: settings.secondary_color,
           custom_domain: settings.website_url || null,
@@ -277,7 +325,11 @@ export default function BrandingPage() {
             Customize your organization&apos;s appearance and identity
           </p>
         </div>
-        <Button onClick={handleSave} disabled={isSaving}>
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="btn-brand"
+        >
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Changes
         </Button>
@@ -285,10 +337,10 @@ export default function BrandingPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Company Information */}
-        <Card>
+        <Card className="modern-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
+              <Building2 className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               Company Information
             </CardTitle>
             <CardDescription>
@@ -306,6 +358,7 @@ export default function BrandingPage() {
                     setSettings({ ...settings, company_name: e.target.value })
                   }
                   placeholder="Acme Corporation"
+                  className="rounded-xl"
                 />
               </div>
               <div className="space-y-2">
@@ -318,6 +371,7 @@ export default function BrandingPage() {
                   }
                   placeholder="شركة أكمي"
                   dir="rtl"
+                  className="rounded-xl"
                 />
               </div>
             </div>
@@ -331,6 +385,7 @@ export default function BrandingPage() {
                     setSettings({ ...settings, tagline: e.target.value })
                   }
                   placeholder="Building the future together"
+                  className="rounded-xl"
                 />
               </div>
               <div className="space-y-2">
@@ -343,6 +398,7 @@ export default function BrandingPage() {
                   }
                   placeholder="نبني المستقبل معاً"
                   dir="rtl"
+                  className="rounded-xl"
                 />
               </div>
             </div>
@@ -350,14 +406,14 @@ export default function BrandingPage() {
         </Card>
 
         {/* Logo & Favicon */}
-        <Card>
+        <Card className="modern-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
+              <ImageIcon className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               Logo & Favicon
             </CardTitle>
             <CardDescription>
-              Upload your company logo and favicon or provide a URL
+              Upload your company logo and favicon
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -379,9 +435,14 @@ export default function BrandingPage() {
 
             {/* Logo Section */}
             <div className="space-y-3">
-              <Label>Company Logo</Label>
+              <div className="flex items-center justify-between">
+                <Label>Company Logo</Label>
+                <Badge variant="secondary" className="text-xs">
+                  Recommended: 200x60px
+                </Badge>
+              </div>
               {settings.logo_url ? (
-                <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
                   <img
                     src={settings.logo_url}
                     alt="Logo preview"
@@ -393,6 +454,7 @@ export default function BrandingPage() {
                     size="sm"
                     onClick={() => logoInputRef.current?.click()}
                     disabled={isUploadingLogo}
+                    className="rounded-lg"
                   >
                     {isUploadingLogo ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -405,56 +467,38 @@ export default function BrandingPage() {
                     variant="ghost"
                     size="icon"
                     onClick={handleRemoveLogo}
+                    className="rounded-lg"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
-                  <div
-                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => logoInputRef.current?.click()}
-                  >
-                    {isUploadingLogo ? (
-                      <Loader2 className="h-8 w-8 mx-auto text-muted-foreground animate-spin" />
-                    ) : (
-                      <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                    )}
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Click to upload logo (max 2MB)
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs text-muted-foreground">or</span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={settings.logo_url}
-                      onChange={(e) =>
-                        setSettings({ ...settings, logo_url: e.target.value })
-                      }
-                      placeholder="Enter logo URL"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={isUploadingLogo}
-                    >
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div
+                  className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  {isUploadingLogo ? (
+                    <Loader2 className="h-8 w-8 mx-auto text-muted-foreground animate-spin" />
+                  ) : (
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+                  )}
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Click to upload logo (max 2MB)
+                  </p>
                 </div>
               )}
             </div>
 
             {/* Favicon Section */}
             <div className="space-y-3">
-              <Label>Favicon</Label>
+              <div className="flex items-center justify-between">
+                <Label>Favicon</Label>
+                <Badge variant="secondary" className="text-xs">
+                  32x32px or 64x64px
+                </Badge>
+              </div>
               {settings.favicon_url ? (
-                <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-xl">
                   <img
                     src={settings.favicon_url}
                     alt="Favicon preview"
@@ -468,6 +512,7 @@ export default function BrandingPage() {
                     size="sm"
                     onClick={() => faviconInputRef.current?.click()}
                     disabled={isUploadingFavicon}
+                    className="rounded-lg"
                   >
                     {isUploadingFavicon ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -480,58 +525,186 @@ export default function BrandingPage() {
                     variant="ghost"
                     size="icon"
                     onClick={handleRemoveFavicon}
+                    className="rounded-lg"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
-                  <div
-                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => faviconInputRef.current?.click()}
-                  >
-                    {isUploadingFavicon ? (
-                      <Loader2 className="h-6 w-6 mx-auto text-muted-foreground animate-spin" />
-                    ) : (
-                      <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
-                    )}
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Click to upload favicon (max 500KB)
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs text-muted-foreground">or</span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={settings.favicon_url}
-                      onChange={(e) =>
-                        setSettings({ ...settings, favicon_url: e.target.value })
-                      }
-                      placeholder="Enter favicon URL"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => faviconInputRef.current?.click()}
-                      disabled={isUploadingFavicon}
-                    >
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div
+                  className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => faviconInputRef.current?.click()}
+                >
+                  {isUploadingFavicon ? (
+                    <Loader2 className="h-6 w-6 mx-auto text-muted-foreground animate-spin" />
+                  ) : (
+                    <Upload className="h-6 w-6 mx-auto text-muted-foreground" />
+                  )}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Click to upload favicon (max 500KB)
+                  </p>
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Brand Colors */}
-        <Card>
+        {/* Login Page Image */}
+        <Card className="modern-card lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
+              <Monitor className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
+              Login Page Image
+            </CardTitle>
+            <CardDescription>
+              Customize the image shown on the right side of your login page
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <input
+              type="file"
+              ref={loginImageInputRef}
+              onChange={handleLoginImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Upload Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
+                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    <p className="font-medium">Recommended dimensions</p>
+                    <p className="text-blue-600 dark:text-blue-400">1920 x 1080px (16:9 ratio) or 1200 x 1600px (3:4 portrait)</p>
+                  </div>
+                </div>
+
+                {settings.login_image_url ? (
+                  <div className="space-y-4">
+                    <div className="relative rounded-xl overflow-hidden border">
+                      <img
+                        src={settings.login_image_url}
+                        alt="Login image preview"
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => loginImageInputRef.current?.click()}
+                          disabled={isUploadingLoginImage}
+                          className="rounded-lg shadow-lg"
+                        >
+                          {isUploadingLoginImage ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="mr-2 h-4 w-4" />
+                          )}
+                          Replace
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          onClick={handleRemoveLoginImage}
+                          className="rounded-lg shadow-lg"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This image will appear on the right side of your login page
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => loginImageInputRef.current?.click()}
+                  >
+                    {isUploadingLoginImage ? (
+                      <Loader2 className="h-10 w-10 mx-auto text-muted-foreground animate-spin" />
+                    ) : (
+                      <div className="space-y-3">
+                        <div
+                          className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
+                          style={{ background: "var(--brand-gradient-subtle)" }}
+                        >
+                          <ImageIcon className="h-8 w-8" style={{ color: "var(--brand-primary)" }} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Upload login page image</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            PNG, JPG or WebP (max 5MB)
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Preview Section */}
+              <div className="space-y-3">
+                <Label>Login Page Preview</Label>
+                <div className="border rounded-xl overflow-hidden bg-background">
+                  <div className="flex h-64">
+                    {/* Left side - Form preview */}
+                    <div className="flex-1 p-4 flex flex-col justify-center">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          {settings.logo_url ? (
+                            <img src={settings.logo_url} alt="" className="h-6 object-contain" />
+                          ) : (
+                            <div
+                              className="w-6 h-6 rounded-lg flex items-center justify-center"
+                              style={{ background: "var(--brand-gradient)" }}
+                            >
+                              <Sparkles className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          <span className="text-xs font-bold gradient-text">
+                            {settings.company_name || "Your Company"}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2 bg-muted rounded w-20" />
+                          <div className="h-6 bg-muted rounded-lg" />
+                          <div className="h-6 bg-muted rounded-lg" />
+                          <div
+                            className="h-6 rounded-lg"
+                            style={{ background: "var(--brand-gradient)" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Right side - Image preview */}
+                    <div
+                      className="flex-1 relative"
+                      style={{
+                        background: settings.login_image_url
+                          ? `url(${settings.login_image_url}) center/cover`
+                          : "var(--brand-gradient)"
+                      }}
+                    >
+                      {!settings.login_image_url && (
+                        <div className="absolute inset-0 flex items-center justify-center text-white/50">
+                          <ImageIcon className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Brand Colors */}
+        <Card className="modern-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               Brand Colors
             </CardTitle>
             <CardDescription>
@@ -543,7 +716,7 @@ export default function BrandingPage() {
               <Label>Primary Color</Label>
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-lg border-2 border-border"
+                  className="w-12 h-12 rounded-xl border-2 border-border shadow-inner"
                   style={{ backgroundColor: settings.primary_color }}
                 />
                 <Input
@@ -551,22 +724,22 @@ export default function BrandingPage() {
                   onChange={(e) =>
                     setSettings({ ...settings, primary_color: e.target.value })
                   }
-                  placeholder="#3B82F6"
-                  className="w-32"
+                  placeholder="#6366F1"
+                  className="w-32 rounded-xl font-mono"
                 />
               </div>
               <div className="flex gap-2 flex-wrap">
                 {defaultColors.map((color) => (
                   <button
                     key={color}
-                    className="w-8 h-8 rounded-lg border-2 border-transparent hover:border-foreground/20 relative"
+                    className="w-9 h-9 rounded-xl border-2 border-transparent hover:border-foreground/20 relative transition-all hover:scale-110"
                     style={{ backgroundColor: color }}
                     onClick={() =>
                       setSettings({ ...settings, primary_color: color })
                     }
                   >
-                    {settings.primary_color === color && (
-                      <Check className="h-4 w-4 text-white absolute inset-0 m-auto" />
+                    {settings.primary_color.toLowerCase() === color.toLowerCase() && (
+                      <Check className="h-4 w-4 text-white absolute inset-0 m-auto drop-shadow" />
                     )}
                   </button>
                 ))}
@@ -576,7 +749,7 @@ export default function BrandingPage() {
               <Label>Secondary Color</Label>
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-lg border-2 border-border"
+                  className="w-12 h-12 rounded-xl border-2 border-border shadow-inner"
                   style={{ backgroundColor: settings.secondary_color }}
                 />
                 <Input
@@ -584,22 +757,22 @@ export default function BrandingPage() {
                   onChange={(e) =>
                     setSettings({ ...settings, secondary_color: e.target.value })
                   }
-                  placeholder="#10B981"
-                  className="w-32"
+                  placeholder="#8B5CF6"
+                  className="w-32 rounded-xl font-mono"
                 />
               </div>
               <div className="flex gap-2 flex-wrap">
                 {defaultColors.map((color) => (
                   <button
                     key={color}
-                    className="w-8 h-8 rounded-lg border-2 border-transparent hover:border-foreground/20 relative"
+                    className="w-9 h-9 rounded-xl border-2 border-transparent hover:border-foreground/20 relative transition-all hover:scale-110"
                     style={{ backgroundColor: color }}
                     onClick={() =>
                       setSettings({ ...settings, secondary_color: color })
                     }
                   >
-                    {settings.secondary_color === color && (
-                      <Check className="h-4 w-4 text-white absolute inset-0 m-auto" />
+                    {settings.secondary_color.toLowerCase() === color.toLowerCase() && (
+                      <Check className="h-4 w-4 text-white absolute inset-0 m-auto drop-shadow" />
                     )}
                   </button>
                 ))}
@@ -609,10 +782,10 @@ export default function BrandingPage() {
         </Card>
 
         {/* Website Links */}
-        <Card>
+        <Card className="modern-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
+              <Globe className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               Website Links
             </CardTitle>
             <CardDescription>
@@ -630,6 +803,7 @@ export default function BrandingPage() {
                   setSettings({ ...settings, website_url: e.target.value })
                 }
                 placeholder="https://www.example.com"
+                className="rounded-xl"
               />
             </div>
             <div className="space-y-2">
@@ -641,7 +815,7 @@ export default function BrandingPage() {
                     type="url"
                     value={settings.slug ? getCareersPageUrl(settings.slug) : ""}
                     readOnly
-                    className="bg-muted pr-10"
+                    className="bg-muted/50 pr-10 rounded-xl"
                   />
                   <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
@@ -655,12 +829,13 @@ export default function BrandingPage() {
                     }
                   }}
                   disabled={!settings.slug}
+                  className="rounded-xl"
                 >
                   Copy
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                This URL is auto-generated based on your organization slug. Share this link for your public job listings page.
+                This URL is auto-generated based on your organization slug
               </p>
             </div>
           </CardContent>
@@ -668,15 +843,15 @@ export default function BrandingPage() {
       </div>
 
       {/* Preview Section */}
-      <Card>
+      <Card className="modern-card">
         <CardHeader>
-          <CardTitle>Preview</CardTitle>
+          <CardTitle>Career Page Preview</CardTitle>
           <CardDescription>
             See how your branding will appear on the careers page
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="p-6 rounded-lg border bg-background">
+          <div className="p-6 rounded-xl border bg-background">
             <div className="flex items-center gap-4 mb-6">
               {settings.logo_url ? (
                 <img
@@ -686,8 +861,8 @@ export default function BrandingPage() {
                 />
               ) : (
                 <div
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: settings.primary_color }}
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: "var(--brand-gradient)" }}
                 >
                   <Building2 className="h-6 w-6 text-white" />
                 </div>
@@ -703,8 +878,8 @@ export default function BrandingPage() {
             </div>
             <div className="flex gap-3">
               <Button
-                style={{ backgroundColor: settings.primary_color }}
-                className="hover:opacity-90"
+                style={{ background: "var(--brand-gradient)" }}
+                className="hover:opacity-90 rounded-xl"
               >
                 View Open Positions
               </Button>
@@ -714,6 +889,7 @@ export default function BrandingPage() {
                   borderColor: settings.secondary_color,
                   color: settings.secondary_color,
                 }}
+                className="rounded-xl"
               >
                 About Us
               </Button>
