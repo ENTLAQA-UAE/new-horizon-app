@@ -206,6 +206,7 @@ export function TeamClient({
           role: inviteForm.role,
           invite_code: inviteCode,
           invited_by: currentUserId,
+          status: "pending",
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
         })
         .select()
