@@ -64,23 +64,11 @@ export default async function IntegrationsSettingsPage() {
     console.error("Integrations error:", intError)
   }
 
-  // Get email configuration
-  const { data: emailConfig, error: emailError } = await supabase
-    .from("organization_email_config")
-    .select("*")
-    .eq("org_id", orgId)
-    .single()
-
-  if (emailError && emailError.code !== "PGRST116") {
-    console.error("Email config error:", emailError)
-  }
-
   return (
     <IntegrationsSettingsClient
       orgId={orgId}
       orgName={org?.name || "Organization"}
       integrations={integrations || []}
-      emailConfig={emailConfig}
     />
   )
 }
