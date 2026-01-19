@@ -11,10 +11,10 @@ export default async function CareerPageBuilderPage() {
     redirect("/login")
   }
 
-  // Get user profile and organization
+  // Get user profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("org_id, role")
+    .select("org_id")
     .eq("id", user.id)
     .single()
 
@@ -22,8 +22,17 @@ export default async function CareerPageBuilderPage() {
     redirect("/onboarding")
   }
 
-  // Only org_admin and super_admin can access
-  if (!["org_admin", "super_admin"].includes(profile.role || "")) {
+  // Get user role from user_roles table
+  const { data: userRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("org_id", profile.org_id)
+    .single()
+
+  // Only org_admin and super_admin can access career page builder
+  const allowedRoles = ["org_admin", "super_admin", "hr_manager"]
+  if (!userRole?.role || !allowedRoles.includes(userRole.role)) {
     redirect("/org")
   }
 
