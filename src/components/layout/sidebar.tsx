@@ -42,6 +42,7 @@ interface SidebarProps {
   userRole?: UserRole
 }
 
+// Super Admin - Platform management only
 const superAdminLinks = [
   { href: "/", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
   { href: "/organizations", label: "Organizations", labelAr: "المؤسسات", icon: Building2 },
@@ -53,7 +54,25 @@ const superAdminLinks = [
   { href: "/settings", label: "Platform Settings", labelAr: "إعدادات المنصة", icon: Settings },
 ]
 
+// Org Admin - Organization management + hiring oversight
 const orgAdminLinks = [
+  { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/org/analytics", label: "Analytics", labelAr: "التحليلات", icon: BarChart3 },
+  { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
+  { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
+  { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
+  { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
+  { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
+  { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
+  { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
+  { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
+  { href: "/org/settings/integrations", label: "Integrations", labelAr: "التكاملات", icon: Plug },
+  { href: "/org/settings/email", label: "Email Settings", labelAr: "إعدادات البريد", icon: Mail },
+  { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
+]
+
+// HR Manager - Workflow configuration + daily operations
+const hrManagerLinks = [
   { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
   { href: "/org/analytics", label: "Analytics", labelAr: "التحليلات", icon: BarChart3 },
   { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
@@ -66,23 +85,34 @@ const orgAdminLinks = [
   { href: "/org/screening-questions", label: "Screening Questions", labelAr: "أسئلة الفحص", icon: HelpCircle },
   { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
   { href: "/org/documents", label: "Documents", labelAr: "المستندات", icon: Files },
-  { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
-  { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
   { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
-  { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
-  { href: "/org/settings/integrations", label: "Integrations", labelAr: "التكاملات", icon: Plug },
-  { href: "/org/settings/email", label: "Email", labelAr: "البريد الإلكتروني", icon: Mail },
-  { href: "/org/settings", label: "Settings", labelAr: "الإعدادات", icon: Settings },
 ]
 
-// Links for HR Manager, Recruiter, etc. (subset of org admin)
-const staffLinks = [
+// Recruiter - Day-to-day hiring
+const recruiterLinks = [
   { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
   { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
   { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
   { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
   { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
   { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
+]
+
+// Hiring Manager - Department-level hiring
+const hiringManagerLinks = [
+  { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
+  { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
+  { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
+  { href: "/org/interviews/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
+  { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
+]
+
+// Interviewer - Interviews only
+const interviewerLinks = [
+  { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
+  { href: "/org/interviews/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
 ]
 
 function getLinksForRole(role?: UserRole) {
@@ -92,13 +122,16 @@ function getLinksForRole(role?: UserRole) {
     case "org_admin":
       return orgAdminLinks
     case "hr_manager":
+      return hrManagerLinks
     case "recruiter":
+      return recruiterLinks
     case "hiring_manager":
+      return hiringManagerLinks
     case "interviewer":
-      return staffLinks
+      return interviewerLinks
     default:
-      // Default to staff links for unknown roles
-      return staffLinks
+      // Default to recruiter links for unknown roles
+      return recruiterLinks
   }
 }
 
