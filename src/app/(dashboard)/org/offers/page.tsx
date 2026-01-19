@@ -78,7 +78,7 @@ export default async function OffersPage() {
         location_id
       )
     `)
-    .eq("organization_id", orgId)
+    .eq("org_id", orgId)
     .eq("status", "offer")
     .order("created_at", { ascending: false })
 
