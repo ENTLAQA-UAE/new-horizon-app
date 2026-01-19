@@ -128,8 +128,14 @@ function SignupPageContent() {
       if (!email && data.invite.email) {
         setEmail(data.invite.email)
       }
-    } catch {
-      setInviteError("Error validating invite code")
+    } catch (err) {
+      console.error("Invite validation error:", err)
+      // Check if it's a network error
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setInviteError("Network error - please check your connection")
+      } else {
+        setInviteError("Error validating invite code - please try again")
+      }
       setInviteInfo(null)
     } finally {
       setValidatingInvite(false)
