@@ -1,5 +1,4 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema (users should be profiles)
 "use client"
 
 import { useState } from "react"
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -43,7 +43,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import {
-  Plus,
   Search,
   MoreHorizontal,
   Users,
@@ -56,15 +55,20 @@ import {
   UserX,
   Loader2,
   Send,
+  Clock,
+  Copy,
+  RefreshCw,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatDistanceToNow } from "date-fns"
 
 interface TeamMember {
   id: string
   first_name: string
   last_name: string
   email: string
-  role: string | null
+  role: string
   department: string | null
   avatar_url: string | null
   is_active: boolean | null
@@ -72,15 +76,27 @@ interface TeamMember {
   last_login_at: string | null
 }
 
+interface Invite {
+  id: string
+  email: string
+  role: string
+  invite_code: string
+  status: string
+  expires_at: string | null
+  created_at: string
+}
+
 interface Department {
   id: string
   name: string
-  name_ar: string | null
 }
 
 interface TeamClientProps {
   members: TeamMember[]
+  invites: Invite[]
   departments: Department[]
+  organizationId: string
+  currentUserId: string
 }
 
 const roleLabels: Record<string, string> = {
@@ -88,7 +104,7 @@ const roleLabels: Record<string, string> = {
   hr_manager: "HR Manager",
   recruiter: "Recruiter",
   hiring_manager: "Hiring Manager",
-  viewer: "Viewer",
+  interviewer: "Interviewer",
 }
 
 const roleColors: Record<string, string> = {
@@ -96,13 +112,20 @@ const roleColors: Record<string, string> = {
   hr_manager: "bg-blue-500",
   recruiter: "bg-green-500",
   hiring_manager: "bg-orange-500",
-  viewer: "bg-gray-500",
+  interviewer: "bg-gray-500",
 }
 
-export function TeamClient({ members: initialMembers, departments }: TeamClientProps) {
+export function TeamClient({
+  members: initialMembers,
+  invites: initialInvites,
+  departments,
+  organizationId,
+  currentUserId,
+}: TeamClientProps) {
   const router = useRouter()
   const supabase = createClient()
   const [members, setMembers] = useState(initialMembers)
+  const [invites, setInvites] = useState(initialInvites)
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
 
@@ -116,15 +139,10 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
   // Form state
   const [inviteForm, setInviteForm] = useState({
     email: "",
-    first_name: "",
-    last_name: "",
     role: "recruiter",
-    department: "",
   })
 
   const [editForm, setEditForm] = useState({
-    first_name: "",
-    last_name: "",
     role: "",
     department: "",
   })
@@ -141,69 +159,135 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
 
   const stats = {
     total: members.length,
-    active: members.filter((m) => m.is_active).length,
+    active: members.filter((m) => m.is_active !== false).length,
+    pending: invites.length,
     admins: members.filter((m) => m.role === "org_admin").length,
-    recruiters: members.filter((m) => m.role === "recruiter").length,
   }
 
-  // Invite team member
+  // Send invite
   const handleInvite = async () => {
-    if (!inviteForm.email || !inviteForm.first_name || !inviteForm.last_name) {
-      toast.error("Please fill in all required fields")
+    if (!inviteForm.email) {
+      toast.error("Please enter an email address")
+      return
+    }
+
+    // Check if already a member
+    if (members.some(m => m.email.toLowerCase() === inviteForm.email.toLowerCase())) {
+      toast.error("This person is already a team member")
+      return
+    }
+
+    // Check if already invited
+    if (invites.some(i => i.email.toLowerCase() === inviteForm.email.toLowerCase())) {
+      toast.error("This person already has a pending invite")
       return
     }
 
     setIsLoading(true)
     try {
-      // In a real app, this would send an invitation email
-      // For now, we'll create the user directly
+      // Generate invite code
+      const generateCode = () => {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        let code = ""
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        return code
+      }
+
+      const inviteCode = generateCode()
+
       const { data, error } = await supabase
-        .from("users")
+        .from("team_invites")
         .insert({
-          email: inviteForm.email,
-          first_name: inviteForm.first_name,
-          last_name: inviteForm.last_name,
+          org_id: organizationId,
+          email: inviteForm.email.toLowerCase(),
           role: inviteForm.role,
-          department: inviteForm.department || null,
-          is_active: true,
+          invite_code: inviteCode,
+          invited_by: currentUserId,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
         })
         .select()
         .single()
 
-      if (error) {
-        if (error.code === "23505") {
-          toast.error("A user with this email already exists")
-        } else {
-          toast.error(error.message)
-        }
-        return
-      }
+      if (error) throw error
 
-      setMembers([data, ...members])
+      setInvites([data, ...invites])
       setIsInviteDialogOpen(false)
-      setInviteForm({
-        email: "",
-        first_name: "",
-        last_name: "",
-        role: "recruiter",
-        department: "",
-      })
-      toast.success("Team member invited successfully")
-      router.refresh()
-    } catch {
-      toast.error("An unexpected error occurred")
+      setInviteForm({ email: "", role: "recruiter" })
+      toast.success("Invitation sent! Share the invite code with your team member.")
+    } catch (error: any) {
+      console.error("Error sending invite:", error)
+      toast.error(error.message || "Failed to send invitation")
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Edit member
+  // Copy invite code
+  const copyInviteCode = (code: string) => {
+    navigator.clipboard.writeText(code)
+    toast.success("Invite code copied to clipboard")
+  }
+
+  // Resend invite (generate new code)
+  const resendInvite = async (invite: Invite) => {
+    setIsLoading(true)
+    try {
+      const generateCode = () => {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        let code = ""
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+        return code
+      }
+
+      const newCode = generateCode()
+
+      const { error } = await supabase
+        .from("team_invites")
+        .update({
+          invite_code: newCode,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq("id", invite.id)
+
+      if (error) throw error
+
+      setInvites(invites.map(i =>
+        i.id === invite.id ? { ...i, invite_code: newCode } : i
+      ))
+      toast.success("New invite code generated")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resend invite")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Cancel invite
+  const cancelInvite = async (invite: Invite) => {
+    try {
+      const { error } = await supabase
+        .from("team_invites")
+        .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+        .eq("id", invite.id)
+
+      if (error) throw error
+
+      setInvites(invites.filter(i => i.id !== invite.id))
+      toast.success("Invitation cancelled")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to cancel invite")
+    }
+  }
+
+  // Edit member role
   const openEditDialog = (member: TeamMember) => {
     setSelectedMember(member)
     setEditForm({
-      first_name: member.first_name,
-      last_name: member.last_name,
-      role: member.role || "recruiter",
+      role: member.role,
       department: member.department || "",
     })
     setIsEditDialogOpen(true)
@@ -214,32 +298,41 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({
-          first_name: editForm.first_name,
-          last_name: editForm.last_name,
+      // Update role in user_roles table
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .upsert({
+          user_id: selectedMember.id,
+          org_id: organizationId,
           role: editForm.role,
-          department: editForm.department || null,
+        }, {
+          onConflict: "user_id,org_id"
         })
-        .eq("id", selectedMember.id)
 
-      if (error) {
-        toast.error(error.message)
-        return
+      if (roleError) throw roleError
+
+      // Update department in profiles
+      if (editForm.department !== selectedMember.department) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ department: editForm.department || null })
+          .eq("id", selectedMember.id)
+
+        if (profileError) throw profileError
       }
 
       setMembers(
         members.map((m) =>
-          m.id === selectedMember.id ? { ...m, ...editForm } : m
+          m.id === selectedMember.id
+            ? { ...m, role: editForm.role, department: editForm.department }
+            : m
         )
       )
       setIsEditDialogOpen(false)
       setSelectedMember(null)
-      toast.success("Team member updated successfully")
-      router.refresh()
-    } catch {
-      toast.error("An unexpected error occurred")
+      toast.success("Team member updated")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update member")
     } finally {
       setIsLoading(false)
     }
@@ -247,57 +340,66 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
 
   // Toggle active status
   const toggleStatus = async (member: TeamMember) => {
+    if (member.id === currentUserId) {
+      toast.error("You cannot deactivate yourself")
+      return
+    }
+
     try {
       const { error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({ is_active: !member.is_active })
         .eq("id", member.id)
 
-      if (error) {
-        toast.error(error.message)
-        return
-      }
+      if (error) throw error
 
       setMembers(
         members.map((m) =>
           m.id === member.id ? { ...m, is_active: !m.is_active } : m
         )
       )
-      toast.success(`User ${!member.is_active ? "activated" : "deactivated"}`)
-      router.refresh()
-    } catch {
-      toast.error("An unexpected error occurred")
+      toast.success(`User ${member.is_active ? "deactivated" : "activated"}`)
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status")
     }
   }
 
-  // Delete member
+  // Remove member from org
   const openDeleteDialog = (member: TeamMember) => {
+    if (member.id === currentUserId) {
+      toast.error("You cannot remove yourself")
+      return
+    }
     setSelectedMember(member)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleDelete = async () => {
+  const handleRemove = async () => {
     if (!selectedMember) return
 
     setIsLoading(true)
     try {
+      // Remove org_id from profile (removes from organization)
       const { error } = await supabase
-        .from("users")
-        .delete()
+        .from("profiles")
+        .update({ org_id: null })
         .eq("id", selectedMember.id)
 
-      if (error) {
-        toast.error(error.message)
-        return
-      }
+      if (error) throw error
+
+      // Remove role
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", selectedMember.id)
+        .eq("org_id", organizationId)
 
       setMembers(members.filter((m) => m.id !== selectedMember.id))
       setIsDeleteDialogOpen(false)
       setSelectedMember(null)
-      toast.success("Team member removed")
-      router.refresh()
-    } catch {
-      toast.error("An unexpected error occurred")
+      toast.success("Team member removed from organization")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to remove member")
     } finally {
       setIsLoading(false)
     }
@@ -310,7 +412,7 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Team</h2>
           <p className="text-muted-foreground">
-            Manage your team members and their permissions
+            Manage your team members and invitations
           </p>
         </div>
         <Button onClick={() => setIsInviteDialogOpen(true)}>
@@ -323,7 +425,7 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Members</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -339,168 +441,249 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
         </Card>
         <Card>
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Invites</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Admins</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.admins}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Recruiters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.recruiters}</div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-40">
-            <Shield className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            {Object.entries(roleLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Tabs */}
+      <Tabs defaultValue="members">
+        <TabsList>
+          <TabsTrigger value="members">
+            <Users className="mr-2 h-4 w-4" />
+            Members ({members.length})
+          </TabsTrigger>
+          <TabsTrigger value="invites">
+            <Mail className="mr-2 h-4 w-4" />
+            Pending Invites ({invites.length})
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Active</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMembers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No team members found</p>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredMembers.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={member.avatar_url || ""} />
-                        <AvatarFallback>
-                          {member.first_name[0]}{member.last_name[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">
-                          {member.first_name} {member.last_name}
+        <TabsContent value="members" className="mt-6 space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-40">
+                <Shield className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                {Object.entries(roleLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Members Table */}
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMembers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12">
+                      <Users className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground">No team members found</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredMembers.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={member.avatar_url || ""} />
+                            <AvatarFallback>
+                              {member.first_name?.[0]}{member.last_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">
+                              {member.first_name} {member.last_name}
+                              {member.id === currentUserId && (
+                                <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {member.email}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {member.email}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={cn("text-white", roleColors[member.role] || "bg-gray-500")}>
+                          {roleLabels[member.role] || member.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">
+                          {member.department || "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={member.is_active !== false ? "default" : "secondary"}>
+                          {member.is_active !== false ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {member.created_at
+                            ? formatDistanceToNow(new Date(member.created_at), { addSuffix: true })
+                            : "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(member)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Role
+                            </DropdownMenuItem>
+                            {member.id !== currentUserId && (
+                              <>
+                                <DropdownMenuItem onClick={() => toggleStatus(member)}>
+                                  {member.is_active !== false ? (
+                                    <>
+                                      <UserX className="mr-2 h-4 w-4" />
+                                      Deactivate
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="mr-2 h-4 w-4" />
+                                      Activate
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => openDeleteDialog(member)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Remove
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invites" className="mt-6">
+          {invites.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Mail className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">No pending invitations</p>
+                <Button className="mt-4" onClick={() => setIsInviteDialogOpen(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Invite Team Member
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {invites.map((invite) => (
+                <Card key={invite.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-yellow-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{invite.email}</p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline">{roleLabels[invite.role] || invite.role}</Badge>
+                            <span>•</span>
+                            <span>
+                              Sent {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "text-white",
-                        roleColors[member.role || "viewer"]
-                      )}
-                    >
-                      {roleLabels[member.role || "viewer"]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">
-                      {member.department || "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={member.is_active ? "default" : "secondary"}>
-                      {member.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {member.last_login_at
-                        ? new Date(member.last_login_at).toLocaleDateString()
-                        : "Never"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-muted px-3 py-1.5 rounded-md">
+                          <code className="text-sm font-mono">{invite.invite_code}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => copyInviteCode(invite.invite_code)}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => resendInvite(invite)}
+                          title="Generate new code"
+                        >
+                          <RefreshCw className="h-4 w-4" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault()
-                            openEditDialog(member)
-                          }}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => toggleStatus(member)}>
-                          {member.is_active ? (
-                            <>
-                              <UserX className="mr-2 h-4 w-4" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="mr-2 h-4 w-4" />
-                              Activate
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="text-destructive"
-                          onSelect={(e) => {
-                            e.preventDefault()
-                            openDeleteDialog(member)
-                          }}
+                          onClick={() => cancelInvite(invite)}
+                          title="Cancel invite"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Invite Dialog */}
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
@@ -508,53 +691,25 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
             <DialogDescription>
-              Send an invitation to join your organization
+              Send an invitation to join your organization. They'll receive a code to sign up.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name *</Label>
-                <Input
-                  id="first_name"
-                  value={inviteForm.first_name}
-                  onChange={(e) =>
-                    setInviteForm({ ...inviteForm, first_name: e.target.value })
-                  }
-                  placeholder="Ahmed"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name *</Label>
-                <Input
-                  id="last_name"
-                  value={inviteForm.last_name}
-                  onChange={(e) =>
-                    setInviteForm({ ...inviteForm, last_name: e.target.value })
-                  }
-                  placeholder="Al-Hassan"
-                />
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email Address *</Label>
               <Input
                 id="email"
                 type="email"
                 value={inviteForm.email}
-                onChange={(e) =>
-                  setInviteForm({ ...inviteForm, email: e.target.value })
-                }
-                placeholder="ahmed@company.com"
+                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                placeholder="colleague@company.com"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role *</Label>
               <Select
                 value={inviteForm.role}
-                onValueChange={(value) =>
-                  setInviteForm({ ...inviteForm, role: value })
-                }
+                onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -568,34 +723,9 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
                 </SelectContent>
               </Select>
             </div>
-            {departments.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select
-                  value={inviteForm.department}
-                  onValueChange={(value) =>
-                    setInviteForm({ ...inviteForm, department: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.name}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsInviteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleInvite} disabled={isLoading}>
@@ -616,39 +746,15 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
           <DialogHeader>
             <DialogTitle>Edit Team Member</DialogTitle>
             <DialogDescription>
-              Update team member information and role
+              Update role and department for {selectedMember?.first_name} {selectedMember?.last_name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit_first_name">First Name</Label>
-                <Input
-                  id="edit_first_name"
-                  value={editForm.first_name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, first_name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_last_name">Last Name</Label>
-                <Input
-                  id="edit_last_name"
-                  value={editForm.last_name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, last_name: e.target.value })
-                  }
-                />
-              </div>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="edit_role">Role</Label>
               <Select
                 value={editForm.role}
-                onValueChange={(value) =>
-                  setEditForm({ ...editForm, role: value })
-                }
+                onValueChange={(value) => setEditForm({ ...editForm, role: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -667,14 +773,13 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
                 <Label htmlFor="edit_department">Department</Label>
                 <Select
                   value={editForm.department}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, department: value })
-                  }
+                  onValueChange={(value) => setEditForm({ ...editForm, department: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">No department</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.name}>
                         {dept.name}
@@ -686,10 +791,7 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
             )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEdit} disabled={isLoading}>
@@ -706,8 +808,7 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
           <DialogHeader>
             <DialogTitle>Remove Team Member</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove this team member? They will lose
-              access to the organization.
+              Are you sure you want to remove this person from your organization?
             </DialogDescription>
           </DialogHeader>
           {selectedMember && (
@@ -716,24 +817,18 @@ export function TeamClient({ members: initialMembers, departments }: TeamClientP
                 <p className="font-medium text-destructive">
                   {selectedMember.first_name} {selectedMember.last_name}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {selectedMember.email}
-                </p>
+                <p className="text-sm text-muted-foreground">{selectedMember.email}</p>
               </div>
+              <p className="text-sm text-muted-foreground mt-4">
+                They will lose access to all organization data but their account will remain.
+              </p>
             </div>
           )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isLoading}
-            >
+            <Button variant="destructive" onClick={handleRemove} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Remove Member
             </Button>
