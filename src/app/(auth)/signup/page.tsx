@@ -156,17 +156,18 @@ function SignupPageContent() {
     return () => clearTimeout(timer)
   }, [inviteCode])
 
-  // Helper function to add timeout to promises
-  const withTimeout = <T,>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> => {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(errorMessage)), ms)
-    )
-    return Promise.race([promise, timeout])
-  }
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+
+    // Global timeout - force redirect after 20 seconds no matter what
+    const globalTimeout = setTimeout(() => {
+      console.error("Global timeout reached - forcing redirect")
+      toast.warning("Request took too long. Redirecting to login...")
+      window.location.href = "/login"
+    }, 20000)
+
+    let shouldRedirect = false
 
     try {
       const supabase = createClient()
@@ -174,60 +175,44 @@ function SignupPageContent() {
       // If using invite, verify email matches
       if (inviteInfo && email.toLowerCase() !== inviteInfo.email.toLowerCase()) {
         toast.error("Email must match the invited email address")
-        setLoading(false)
         return
       }
 
-      // Create user account with 15 second timeout
-      let authData
-      try {
-        const signUpResult = await withTimeout(
-          supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                first_name: firstName,
-                last_name: lastName,
-              },
-            },
-          }),
-          15000,
-          "Signup request timed out. Please try again."
-        )
+      // Create user account
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+        },
+      })
 
-        if (signUpResult.error) {
-          toast.error(signUpResult.error.message)
-          setLoading(false)
-          return
-        }
-        authData = signUpResult.data
-      } catch (timeoutErr: any) {
-        toast.error(timeoutErr.message || "Signup timed out. Please try again.")
-        setLoading(false)
+      if (signUpError) {
+        toast.error(signUpError.message)
         return
       }
 
       // Check if user was actually created
       if (!authData?.user) {
         toast.error("Failed to create account. Please try again.")
-        setLoading(false)
         return
       }
 
       // Check for fake signups (user exists, email confirmation enabled)
       if (authData.user.identities && authData.user.identities.length === 0) {
         toast.error("An account with this email already exists. Please sign in instead.")
-        setLoading(false)
         return
       }
 
-      // If invite code provided, join the organization via API with 10 second timeout
+      // User created successfully - set flag to redirect
+      shouldRedirect = true
+
+      // If invite code provided, join the organization via API
       if (inviteInfo) {
         try {
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 10000)
-
           const acceptResponse = await fetch("/api/invites/accept", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -235,37 +220,36 @@ function SignupPageContent() {
               inviteId: inviteInfo.id,
               userId: authData.user.id,
             }),
-            signal: controller.signal,
           })
 
-          clearTimeout(timeoutId)
-
-          const acceptData = await acceptResponse.json()
-
-          if (!acceptResponse.ok) {
+          if (acceptResponse.ok) {
+            toast.success(`Account created! You've joined ${inviteInfo.organization.name}. Check your email to verify.`)
+          } else {
+            const acceptData = await acceptResponse.json().catch(() => ({}))
             console.error("Error accepting invite:", acceptData.error)
             toast.warning(`Account created but couldn't join organization. Please contact your admin.`)
-          } else {
-            toast.success(`Account created! You've joined ${inviteInfo.organization.name}. Check your email to verify.`)
           }
-        } catch (acceptErr: any) {
+        } catch (acceptErr) {
           console.error("Error accepting invite:", acceptErr)
-          if (acceptErr.name === 'AbortError') {
-            toast.warning("Account created but organization join timed out. Please contact your admin.")
-          } else {
-            toast.warning("Account created but couldn't join organization. Please contact your admin.")
-          }
+          toast.warning("Account created but couldn't join organization. Please contact your admin.")
         }
       } else {
         toast.success("Account created! Please check your email to verify.")
       }
-
-      // Always redirect to login
-      window.location.href = "/login"
     } catch (err: any) {
       console.error("Signup error:", err)
       toast.error(err.message || "An unexpected error occurred")
+    } finally {
+      clearTimeout(globalTimeout)
       setLoading(false)
+
+      // Redirect if signup was successful
+      if (shouldRedirect) {
+        // Small delay to show toast
+        setTimeout(() => {
+          window.location.href = "/login"
+        }, 500)
+      }
     }
   }
 
