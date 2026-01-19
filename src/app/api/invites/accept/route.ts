@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (invite.status !== "pending") {
+    // Check status - treat NULL as pending for backwards compatibility
+    if (invite.status && invite.status !== "pending") {
       return NextResponse.json(
         { error: "This invite has already been used" },
         { status: 400 }
