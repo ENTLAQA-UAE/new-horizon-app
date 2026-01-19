@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create user role
+    // Create user role - this is critical for the user to access the org
     const { error: roleError } = await supabase
       .from("user_roles")
       .upsert({
@@ -111,6 +111,25 @@ export async function POST(request: NextRequest) {
 
     if (roleError) {
       console.error("Error creating user role:", roleError)
+      // Try a direct insert as fallback in case upsert conflict handling isn't working
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          org_id: invite.org_id,
+          role: invite.role,
+        })
+
+      if (insertError) {
+        // If it's a duplicate key error, the role already exists which is fine
+        if (!insertError.message?.includes("duplicate") && !insertError.code?.includes("23505")) {
+          console.error("Error inserting user role:", insertError)
+          return NextResponse.json(
+            { error: "Failed to assign user role: " + insertError.message },
+            { status: 500 }
+          )
+        }
+      }
     }
 
     // Mark invite as accepted
