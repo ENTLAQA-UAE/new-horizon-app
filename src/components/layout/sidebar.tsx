@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useBranding } from "@/lib/branding/branding-context"
 import {
   LayoutDashboard,
   Building2,
@@ -33,9 +34,16 @@ import {
   FileSignature,
   PanelTop,
   Bell,
+  Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export type UserRole = "super_admin" | "org_admin" | "hr_manager" | "recruiter" | "hiring_manager" | "interviewer"
 
@@ -216,6 +224,7 @@ function getSectionsForRole(role?: UserRole): NavSection[] {
 export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProps) {
   const pathname = usePathname()
   const { language, isRTL } = useI18n()
+  const branding = useBranding()
 
   const sections = getSectionsForRole(userRole)
 
@@ -233,96 +242,167 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
   }
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col border-border bg-card transition-all duration-300",
-        isRTL ? "border-l" : "border-r",
-        collapsed ? "w-16" : "w-64"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-border">
-        {!collapsed && (
-          <Link href={homeHref} className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg">{language === "ar" ? "جدارات" : "Jadarat"}</span>
-          </Link>
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "flex flex-col bg-card transition-all duration-300 relative overflow-hidden",
+          isRTL ? "border-l border-border" : "border-r border-border",
+          collapsed ? "w-[72px]" : "w-64"
         )}
-        {collapsed && (
-          <Link href={homeHref} className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
-            <Building2 className="w-4 h-4 text-primary-foreground" />
-          </Link>
-        )}
-        {onCollapse && !collapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onCollapse(true)}
+      >
+        {/* Decorative gradient background */}
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ background: `var(--brand-gradient)` }}
+        />
+
+        {/* Logo Section */}
+        <div className={cn(
+          "flex h-16 items-center justify-between px-4 border-b border-border relative",
+          collapsed ? "justify-center" : ""
+        )}>
+          <Link
+            href={homeHref}
+            className={cn(
+              "flex items-center gap-3 group",
+              collapsed ? "justify-center" : ""
+            )}
           >
-            <CollapseIcon className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+            {branding.logoUrl ? (
+              <div className="relative">
+                <img
+                  src={branding.logoUrl}
+                  alt={branding.orgName}
+                  className={cn(
+                    "object-contain transition-transform group-hover:scale-105",
+                    collapsed ? "h-9 w-9" : "h-9 max-w-[140px]"
+                  )}
+                />
+              </div>
+            ) : (
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105"
+                style={{ background: `var(--brand-gradient)` }}
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+            )}
+            {!collapsed && !branding.logoUrl && (
+              <span className="font-bold text-lg gradient-text">
+                {language === "ar" ? branding.orgNameAr : branding.orgName}
+              </span>
+            )}
+          </Link>
 
-      {/* Navigation */}
-      <ScrollArea className="flex-1 py-4">
-        <nav className="space-y-4 px-2">
-          {sections.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="space-y-1">
-              {/* Section Title */}
-              {section.title && !collapsed && (
-                <div className="px-3 py-2">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {language === "ar" ? section.titleAr : section.title}
-                  </h3>
-                </div>
-              )}
-              {section.title && collapsed && (
-                <div className="h-px bg-border mx-2 my-2" />
-              )}
-
-              {/* Section Links */}
-              {section.links.map((link) => {
-                const isActive = isLinkActive(link.href)
-                const label = language === "ar" ? link.labelAr : link.label
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                    title={collapsed ? label : undefined}
-                  >
-                    <link.icon className="h-5 w-5 shrink-0" />
-                    {!collapsed && <span>{label}</span>}
-                  </Link>
-                )
-              })}
-            </div>
-          ))}
-        </nav>
-      </ScrollArea>
-
-      {/* Collapse button (when collapsed) */}
-      {collapsed && onCollapse && (
-        <div className="p-2 border-t border-border">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-full h-8"
-            onClick={() => onCollapse(false)}
-          >
-            <ExpandIcon className="h-4 w-4" />
-          </Button>
+          {onCollapse && !collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={() => onCollapse(true)}
+            >
+              <CollapseIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      )}
-    </aside>
+
+        {/* Navigation */}
+        <ScrollArea className="flex-1 py-4">
+          <nav className="space-y-6 px-3">
+            {sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="space-y-1">
+                {/* Section Title */}
+                {section.title && !collapsed && (
+                  <div className="px-3 py-2">
+                    <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {language === "ar" ? section.titleAr : section.title}
+                    </h3>
+                  </div>
+                )}
+                {section.title && collapsed && (
+                  <div className="h-px bg-border mx-2 my-3" />
+                )}
+
+                {/* Section Links */}
+                {section.links.map((link) => {
+                  const isActive = isLinkActive(link.href)
+                  const label = language === "ar" ? link.labelAr : link.label
+
+                  const linkContent = (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        isActive
+                          ? "text-white shadow-lg"
+                          : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      )}
+                      style={isActive ? { background: `var(--brand-gradient)` } : undefined}
+                    >
+                      <link.icon className={cn(
+                        "h-5 w-5 shrink-0 transition-transform",
+                        isActive ? "text-white" : "",
+                        !isActive && "group-hover:scale-110"
+                      )} />
+                      {!collapsed && <span>{label}</span>}
+                    </Link>
+                  )
+
+                  if (collapsed) {
+                    return (
+                      <Tooltip key={link.href}>
+                        <TooltipTrigger asChild>
+                          {linkContent}
+                        </TooltipTrigger>
+                        <TooltipContent side={isRTL ? "left" : "right"} className="font-medium">
+                          {label}
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  }
+
+                  return linkContent
+                })}
+              </div>
+            ))}
+          </nav>
+        </ScrollArea>
+
+        {/* Collapse button (when collapsed) */}
+        {collapsed && onCollapse && (
+          <div className="p-3 border-t border-border">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-full h-9 rounded-xl hover:bg-muted"
+                  onClick={() => onCollapse(false)}
+                >
+                  <ExpandIcon className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side={isRTL ? "left" : "right"}>
+                {language === "ar" ? "توسيع القائمة" : "Expand sidebar"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+        {/* Branding footer */}
+        {!collapsed && (
+          <div className="p-4 border-t border-border">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ background: `var(--brand-primary)` }}
+              />
+              <span>Powered by Jadarat</span>
+            </div>
+          </div>
+        )}
+      </aside>
+    </TooltipProvider>
   )
 }

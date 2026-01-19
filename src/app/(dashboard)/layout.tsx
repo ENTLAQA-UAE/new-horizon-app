@@ -5,8 +5,9 @@ import { useRouter, usePathname } from "next/navigation"
 import { Sidebar, UserRole } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
+import { BrandingProvider } from "@/lib/branding/branding-context"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -104,27 +105,37 @@ export default function DashboardLayout({
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
+            style={{ background: "var(--brand-gradient)" }}
+          >
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       </div>
     )
   }
 
   return (
-    <I18nProvider>
-      <div className="flex h-screen overflow-hidden">
-        <Sidebar
-          collapsed={sidebarCollapsed}
-          onCollapse={setSidebarCollapsed}
-          userRole={userRole || undefined}
-        />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
-            {children}
-          </main>
+    <BrandingProvider>
+      <I18nProvider>
+        <div className="flex h-screen overflow-hidden bg-background">
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onCollapse={setSidebarCollapsed}
+            userRole={userRole || undefined}
+          />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-y-auto bg-muted/20 p-6">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
-    </I18nProvider>
+      </I18nProvider>
+    </BrandingProvider>
   )
 }
