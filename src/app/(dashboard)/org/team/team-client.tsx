@@ -291,12 +291,12 @@ export function TeamClient({
     }
   }
 
-  // Cancel invite
+  // Cancel invite - delete instead of updating status to avoid unique constraint issues
   const cancelInvite = async (invite: Invite) => {
     try {
       const { error } = await supabase
         .from("team_invites")
-        .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+        .delete()
         .eq("id", invite.id)
 
       if (error) throw error
