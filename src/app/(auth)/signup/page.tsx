@@ -106,7 +106,25 @@ function SignupPageContent() {
     setInviteError(null)
 
     try {
-      const response = await fetch(`/api/invites/validate?code=${encodeURIComponent(code)}`)
+      const response = await fetch(`/api/invites/validate?code=${encodeURIComponent(code)}`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+        },
+        cache: "no-store",
+      })
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("Invalid response content-type:", contentType)
+        const text = await response.text()
+        console.error("Response body:", text.substring(0, 500))
+        setInviteError("Server returned invalid response")
+        setInviteInfo(null)
+        return
+      }
+
       const data = await response.json()
 
       if (!response.ok || !data.valid) {

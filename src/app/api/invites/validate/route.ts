@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
+// Helper to create JSON response with proper headers
+function jsonResponse(data: object, status: number = 200) {
+  return new NextResponse(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  })
+}
+
 /**
  * Validate an invite code (public endpoint - no auth required)
  * This uses the service role to bypass RLS for invite validation
@@ -10,10 +21,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
 
   if (!code) {
-    return NextResponse.json(
-      { error: "Invite code is required" },
-      { status: 400 }
-    )
+    return jsonResponse({ valid: false, error: "Invite code is required" }, 400)
   }
 
   // Use service role to bypass RLS
@@ -22,10 +30,7 @@ export async function GET(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseServiceKey) {
     console.error("Missing Supabase credentials")
-    return NextResponse.json(
-      { error: "Server configuration error" },
-      { status: 500 }
-    )
+    return jsonResponse({ valid: false, error: "Server configuration error" }, 500)
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -40,32 +45,20 @@ export async function GET(request: NextRequest) {
 
     if (inviteError) {
       console.error("Invite query error:", inviteError)
-      return NextResponse.json(
-        { valid: false, error: "Invalid invite code" },
-        { status: 404 }
-      )
+      return jsonResponse({ valid: false, error: "Invalid invite code" }, 404)
     }
 
     if (!invite) {
-      return NextResponse.json(
-        { valid: false, error: "Invalid invite code" },
-        { status: 404 }
-      )
+      return jsonResponse({ valid: false, error: "Invalid invite code" }, 404)
     }
 
     // Check status - treat NULL as pending for backwards compatibility
     if (invite.status && invite.status !== "pending") {
-      return NextResponse.json(
-        { valid: false, error: "This invite has already been used" },
-        { status: 400 }
-      )
+      return jsonResponse({ valid: false, error: "This invite has already been used" }, 400)
     }
 
     if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-      return NextResponse.json(
-        { valid: false, error: "This invite has expired" },
-        { status: 400 }
-      )
+      return jsonResponse({ valid: false, error: "This invite has expired" }, 400)
     }
 
     // Get organization info separately to avoid join issues
@@ -80,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return invite info (limited fields for security)
-    return NextResponse.json({
+    return jsonResponse({
       valid: true,
       invite: {
         id: invite.id,
@@ -92,9 +85,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (err: any) {
     console.error("Error validating invite:", err?.message || err)
-    return NextResponse.json(
-      { valid: false, error: "Server error validating invite" },
-      { status: 500 }
-    )
+    return jsonResponse({ valid: false, error: "Server error validating invite" }, 500)
   }
 }
