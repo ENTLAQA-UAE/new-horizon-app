@@ -178,6 +178,21 @@ function SignupPageContent() {
 
       if (authError) {
         toast.error(authError.message)
+        setLoading(false)
+        return
+      }
+
+      // Check if user was actually created (handles case where user already exists)
+      if (!authData.user) {
+        toast.error("Failed to create account. Please try again.")
+        setLoading(false)
+        return
+      }
+
+      // Check for fake signups (user exists, email confirmation enabled)
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        toast.error("An account with this email already exists. Please sign in instead.")
+        setLoading(false)
         return
       }
 
@@ -193,12 +208,20 @@ function SignupPageContent() {
             }),
           })
 
+          const acceptData = await acceptResponse.json()
+
           if (!acceptResponse.ok) {
-            const acceptData = await acceptResponse.json()
             console.error("Error accepting invite:", acceptData.error)
+            // Still show success for signup, but warn about org join
+            toast.warning(`Account created but couldn't join organization: ${acceptData.error}. Please contact your admin.`)
+            router.push("/login")
+            return
           }
         } catch (acceptErr) {
           console.error("Error accepting invite:", acceptErr)
+          toast.warning("Account created but couldn't join organization. Please contact your admin.")
+          router.push("/login")
+          return
         }
 
         toast.success(`Account created! You've joined ${inviteInfo.organization.name}. Please check your email to verify.`)
@@ -207,7 +230,8 @@ function SignupPageContent() {
       }
 
       router.push("/login")
-    } catch {
+    } catch (err) {
+      console.error("Signup error:", err)
       toast.error("An unexpected error occurred")
     } finally {
       setLoading(false)

@@ -77,18 +77,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update profile with org_id
+    // Update or create profile with org_id
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: userId,
         org_id: invite.org_id,
+        email: user.user.email,
+        first_name: user.user.user_metadata?.first_name || "",
+        last_name: user.user.user_metadata?.last_name || "",
+      }, {
+        onConflict: "id"
       })
-      .eq("id", userId)
 
     if (profileError) {
       console.error("Error updating profile:", profileError)
       return NextResponse.json(
-        { error: "Failed to update profile" },
+        { error: "Failed to update profile: " + profileError.message },
         { status: 500 }
       )
     }
