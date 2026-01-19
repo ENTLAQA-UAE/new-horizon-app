@@ -11,10 +11,10 @@ export default async function NotificationSettingsPage() {
     redirect("/login")
   }
 
-  // Get user profile and check permissions
+  // Get user profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("org_id, role")
+    .select("org_id")
     .eq("id", user.id)
     .single()
 
@@ -22,8 +22,16 @@ export default async function NotificationSettingsPage() {
     redirect("/onboarding")
   }
 
+  // Get user role from user_roles table
+  const { data: userRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("org_id", profile.org_id)
+    .single()
+
   // Only org_admin and super_admin can access
-  if (!["org_admin", "super_admin"].includes(profile.role || "")) {
+  if (!userRole?.role || !["org_admin", "super_admin"].includes(userRole.role)) {
     redirect("/org")
   }
 
