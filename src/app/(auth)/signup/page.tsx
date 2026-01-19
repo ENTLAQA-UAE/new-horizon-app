@@ -156,6 +156,14 @@ function SignupPageContent() {
     return () => clearTimeout(timer)
   }, [inviteCode])
 
+  // Helper function to add timeout to promises
+  const withTimeout = <T,>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> => {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    )
+    return Promise.race([promise, timeout])
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -170,26 +178,38 @@ function SignupPageContent() {
         return
       }
 
-      // Create user account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-          },
-        },
-      })
+      // Create user account with 15 second timeout
+      let authData
+      try {
+        const signUpResult = await withTimeout(
+          supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                first_name: firstName,
+                last_name: lastName,
+              },
+            },
+          }),
+          15000,
+          "Signup request timed out. Please try again."
+        )
 
-      if (authError) {
-        toast.error(authError.message)
+        if (signUpResult.error) {
+          toast.error(signUpResult.error.message)
+          setLoading(false)
+          return
+        }
+        authData = signUpResult.data
+      } catch (timeoutErr: any) {
+        toast.error(timeoutErr.message || "Signup timed out. Please try again.")
         setLoading(false)
         return
       }
 
-      // Check if user was actually created (handles case where user already exists)
-      if (!authData.user) {
+      // Check if user was actually created
+      if (!authData?.user) {
         toast.error("Failed to create account. Please try again.")
         setLoading(false)
         return
@@ -202,9 +222,12 @@ function SignupPageContent() {
         return
       }
 
-      // If invite code provided, join the organization via API
-      if (inviteInfo && authData.user) {
+      // If invite code provided, join the organization via API with 10 second timeout
+      if (inviteInfo) {
         try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 10000)
+
           const acceptResponse = await fetch("/api/invites/accept", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -212,35 +235,36 @@ function SignupPageContent() {
               inviteId: inviteInfo.id,
               userId: authData.user.id,
             }),
+            signal: controller.signal,
           })
+
+          clearTimeout(timeoutId)
 
           const acceptData = await acceptResponse.json()
 
           if (!acceptResponse.ok) {
             console.error("Error accepting invite:", acceptData.error)
-            // Still show success for signup, but warn about org join
-            toast.warning(`Account created but couldn't join organization: ${acceptData.error}. Please contact your admin.`)
-            setTimeout(() => window.location.href = "/login", 1500)
-            return
+            toast.warning(`Account created but couldn't join organization. Please contact your admin.`)
+          } else {
+            toast.success(`Account created! You've joined ${inviteInfo.organization.name}. Check your email to verify.`)
           }
-        } catch (acceptErr) {
+        } catch (acceptErr: any) {
           console.error("Error accepting invite:", acceptErr)
-          toast.warning("Account created but couldn't join organization. Please contact your admin.")
-          setTimeout(() => window.location.href = "/login", 1500)
-          return
+          if (acceptErr.name === 'AbortError') {
+            toast.warning("Account created but organization join timed out. Please contact your admin.")
+          } else {
+            toast.warning("Account created but couldn't join organization. Please contact your admin.")
+          }
         }
-
-        toast.success(`Account created! You've joined ${inviteInfo.organization.name}. Please check your email to verify.`)
       } else {
         toast.success("Account created! Please check your email to verify.")
       }
 
-      // Redirect to login after short delay to show toast
-      setTimeout(() => window.location.href = "/login", 1500)
-    } catch (err) {
+      // Always redirect to login
+      window.location.href = "/login"
+    } catch (err: any) {
       console.error("Signup error:", err)
-      toast.error("An unexpected error occurred")
-    } finally {
+      toast.error(err.message || "An unexpected error occurred")
       setLoading(false)
     }
   }
