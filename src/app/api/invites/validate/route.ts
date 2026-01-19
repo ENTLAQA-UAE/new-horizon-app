@@ -31,31 +31,30 @@ export async function GET(request: NextRequest) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   try {
-    const { data: invite, error } = await supabase
+    // First, get the invite without the join to ensure it exists
+    const { data: invite, error: inviteError } = await supabase
       .from("team_invites")
-      .select(`
-        id,
-        email,
-        role,
-        org_id,
-        status,
-        expires_at,
-        organizations:org_id (
-          name,
-          logo_url
-        )
-      `)
+      .select("id, email, role, org_id, status, expires_at")
       .eq("invite_code", code.toUpperCase())
       .single()
 
-    if (error || !invite) {
+    if (inviteError) {
+      console.error("Invite query error:", inviteError)
       return NextResponse.json(
         { valid: false, error: "Invalid invite code" },
         { status: 404 }
       )
     }
 
-    if (invite.status !== "pending") {
+    if (!invite) {
+      return NextResponse.json(
+        { valid: false, error: "Invalid invite code" },
+        { status: 404 }
+      )
+    }
+
+    // Check status - treat NULL as pending for backwards compatibility
+    if (invite.status && invite.status !== "pending") {
       return NextResponse.json(
         { valid: false, error: "This invite has already been used" },
         { status: 400 }
@@ -69,6 +68,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Get organization info separately to avoid join issues
+    let organization = null
+    if (invite.org_id) {
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("name, logo_url")
+        .eq("id", invite.org_id)
+        .single()
+      organization = org
+    }
+
     // Return invite info (limited fields for security)
     return NextResponse.json({
       valid: true,
@@ -77,13 +87,13 @@ export async function GET(request: NextRequest) {
         email: invite.email,
         role: invite.role,
         org_id: invite.org_id,
-        organization: invite.organizations,
+        organization: organization,
       },
     })
-  } catch (err) {
-    console.error("Error validating invite:", err)
+  } catch (err: any) {
+    console.error("Error validating invite:", err?.message || err)
     return NextResponse.json(
-      { error: "Error validating invite code" },
+      { valid: false, error: "Server error validating invite" },
       { status: 500 }
     )
   }
