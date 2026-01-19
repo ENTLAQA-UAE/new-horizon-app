@@ -12,10 +12,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell, Search, LogOut, User, Settings, Globe } from "lucide-react"
+import { Search, LogOut, User, Settings, Globe } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { useI18n } from "@/lib/i18n"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 
 interface HeaderProps {
   title?: string
@@ -66,10 +67,7 @@ export function Header({ title, titleAr }: HeaderProps) {
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 rtl:right-auto rtl:left-1.5 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <NotificationBell />
 
         {/* User Menu */}
         <DropdownMenu>
