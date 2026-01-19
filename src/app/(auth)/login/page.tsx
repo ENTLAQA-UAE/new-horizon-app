@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -30,6 +30,22 @@ interface OrgBranding {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageSkeleton />}>
+      <LoginPageContent />
+    </Suspense>
+  )
+}
+
+function LoginPageSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  )
+}
+
+function LoginPageContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
