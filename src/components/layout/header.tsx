@@ -45,7 +45,8 @@ interface HeaderProps {
 }
 
 interface UserProfile {
-  full_name: string | null
+  first_name: string | null
+  last_name: string | null
   email: string | null
   avatar_url: string | null
 }
@@ -67,7 +68,7 @@ export function Header({ title, titleAr }: HeaderProps) {
       if (user) {
         const { data } = await supabase
           .from("profiles")
-          .select("full_name, email, avatar_url")
+          .select("first_name, last_name, email, avatar_url")
           .eq("id", user.id)
           .single()
         if (data) {
@@ -108,9 +109,15 @@ export function Header({ title, titleAr }: HeaderProps) {
     setLanguage(language === "en" ? "ar" : "en")
   }
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "U"
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+  const getFullName = () => {
+    if (!profile?.first_name && !profile?.last_name) return null
+    return `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()
+  }
+
+  const getInitials = () => {
+    const first = profile?.first_name?.[0] || ""
+    const last = profile?.last_name?.[0] || ""
+    return (first + last).toUpperCase() || "U"
   }
 
   return (
@@ -173,17 +180,17 @@ export function Header({ title, titleAr }: HeaderProps) {
                 className="relative h-10 gap-2 rounded-xl px-2 hover:bg-muted"
               >
                 <Avatar className="h-8 w-8 border-2 border-border">
-                  <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "User"} />
+                  <AvatarImage src={profile?.avatar_url || ""} alt={getFullName() || "User"} />
                   <AvatarFallback
                     className="text-xs font-medium text-white"
                     style={{ background: `var(--brand-gradient)` }}
                   >
-                    {getInitials(profile?.full_name)}
+                    {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start">
                   <span className="text-sm font-medium">
-                    {profile?.full_name || "User"}
+                    {getFullName() || "User"}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {branding.orgName}
@@ -194,7 +201,7 @@ export function Header({ title, titleAr }: HeaderProps) {
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{profile?.full_name || "User"}</p>
+                  <p className="text-sm font-medium">{getFullName() || "User"}</p>
                   <p className="text-xs text-muted-foreground">{profile?.email}</p>
                 </div>
               </DropdownMenuLabel>
