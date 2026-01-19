@@ -28,6 +28,8 @@ import {
   GitBranch,
   HelpCircle,
   FileCheck,
+  BarChart3,
+  Files,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
@@ -53,6 +55,7 @@ const superAdminLinks = [
 
 const orgAdminLinks = [
   { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+  { href: "/org/analytics", label: "Analytics", labelAr: "التحليلات", icon: BarChart3 },
   { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
   { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
   { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
@@ -62,6 +65,7 @@ const orgAdminLinks = [
   { href: "/org/pipelines", label: "Pipelines", labelAr: "مسارات التوظيف", icon: GitBranch },
   { href: "/org/screening-questions", label: "Screening Questions", labelAr: "أسئلة الفحص", icon: HelpCircle },
   { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
+  { href: "/org/documents", label: "Documents", labelAr: "المستندات", icon: Files },
   { href: "/org/team", label: "Team", labelAr: "الفريق", icon: Users },
   { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
   { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
