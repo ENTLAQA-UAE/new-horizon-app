@@ -34,14 +34,14 @@ export default async function DocumentsPage() {
       candidates (id, first_name, last_name),
       applications (id, jobs (title))
     `)
-    .eq("organization_id", orgId)
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false })
 
   // Get candidates for filtering
   const { data: candidates } = await supabase
     .from("candidates")
     .select("id, first_name, last_name")
-    .eq("organization_id", orgId)
+    .eq("org_id", orgId)
     .order("first_name", { ascending: true })
 
   return (

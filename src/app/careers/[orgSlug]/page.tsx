@@ -43,7 +43,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
       closes_at
     `
     )
-    .eq("organization_id", organization.id)
+    .eq("org_id", organization.id)
     .eq("status", "published")
     .order("published_at", { ascending: false })
 
@@ -51,7 +51,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
   const { data: branding } = await supabase
     .from("organization_branding")
     .select("*")
-    .eq("organization_id", organization.id)
+    .eq("org_id", organization.id)
     .single()
 
   return (
