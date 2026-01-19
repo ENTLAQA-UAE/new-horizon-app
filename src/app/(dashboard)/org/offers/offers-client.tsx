@@ -325,7 +325,7 @@ export function OffersClient({
         return
       }
 
-      setOffers([data, ...offers])
+      setOffers([data as unknown as Offer, ...offers])
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Offer created successfully")
