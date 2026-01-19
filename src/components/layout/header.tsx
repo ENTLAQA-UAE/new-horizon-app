@@ -30,14 +30,18 @@ export function Header({ title, titleAr }: HeaderProps) {
   const displayTitle = language === "ar" && titleAr ? titleAr : title || t("nav.dashboard")
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      toast.error("Error signing out")
-      return
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error("Error signing out:", error)
+        toast.error("Error signing out")
+      }
+    } catch (err) {
+      console.error("Logout error:", err)
     }
-    router.push("/login")
-    router.refresh()
+    // Always redirect to login with hard refresh to clear all state
+    window.location.href = "/login"
   }
 
   const toggleLanguage = () => {
