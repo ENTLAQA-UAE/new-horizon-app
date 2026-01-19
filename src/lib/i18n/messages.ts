@@ -14,6 +14,7 @@ import interviewsEn from '@/messages/en/interviews.json'
 import offersEn from '@/messages/en/offers.json'
 import settingsEn from '@/messages/en/settings.json'
 import errorsEn from '@/messages/en/errors.json'
+import navEn from '@/messages/en/nav.json'
 
 // Arabic translations
 import commonAr from '@/messages/ar/common.json'
@@ -26,6 +27,7 @@ import interviewsAr from '@/messages/ar/interviews.json'
 import offersAr from '@/messages/ar/offers.json'
 import settingsAr from '@/messages/ar/settings.json'
 import errorsAr from '@/messages/ar/errors.json'
+import navAr from '@/messages/ar/nav.json'
 
 export const messages = {
   en: {
@@ -39,6 +41,7 @@ export const messages = {
     offers: offersEn,
     settings: settingsEn,
     errors: errorsEn,
+    nav: navEn,
   },
   ar: {
     common: commonAr,
@@ -51,6 +54,7 @@ export const messages = {
     offers: offersAr,
     settings: settingsAr,
     errors: errorsAr,
+    nav: navAr,
   },
 } as const
 
