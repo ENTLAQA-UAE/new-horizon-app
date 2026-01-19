@@ -59,6 +59,7 @@ import {
   Copy,
   RefreshCw,
   X,
+  Link,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
@@ -215,7 +216,7 @@ export function TeamClient({
       setInvites([data, ...invites])
       setIsInviteDialogOpen(false)
       setInviteForm({ email: "", role: "recruiter" })
-      toast.success("Invitation sent! Share the invite code with your team member.")
+      toast.success("Invitation created! Share the invite code or link with your team member.")
     } catch (error: any) {
       console.error("Error sending invite:", error)
       toast.error(error.message || "Failed to send invitation")
@@ -228,6 +229,14 @@ export function TeamClient({
   const copyInviteCode = (code: string) => {
     navigator.clipboard.writeText(code)
     toast.success("Invite code copied to clipboard")
+  }
+
+  // Copy invite link
+  const copyInviteLink = (code: string) => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+    const inviteLink = `${baseUrl}/signup?code=${code}`
+    navigator.clipboard.writeText(inviteLink)
+    toast.success("Invite link copied to clipboard")
   }
 
   // Resend invite (generate new code)
@@ -654,10 +663,19 @@ export function TeamClient({
                             size="icon"
                             className="h-6 w-6"
                             onClick={() => copyInviteCode(invite.invite_code)}
+                            title="Copy code"
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyInviteLink(invite.invite_code)}
+                          title="Copy invite link"
+                        >
+                          <Link className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
