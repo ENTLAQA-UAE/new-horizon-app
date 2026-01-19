@@ -211,7 +211,18 @@ export function TeamClient({
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        // Handle specific database constraint errors
+        if (error.code === "23505" || error.message?.includes("duplicate") || error.message?.includes("unique constraint")) {
+          toast.error("This person already has a pending invite. Please cancel the existing invite first or wait for them to accept it.")
+          // Refresh invites list to sync state
+          router.refresh()
+          setIsLoading(false)
+          setIsInviteDialogOpen(false)
+          return
+        }
+        throw error
+      }
 
       setInvites([data, ...invites])
       setIsInviteDialogOpen(false)
@@ -219,7 +230,12 @@ export function TeamClient({
       toast.success("Invitation created! Share the invite code or link with your team member.")
     } catch (error: any) {
       console.error("Error sending invite:", error)
-      toast.error(error.message || "Failed to send invitation")
+      // Provide user-friendly error messages
+      if (error.code === "23505" || error.message?.includes("duplicate")) {
+        toast.error("This person already has a pending invite")
+      } else {
+        toast.error(error.message || "Failed to send invitation")
+      }
     } finally {
       setIsLoading(false)
     }
