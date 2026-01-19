@@ -97,7 +97,8 @@ const orgAdminSections: NavSection[] = [
     titleAr: "الإعدادات",
     links: [
       { href: "/org/settings", label: "General", labelAr: "عام", icon: Settings },
-      { href: "/org/settings/integrations", label: "Integrations", labelAr: "التكاملات", icon: Plug },
+      { href: "/org/settings/integrations", label: "Video Integration", labelAr: "تكامل الفيديو", icon: Plug },
+      { href: "/org/settings/email", label: "Email Integration", labelAr: "تكامل البريد", icon: Mail },
       { href: "/org/settings/notifications", label: "Notifications", labelAr: "الإشعارات", icon: Bell },
     ],
   },
