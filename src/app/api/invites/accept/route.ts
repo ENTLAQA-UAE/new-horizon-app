@@ -124,7 +124,14 @@ export async function POST(request: NextRequest) {
       .eq("id", inviteId)
 
     if (updateError) {
-      console.error("Error updating invite:", updateError)
+      console.error("Error updating invite status:", updateError)
+      // Still return success since user is added to org, but log the warning
+      return NextResponse.json({
+        success: true,
+        message: "User added to organization but invite status update failed",
+        warning: updateError.message,
+        orgId: invite.org_id,
+      })
     }
 
     return NextResponse.json({
