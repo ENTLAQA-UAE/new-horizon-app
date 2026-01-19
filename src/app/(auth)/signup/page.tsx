@@ -214,13 +214,13 @@ function SignupPageContent() {
             console.error("Error accepting invite:", acceptData.error)
             // Still show success for signup, but warn about org join
             toast.warning(`Account created but couldn't join organization: ${acceptData.error}. Please contact your admin.`)
-            router.push("/login")
+            setTimeout(() => window.location.href = "/login", 1500)
             return
           }
         } catch (acceptErr) {
           console.error("Error accepting invite:", acceptErr)
           toast.warning("Account created but couldn't join organization. Please contact your admin.")
-          router.push("/login")
+          setTimeout(() => window.location.href = "/login", 1500)
           return
         }
 
@@ -229,7 +229,8 @@ function SignupPageContent() {
         toast.success("Account created! Please check your email to verify.")
       }
 
-      router.push("/login")
+      // Redirect to login after short delay to show toast
+      setTimeout(() => window.location.href = "/login", 1500)
     } catch (err) {
       console.error("Signup error:", err)
       toast.error("An unexpected error occurred")
