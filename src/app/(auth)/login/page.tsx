@@ -47,12 +47,15 @@ export default function LoginPage() {
       const supabase = createClient()
       const { data } = await supabase
         .from("organizations")
-        .select("name, logo_url, login_image_url, primary_color, secondary_color")
+        .select("name, logo_url, primary_color, secondary_color")
         .eq("slug", orgSlug)
         .single()
 
       if (data) {
-        setOrgBranding(data)
+        setOrgBranding({
+          ...data,
+          login_image_url: (data as Record<string, unknown>).login_image_url as string | null ?? null,
+        })
       }
     }
 

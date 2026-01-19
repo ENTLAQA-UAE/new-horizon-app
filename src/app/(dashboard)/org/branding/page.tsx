@@ -108,13 +108,15 @@ export default function BrandingPage() {
         // Load organization branding
         const { data: org, error } = await supabase
           .from("organizations")
-          .select("name, name_ar, slug, logo_url, login_image_url, primary_color, secondary_color, custom_domain")
+          .select("name, name_ar, slug, logo_url, primary_color, secondary_color, custom_domain")
           .eq("id", orgId)
           .single()
 
         if (error) throw error
 
         if (org) {
+          // Handle login_image_url which may not exist in DB yet
+          const orgData = org as Record<string, unknown>
           setSettings({
             company_name: org.name || "",
             company_name_ar: org.name_ar || "",
@@ -123,7 +125,7 @@ export default function BrandingPage() {
             tagline_ar: "",
             logo_url: org.logo_url || "",
             favicon_url: "",
-            login_image_url: org.login_image_url || "",
+            login_image_url: (orgData.login_image_url as string) || "",
             primary_color: org.primary_color || "#6366F1",
             secondary_color: org.secondary_color || "#8B5CF6",
             website_url: org.custom_domain || "",
