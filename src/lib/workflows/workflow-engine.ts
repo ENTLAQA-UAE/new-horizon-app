@@ -80,7 +80,7 @@ export async function getActiveWorkflows(
   const { data, error } = await supabase
     .from("workflows")
     .select("*")
-    .eq("organization_id", organizationId)
+    .eq("org_id", organizationId)
     .eq("trigger_type", triggerType)
     .eq("is_active", true)
 

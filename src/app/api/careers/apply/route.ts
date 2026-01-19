@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       .from("candidates")
       .select("id")
       .eq("email", email)
-      .eq("organization_id", organizationId)
+      .eq("org_id", organizationId)
       .single()
 
     if (existingCandidate) {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       const { data: newCandidate, error: createError } = await supabase
         .from("candidates")
         .insert({
-          organization_id: organizationId,
+          org_id: organizationId,
           first_name: firstName,
           last_name: lastName,
           email: email,
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     const { data: stages } = await supabase
       .from("hiring_stages")
       .select("id")
-      .eq("organization_id", organizationId)
+      .eq("org_id", organizationId)
       .order("sort_order", { ascending: true })
       .limit(1)
 

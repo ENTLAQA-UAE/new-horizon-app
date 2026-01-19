@@ -36,7 +36,7 @@ export default async function DocumentsPage() {
       candidates (id, first_name, last_name),
       applications (id, jobs (title))
     `)
-    .eq("organization_id", orgId)
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false })
 
   // Get candidates for filtering

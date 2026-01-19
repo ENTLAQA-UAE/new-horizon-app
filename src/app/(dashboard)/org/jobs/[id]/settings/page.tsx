@@ -193,7 +193,7 @@ export default function JobSettingsPage() {
       const { data: team } = await supabase
         .from("profiles")
         .select("id, full_name, email, avatar_url, role")
-        .eq("organization_id", orgId)
+        .eq("org_id", orgId)
 
       setAvailableTeam(team || [])
 

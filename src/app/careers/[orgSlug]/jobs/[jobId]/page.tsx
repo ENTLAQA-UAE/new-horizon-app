@@ -28,7 +28,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     .from("jobs")
     .select("*")
     .eq("id", jobId)
-    .eq("organization_id", organization.id)
+    .eq("org_id", organization.id)
     .eq("status", "published")
     .single()
 
@@ -40,7 +40,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { data: branding } = await supabase
     .from("organization_branding")
     .select("*")
-    .eq("organization_id", organization.id)
+    .eq("org_id", organization.id)
     .single()
 
   return (
