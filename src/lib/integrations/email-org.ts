@@ -120,7 +120,7 @@ export async function sendOrgEmail(
       subject: options.subject,
       html: options.html,
       text: options.text,
-      reply_to: options.replyTo || config.replyTo,
+      replyTo: options.replyTo || config.replyTo,
       cc: options.cc,
       bcc: options.bcc,
       attachments: options.attachments?.map((a) => ({

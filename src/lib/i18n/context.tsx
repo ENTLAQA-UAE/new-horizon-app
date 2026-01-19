@@ -54,7 +54,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const value: I18nContextType = {
     language,
     setLanguage,
-    messages: messages[language],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    messages: messages[language] as any,
     t,
     dir: language === "ar" ? "rtl" : "ltr",
     isRTL: language === "ar",

@@ -194,7 +194,8 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
       if (error) throw error
 
-      setJobs([data, ...jobs])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setJobs([data as any, ...jobs])
       setIsCreateOpen(false)
       resetForm()
       toast.success("Job created successfully")

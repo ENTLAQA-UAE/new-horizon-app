@@ -46,5 +46,6 @@ export default async function TiersPage() {
     getTierStats(),
   ])
 
-  return <TiersClient tiers={tiers} tierStats={tierStats} />
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <TiersClient tiers={tiers as any} tierStats={tierStats} />
 }

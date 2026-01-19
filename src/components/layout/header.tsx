@@ -26,7 +26,7 @@ export function Header({ title, titleAr }: HeaderProps) {
   const router = useRouter()
   const { language, setLanguage, t } = useI18n()
 
-  const displayTitle = language === "ar" && titleAr ? titleAr : title || t.nav.dashboard
+  const displayTitle = language === "ar" && titleAr ? titleAr : title || t("nav.dashboard")
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -51,7 +51,7 @@ export function Header({ title, titleAr }: HeaderProps) {
         <div className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground rtl:left-auto rtl:right-3" />
           <Input
-            placeholder={t.common.search + "..."}
+            placeholder={t("common.search") + "..."}
             className="w-64 pl-9 rtl:pl-3 rtl:pr-9 bg-muted/50"
           />
         </div>
@@ -90,12 +90,12 @@ export function Header({ title, titleAr }: HeaderProps) {
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 rtl:mr-0 rtl:ml-2 h-4 w-4" />
-              {t.nav.settings}
+              {t("nav.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               <LogOut className="mr-2 rtl:mr-0 rtl:ml-2 h-4 w-4" />
-              {t.nav.logout}
+              {t("nav.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

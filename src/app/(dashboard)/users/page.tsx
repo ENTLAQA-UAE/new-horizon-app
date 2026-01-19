@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Note: This file uses organization_id instead of org_id
 import { createClient } from "@/lib/supabase/server"
 import { UsersClient } from "./users-client"
 

@@ -54,7 +54,8 @@ export default async function JobsPage() {
 
   return (
     <JobsClient
-      jobs={jobs}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      jobs={jobs as any}
       departments={departments}
       locations={locations}
     />

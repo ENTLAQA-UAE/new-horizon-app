@@ -42,11 +42,15 @@ import { Json } from "@/lib/supabase/types"
 interface AuditLog {
   id: string
   user_id: string | null
+  org_id: string | null
   action: string
   entity_type: string | null
   entity_id: string | null
-  details: Json | null
+  old_values: Json | null
+  new_values: Json | null
   ip_address: string | null
+  user_agent: string | null
+  metadata: Json | null
   created_at: string | null
 }
 
@@ -418,13 +422,35 @@ export function AuditLogsClient({
                 </div>
               </div>
 
-              {selectedLog.details && Object.keys(selectedLog.details as object).length > 0 && (
+              {selectedLog.old_values && Object.keys(selectedLog.old_values as object).length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Details
+                    Previous Values
                   </label>
                   <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
-                    {JSON.stringify(selectedLog.details, null, 2)}
+                    {JSON.stringify(selectedLog.old_values, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {selectedLog.new_values && Object.keys(selectedLog.new_values as object).length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    New Values
+                  </label>
+                  <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
+                    {JSON.stringify(selectedLog.new_values, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {selectedLog.metadata && Object.keys(selectedLog.metadata as object).length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Metadata
+                  </label>
+                  <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
+                    {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>
                 </div>
               )}
