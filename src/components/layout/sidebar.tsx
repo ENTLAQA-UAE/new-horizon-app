@@ -31,6 +31,7 @@ import {
   BarChart3,
   Files,
   FileSignature,
+  PanelTop,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
@@ -87,6 +88,7 @@ const orgAdminSections: NavSection[] = [
       { href: "/org/team", label: "Team Members", labelAr: "أعضاء الفريق", icon: Users },
       { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
       { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
+      { href: "/org/career-page", label: "Career Page", labelAr: "صفحة التوظيف", icon: PanelTop },
     ],
   },
   {
