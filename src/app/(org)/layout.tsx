@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Sidebar, UserRole } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
@@ -9,7 +9,11 @@ import { BrandingProvider } from "@/lib/branding/branding-context"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, Sparkles } from "lucide-react"
 
-export default function DashboardLayout({
+/**
+ * Org Layout - For Organization Admin routes
+ * Includes BrandingProvider to apply organization-specific branding
+ */
+export default function OrgLayout({
   children,
 }: {
   children: React.ReactNode
@@ -18,7 +22,6 @@ export default function DashboardLayout({
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const pathname = usePathname()
 
   useEffect(() => {
     async function fetchUserRole() {
@@ -81,35 +84,13 @@ export default function DashboardLayout({
     fetchUserRole()
   }, [router])
 
-  // Redirect based on role and current path
-  useEffect(() => {
-    if (isLoading || !userRole) return
-
-    const isSuperAdminRoute = pathname === "/" ||
-      pathname.startsWith("/organizations") ||
-      pathname.startsWith("/users") ||
-      pathname.startsWith("/tiers") ||
-      pathname.startsWith("/billing") ||
-      pathname.startsWith("/email-templates") ||
-      pathname.startsWith("/audit-logs") ||
-      pathname.startsWith("/settings")
-
-    const isOrgRoute = pathname.startsWith("/org")
-
-    // Super admin trying to access org routes is OK (for testing)
-    // But org users should NOT access super admin routes
-    if (userRole !== "super_admin" && isSuperAdminRoute && !isOrgRoute) {
-      router.push("/org")
-    }
-  }, [userRole, pathname, isLoading, router])
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
-            style={{ background: "var(--brand-gradient)" }}
+            style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
           >
             <Sparkles className="w-8 h-8 text-white" />
           </div>
