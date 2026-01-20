@@ -51,8 +51,19 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
       loadingRef.current = true
 
       try {
-        // CRITICAL: Always verify user with server - never trust cached data
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        // CRITICAL: Always verify user with server - with timeout to prevent hanging
+        console.log("Branding: Calling getUser()...")
+
+        const getUserPromise = supabase.auth.getUser()
+        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
+          setTimeout(() => {
+            console.warn("Branding: getUser() timed out after 5 seconds")
+            resolve({ data: { user: null }, error: new Error("getUser timeout") })
+          }, 5000)
+        )
+
+        const { data: { user }, error: authError } = await Promise.race([getUserPromise, timeoutPromise])
+        console.log("Branding: getUser result:", { userId: user?.id, error: authError?.message })
 
         if (authError || !user) {
           // Clear stored user ID when not authenticated
