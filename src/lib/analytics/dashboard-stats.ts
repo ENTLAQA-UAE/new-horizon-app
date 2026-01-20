@@ -201,7 +201,7 @@ export async function getDashboardStats(
       }
     }
   })
-  const avgTimeToHire = hiredCount > 0 ? Math.round(totalTimeToHire / hiredCount) : 21
+  const avgTimeToHire = hiredCount > 0 ? Math.round(totalTimeToHire / hiredCount) : 0
 
   // Calculate hiring funnel
   const stageMap = new Map<string, number>()
@@ -388,9 +388,11 @@ export async function getDashboardStats(
     .slice(0, 10)
 
   // Calculate pipeline velocity (average days at each stage)
+  // Note: Without tracking stage transitions, we can't calculate actual velocity
+  // Show 0 days when no data is available
   const pipelineVelocity = stages.filter(s => s !== "rejected").map(stage => ({
     stage: stage.charAt(0).toUpperCase() + stage.slice(1),
-    avgDays: stage === "new" ? 2 : stage === "screening" ? 5 : stage === "interviewing" ? 10 : stage === "offered" ? 3 : 1,
+    avgDays: 0, // Real velocity would require tracking stage transition timestamps
     candidates: stageMap.get(stage) || 0,
   }))
 
