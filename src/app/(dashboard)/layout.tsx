@@ -6,7 +6,6 @@ import { Sidebar, UserRole } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
 import { BrandingProvider } from "@/lib/branding/branding-context"
-import { ThemeProvider } from "@/lib/theme/theme-context"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, Sparkles } from "lucide-react"
 
@@ -121,26 +120,24 @@ export default function DashboardLayout({
   }
 
   return (
-    <ThemeProvider>
-      <BrandingProvider>
-        <I18nProvider>
-          <div className="flex h-screen overflow-hidden bg-background">
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              onCollapse={setSidebarCollapsed}
-              userRole={userRole || undefined}
-            />
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
-                <div className="animate-fade-in-up">
-                  {children}
-                </div>
-              </main>
-            </div>
+    <BrandingProvider>
+      <I18nProvider>
+        <div className="flex h-screen overflow-hidden bg-background">
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onCollapse={setSidebarCollapsed}
+            userRole={userRole || undefined}
+          />
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <Header />
+            <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
+              <div className="animate-fade-in-up">
+                {children}
+              </div>
+            </main>
           </div>
-        </I18nProvider>
-      </BrandingProvider>
-    </ThemeProvider>
+        </div>
+      </I18nProvider>
+    </BrandingProvider>
   )
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Toaster } from "sonner"
 import { SentryUserProvider } from "@/components/sentry-user-provider"
+import { ThemeProvider } from "@/lib/theme/theme-context"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -20,9 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased min-h-screen bg-background font-sans">
-        <SentryUserProvider>
-          {children}
-        </SentryUserProvider>
+        <ThemeProvider>
+          <SentryUserProvider>
+            {children}
+          </SentryUserProvider>
+        </ThemeProvider>
         <Toaster position="top-right" richColors />
       </body>
     </html>

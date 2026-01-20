@@ -48,8 +48,11 @@ function SignupPageSkeleton() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary-foreground" />
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
+            >
+              <Building2 className="w-6 h-6 text-white" />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
@@ -283,8 +286,11 @@ function SignupPageContent() {
                 className="w-12 h-12 rounded-xl object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-primary-foreground" />
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
+              >
+                <Building2 className="w-6 h-6 text-white" />
               </div>
             )}
           </div>

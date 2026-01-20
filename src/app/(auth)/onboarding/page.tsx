@@ -274,8 +274,11 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <Building2 className="w-6 h-6 text-primary-foreground" />
+          <div
+            className="mx-auto mb-4 w-12 h-12 rounded-xl flex items-center justify-center"
+            style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
+          >
+            <Building2 className="w-6 h-6 text-white" />
           </div>
           <CardTitle className="text-2xl">Welcome to Jadarat ATS</CardTitle>
           <CardDescription>
@@ -293,8 +296,11 @@ export default function OnboardingPage() {
                 className="w-full h-auto py-6 flex flex-col items-center gap-2"
                 onClick={() => setStep("create")}
               >
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary" />
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ background: "var(--brand-gradient-subtle, linear-gradient(135deg, #6366f115 0%, #8b5cf615 100%))" }}
+                >
+                  <Plus className="w-6 h-6" style={{ color: "var(--brand-primary, #6366f1)" }} />
                 </div>
                 <span className="font-semibold">Create New Organization</span>
                 <span className="text-sm text-muted-foreground">
@@ -307,8 +313,11 @@ export default function OnboardingPage() {
                 className="w-full h-auto py-6 flex flex-col items-center gap-2"
                 onClick={() => setStep("invite")}
               >
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-primary" />
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ background: "var(--brand-gradient-subtle, linear-gradient(135deg, #6366f115 0%, #8b5cf615 100%))" }}
+                >
+                  <Mail className="w-6 h-6" style={{ color: "var(--brand-primary, #6366f1)" }} />
                 </div>
                 <span className="font-semibold">Join with Invite Code</span>
                 <span className="text-sm text-muted-foreground">

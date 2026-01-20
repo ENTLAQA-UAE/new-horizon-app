@@ -93,10 +93,12 @@ export function HiringManagerDashboard({
           </CardContent>
         </Card>
 
-        <Card className={stats.pendingJobApprovals > 0 ? "border-purple-200 bg-purple-50 dark:bg-purple-950/20" : ""}>
+        <Card
+          className={stats.pendingJobApprovals > 0 ? "border-[var(--brand-secondary,#8b5cf6)]/30 bg-[var(--brand-secondary,#8b5cf6)]/5" : ""}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Job Requisitions</CardTitle>
-            <ClipboardCheck className="h-4 w-4 text-purple-500" />
+            <ClipboardCheck className="h-4 w-4" style={{ color: "var(--brand-secondary, #8b5cf6)" }} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingJobApprovals}</div>
