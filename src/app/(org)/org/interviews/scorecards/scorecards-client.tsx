@@ -251,6 +251,13 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
     setIsLoading(true)
     try {
+      console.log("Creating scorecard template with data:", {
+        org_id: organizationId,
+        name: formData.name,
+        template_type: formData.template_type,
+        criteria_count: formData.criteria.length,
+      })
+
       const { data, error } = await supabase
         .from("scorecard_templates")
         .insert({
@@ -270,17 +277,20 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         .single()
 
       if (error) {
-        toast.error(error.message)
+        console.error("Supabase error creating scorecard:", error)
+        toast.error(`Failed to create template: ${error.message}`)
         return
       }
 
+      console.log("Scorecard template created successfully:", data)
       setTemplates([data as unknown as ScorecardTemplate, ...templates])
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Scorecard template created successfully")
       router.refresh()
-    } catch {
-      toast.error("An unexpected error occurred")
+    } catch (err) {
+      console.error("Unexpected error creating scorecard:", err)
+      toast.error("An unexpected error occurred. Please check the console for details.")
     } finally {
       setIsLoading(false)
     }
@@ -498,7 +508,8 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
     )
   }
 
-  const CriteriaForm = () => (
+  // Criteria form JSX - inlined to prevent focus loss on re-render
+  const criteriaFormJSX = (
     <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
       <h4 className="font-medium text-sm">Add Criteria</h4>
       <div className="grid grid-cols-2 gap-3">
@@ -507,7 +518,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
           <Input
             id="criteria_name"
             value={newCriteria.name}
-            onChange={(e) => setNewCriteria({ ...newCriteria, name: e.target.value })}
+            onChange={(e) => setNewCriteria(prev => ({ ...prev, name: e.target.value }))}
             placeholder="e.g., Technical Knowledge"
           />
         </div>
@@ -516,7 +527,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
           <Input
             id="criteria_name_ar"
             value={newCriteria.name_ar}
-            onChange={(e) => setNewCriteria({ ...newCriteria, name_ar: e.target.value })}
+            onChange={(e) => setNewCriteria(prev => ({ ...prev, name_ar: e.target.value }))}
             placeholder="المعرفة التقنية"
             dir="rtl"
           />
@@ -527,7 +538,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         <Input
           id="criteria_description"
           value={newCriteria.description}
-          onChange={(e) => setNewCriteria({ ...newCriteria, description: e.target.value })}
+          onChange={(e) => setNewCriteria(prev => ({ ...prev, description: e.target.value }))}
           placeholder="What should the interviewer evaluate?"
         />
       </div>
@@ -538,7 +549,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         </div>
         <Slider
           value={[newCriteria.weight]}
-          onValueChange={([value]) => setNewCriteria({ ...newCriteria, weight: value })}
+          onValueChange={([value]) => setNewCriteria(prev => ({ ...prev, weight: value }))}
           max={100}
           min={5}
           step={5}
@@ -551,7 +562,8 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
     </div>
   )
 
-  const CriteriaList = () => (
+  // Criteria list JSX - inlined to prevent focus loss on re-render
+  const criteriaListJSX = (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <Label>Criteria ({formData.criteria.length})</Label>
@@ -568,7 +580,7 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         </div>
       ) : (
         <div className="space-y-2">
-          {formData.criteria.map((criteria, index) => (
+          {formData.criteria.map((criteria) => (
             <div
               key={criteria.id}
               className="flex items-center gap-3 p-3 border rounded-lg bg-background"
@@ -829,8 +841,8 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
             {/* Criteria Section */}
             <div className="border-t pt-6 space-y-4">
               <h3 className="font-semibold">Evaluation Criteria</h3>
-              <CriteriaForm />
-              <CriteriaList />
+              {criteriaFormJSX}
+              {criteriaListJSX}
             </div>
           </div>
 
