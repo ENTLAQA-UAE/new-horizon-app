@@ -156,35 +156,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const supabase = createClient()
 
     try {
-      // Step 1: Use getUser() to validate session with server
-      // This is CRITICAL for RLS to work correctly after page refresh
-      // getSession() only reads from cache and doesn't validate with server
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      // Step 1: Get session first (fast, cached) then try to validate with getUser()
+      // getUser() can timeout in some environments, so we use getSession() as primary
+      // and getUser() as optional validation with timeout
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (userError) {
-        console.error("AuthProvider: User error:", userError)
-        // Clear any stale session data
-        try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
-
-        if (mountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            isAuthenticated: false,
-            error: {
-              code: "SESSION_EXPIRED",
-              message: "Your session has expired. Please log in again.",
-              details: userError.message
-            }
-          }))
-        }
-        loadingRef.current = false
-        return
-      }
-
-      if (!user) {
-        console.log("AuthProvider: No user found")
-        // Clear stored user ID
+      if (!session) {
+        console.log("AuthProvider: No session found")
         try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
 
         if (mountedRef.current) {
@@ -205,8 +183,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Get session for completeness (now that user is validated)
-      const { data: { session } } = await supabase.auth.getSession()
+      // We have a session - use session.user initially
+      let user = session.user
+      console.log("AuthProvider: Session found for user:", user.id)
+
+      // Try to validate with getUser() but with a timeout
+      // This ensures RLS works correctly but doesn't block forever
+      try {
+        const getUserPromise = supabase.auth.getUser()
+        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((_, reject) =>
+          setTimeout(() => reject(new Error("getUser timeout")), 5000)
+        )
+
+        const { data: userData, error: userError } = await Promise.race([
+          getUserPromise,
+          timeoutPromise
+        ])
+
+        if (userError) {
+          console.warn("AuthProvider: getUser() validation failed:", userError.message)
+          // Session might be invalid - clear and redirect to login
+          if (userError.message.includes("invalid") || userError.message.includes("expired")) {
+            try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
+            if (mountedRef.current) {
+              setState(prev => ({
+                ...prev,
+                isLoading: false,
+                isAuthenticated: false,
+                error: {
+                  code: "SESSION_EXPIRED",
+                  message: "Your session has expired. Please log in again.",
+                  details: userError.message
+                }
+              }))
+            }
+            loadingRef.current = false
+            return
+          }
+          // For other errors, continue with session user
+          console.log("AuthProvider: Continuing with session user despite getUser error")
+        } else if (userData?.user) {
+          // Use validated user from getUser()
+          user = userData.user
+          console.log("AuthProvider: User validated with getUser()")
+        }
+      } catch (timeoutError) {
+        // getUser() timed out - continue with session user
+        console.warn("AuthProvider: getUser() timed out, using session user")
+      }
 
       console.log("AuthProvider: User validated:", user.id)
 
