@@ -268,40 +268,32 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
       console.log("Creating scorecard template with data:", insertData)
 
       // Add timeout to detect hanging requests (RLS policy blocking)
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000)
+      const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) => {
+        setTimeout(() => {
+          resolve({ data: null, error: { message: "Request timed out. Your role may not have permission to create scorecards." } })
+        }, 10000)
+      })
 
-      try {
-        const { data, error } = await supabase
-          .from("scorecard_templates")
-          .insert(insertData)
-          .select()
-          .single()
-          .abortSignal(controller.signal)
+      const insertPromise = supabase
+        .from("scorecard_templates")
+        .insert(insertData)
+        .select()
+        .single()
 
-        clearTimeout(timeoutId)
+      const { data, error } = await Promise.race([insertPromise, timeoutPromise])
 
-        if (error) {
-          console.error("Supabase error creating scorecard:", error)
-          toast.error(`Failed to create template: ${error.message}`)
-          return
-        }
-
-        console.log("Scorecard template created successfully:", data)
-        setTemplates([data as unknown as ScorecardTemplate, ...templates])
-        setIsCreateDialogOpen(false)
-        resetForm()
-        toast.success("Scorecard template created successfully")
-        router.refresh()
-      } catch (abortError) {
-        clearTimeout(timeoutId)
-        if ((abortError as Error).name === 'AbortError') {
-          console.error("Request timed out - likely RLS policy blocking")
-          toast.error("Request timed out. Your role may not have permission to create scorecards.")
-        } else {
-          throw abortError
-        }
+      if (error) {
+        console.error("Supabase error creating scorecard:", error)
+        toast.error(`Failed to create template: ${error.message}`)
+        return
       }
+
+      console.log("Scorecard template created successfully:", data)
+      setTemplates([data as unknown as ScorecardTemplate, ...templates])
+      setIsCreateDialogOpen(false)
+      resetForm()
+      toast.success("Scorecard template created successfully")
+      router.refresh()
     } catch (err) {
       console.error("Unexpected error creating scorecard:", err)
       toast.error("An unexpected error occurred. Please check the console for details.")
