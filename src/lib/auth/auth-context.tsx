@@ -227,9 +227,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
       let profile: UserProfile | null = null
       let profileError: AuthError | null = null
 
+      // Debug: Log Supabase URL to verify configuration
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      console.log("AuthProvider: Supabase URL:", supabaseUrl)
       console.log("AuthProvider: Fetching profile for user:", user.id)
+
+      // Debug: Test raw fetch to Supabase to check connectivity
+      if (supabaseUrl) {
+        try {
+          const testStart = Date.now()
+          const testResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id&limit=1`, {
+            headers: {
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+              'Authorization': `Bearer ${session.access_token}`,
+            }
+          })
+          console.log("AuthProvider: Raw fetch test:", {
+            status: testResponse.status,
+            ok: testResponse.ok,
+            time: Date.now() - testStart + 'ms'
+          })
+        } catch (fetchErr) {
+          console.error("AuthProvider: Raw fetch test FAILED:", fetchErr)
+        }
+      }
+
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
+          console.log(`AuthProvider: Profile fetch attempt ${attempt} starting...`)
           const profilePromise = supabase
             .from("profiles")
             .select("id, email, first_name, last_name, avatar_url, org_id")
