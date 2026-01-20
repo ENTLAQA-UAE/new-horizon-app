@@ -60,6 +60,7 @@ export default function BrandingPage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
   const faviconInputRef = useRef<HTMLInputElement>(null)
   const loginImageInputRef = useRef<HTMLInputElement>(null)
+  const [loginImageError, setLoginImageError] = useState(false)
   const [settings, setSettings] = useState<BrandingSettings>({
     company_name: "",
     company_name_ar: "",
@@ -226,7 +227,10 @@ export default function BrandingPage() {
   // Handle login image upload
   const handleLoginImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file || !organizationId) return
+    if (!file || !organizationId) {
+      if (!organizationId) toast.error("Organization not found. Please refresh the page.")
+      return
+    }
 
     if (!file.type.startsWith('image/')) {
       toast.error("Please upload an image file")
@@ -248,17 +252,29 @@ export default function BrandingPage() {
         .from('organization-assets')
         .upload(fileName, file, { upsert: true })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError)
+        if (uploadError.message?.includes('row-level security') || uploadError.message?.includes('policy')) {
+          toast.error("Permission denied. Please contact support to enable file uploads.")
+        } else if (uploadError.message?.includes('bucket')) {
+          toast.error("Storage not configured. Please contact support.")
+        } else {
+          toast.error(`Upload failed: ${uploadError.message || 'Unknown error'}`)
+        }
+        return
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('organization-assets')
         .getPublicUrl(fileName)
 
       setSettings({ ...settings, login_image_url: publicUrl })
+      setLoginImageError(false) // Reset error state on successful upload
       toast.success("Login image uploaded successfully")
     } catch (error) {
       console.error("Error uploading login image:", error)
-      toast.error("Failed to upload login image")
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      toast.error(`Failed to upload: ${errorMessage}`)
     } finally {
       setIsUploadingLoginImage(false)
     }
@@ -582,13 +598,17 @@ export default function BrandingPage() {
                   </div>
                 </div>
 
-                {settings.login_image_url ? (
+                {settings.login_image_url && !loginImageError ? (
                   <div className="space-y-4">
                     <div className="relative rounded-xl overflow-hidden border">
                       <img
                         src={settings.login_image_url}
                         alt="Login image preview"
                         className="w-full h-48 object-cover"
+                        onError={() => {
+                          setLoginImageError(true)
+                          toast.error("Failed to load image. The image may have been deleted or is inaccessible.")
+                        }}
                       />
                       <div className="absolute top-2 right-2 flex gap-2">
                         <Button
@@ -618,6 +638,41 @@ export default function BrandingPage() {
                     <p className="text-xs text-muted-foreground">
                       This image will appear on the right side of your login page
                     </p>
+                  </div>
+                ) : settings.login_image_url && loginImageError ? (
+                  <div className="space-y-4">
+                    <div className="relative rounded-xl overflow-hidden border bg-muted/50 p-8 text-center">
+                      <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-sm text-muted-foreground mb-3">Image failed to load</p>
+                      <div className="flex justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loginImageInputRef.current?.click()}
+                          disabled={isUploadingLoginImage}
+                          className="rounded-lg"
+                        >
+                          {isUploadingLoginImage ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="mr-2 h-4 w-4" />
+                          )}
+                          Upload New Image
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            handleRemoveLoginImage()
+                            setLoginImageError(false)
+                          }}
+                          className="rounded-lg"
+                        >
+                          <X className="mr-2 h-4 w-4" />
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div
@@ -684,12 +739,12 @@ export default function BrandingPage() {
                     <div
                       className="flex-1 relative"
                       style={{
-                        background: settings.login_image_url
+                        background: settings.login_image_url && !loginImageError
                           ? `url(${settings.login_image_url}) center/cover`
                           : "var(--brand-gradient)"
                       }}
                     >
-                      {!settings.login_image_url && (
+                      {(!settings.login_image_url || loginImageError) && (
                         <div className="absolute inset-0 flex items-center justify-center text-white/50">
                           <ImageIcon className="w-8 h-8" />
                         </div>
