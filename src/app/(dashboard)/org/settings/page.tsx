@@ -25,11 +25,13 @@ import {
   Clock,
   Shield,
   Calendar,
+  DollarSign,
 } from "lucide-react"
 
 interface OrgSettings {
   timezone: string
   language: string
+  currency: string
   date_format: string
   email_notifications: boolean
   application_alerts: boolean
@@ -64,6 +66,22 @@ const dateFormats = [
   { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
 ]
 
+const currencies = [
+  { value: "SAR", label: "SAR - Saudi Riyal (ر.س)", symbol: "ر.س" },
+  { value: "AED", label: "AED - UAE Dirham (د.إ)", symbol: "د.إ" },
+  { value: "KWD", label: "KWD - Kuwaiti Dinar (د.ك)", symbol: "د.ك" },
+  { value: "QAR", label: "QAR - Qatari Riyal (ر.ق)", symbol: "ر.ق" },
+  { value: "BHD", label: "BHD - Bahraini Dinar (.د.ب)", symbol: ".د.ب" },
+  { value: "OMR", label: "OMR - Omani Rial (ر.ع.)", symbol: "ر.ع." },
+  { value: "EGP", label: "EGP - Egyptian Pound (ج.م)", symbol: "ج.م" },
+  { value: "JOD", label: "JOD - Jordanian Dinar (د.أ)", symbol: "د.أ" },
+  { value: "USD", label: "USD - US Dollar ($)", symbol: "$" },
+  { value: "EUR", label: "EUR - Euro (€)", symbol: "€" },
+  { value: "GBP", label: "GBP - British Pound (£)", symbol: "£" },
+  { value: "INR", label: "INR - Indian Rupee (₹)", symbol: "₹" },
+  { value: "PKR", label: "PKR - Pakistani Rupee (₨)", symbol: "₨" },
+]
+
 export default function OrgSettingsPage() {
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
@@ -71,6 +89,7 @@ export default function OrgSettingsPage() {
   const [settings, setSettings] = useState<OrgSettings>({
     timezone: "Asia/Riyadh",
     language: "both",
+    currency: "SAR",
     date_format: "DD/MM/YYYY",
     email_notifications: true,
     application_alerts: true,
@@ -241,6 +260,34 @@ export default function OrgSettingsPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Preferred Currency
+                </div>
+              </Label>
+              <Select
+                value={settings.currency}
+                onValueChange={(value) =>
+                  setSettings({ ...settings, currency: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.value} value={currency.value}>
+                      {currency.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Currency displayed for salaries and compensation
+              </p>
             </div>
           </CardContent>
         </Card>
