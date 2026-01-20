@@ -1,8 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useAuth } from "@/lib/auth"
 
 export interface BrandingConfig {
   orgId: string | null
@@ -20,9 +19,9 @@ const defaultBranding: BrandingConfig = {
   orgName: "Jadarat",
   orgNameAr: "جدارات",
   logoUrl: null,
-  primaryColor: "#6366f1",
-  secondaryColor: "#8b5cf6",
-  accentColor: "#06b6d4",
+  primaryColor: "#6366f1", // Modern indigo
+  secondaryColor: "#8b5cf6", // Purple
+  accentColor: "#06b6d4", // Cyan
   isLoaded: false,
 }
 
@@ -36,68 +35,49 @@ interface BrandingProviderProps {
   children: ReactNode
 }
 
+/**
+ * BrandingProvider - Now uses AuthProvider data instead of fetching independently
+ * This eliminates duplicate API calls and race conditions
+ */
 export function BrandingProvider({ children }: BrandingProviderProps) {
+  const { isLoading: authLoading, organization, isAuthenticated } = useAuth()
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding)
-  const { user, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
     // Wait for auth to finish loading
-    if (authLoading) return
-
-    // If no user or no orgId, use default branding
-    if (!user?.orgId) {
-      console.log("Branding: No user or org_id, using default")
-      setBranding({ ...defaultBranding, isLoaded: true })
-      applyBrandingToDOM(defaultBranding)
+    if (authLoading) {
       return
     }
 
-    // Fetch organization branding
-    async function loadBranding() {
-      try {
-        const supabase = createClient()
-        console.log("Branding: Loading for org:", user!.orgId)
-
-        const { data: org, error } = await supabase
-          .from("organizations")
-          .select("id, name, name_ar, logo_url, primary_color, secondary_color")
-          .eq("id", user!.orgId)
-          .single()
-
-        if (error) {
-          console.error("Branding: Org fetch error:", error.message)
-          setBranding({ ...defaultBranding, isLoaded: true })
-          applyBrandingToDOM(defaultBranding)
-          return
-        }
-
-        if (org) {
-          const newBranding: BrandingConfig = {
-            orgId: org.id,
-            orgName: org.name || "Jadarat",
-            orgNameAr: org.name_ar || "جدارات",
-            logoUrl: org.logo_url,
-            primaryColor: org.primary_color || "#6366f1",
-            secondaryColor: org.secondary_color || "#8b5cf6",
-            accentColor: "#06b6d4",
-            isLoaded: true,
-          }
-          setBranding(newBranding)
-          applyBrandingToDOM(newBranding)
-          console.log("Branding: Loaded for", org.name)
-        } else {
-          setBranding({ ...defaultBranding, isLoaded: true })
-          applyBrandingToDOM(defaultBranding)
-        }
-      } catch (error) {
-        console.error("Branding: Error loading:", error)
-        setBranding({ ...defaultBranding, isLoaded: true })
-        applyBrandingToDOM(defaultBranding)
-      }
+    // Not authenticated - use default branding
+    if (!isAuthenticated) {
+      setBranding({ ...defaultBranding, isLoaded: true })
+      return
     }
 
-    loadBranding()
-  }, [user, authLoading])
+    // No organization - use default branding
+    if (!organization) {
+      console.log("BrandingProvider: No organization, using default branding")
+      setBranding({ ...defaultBranding, isLoaded: true })
+      return
+    }
+
+    // Build branding from organization data
+    const newBranding: BrandingConfig = {
+      orgId: organization.id,
+      orgName: organization.name || "Jadarat",
+      orgNameAr: organization.name_ar || "جدارات",
+      logoUrl: organization.logo_url,
+      primaryColor: organization.primary_color || "#6366f1",
+      secondaryColor: organization.secondary_color || "#8b5cf6",
+      accentColor: "#06b6d4",
+      isLoaded: true,
+    }
+
+    setBranding(newBranding)
+    applyBrandingToDOM(newBranding)
+    console.log("BrandingProvider: Branding loaded from AuthProvider:", organization.name)
+  }, [authLoading, isAuthenticated, organization])
 
   return (
     <BrandingContext.Provider value={branding}>
@@ -108,12 +88,11 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
 
 // Apply branding colors as CSS variables
 function applyBrandingToDOM(branding: BrandingConfig) {
-  if (typeof document === "undefined") return
-
   const root = document.documentElement
 
   // Convert hex to HSL for better color manipulation
   const primaryHSL = hexToHSL(branding.primaryColor)
+  const secondaryHSL = hexToHSL(branding.secondaryColor)
 
   // Set CSS custom properties
   root.style.setProperty("--brand-primary", branding.primaryColor)

@@ -2,12 +2,14 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuSub,
@@ -31,6 +33,7 @@ import {
   User,
   Settings,
   Globe,
+  Sparkles,
   Keyboard,
   Briefcase,
   Users,
@@ -48,13 +51,16 @@ import { useBranding } from "@/lib/branding/branding-context"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/theme/theme-context"
-import { useAuth } from "@/lib/auth/auth-context"
 
 interface HeaderProps {
   title?: string
   titleAr?: string
 }
 
+/**
+ * Header component - Now uses centralized AuthProvider
+ * No more duplicate profile fetches!
+ */
 export function Header({ title, titleAr }: HeaderProps) {
   const router = useRouter()
   const { language, setLanguage, t, isRTL } = useI18n()
@@ -62,8 +68,8 @@ export function Header({ title, titleAr }: HeaderProps) {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [commandOpen, setCommandOpen] = useState(false)
 
-  // Use the auth context for user data - single source of truth
-  const { user, signOut } = useAuth()
+  // Use profile from AuthProvider instead of fetching separately
+  const { profile, signOut } = useAuth()
 
   const displayTitle = language === "ar" && titleAr ? titleAr : title || t("nav.dashboard")
 
@@ -88,13 +94,13 @@ export function Header({ title, titleAr }: HeaderProps) {
   }
 
   const getFullName = () => {
-    if (!user?.firstName && !user?.lastName) return null
-    return `${user?.firstName || ""} ${user?.lastName || ""}`.trim()
+    if (!profile?.first_name && !profile?.last_name) return null
+    return `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()
   }
 
   const getInitials = () => {
-    const first = user?.firstName?.[0] || ""
-    const last = user?.lastName?.[0] || ""
+    const first = profile?.first_name?.[0] || ""
+    const last = profile?.last_name?.[0] || ""
     return (first + last).toUpperCase() || "U"
   }
 
@@ -195,7 +201,7 @@ export function Header({ title, titleAr }: HeaderProps) {
               >
                 <div className="relative">
                   <Avatar className="h-8 w-8 ring-2 ring-border">
-                    <AvatarImage src={user?.avatarUrl || ""} alt={getFullName() || "User"} />
+                    <AvatarImage src={profile?.avatar_url || ""} alt={getFullName() || "User"} />
                     <AvatarFallback
                       className="text-xs font-semibold text-white"
                       style={{ background: `var(--brand-gradient)` }}
@@ -225,7 +231,7 @@ export function Header({ title, titleAr }: HeaderProps) {
               <div className="p-3 bg-muted/30 rounded-lg mx-2 mt-2 mb-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 ring-2 ring-border">
-                    <AvatarImage src={user?.avatarUrl || ""} alt={getFullName() || "User"} />
+                    <AvatarImage src={profile?.avatar_url || ""} alt={getFullName() || "User"} />
                     <AvatarFallback
                       className="text-sm font-semibold text-white"
                       style={{ background: `var(--brand-gradient)` }}
@@ -235,7 +241,7 @@ export function Header({ title, titleAr }: HeaderProps) {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{getFullName() || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
                   </div>
                 </div>
               </div>
@@ -393,6 +399,18 @@ export function Header({ title, titleAr }: HeaderProps) {
               <div className="flex flex-col">
                 <span className="font-medium">{language === "ar" ? "الإعدادات العامة" : "General Settings"}</span>
                 <span className="text-xs text-muted-foreground">{language === "ar" ? "تخصيص إعدادات المؤسسة" : "Customize organization settings"}</span>
+              </div>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => { router.push("/org/branding"); setCommandOpen(false) }}
+              className="gap-3 py-3"
+            >
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-medium">{language === "ar" ? "الهوية البصرية" : "Branding"}</span>
+                <span className="text-xs text-muted-foreground">{language === "ar" ? "تخصيص المظهر والألوان" : "Customize appearance and colors"}</span>
               </div>
             </CommandItem>
           </CommandGroup>

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
-import { AuthProvider, useAuth } from "@/lib/auth/auth-context"
+import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
+import { AuthErrorDisplay } from "@/components/auth/auth-error"
 import { Loader2, Sparkles } from "lucide-react"
 
 // Apply default Jadarat branding CSS variables
@@ -21,49 +22,76 @@ function applyDefaultBranding() {
 }
 
 /**
- * Inner layout component that uses the auth context
+ * Admin Layout - For Super Admin routes only
+ * Uses centralized AuthProvider for auth state management
+ * No BrandingProvider since super admins see platform branding (Jadarat)
  */
-function AdminLayoutInner({ children }: { children: React.ReactNode }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { user, isLoading } = useAuth()
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AuthProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AuthProvider>
+  )
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const {
+    isLoading,
+    isAuthenticated,
+    error,
+    isSuperAdmin,
+    refreshAuth,
+  } = useAuth()
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Apply default Jadarat branding on mount
   useEffect(() => {
     applyDefaultBranding()
   }, [])
 
-  // Redirect non-super-admins to org routes
+  // Handle redirects based on auth state
   useEffect(() => {
-    if (!isLoading && user && user.role !== "super_admin") {
-      console.log("AdminLayout: User is not super_admin, redirecting to org")
-      router.push("/org")
-    }
-  }, [isLoading, user, router])
+    if (isLoading) return
 
+    // Not authenticated - redirect to login
+    if (!isAuthenticated) {
+      console.log("AdminLayout: Not authenticated, redirecting to login")
+      router.push("/login")
+      return
+    }
+
+    // Not a super admin - redirect to org
+    if (!isSuperAdmin) {
+      console.log("AdminLayout: User is not super admin, redirecting to org")
+      router.push("/org")
+      return
+    }
+  }, [isLoading, isAuthenticated, isSuperAdmin, router])
+
+  // Show loading state
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
-            style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
-          >
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    )
+    return <AdminLoadingScreen />
   }
 
-  // Don't render if not super_admin (will redirect)
-  if (user?.role !== "super_admin") {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
+  // Show error state with retry option
+  if (error) {
+    return <AuthErrorDisplay error={error} onRetry={refreshAuth} />
+  }
+
+  // Not authenticated (will redirect via useEffect)
+  if (!isAuthenticated) {
+    return <AdminLoadingScreen />
+  }
+
+  // Not super admin (will redirect via useEffect)
+  if (!isSuperAdmin) {
+    return <AdminLoadingScreen />
   }
 
   return (
@@ -87,18 +115,18 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   )
 }
 
-/**
- * Admin Layout - For Super Admin routes only
- * Uses AuthProvider for reliable server-verified authentication
- */
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function AdminLoadingScreen() {
   return (
-    <AuthProvider redirectToLoginOnUnauthenticated={true}>
-      <AdminLayoutInner>{children}</AdminLayoutInner>
-    </AuthProvider>
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
+          style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
+        >
+          <Sparkles className="w-8 h-8 text-white" />
+        </div>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    </div>
   )
 }
