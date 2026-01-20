@@ -56,6 +56,7 @@ export interface AuthState {
 // Auth error types for better error handling
 export type AuthErrorCode =
   | "NO_SESSION"
+  | "SESSION_ERROR"
   | "SESSION_EXPIRED"
   | "PROFILE_NOT_FOUND"
   | "PROFILE_FETCH_ERROR"
@@ -157,9 +158,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     try {
       // Step 1: Get session first (fast, cached) then try to validate with getUser()
-      // getUser() can timeout in some environments, so we use getSession() as primary
-      // and getUser() as optional validation with timeout
-      const { data: { session } } = await supabase.auth.getSession()
+      // Both calls can hang in some environments, so we add timeouts
+      console.log("AuthProvider: Getting session...")
+
+      let session = null
+      try {
+        const getSessionPromise = supabase.auth.getSession()
+        const sessionTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("getSession timeout")), 5000)
+        )
+
+        const sessionResult = await Promise.race([getSessionPromise, sessionTimeoutPromise])
+        session = sessionResult.data.session
+        console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
+      } catch (sessionError) {
+        console.error("AuthProvider: getSession failed or timed out:", sessionError)
+        // If getSession fails, we can't proceed
+        if (mountedRef.current) {
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            isAuthenticated: false,
+            error: {
+              code: "SESSION_ERROR",
+              message: "Unable to check authentication status. Please refresh the page.",
+              details: String(sessionError)
+            }
+          }))
+        }
+        loadingRef.current = false
+        return
+      }
 
       if (!session) {
         console.log("AuthProvider: No session found")
