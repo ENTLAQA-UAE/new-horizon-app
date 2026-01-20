@@ -145,7 +145,7 @@ export function TeamClient({
 
   const [editForm, setEditForm] = useState({
     role: "",
-    department: "",
+    department: "none",
   })
 
   // Filter members
@@ -315,7 +315,7 @@ export function TeamClient({
     setSelectedMember(member)
     setEditForm({
       role: member.role,
-      department: member.department || "",
+      department: member.department || "none",
     })
     setIsEditDialogOpen(true)
   }
@@ -339,10 +339,11 @@ export function TeamClient({
       if (roleError) throw roleError
 
       // Update department in profiles
-      if (editForm.department !== selectedMember.department) {
+      const newDepartment = editForm.department === "none" ? null : (editForm.department || null)
+      if (newDepartment !== selectedMember.department) {
         const { error: profileError } = await supabase
           .from("profiles")
-          .update({ department: editForm.department || null })
+          .update({ department: newDepartment })
           .eq("id", selectedMember.id)
 
         if (profileError) throw profileError
@@ -351,7 +352,7 @@ export function TeamClient({
       setMembers(
         members.map((m) =>
           m.id === selectedMember.id
-            ? { ...m, role: editForm.role, department: editForm.department }
+            ? { ...m, role: editForm.role, department: newDepartment }
             : m
         )
       )
@@ -815,7 +816,7 @@ export function TeamClient({
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No department</SelectItem>
+                    <SelectItem value="none">No department</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.name}>
                         {dept.name}

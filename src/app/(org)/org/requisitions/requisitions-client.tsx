@@ -798,13 +798,14 @@ export function RequisitionsClient({
               <div className="space-y-2">
                 <Label>Approvers</Label>
                 <Select
-                  value={formData.approvers[0] || ""}
-                  onValueChange={(value) => setFormData({ ...formData, approvers: value ? [value] : [] })}
+                  value={formData.approvers[0] || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, approvers: value === "none" ? [] : [value] })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select approver (optional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">No approver</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name}

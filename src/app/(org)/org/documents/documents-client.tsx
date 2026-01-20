@@ -131,7 +131,7 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
     name: "",
     description: "",
     document_type: "resume",
-    candidate_id: "",
+    candidate_id: "none",
   })
 
   // Filter documents
@@ -208,7 +208,7 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
           file_type: selectedFile.type,
           file_size: selectedFile.size,
           document_type: formData.document_type,
-          candidate_id: formData.candidate_id || null,
+          candidate_id: formData.candidate_id === "none" ? null : (formData.candidate_id || null),
         })
         .select(`
           *,
@@ -252,7 +252,7 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
       name: "",
       description: "",
       document_type: "resume",
-      candidate_id: "",
+      candidate_id: "none",
     })
     setSelectedFile(null)
   }
@@ -554,7 +554,7 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
                   <SelectValue placeholder="Select candidate (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No candidate</SelectItem>
+                  <SelectItem value="none">No candidate</SelectItem>
                   {candidates.map((candidate) => (
                     <SelectItem key={candidate.id} value={candidate.id}>
                       {candidate.first_name} {candidate.last_name}

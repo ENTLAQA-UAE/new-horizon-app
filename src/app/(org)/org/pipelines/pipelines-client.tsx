@@ -78,6 +78,7 @@ interface PipelineStage {
   color: string
   sort_order: number
   stage_type: string
+  is_system: boolean
   requires_approval: boolean
   approvers: string[]
   auto_email_template_id: string | null
@@ -86,6 +87,13 @@ interface PipelineStage {
   sla_warning_days: number | null
   sla_critical_days: number | null
 }
+
+// Mandatory system stages that are created with every new pipeline
+const systemStages = [
+  { name: "Applied", name_ar: "تم التقديم", stage_type: "applied", color: "#6B7280", sort_order: 0 },
+  { name: "Hired", name_ar: "تم التوظيف", stage_type: "hired", color: "#10B981", sort_order: 998 },
+  { name: "Rejected", name_ar: "مرفوض", stage_type: "rejected", color: "#EF4444", sort_order: 999 },
+]
 
 interface PipelinesClientProps {
   pipelines: Pipeline[]
@@ -167,7 +175,7 @@ export function PipelinesClient({
     color: "#3B82F6",
     requires_approval: false,
     approvers: [],
-    auto_email_template_id: "",
+    auto_email_template_id: "none",
     auto_reject_enabled: false,
     auto_reject_days: 30,
     sla_warning_days: 3,
@@ -206,7 +214,7 @@ export function PipelinesClient({
       color: "#3B82F6",
       requires_approval: false,
       approvers: [],
-      auto_email_template_id: "",
+      auto_email_template_id: "none",
       auto_reject_enabled: false,
       auto_reject_days: 30,
       sla_warning_days: 3,
@@ -242,6 +250,7 @@ export function PipelinesClient({
         setPipelines(pipelines.map((p) => (p.id === editingPipeline.id ? data : p)))
         toast.success("Pipeline updated successfully")
       } else {
+        // Create the pipeline
         const { data, error } = await supabase
           .from("pipelines")
           .insert({
@@ -257,8 +266,34 @@ export function PipelinesClient({
           .single()
 
         if (error) throw error
+
+        // Auto-create mandatory system stages (Applied, Hired, Rejected)
+        const { data: stagesData, error: stagesError } = await supabase
+          .from("pipeline_stages")
+          .insert(
+            systemStages.map((stage) => ({
+              org_id: organizationId,
+              pipeline_id: data.id,
+              name: stage.name,
+              name_ar: stage.name_ar,
+              stage_type: stage.stage_type,
+              color: stage.color,
+              sort_order: stage.sort_order,
+              is_system: true,
+              requires_approval: false,
+              approvers: [],
+            }))
+          )
+          .select()
+
+        if (stagesError) {
+          console.error("Failed to create system stages:", stagesError)
+        } else if (stagesData) {
+          setAllStages([...allStages, ...stagesData])
+        }
+
         setPipelines([data, ...pipelines])
-        toast.success("Pipeline created successfully")
+        toast.success("Pipeline created with default stages")
       }
 
       setIsPipelineDialogOpen(false)
@@ -318,10 +353,10 @@ export function PipelinesClient({
 
       if (pipelineError) throw pipelineError
 
-      // Copy stages
+      // Copy stages (preserve is_system flag)
       const pipelineStages = getPipelineStages(pipeline.id)
       if (pipelineStages.length > 0) {
-        const { error: stagesError } = await supabase.from("pipeline_stages").insert(
+        const { data: copiedStages, error: stagesError } = await supabase.from("pipeline_stages").insert(
           pipelineStages.map((s) => ({
             org_id: organizationId,
             pipeline_id: newPipeline.id,
@@ -331,13 +366,18 @@ export function PipelinesClient({
             color: s.color,
             sort_order: s.sort_order,
             stage_type: s.stage_type,
+            is_system: s.is_system,
             requires_approval: s.requires_approval,
             approvers: s.approvers,
             auto_email_template_id: s.auto_email_template_id,
           }))
-        )
+        ).select()
 
-        if (stagesError) console.error("Failed to copy stages:", stagesError)
+        if (stagesError) {
+          console.error("Failed to copy stages:", stagesError)
+        } else if (copiedStages) {
+          setAllStages([...allStages, ...copiedStages])
+        }
       }
 
       setPipelines([newPipeline, ...pipelines])
@@ -382,7 +422,7 @@ export function PipelinesClient({
             color: stageForm.color,
             requires_approval: stageForm.requires_approval,
             approvers: stageForm.approvers,
-            auto_email_template_id: stageForm.auto_email_template_id || null,
+            auto_email_template_id: stageForm.auto_email_template_id === "none" ? null : (stageForm.auto_email_template_id || null),
             auto_reject_enabled: stageForm.auto_reject_enabled,
             auto_reject_days: stageForm.auto_reject_enabled ? stageForm.auto_reject_days : null,
             sla_warning_days: stageForm.sla_warning_days || null,
@@ -413,7 +453,7 @@ export function PipelinesClient({
             sort_order: maxOrder + 1,
             requires_approval: stageForm.requires_approval,
             approvers: stageForm.approvers,
-            auto_email_template_id: stageForm.auto_email_template_id || null,
+            auto_email_template_id: stageForm.auto_email_template_id === "none" ? null : (stageForm.auto_email_template_id || null),
             auto_reject_enabled: stageForm.auto_reject_enabled,
             auto_reject_days: stageForm.auto_reject_enabled ? stageForm.auto_reject_days : null,
             sla_warning_days: stageForm.sla_warning_days || null,
@@ -468,7 +508,7 @@ export function PipelinesClient({
       color: stage.color,
       requires_approval: stage.requires_approval,
       approvers: stage.approvers || [],
-      auto_email_template_id: stage.auto_email_template_id || "",
+      auto_email_template_id: stage.auto_email_template_id || "none",
       auto_reject_enabled: stage.auto_reject_enabled,
       auto_reject_days: stage.auto_reject_days || 30,
       sla_warning_days: stage.sla_warning_days || 3,
@@ -687,9 +727,15 @@ export function PipelinesClient({
                 getPipelineStages(selectedPipeline.id).map((stage, index) => (
                   <div
                     key={stage.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow"
+                    className={cn(
+                      "flex items-center gap-4 p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow",
+                      stage.is_system && "bg-muted/50"
+                    )}
                   >
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                    {!stage.is_system && (
+                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                    )}
+                    {stage.is_system && <div className="w-4" />}
                     <div
                       className="w-4 h-4 rounded-full flex-shrink-0"
                       style={{ backgroundColor: stage.color }}
@@ -700,6 +746,11 @@ export function PipelinesClient({
                         <Badge variant="outline" className="text-xs">
                           {getStageTypeConfig(stage.stage_type).label}
                         </Badge>
+                        {stage.is_system && (
+                          <Badge variant="default" className="text-xs bg-slate-600">
+                            System
+                          </Badge>
+                        )}
                         {stage.requires_approval && (
                           <Badge variant="secondary" className="text-xs">
                             <UserCheck className="h-3 w-3 mr-1" />
@@ -720,22 +771,26 @@ export function PipelinesClient({
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEditStageDialog(stage)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => handleDeleteStage(stage.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!stage.is_system && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditStageDialog(stage)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => handleDeleteStage(stage.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                     {index < getPipelineStages(selectedPipeline.id).length - 1 && (
                       <ArrowRight className="h-4 w-4 text-muted-foreground absolute right-[-20px]" />
@@ -940,11 +995,11 @@ export function PipelinesClient({
                 <div className="space-y-2">
                   <Label>Approvers</Label>
                   <Select
-                    value={stageForm.approvers[0] || ""}
+                    value={stageForm.approvers[0] || "none"}
                     onValueChange={(value) =>
                       setStageForm({
                         ...stageForm,
-                        approvers: value ? [value] : [],
+                        approvers: value === "none" ? [] : [value],
                       })
                     }
                   >
@@ -952,6 +1007,7 @@ export function PipelinesClient({
                       <SelectValue placeholder="Select approver" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">No approver required</SelectItem>
                       {teamMembers.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.name}
@@ -978,7 +1034,7 @@ export function PipelinesClient({
                     <SelectValue placeholder="Select email template" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {emailTemplates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
