@@ -1,6 +1,27 @@
 import { SupabaseClient } from "@supabase/supabase-js"
 
+export type DateRange = "7d" | "30d" | "90d" | "12m" | "all"
+
+export interface HiringGoal {
+  id: string
+  title: string
+  target: number
+  current: number
+  deadline: string
+  type: "hires" | "applications" | "interviews"
+}
+
+export interface DropoffStage {
+  fromStage: string
+  toStage: string
+  dropoffCount: number
+  dropoffRate: number
+  totalEntered: number
+}
+
 export interface DashboardStats {
+  dateRange: DateRange
+  periodLabel: string
   overview: {
     totalJobs: number
     activeJobs: number
@@ -57,6 +78,7 @@ export interface DashboardStats {
     interviewsConducted: number
     offersExtended: number
     hires: number
+    score: number
   }[]
   pipelineVelocity: {
     stage: string
@@ -78,16 +100,71 @@ export interface DashboardStats {
     hires: number
     avgTimeToFill: number
   }[]
+  dropoffAnalysis: DropoffStage[]
+  goals: HiringGoal[]
+}
+
+// Helper to get date range boundaries
+function getDateRangeBoundaries(dateRange: DateRange): { start: Date; end: Date; previousStart: Date; previousEnd: Date; trendDays: number; label: string } {
+  const now = new Date()
+  const end = now
+  let start: Date
+  let previousStart: Date
+  let previousEnd: Date
+  let trendDays: number
+  let label: string
+
+  switch (dateRange) {
+    case "7d":
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      previousStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+      previousEnd = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      trendDays = 7
+      label = "Last 7 days"
+      break
+    case "30d":
+      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      previousStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+      previousEnd = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      trendDays = 30
+      label = "Last 30 days"
+      break
+    case "90d":
+      start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+      previousStart = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000)
+      previousEnd = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+      trendDays = 90
+      label = "Last 90 days"
+      break
+    case "12m":
+      start = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+      previousStart = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate())
+      previousEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+      trendDays = 365
+      label = "Last 12 months"
+      break
+    case "all":
+    default:
+      start = new Date(2020, 0, 1) // Far back date
+      previousStart = new Date(2020, 0, 1)
+      previousEnd = new Date(2020, 0, 1)
+      trendDays = 30 // Show last 30 days for trend even in "all" mode
+      label = "All time"
+      break
+  }
+
+  return { start, end, previousStart, previousEnd, trendDays, label }
 }
 
 export async function getDashboardStats(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  dateRange: DateRange = "30d"
 ): Promise<DashboardStats> {
   const now = new Date()
+  const { start, previousStart, previousEnd, trendDays, label } = getDateRangeBoundaries(dateRange)
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000)
+  const trendStartDate = new Date(now.getTime() - trendDays * 24 * 60 * 60 * 1000)
 
   // Fetch all data in parallel
   const [
@@ -133,11 +210,11 @@ export async function getDashboardStats(
     // Applications by source with details
     supabase.from("applications").select("source, status, job_id"),
 
-    // Recent applications for trend
+    // Recent applications for trend (based on date range)
     supabase
       .from("applications")
       .select("created_at, status")
-      .gte("created_at", thirtyDaysAgo.toISOString())
+      .gte("created_at", trendStartDate.toISOString())
       .order("created_at", { ascending: true }),
 
     // Offers data
@@ -152,12 +229,12 @@ export async function getDashboardStats(
     // Get interviewers' profiles
     supabase.from("profiles").select("id, full_name, email"),
 
-    // Previous period applications (for comparison)
+    // Previous period applications (for comparison based on date range)
     supabase
       .from("applications")
       .select("id", { count: "exact" })
-      .gte("created_at", sixtyDaysAgo.toISOString())
-      .lt("created_at", thirtyDaysAgo.toISOString()),
+      .gte("created_at", previousStart.toISOString())
+      .lt("created_at", previousEnd.toISOString()),
 
     // Previous period hired
     supabase
@@ -374,6 +451,8 @@ export async function getDashboardStats(
   const teamActivity = Array.from(interviewerStats.entries())
     .map(([userId, stats]) => {
       const profile = profileMap.get(userId)
+      // Calculate score: interviews * 10 + apps reviewed * 5
+      const score = stats.interviews * 10 + stats.appIds.size * 5
       return {
         userId,
         userName: profile?.name || "Unknown",
@@ -382,9 +461,10 @@ export async function getDashboardStats(
         interviewsConducted: stats.interviews,
         offersExtended: 0,
         hires: 0,
+        score,
       }
     })
-    .sort((a, b) => b.interviewsConducted - a.interviewsConducted)
+    .sort((a, b) => b.score - a.score)
     .slice(0, 10)
 
   // Calculate pipeline velocity (average days at each stage)
@@ -396,16 +476,16 @@ export async function getDashboardStats(
     candidates: stageMap.get(stage) || 0,
   }))
 
-  // Calculate period comparison
+  // Calculate period comparison (based on selected date range)
   const currentApps = recentApps.length
   const previousApps = previousPeriodAppsResult.count || 0
   const currentHired = hiredResult.count || 0
   const previousHired = previousPeriodHiredResult.count || 0
   const currentInterviews = interviews.filter(i =>
-    new Date(i.scheduled_at) >= thirtyDaysAgo
+    new Date(i.scheduled_at) >= start
   ).length
   const previousInterviews = interviews.filter(i =>
-    new Date(i.scheduled_at) >= sixtyDaysAgo && new Date(i.scheduled_at) < thirtyDaysAgo
+    new Date(i.scheduled_at) >= previousStart && new Date(i.scheduled_at) < previousEnd
   ).length
 
   const periodComparison = [
@@ -470,7 +550,63 @@ export async function getDashboardStats(
     }
   }).sort((a, b) => b.applications - a.applications)
 
+  // Calculate candidate drop-off analysis
+  const stageOrder = ["new", "screening", "interviewing", "offered", "hired"]
+  const dropoffAnalysis: DropoffStage[] = []
+
+  for (let i = 0; i < stageOrder.length - 1; i++) {
+    const fromStage = stageOrder[i]
+    const toStage = stageOrder[i + 1]
+    const fromCount = stageMap.get(fromStage) || 0
+    const toCount = stageMap.get(toStage) || 0
+
+    // For funnel, we need cumulative counts (everyone who reached this stage or beyond)
+    const reachedFromStage = stageOrder.slice(i).reduce((sum, s) => sum + (stageMap.get(s) || 0), 0)
+    const reachedToStage = stageOrder.slice(i + 1).reduce((sum, s) => sum + (stageMap.get(s) || 0), 0)
+
+    const dropoffCount = reachedFromStage - reachedToStage
+    const dropoffRate = reachedFromStage > 0 ? Math.round((dropoffCount / reachedFromStage) * 100) : 0
+
+    dropoffAnalysis.push({
+      fromStage: fromStage.charAt(0).toUpperCase() + fromStage.slice(1),
+      toStage: toStage.charAt(0).toUpperCase() + toStage.slice(1),
+      dropoffCount,
+      dropoffRate,
+      totalEntered: reachedFromStage,
+    })
+  }
+
+  // Generate hiring goals (in a real app, these would come from a database)
+  const goals: HiringGoal[] = [
+    {
+      id: "goal-1",
+      title: "Monthly Hires",
+      target: 10,
+      current: hiredResult.count || 0,
+      deadline: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+      type: "hires",
+    },
+    {
+      id: "goal-2",
+      title: "Interview Pipeline",
+      target: 50,
+      current: stageMap.get("interviewing") || 0,
+      deadline: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+      type: "interviews",
+    },
+    {
+      id: "goal-3",
+      title: "Application Target",
+      target: 100,
+      current: currentApps,
+      deadline: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+      type: "applications",
+    },
+  ]
+
   return {
+    dateRange,
+    periodLabel: label,
     overview: {
       totalJobs,
       activeJobs,
@@ -494,6 +630,8 @@ export async function getDashboardStats(
     pipelineVelocity,
     periodComparison,
     departmentMetrics,
+    dropoffAnalysis,
+    goals,
   }
 }
 
