@@ -10,7 +10,10 @@ interface SentryUserProviderProps {
 
 /**
  * Provider that automatically sets Sentry user context
- * when the user's authentication state changes
+ * when the user's authentication state changes.
+ *
+ * Uses maybeSingle() instead of single() to avoid 400 errors
+ * when profile or role doesn't exist.
  */
 export function SentryUserProvider({ children }: SentryUserProviderProps) {
   useEffect(() => {
@@ -18,22 +21,27 @@ export function SentryUserProvider({ children }: SentryUserProviderProps) {
 
     // Get initial user
     const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
 
-      if (user) {
-        // Get user profile with org info
+        if (error || !user) {
+          setSentryUser(null)
+          return
+        }
+
+        // Get user profile with org info - use maybeSingle to avoid 400 errors
         const { data: profile } = await supabase
           .from("profiles")
           .select("org_id, first_name, last_name, organizations(name)")
           .eq("id", user.id)
-          .single()
+          .maybeSingle()
 
-        // Get user role
+        // Get user role - use maybeSingle to avoid 400 errors
         const { data: userRole } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
-          .single()
+          .maybeSingle()
 
         setSentryUser({
           id: user.id,
@@ -43,7 +51,8 @@ export function SentryUserProvider({ children }: SentryUserProviderProps) {
           orgName: (profile?.organizations as { name: string })?.name || undefined,
           role: userRole?.role || undefined,
         })
-      } else {
+      } catch (error) {
+        console.error("SentryUserProvider: Error initializing user:", error)
         setSentryUser(null)
       }
     }
@@ -54,28 +63,32 @@ export function SentryUserProvider({ children }: SentryUserProviderProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session?.user) {
-          // Get user profile with org info
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("org_id, first_name, last_name, organizations(name)")
-            .eq("id", session.user.id)
-            .single()
+          try {
+            // Get user profile with org info - use maybeSingle to avoid 400 errors
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("org_id, first_name, last_name, organizations(name)")
+              .eq("id", session.user.id)
+              .maybeSingle()
 
-          // Get user role
-          const { data: userRole } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .single()
+            // Get user role - use maybeSingle to avoid 400 errors
+            const { data: userRole } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", session.user.id)
+              .maybeSingle()
 
-          setSentryUser({
-            id: session.user.id,
-            email: session.user.email,
-            username: profile ? `${profile.first_name} ${profile.last_name}` : undefined,
-            orgId: profile?.org_id || undefined,
-            orgName: (profile?.organizations as { name: string })?.name || undefined,
-            role: userRole?.role || undefined,
-          })
+            setSentryUser({
+              id: session.user.id,
+              email: session.user.email,
+              username: profile ? `${profile.first_name} ${profile.last_name}` : undefined,
+              orgId: profile?.org_id || undefined,
+              orgName: (profile?.organizations as { name: string })?.name || undefined,
+              role: userRole?.role || undefined,
+            })
+          } catch (error) {
+            console.error("SentryUserProvider: Error setting user:", error)
+          }
         } else if (event === "SIGNED_OUT") {
           setSentryUser(null)
         }

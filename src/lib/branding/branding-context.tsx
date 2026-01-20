@@ -1,7 +1,7 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { useAuth } from "@/lib/auth"
 
 export interface BrandingConfig {
   orgId: string | null
@@ -35,150 +35,49 @@ interface BrandingProviderProps {
   children: ReactNode
 }
 
-// Track user ID across page loads to detect user switches
-const USER_ID_KEY = "jadarat_current_user_id"
-
+/**
+ * BrandingProvider - Now uses AuthProvider data instead of fetching independently
+ * This eliminates duplicate API calls and race conditions
+ */
 export function BrandingProvider({ children }: BrandingProviderProps) {
+  const { isLoading: authLoading, organization, isAuthenticated } = useAuth()
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding)
-  const loadingRef = useRef(false)
 
   useEffect(() => {
-    const supabase = createClient()
-
-    async function loadBranding() {
-      // Prevent concurrent loads
-      if (loadingRef.current) return
-      loadingRef.current = true
-
-      try {
-        // Use getSession for fast initial check
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log("Branding: Session check:", { userId: session?.user?.id })
-
-        if (!session?.user) {
-          // Clear stored user ID when not authenticated
-          try { sessionStorage.removeItem(USER_ID_KEY) } catch {}
-          setBranding({ ...defaultBranding, isLoaded: true })
-          loadingRef.current = false
-          return
-        }
-
-        const user = session.user
-
-        // Check if user ID changed from what we had before
-        try {
-          const storedUserId = sessionStorage.getItem(USER_ID_KEY)
-          if (storedUserId && storedUserId !== user.id) {
-            console.warn("User changed! Clearing state and reloading...", {
-              stored: storedUserId,
-              current: user.id,
-            })
-            // Different user detected - clear everything and reload
-            sessionStorage.setItem(USER_ID_KEY, user.id)
-            window.location.reload()
-            return
-          }
-          // Store current user ID
-          sessionStorage.setItem(USER_ID_KEY, user.id)
-        } catch (e) {
-          // sessionStorage might not be available
-        }
-
-        // Get user's profile to find org_id with retry logic
-        let profile = null
-        let attempts = 0
-        const maxAttempts = 3
-
-        while (!profile && attempts < maxAttempts) {
-          attempts++
-          const { data, error: profileError } = await supabase
-            .from("profiles")
-            .select("org_id")
-            .eq("id", user.id)
-            .single()
-
-          if (profileError) {
-            console.warn(`Profile fetch attempt ${attempts} failed:`, profileError.message)
-            if (attempts < maxAttempts) {
-              await new Promise(r => setTimeout(r, 500 * attempts))
-            }
-          } else {
-            profile = data
-          }
-        }
-
-        if (!profile?.org_id) {
-          console.log("User has no org_id, using default branding")
-          setBranding({ ...defaultBranding, isLoaded: true })
-          loadingRef.current = false
-          return
-        }
-
-        // Get organization branding
-        const { data: org, error: orgError } = await supabase
-          .from("organizations")
-          .select("id, name, name_ar, logo_url, primary_color, secondary_color")
-          .eq("id", profile.org_id)
-          .single()
-
-        if (orgError) {
-          console.error("Org fetch error:", orgError.message)
-          setBranding({ ...defaultBranding, isLoaded: true })
-          loadingRef.current = false
-          return
-        }
-
-        if (org) {
-          const newBranding: BrandingConfig = {
-            orgId: org.id,
-            orgName: org.name || "Jadarat",
-            orgNameAr: org.name_ar || "جدارات",
-            logoUrl: org.logo_url,
-            primaryColor: org.primary_color || "#6366f1",
-            secondaryColor: org.secondary_color || "#8b5cf6",
-            accentColor: "#06b6d4",
-            isLoaded: true,
-          }
-          setBranding(newBranding)
-          applyBrandingToDOM(newBranding)
-          console.log("Branding loaded:", org.name)
-        } else {
-          setBranding({ ...defaultBranding, isLoaded: true })
-        }
-      } catch (error) {
-        console.error("Error loading branding:", error)
-        setBranding({ ...defaultBranding, isLoaded: true })
-      } finally {
-        loadingRef.current = false
-      }
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return
     }
 
-    loadBranding()
-
-    // Listen for auth state changes to refresh branding when user logs in/out
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Branding auth event:", event)
-
-        if (event === "SIGNED_OUT") {
-          try { sessionStorage.removeItem(USER_ID_KEY) } catch {}
-          setBranding({ ...defaultBranding, isLoaded: true })
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // On sign in, store new user ID and reload branding
-          if (session?.user?.id) {
-            try { sessionStorage.setItem(USER_ID_KEY, session.user.id) } catch {}
-          }
-          setBranding({ ...defaultBranding, isLoaded: false })
-          loadingRef.current = false
-          loadBranding()
-        }
-      }
-    )
-
-    return () => {
-      subscription.unsubscribe()
+    // Not authenticated - use default branding
+    if (!isAuthenticated) {
+      setBranding({ ...defaultBranding, isLoaded: true })
+      return
     }
-  }, [])
+
+    // No organization - use default branding
+    if (!organization) {
+      console.log("BrandingProvider: No organization, using default branding")
+      setBranding({ ...defaultBranding, isLoaded: true })
+      return
+    }
+
+    // Build branding from organization data
+    const newBranding: BrandingConfig = {
+      orgId: organization.id,
+      orgName: organization.name || "Jadarat",
+      orgNameAr: organization.name_ar || "جدارات",
+      logoUrl: organization.logo_url,
+      primaryColor: organization.primary_color || "#6366f1",
+      secondaryColor: organization.secondary_color || "#8b5cf6",
+      accentColor: "#06b6d4",
+      isLoaded: true,
+    }
+
+    setBranding(newBranding)
+    applyBrandingToDOM(newBranding)
+    console.log("BrandingProvider: Branding loaded from AuthProvider:", organization.name)
+  }, [authLoading, isAuthenticated, organization])
 
   return (
     <BrandingContext.Provider value={branding}>
