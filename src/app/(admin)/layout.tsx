@@ -45,10 +45,10 @@ export default function AdminLayout({
 
     async function fetchUserRole() {
       try {
-        // First try to get session (fast, cached) to check if we have any auth
+        // Get session (fast, cached)
         const { data: { session } } = await supabase.auth.getSession()
 
-        if (!session) {
+        if (!session?.user) {
           console.log("AdminLayout: No session found, redirecting to login")
           if (isMounted) {
             router.push("/login")
@@ -56,50 +56,8 @@ export default function AdminLayout({
           return
         }
 
-        // We have a session, now verify with server (with longer timeout and retry)
-        console.log("AdminLayout: Session found, verifying with server...")
-
-        let user = null
-        let attempts = 0
-        const maxAttempts = 2
-
-        while (!user && attempts < maxAttempts) {
-          attempts++
-          try {
-            const getUserPromise = supabase.auth.getUser()
-            const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
-              setTimeout(() => {
-                console.warn(`AdminLayout: getUser() attempt ${attempts} timed out`)
-                resolve({ data: { user: null }, error: new Error("getUser timeout") })
-              }, 10000)
-            )
-
-            const result = await Promise.race([getUserPromise, timeoutPromise])
-            if (result.data.user) {
-              user = result.data.user
-              console.log("AdminLayout: getUser succeeded:", user.id)
-            } else if (attempts < maxAttempts) {
-              console.log("AdminLayout: Retrying getUser...")
-              await new Promise(r => setTimeout(r, 1000))
-            }
-          } catch (e) {
-            console.warn("AdminLayout: getUser error:", e)
-          }
-        }
-
-        // If getUser failed but we have a session, use the session user as fallback
-        if (!user && session.user) {
-          console.log("AdminLayout: Using session user as fallback:", session.user.id)
-          user = session.user
-        }
-
-        if (!user) {
-          console.log("AdminLayout: No user after all attempts, redirecting to login")
-          if (isMounted) {
-            router.push("/login")
-          }
-          return
-        }
+        const user = session.user
+        console.log("AdminLayout: Session user:", user.id)
 
         // Get user's roles from user_roles table with timeout
         const rolesPromise = supabase
@@ -116,8 +74,8 @@ export default function AdminLayout({
         if (!isMounted) return
 
         if (roles && roles.length > 0) {
-          // Prioritize roles: super_admin > org_admin > others
           const roleList = roles.map(r => r.role)
+          console.log("AdminLayout: User roles:", roleList)
 
           if (roleList.includes("super_admin")) {
             setUserRole("super_admin")
@@ -133,7 +91,7 @@ export default function AdminLayout({
           return
         }
       } catch (error) {
-        // Silently handle errors - redirect to login
+        console.error("AdminLayout: Error:", error)
         if (isMounted) {
           router.push("/login")
         }

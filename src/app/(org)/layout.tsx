@@ -29,7 +29,7 @@ export default function OrgLayout({
 
     // Safety timeout - always show page after 8 seconds max
     const safetyTimeout = setTimeout(() => {
-      if (isMounted && isLoading) {
+      if (isMounted) {
         console.warn("Safety timeout triggered - showing page with default role")
         setUserRole("recruiter")
         setIsLoading(false)
@@ -51,45 +51,12 @@ export default function OrgLayout({
           return
         }
 
-        // We have a session, now verify with server (with longer timeout and retry)
-        console.log("OrgLayout: Session found, verifying with server...")
-
-        let user = null
-        let attempts = 0
-        const maxAttempts = 2
-
-        while (!user && attempts < maxAttempts) {
-          attempts++
-          try {
-            const getUserPromise = supabase.auth.getUser()
-            const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
-              setTimeout(() => {
-                console.warn(`OrgLayout: getUser() attempt ${attempts} timed out`)
-                resolve({ data: { user: null }, error: new Error("getUser timeout") })
-              }, 10000) // 10 second timeout
-            )
-
-            const result = await Promise.race([getUserPromise, timeoutPromise])
-            if (result.data.user) {
-              user = result.data.user
-              console.log("OrgLayout: getUser succeeded:", user.id)
-            } else if (attempts < maxAttempts) {
-              console.log("OrgLayout: Retrying getUser...")
-              await new Promise(r => setTimeout(r, 1000)) // Wait 1 second before retry
-            }
-          } catch (e) {
-            console.warn("OrgLayout: getUser error:", e)
-          }
-        }
-
-        // If getUser failed but we have a session, use the session user as fallback
-        if (!user && session.user) {
-          console.log("OrgLayout: Using session user as fallback:", session.user.id)
-          user = session.user
-        }
+        // We have a session, use the session user directly for faster loading
+        const user = session.user
+        console.log("OrgLayout: Session user:", user.id)
 
         if (!user) {
-          console.log("OrgLayout: No user after all attempts, redirecting to login")
+          console.log("OrgLayout: No user in session, redirecting to login")
           if (isMounted) {
             router.push("/login")
           }
@@ -159,7 +126,6 @@ export default function OrgLayout({
         if (event === "SIGNED_OUT") {
           router.push("/login")
         } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          setIsLoading(true)
           fetchUserRole()
         }
       }
@@ -170,7 +136,7 @@ export default function OrgLayout({
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [router, isLoading])
+  }, [router])
 
   if (isLoading) {
     return (
