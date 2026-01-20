@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { createClient, clearSupabaseStorage, resetSupabaseClient } from "@/lib/supabase/client"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -46,7 +46,6 @@ import {
   FileText,
   ChevronRight,
 } from "lucide-react"
-import { toast } from "sonner"
 import { useI18n } from "@/lib/i18n"
 import { useBranding } from "@/lib/branding/branding-context"
 import { NotificationBell } from "@/components/notifications/notification-bell"
@@ -58,113 +57,21 @@ interface HeaderProps {
   titleAr?: string
 }
 
-interface UserProfile {
-  first_name: string | null
-  last_name: string | null
-  email: string | null
-  avatar_url: string | null
-}
-
+/**
+ * Header component - Now uses centralized AuthProvider
+ * No more duplicate profile fetches!
+ */
 export function Header({ title, titleAr }: HeaderProps) {
   const router = useRouter()
   const { language, setLanguage, t, isRTL } = useI18n()
   const branding = useBranding()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [commandOpen, setCommandOpen] = useState(false)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+
+  // Use profile from AuthProvider instead of fetching separately
+  const { profile, signOut } = useAuth()
 
   const displayTitle = language === "ar" && titleAr ? titleAr : title || t("nav.dashboard")
-
-  // Track user ID to detect user changes
-  const HEADER_USER_KEY = "jadarat_header_user_id"
-
-  // Fetch user profile
-  useEffect(() => {
-    let isMounted = true
-    const supabase = createClient()
-
-    async function fetchProfile() {
-      try {
-        // First check session (fast) to get user ID
-        const { data: { session } } = await supabase.auth.getSession()
-
-        if (!session?.user || !isMounted) {
-          setProfile(null)
-          return
-        }
-
-        const user = session.user
-        console.log("Header: Session user:", user.id)
-
-        // Check if user changed - if so, clear profile and let page reload handle it
-        try {
-          const storedUserId = sessionStorage.getItem(HEADER_USER_KEY)
-          if (storedUserId && storedUserId !== user.id) {
-            console.warn("Header: User changed, clearing profile")
-            setProfile(null)
-            sessionStorage.setItem(HEADER_USER_KEY, user.id)
-            return // Let branding context trigger reload
-          }
-          sessionStorage.setItem(HEADER_USER_KEY, user.id)
-        } catch {}
-
-        // Fetch profile with retry logic
-        let profileData = null
-        let attempts = 0
-        const maxAttempts = 3
-
-        while (!profileData && attempts < maxAttempts && isMounted) {
-          attempts++
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("first_name, last_name, email, avatar_url")
-            .eq("id", user.id)
-            .single()
-
-          if (error) {
-            console.warn(`Header profile fetch attempt ${attempts} failed:`, error.message)
-            if (attempts < maxAttempts) {
-              await new Promise(r => setTimeout(r, 500 * attempts))
-            }
-          } else {
-            profileData = data
-          }
-        }
-
-        if (profileData && isMounted) {
-          setProfile(profileData)
-          console.log("Header: Profile loaded for", profileData.first_name, profileData.last_name)
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error)
-      }
-    }
-
-    fetchProfile()
-
-    // Listen for auth state changes to refresh profile
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Header: Auth event", event)
-        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Store new user ID and re-fetch
-          if (session?.user?.id) {
-            try { sessionStorage.setItem(HEADER_USER_KEY, session.user.id) } catch {}
-          }
-          setProfile(null)
-          fetchProfile()
-        } else if (event === "SIGNED_OUT") {
-          try { sessionStorage.removeItem(HEADER_USER_KEY) } catch {}
-          setProfile(null)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -179,35 +86,7 @@ export function Header({ title, titleAr }: HeaderProps) {
   }, [])
 
   const handleLogout = async () => {
-    try {
-      const supabase = createClient()
-
-      // CRITICAL: Clear ALL Supabase storage to prevent stale session data
-      clearSupabaseStorage()
-
-      // Add timeout to signOut to prevent hanging on stale sessions
-      const signOutPromise = supabase.auth.signOut({ scope: 'global' }) // Sign out from all devices
-      const timeoutPromise = new Promise<{ error: Error }>((resolve) =>
-        setTimeout(() => resolve({ error: new Error("Sign out timeout") }), 3000)
-      )
-
-      const { error } = await Promise.race([signOutPromise, timeoutPromise])
-
-      if (error) {
-        console.error("Error signing out:", error)
-      }
-
-      // Reset the Supabase client singleton to ensure fresh state on next login
-      resetSupabaseClient()
-    } catch (err) {
-      console.error("Logout error:", err)
-      // Still clear storage even if there's an error
-      clearSupabaseStorage()
-      resetSupabaseClient()
-    }
-
-    // Always redirect to login with full page reload to clear all React state
-    window.location.href = "/login"
+    await signOut()
   }
 
   const toggleLanguage = () => {

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Sidebar, UserRole } from "@/components/layout/sidebar"
+import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
-import { createClient } from "@/lib/supabase/client"
+import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
+import { AuthErrorDisplay } from "@/components/auth/auth-error"
 import { Loader2, Sparkles } from "lucide-react"
 
 // Apply default Jadarat branding CSS variables
@@ -22,6 +23,7 @@ function applyDefaultBranding() {
 
 /**
  * Admin Layout - For Super Admin routes only
+ * Uses centralized AuthProvider for auth state management
  * No BrandingProvider since super admins see platform branding (Jadarat)
  */
 export default function AdminLayout({
@@ -29,118 +31,67 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [userRole, setUserRole] = useState<UserRole | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  return (
+    <AuthProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AuthProvider>
+  )
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const {
+    isLoading,
+    isAuthenticated,
+    error,
+    isSuperAdmin,
+    refreshAuth,
+  } = useAuth()
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Apply default Jadarat branding on mount
   useEffect(() => {
     applyDefaultBranding()
   }, [])
 
+  // Handle redirects based on auth state
   useEffect(() => {
-    let isMounted = true
-    const supabase = createClient()
+    if (isLoading) return
 
-    async function fetchUserRole() {
-      try {
-        // Get session (fast, cached)
-        const sessionResult = await supabase.auth.getSession()
-        console.log("AdminLayout: getSession result:", sessionResult)
-
-        // Handle session errors
-        if (sessionResult.error) {
-          console.error("AdminLayout: Session error:", sessionResult.error)
-          if (isMounted) {
-            router.push("/org") // Redirect to org instead of login
-          }
-          return
-        }
-
-        const session = sessionResult.data?.session
-        if (!session?.user) {
-          console.log("AdminLayout: No session found, redirecting to login")
-          if (isMounted) {
-            router.push("/login")
-          }
-          return
-        }
-
-        const user = session.user
-        console.log("AdminLayout: Session user:", user.id)
-
-        // Get user's roles
-        try {
-          const { data: roles, error: rolesError } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-
-          console.log("AdminLayout: Roles result:", { roles, error: rolesError?.message })
-
-          if (!isMounted) return
-
-          if (roles && roles.length > 0) {
-            const roleList = roles.map(r => r.role)
-
-            if (roleList.includes("super_admin")) {
-              setUserRole("super_admin")
-              setIsLoading(false)
-            } else {
-              router.push("/org")
-              return
-            }
-          } else {
-            router.push("/org")
-            return
-          }
-        } catch (rolesError) {
-          console.warn("AdminLayout: Roles fetch failed:", rolesError)
-          router.push("/org")
-        }
-      } catch (error) {
-        console.error("AdminLayout: Error:", error)
-        if (isMounted) {
-          router.push("/org")
-        }
-      }
+    // Not authenticated - redirect to login
+    if (!isAuthenticated) {
+      console.log("AdminLayout: Not authenticated, redirecting to login")
+      router.push("/login")
+      return
     }
 
-    fetchUserRole()
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "SIGNED_OUT") {
-          router.push("/login")
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Re-fetch user role when auth changes
-          fetchUserRole()
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
+    // Not a super admin - redirect to org
+    if (!isSuperAdmin) {
+      console.log("AdminLayout: User is not super admin, redirecting to org")
+      router.push("/org")
+      return
     }
-  }, [router])
+  }, [isLoading, isAuthenticated, isSuperAdmin, router])
 
+  // Show loading state
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
-            style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
-          >
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    )
+    return <AdminLoadingScreen />
+  }
+
+  // Show error state with retry option
+  if (error) {
+    return <AuthErrorDisplay error={error} onRetry={refreshAuth} />
+  }
+
+  // Not authenticated (will redirect via useEffect)
+  if (!isAuthenticated) {
+    return <AdminLoadingScreen />
+  }
+
+  // Not super admin (will redirect via useEffect)
+  if (!isSuperAdmin) {
+    return <AdminLoadingScreen />
   }
 
   return (
@@ -149,7 +100,7 @@ export default function AdminLayout({
         <Sidebar
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
-          userRole={userRole || undefined}
+          userRole="super_admin"
         />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
@@ -161,5 +112,21 @@ export default function AdminLayout({
         </div>
       </div>
     </I18nProvider>
+  )
+}
+
+function AdminLoadingScreen() {
+  return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
+          style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
+        >
+          <Sparkles className="w-8 h-8 text-white" />
+        </div>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    </div>
   )
 }

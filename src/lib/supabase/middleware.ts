@@ -35,15 +35,51 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser()
 
   // Define public routes that don't require authentication
-  const publicRoutes = ['/login', '/signup', '/auth/callback', '/careers', '/api/invites']
+  const publicRoutes = [
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/auth/callback',
+    '/careers',
+    '/portal/login',
+    '/portal/auth',
+    '/api/invites',
+    '/api/careers',
+    '/onboarding', // Allow onboarding for authenticated users without org
+  ]
+
   const isPublicRoute = publicRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
 
-  if (!user && !isPublicRoute && !request.nextUrl.pathname.startsWith('/_next')) {
+  // Skip auth check for static files and Next.js internals
+  const isStaticOrInternal =
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/favicon') ||
+    request.nextUrl.pathname.includes('.')
+
+  if (isStaticOrInternal) {
+    return supabaseResponse
+  }
+
+  // Handle auth errors gracefully
+  if (userError) {
+    console.error('Middleware: Auth error:', userError.message)
+    // If there's an auth error on a protected route, redirect to login
+    if (!isPublicRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
+  if (!user && !isPublicRoute) {
     // No user, redirect to login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
