@@ -37,35 +37,36 @@ export default function OrgLayout({
     }, 8000)
 
     async function fetchUserRole() {
+      console.log("OrgLayout: Starting fetchUserRole...")
+
       try {
-        // ALWAYS use getUser() to verify with the server - never use cached getSession()
-        // This prevents showing wrong user's data after page refresh
+        // CRITICAL: Always verify user with server
+        console.log("OrgLayout: Calling getUser()...")
         const { data: { user }, error: authError } = await supabase.auth.getUser()
+        console.log("OrgLayout: getUser result:", { userId: user?.id, error: authError?.message })
 
         if (authError || !user) {
+          console.log("OrgLayout: No user, redirecting to login")
           if (isMounted) {
             router.push("/login")
           }
           return
         }
 
-        // Get user's roles from user_roles table with timeout
-        const rolesPromise = supabase
+        // Get user's roles from user_roles table
+        console.log("OrgLayout: Fetching roles for user:", user.id)
+        const { data: roles, error: rolesError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
 
-        const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: new Error("Roles query timeout") }), 5000)
-        )
-
-        const { data: roles } = await Promise.race([rolesPromise, timeoutPromise])
+        console.log("OrgLayout: Roles result:", { roles, error: rolesError?.message })
 
         if (!isMounted) return
 
         if (roles && roles.length > 0) {
-          // Prioritize roles: super_admin > org_admin > others
           const roleList = roles.map(r => r.role)
+          console.log("OrgLayout: User roles:", roleList)
 
           if (roleList.includes("super_admin")) {
             setUserRole("super_admin")
@@ -80,16 +81,17 @@ export default function OrgLayout({
           } else if (roleList.includes("interviewer")) {
             setUserRole("interviewer")
           } else {
-            setUserRole("recruiter") // Default
+            setUserRole("recruiter")
           }
         } else {
-          // No roles assigned, default to recruiter
+          console.log("OrgLayout: No roles found, using default")
           setUserRole("recruiter")
         }
 
+        console.log("OrgLayout: Setting isLoading to false")
         setIsLoading(false)
       } catch (error) {
-        // Silently handle errors - show page with default role
+        console.error("OrgLayout: Error in fetchUserRole:", error)
         if (isMounted) {
           setUserRole("recruiter")
           setIsLoading(false)
@@ -102,10 +104,10 @@ export default function OrgLayout({
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
+        console.log("OrgLayout: Auth event:", event)
         if (event === "SIGNED_OUT") {
           router.push("/login")
         } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Re-fetch user role when auth changes
           setIsLoading(true)
           fetchUserRole()
         }
