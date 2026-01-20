@@ -5,9 +5,6 @@ import {
   Briefcase,
   Users,
   UserSearch,
-  FileText,
-  TrendingUp,
-  TrendingDown,
   Clock,
   CheckCircle,
   Calendar,
@@ -16,7 +13,6 @@ import {
   Target,
   Zap,
   Plus,
-  MoreHorizontal,
   ChevronRight,
 } from "lucide-react"
 
@@ -38,6 +34,20 @@ async function getOrgStats() {
     .from("applications")
     .select("*", { count: "exact", head: true })
 
+  // Get applications grouped by status for pipeline
+  const { data: applications } = await supabase
+    .from("applications")
+    .select("status")
+
+  // Count applications by status
+  const stageCounts: Record<string, number> = {}
+  if (applications) {
+    applications.forEach((app) => {
+      const status = (app as { status: string }).status || "new"
+      stageCounts[status] = (stageCounts[status] || 0) + 1
+    })
+  }
+
   // Get recent jobs
   const { data: recentJobs } = await supabase
     .from("jobs")
@@ -57,6 +67,7 @@ async function getOrgStats() {
     jobs: jobsCount || 0,
     candidates: candidatesCount || 0,
     applications: applicationsCount || 0,
+    stageCounts,
     recentJobs: recentJobs || [],
     interviews: interviews || [],
   }
@@ -65,21 +76,16 @@ async function getOrgStats() {
 export default async function OrgDashboardPage() {
   const stats = await getOrgStats()
 
-  // Mock data for visual demo
+  // Real pipeline stages from database (using application status enum values)
   const pipelineStages = [
-    { name: "Applied", count: 45, color: "#6366f1" },
-    { name: "Screening", count: 28, color: "#8b5cf6" },
-    { name: "Interview", count: 12, color: "#06b6d4" },
-    { name: "Offer", count: 5, color: "#10b981" },
-    { name: "Hired", count: 3, color: "#22c55e" },
+    { name: "New", count: stats.stageCounts["new"] || 0, color: "#6366f1" },
+    { name: "Screening", count: stats.stageCounts["screening"] || 0, color: "#8b5cf6" },
+    { name: "Interview", count: stats.stageCounts["interview"] || 0, color: "#06b6d4" },
+    { name: "Offer", count: stats.stageCounts["offer"] || 0, color: "#10b981" },
+    { name: "Hired", count: stats.stageCounts["hired"] || 0, color: "#22c55e" },
   ]
 
-  const recentActivity = [
-    { type: "application", message: "New application for Senior Developer", time: "2 min ago", icon: FileText, color: "bg-blue-500" },
-    { type: "interview", message: "Interview scheduled with Sarah Ahmed", time: "1 hour ago", icon: Calendar, color: "bg-purple-500" },
-    { type: "hire", message: "Mohammed Ali accepted offer", time: "3 hours ago", icon: CheckCircle, color: "bg-green-500" },
-    { type: "job", message: "Product Manager position published", time: "5 hours ago", icon: Briefcase, color: "bg-indigo-500" },
-  ]
+  const totalPipelineCount = pipelineStages.reduce((sum, stage) => sum + stage.count, 0)
 
   return (
     <div className="space-y-6">
@@ -130,23 +136,20 @@ export default async function OrgDashboardPage() {
                 <p className="text-white/70 text-sm font-medium mb-2">Total Applications</p>
                 <div className="flex items-end gap-3">
                   <span className="text-6xl font-bold">{stats.applications}</span>
-                  <div className="flex items-center gap-1 text-green-300 mb-2">
-                    <TrendingUp className="h-4 w-4" />
-                    <span className="text-sm font-medium">+12%</span>
-                  </div>
                 </div>
                 <p className="text-white/60 text-sm mt-2">
-                  vs. last month
+                  Across all jobs
                 </p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/70 text-sm">Conversion Rate</span>
-                  <span className="font-semibold">23.5%</span>
+                  <span className="text-white/70 text-sm">Active Jobs</span>
+                  <span className="font-semibold">{stats.jobs}</span>
                 </div>
-                <div className="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full w-[23.5%] bg-white rounded-full" />
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-white/70 text-sm">Candidates</span>
+                  <span className="font-semibold">{stats.candidates}</span>
                 </div>
               </div>
             </div>
@@ -163,10 +166,6 @@ export default async function OrgDashboardPage() {
               >
                 <Briefcase className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
-              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                <TrendingUp className="h-3.5 w-3.5" />
-                +3
-              </span>
             </div>
             <p className="text-sm text-muted-foreground font-medium">Active Jobs</p>
             <p className="text-3xl font-bold mt-1">{stats.jobs}</p>
@@ -189,10 +188,6 @@ export default async function OrgDashboardPage() {
               >
                 <UserSearch className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
-              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                <TrendingUp className="h-3.5 w-3.5" />
-                +18
-              </span>
             </div>
             <p className="text-sm text-muted-foreground font-medium">Candidates</p>
             <p className="text-3xl font-bold mt-1">{stats.candidates}</p>
@@ -237,16 +232,12 @@ export default async function OrgDashboardPage() {
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
                 style={{ background: "var(--brand-gradient-subtle)" }}
               >
-                <Clock className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
+                <CheckCircle className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
-              <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                <TrendingDown className="h-3.5 w-3.5" />
-                -3 days
-              </span>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Time to Hire</p>
-            <p className="text-3xl font-bold mt-1">18 <span className="text-lg font-normal text-muted-foreground">days</span></p>
-            <p className="text-sm text-muted-foreground mt-3">Average this month</p>
+            <p className="text-sm text-muted-foreground font-medium">Hired</p>
+            <p className="text-3xl font-bold mt-1">{stats.stageCounts["hired"] || 0}</p>
+            <p className="text-sm text-muted-foreground mt-3">Total placements</p>
           </div>
         </div>
 
@@ -267,26 +258,41 @@ export default async function OrgDashboardPage() {
               </Link>
             </div>
 
-            <div className="flex items-end gap-3 h-32">
-              {pipelineStages.map((stage, index) => {
-                const maxCount = Math.max(...pipelineStages.map(s => s.count))
-                const height = (stage.count / maxCount) * 100
-                return (
-                  <div key={stage.name} className="flex-1 flex flex-col items-center gap-2">
-                    <span className="text-sm font-semibold">{stage.count}</span>
-                    <div
-                      className="w-full rounded-xl transition-all hover:opacity-80"
-                      style={{
-                        height: `${height}%`,
-                        background: stage.color,
-                        minHeight: '20px'
-                      }}
-                    />
-                    <span className="text-xs text-muted-foreground text-center">{stage.name}</span>
+            {totalPipelineCount > 0 ? (
+              <div className="flex items-end gap-3 h-32">
+                {pipelineStages.map((stage) => {
+                  const maxCount = Math.max(...pipelineStages.map(s => s.count), 1)
+                  const height = (stage.count / maxCount) * 100
+                  return (
+                    <div key={stage.name} className="flex-1 flex flex-col items-center gap-2">
+                      <span className="text-sm font-semibold">{stage.count}</span>
+                      <div
+                        className="w-full rounded-xl transition-all hover:opacity-80"
+                        style={{
+                          height: `${Math.max(height, 5)}%`,
+                          background: stage.color,
+                          minHeight: '8px'
+                        }}
+                      />
+                      <span className="text-xs text-muted-foreground text-center">{stage.name}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <div
+                    className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
+                    style={{ background: "var(--brand-gradient-subtle)" }}
+                  >
+                    <Target className="h-6 w-6" style={{ color: "var(--brand-primary)" }} />
                   </div>
-                )
-              })}
-            </div>
+                  <p className="text-sm text-muted-foreground">No applications yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Applications will appear here as candidates apply</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -422,40 +428,68 @@ export default async function OrgDashboardPage() {
           </div>
         </div>
 
-        {/* Activity Feed */}
+        {/* Getting Started */}
         <div className="col-span-12 lg:col-span-6">
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Recent Activity</h3>
-                <p className="text-sm text-muted-foreground">Latest updates</p>
+                <h3 className="text-lg font-semibold">Getting Started</h3>
+                <p className="text-sm text-muted-foreground">Complete your setup</p>
               </div>
-              <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-              </button>
+              <Sparkles className="h-5 w-5 text-muted-foreground" />
             </div>
 
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3 group">
-                  <div className={`w-8 h-8 rounded-lg ${activity.color} flex items-center justify-center shrink-0`}>
-                    <activity.icon className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
+              <div className="flex items-start gap-3 group">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${stats.jobs > 0 ? 'bg-green-500' : 'bg-muted'}`}>
+                  {stats.jobs > 0 ? (
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  ) : (
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
-              ))}
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${stats.jobs > 0 ? 'line-through text-muted-foreground' : ''}`}>Post your first job</p>
+                  <p className="text-xs text-muted-foreground">Create a job listing to attract candidates</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 group">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${stats.candidates > 0 ? 'bg-green-500' : 'bg-muted'}`}>
+                  {stats.candidates > 0 ? (
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  ) : (
+                    <UserSearch className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${stats.candidates > 0 ? 'line-through text-muted-foreground' : ''}`}>Add your first candidate</p>
+                  <p className="text-xs text-muted-foreground">Import or add candidates manually</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 group">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${stats.interviews.length > 0 ? 'bg-green-500' : 'bg-muted'}`}>
+                  {stats.interviews.length > 0 ? (
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  ) : (
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${stats.interviews.length > 0 ? 'line-through text-muted-foreground' : ''}`}>Schedule an interview</p>
+                  <p className="text-xs text-muted-foreground">Set up your first candidate interview</p>
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 pt-4 border-t">
               <Link
-                href="/org/activity"
+                href="/org/settings"
                 className="flex items-center justify-center gap-2 text-sm font-medium py-2 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all activity <ArrowRight className="h-4 w-4" />
+                Configure settings <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

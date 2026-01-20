@@ -10,7 +10,11 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+const ThemeContext = createContext<ThemeContextType>({
+  theme: "system",
+  resolvedTheme: "light",
+  setTheme: () => {},
+})
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("system")
@@ -66,15 +70,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme)
   }
 
-  // Prevent flash by not rendering until mounted
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-background">
-        {children}
-      </div>
-    )
-  }
-
   return (
     <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
       {children}
@@ -83,9 +78,5 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext)
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider")
-  }
-  return context
+  return useContext(ThemeContext)
 }
