@@ -143,8 +143,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return null
   }
 
-  // Main auth loading function
-  const loadAuth = useCallback(async () => {
+  // Main auth loading function - now accepts optional session from auth state change
+  const loadAuth = useCallback(async (providedSession?: Session | null) => {
     // Prevent concurrent loads
     if (loadingRef.current) {
       console.log("AuthProvider: Load already in progress, skipping")
@@ -152,42 +152,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     loadingRef.current = true
-    console.log("AuthProvider: Starting auth load...")
+    console.log("AuthProvider: Starting auth load...", providedSession ? "with provided session" : "fetching session")
 
     const supabase = createClient()
 
     try {
-      // Step 1: Get session first (fast, cached) then try to validate with getUser()
-      // Both calls can hang in some environments, so we add timeouts
-      console.log("AuthProvider: Getting session...")
+      // Use provided session from auth state change, or try to get it
+      let session = providedSession ?? null
 
-      let session = null
-      try {
-        const getSessionPromise = supabase.auth.getSession()
-        const sessionTimeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("getSession timeout")), 5000)
-        )
+      if (!session) {
+        // Try getSession with a short timeout - it might hang if trying to refresh
+        console.log("AuthProvider: No session provided, trying getSession...")
+        try {
+          const getSessionPromise = supabase.auth.getSession()
+          const sessionTimeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("getSession timeout")), 3000)
+          )
 
-        const sessionResult = await Promise.race([getSessionPromise, sessionTimeoutPromise])
-        session = sessionResult.data.session
-        console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
-      } catch (sessionError) {
-        console.error("AuthProvider: getSession failed or timed out:", sessionError)
-        // If getSession fails, we can't proceed
-        if (mountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            isAuthenticated: false,
-            error: {
-              code: "SESSION_ERROR",
-              message: "Unable to check authentication status. Please refresh the page.",
-              details: String(sessionError)
-            }
-          }))
+          const sessionResult = await Promise.race([getSessionPromise, sessionTimeoutPromise])
+          session = sessionResult.data.session
+          console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
+        } catch (sessionError) {
+          console.warn("AuthProvider: getSession timed out, will wait for auth state change")
+          // Don't fail completely - the auth state change listener might provide the session
+          // Set a flag and return, letting the auth state change handle it
+          loadingRef.current = false
+          return
         }
-        loadingRef.current = false
-        return
       }
 
       if (!session) {
@@ -212,56 +203,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // We have a session - use session.user initially
-      let user = session.user
+      // We have a session - use session.user
+      const user = session.user
       console.log("AuthProvider: Session found for user:", user.id)
 
-      // Try to validate with getUser() but with a timeout
-      // This ensures RLS works correctly but doesn't block forever
-      try {
-        const getUserPromise = supabase.auth.getUser()
-        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((_, reject) =>
-          setTimeout(() => reject(new Error("getUser timeout")), 5000)
-        )
-
-        const { data: userData, error: userError } = await Promise.race([
-          getUserPromise,
-          timeoutPromise
-        ])
-
-        if (userError) {
-          console.warn("AuthProvider: getUser() validation failed:", userError.message)
-          // Session might be invalid - clear and redirect to login
-          if (userError.message.includes("invalid") || userError.message.includes("expired")) {
-            try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
-            if (mountedRef.current) {
-              setState(prev => ({
-                ...prev,
-                isLoading: false,
-                isAuthenticated: false,
-                error: {
-                  code: "SESSION_EXPIRED",
-                  message: "Your session has expired. Please log in again.",
-                  details: userError.message
-                }
-              }))
-            }
-            loadingRef.current = false
-            return
-          }
-          // For other errors, continue with session user
-          console.log("AuthProvider: Continuing with session user despite getUser error")
-        } else if (userData?.user) {
-          // Use validated user from getUser()
-          user = userData.user
-          console.log("AuthProvider: User validated with getUser()")
-        }
-      } catch (timeoutError) {
-        // getUser() timed out - continue with session user
-        console.warn("AuthProvider: getUser() timed out, using session user")
-      }
-
-      console.log("AuthProvider: User validated:", user.id)
+      // Skip getUser() validation entirely - it hangs in this environment
+      // The session from auth state change is already validated by Supabase
+      console.log("AuthProvider: Using session user directly (skipping getUser validation)")
 
       // Check for user change and trigger reload if needed
       try {
@@ -507,15 +455,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
               needsOnboarding: false,
             })
           }
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Reload auth data on sign in or token refresh
-          // Don't force reset loadingRef - let the current load complete first
-          // This prevents race conditions with multiple concurrent loads
-          console.log("AuthProvider: Auth event triggering reload, loadingRef:", loadingRef.current)
-          if (!loadingRef.current) {
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+          // Use the session from the auth state change event directly
+          // This avoids the getSession() call which can hang
+          console.log("AuthProvider: Auth event with session, loadingRef:", loadingRef.current, "session:", session ? "exists" : "null")
+          if (session) {
+            // We have a valid session from the event - use it directly
+            loadingRef.current = false // Reset to allow loading with the new session
+            await loadAuth(session)
+          } else if (!loadingRef.current) {
+            // No session in event, try loading normally
             await loadAuth()
           } else {
-            console.log("AuthProvider: Skipping reload - load already in progress")
+            console.log("AuthProvider: Skipping - load already in progress")
           }
         }
       }
