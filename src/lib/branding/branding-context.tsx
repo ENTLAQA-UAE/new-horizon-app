@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 export interface BrandingConfig {
@@ -35,47 +35,95 @@ interface BrandingProviderProps {
   children: ReactNode
 }
 
+// Track user ID across page loads to detect user switches
+const USER_ID_KEY = "jadarat_current_user_id"
+
 export function BrandingProvider({ children }: BrandingProviderProps) {
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding)
+  const loadingRef = useRef(false)
 
   useEffect(() => {
     const supabase = createClient()
 
     async function loadBranding() {
+      // Prevent concurrent loads
+      if (loadingRef.current) return
+      loadingRef.current = true
+
       try {
-        // ALWAYS use getUser() to verify with the server - never use cached getSession()
-        // This prevents showing wrong user's branding after page refresh
+        // CRITICAL: Always verify user with server - never trust cached data
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError || !user) {
+          // Clear stored user ID when not authenticated
+          try { sessionStorage.removeItem(USER_ID_KEY) } catch {}
           setBranding({ ...defaultBranding, isLoaded: true })
+          loadingRef.current = false
           return
         }
 
-        // Get user's profile to find org_id with timeout
-        const profilePromise = supabase
-          .from("profiles")
-          .select("org_id")
-          .eq("id", user.id)
-          .single()
+        // Check if user ID changed from what we had before
+        try {
+          const storedUserId = sessionStorage.getItem(USER_ID_KEY)
+          if (storedUserId && storedUserId !== user.id) {
+            console.warn("User changed! Clearing state and reloading...", {
+              stored: storedUserId,
+              current: user.id,
+            })
+            // Different user detected - clear everything and reload
+            sessionStorage.setItem(USER_ID_KEY, user.id)
+            window.location.reload()
+            return
+          }
+          // Store current user ID
+          sessionStorage.setItem(USER_ID_KEY, user.id)
+        } catch (e) {
+          // sessionStorage might not be available
+        }
 
-        const timeoutPromise = new Promise<{ data: null }>((resolve) =>
-          setTimeout(() => resolve({ data: null }), 5000)
-        )
+        // Get user's profile to find org_id with retry logic
+        let profile = null
+        let attempts = 0
+        const maxAttempts = 3
 
-        const { data: profile } = await Promise.race([profilePromise, timeoutPromise])
+        while (!profile && attempts < maxAttempts) {
+          attempts++
+          const { data, error: profileError } = await supabase
+            .from("profiles")
+            .select("org_id")
+            .eq("id", user.id)
+            .single()
+
+          if (profileError) {
+            console.warn(`Profile fetch attempt ${attempts} failed:`, profileError.message)
+            if (attempts < maxAttempts) {
+              await new Promise(r => setTimeout(r, 500 * attempts))
+            }
+          } else {
+            profile = data
+          }
+        }
 
         if (!profile?.org_id) {
+          console.log("User has no org_id, using default branding")
           setBranding({ ...defaultBranding, isLoaded: true })
+          loadingRef.current = false
           return
         }
 
         // Get organization branding
-        const { data: org } = await supabase
+        const { data: org, error: orgError } = await supabase
           .from("organizations")
           .select("id, name, name_ar, logo_url, primary_color, secondary_color")
           .eq("id", profile.org_id)
           .single()
+
+        if (orgError) {
+          console.error("Org fetch error:", orgError.message)
+          setBranding({ ...defaultBranding, isLoaded: true })
+          loadingRef.current = false
+          return
+        }
 
         if (org) {
           const newBranding: BrandingConfig = {
@@ -90,12 +138,15 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
           }
           setBranding(newBranding)
           applyBrandingToDOM(newBranding)
+          console.log("Branding loaded:", org.name)
         } else {
           setBranding({ ...defaultBranding, isLoaded: true })
         }
       } catch (error) {
         console.error("Error loading branding:", error)
         setBranding({ ...defaultBranding, isLoaded: true })
+      } finally {
+        loadingRef.current = false
       }
     }
 
@@ -103,10 +154,19 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
 
     // Listen for auth state changes to refresh branding when user logs in/out
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event) => {
-        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-          // Reset to default first, then reload
+      async (event, session) => {
+        console.log("Branding auth event:", event)
+
+        if (event === "SIGNED_OUT") {
+          try { sessionStorage.removeItem(USER_ID_KEY) } catch {}
+          setBranding({ ...defaultBranding, isLoaded: true })
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          // On sign in, store new user ID and reload branding
+          if (session?.user?.id) {
+            try { sessionStorage.setItem(USER_ID_KEY, session.user.id) } catch {}
+          }
           setBranding({ ...defaultBranding, isLoaded: false })
+          loadingRef.current = false
           loadBranding()
         }
       }
