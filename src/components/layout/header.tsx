@@ -78,10 +78,9 @@ export function Header({ title, titleAr }: HeaderProps) {
   // Fetch user profile
   useEffect(() => {
     let isMounted = true
+    const supabase = createClient()
 
     async function fetchProfile() {
-      const supabase = createClient()
-
       try {
         // Use getUser to verify the session is still valid (prevents showing wrong user)
         const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -112,8 +111,22 @@ export function Header({ title, titleAr }: HeaderProps) {
 
     fetchProfile()
 
+    // Listen for auth state changes to refresh profile
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          // Reset profile and re-fetch
+          setProfile(null)
+          fetchProfile()
+        } else if (event === "SIGNED_OUT") {
+          setProfile(null)
+        }
+      }
+    )
+
     return () => {
       isMounted = false
+      subscription.unsubscribe()
     }
   }, [])
 
