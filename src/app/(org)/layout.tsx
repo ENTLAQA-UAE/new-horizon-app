@@ -39,17 +39,15 @@ export default function OrgLayout({
       const supabase = createClient()
 
       try {
-        // Use getSession first (cached, faster) instead of getUser (network request)
-        const { data: { session } } = await supabase.auth.getSession()
+        // Verify session with getUser to ensure we have the correct authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        if (!session?.user) {
+        if (authError || !user) {
           if (isMounted) {
             router.push("/login")
           }
           return
         }
-
-        const user = session.user
 
         // Get user's roles from user_roles table with timeout
         const rolesPromise = supabase

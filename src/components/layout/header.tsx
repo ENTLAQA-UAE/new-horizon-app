@@ -83,16 +83,16 @@ export function Header({ title, titleAr }: HeaderProps) {
       const supabase = createClient()
 
       try {
-        // Use getSession (cached) instead of getUser (network request) to avoid hanging
-        const { data: { session } } = await supabase.auth.getSession()
+        // Use getUser to verify the session is still valid (prevents showing wrong user)
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        if (!session?.user || !isMounted) return
+        if (authError || !user || !isMounted) return
 
         // Add timeout to profile fetch to prevent hanging
         const profilePromise = supabase
           .from("profiles")
           .select("first_name, last_name, email, avatar_url")
-          .eq("id", session.user.id)
+          .eq("id", user.id)
           .single()
 
         const timeoutPromise = new Promise<{ data: null }>((resolve) =>
