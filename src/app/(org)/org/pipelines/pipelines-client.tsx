@@ -175,7 +175,7 @@ export function PipelinesClient({
     color: "#3B82F6",
     requires_approval: false,
     approvers: [],
-    auto_email_template_id: "",
+    auto_email_template_id: "none",
     auto_reject_enabled: false,
     auto_reject_days: 30,
     sla_warning_days: 3,
@@ -214,7 +214,7 @@ export function PipelinesClient({
       color: "#3B82F6",
       requires_approval: false,
       approvers: [],
-      auto_email_template_id: "",
+      auto_email_template_id: "none",
       auto_reject_enabled: false,
       auto_reject_days: 30,
       sla_warning_days: 3,
@@ -422,7 +422,7 @@ export function PipelinesClient({
             color: stageForm.color,
             requires_approval: stageForm.requires_approval,
             approvers: stageForm.approvers,
-            auto_email_template_id: stageForm.auto_email_template_id || null,
+            auto_email_template_id: stageForm.auto_email_template_id === "none" ? null : (stageForm.auto_email_template_id || null),
             auto_reject_enabled: stageForm.auto_reject_enabled,
             auto_reject_days: stageForm.auto_reject_enabled ? stageForm.auto_reject_days : null,
             sla_warning_days: stageForm.sla_warning_days || null,
@@ -453,7 +453,7 @@ export function PipelinesClient({
             sort_order: maxOrder + 1,
             requires_approval: stageForm.requires_approval,
             approvers: stageForm.approvers,
-            auto_email_template_id: stageForm.auto_email_template_id || null,
+            auto_email_template_id: stageForm.auto_email_template_id === "none" ? null : (stageForm.auto_email_template_id || null),
             auto_reject_enabled: stageForm.auto_reject_enabled,
             auto_reject_days: stageForm.auto_reject_enabled ? stageForm.auto_reject_days : null,
             sla_warning_days: stageForm.sla_warning_days || null,
@@ -508,7 +508,7 @@ export function PipelinesClient({
       color: stage.color,
       requires_approval: stage.requires_approval,
       approvers: stage.approvers || [],
-      auto_email_template_id: stage.auto_email_template_id || "",
+      auto_email_template_id: stage.auto_email_template_id || "none",
       auto_reject_enabled: stage.auto_reject_enabled,
       auto_reject_days: stage.auto_reject_days || 30,
       sla_warning_days: stage.sla_warning_days || 3,
@@ -1033,7 +1033,7 @@ export function PipelinesClient({
                     <SelectValue placeholder="Select email template" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {emailTemplates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}

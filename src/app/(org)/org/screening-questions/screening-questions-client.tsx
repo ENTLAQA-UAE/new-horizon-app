@@ -125,7 +125,7 @@ export function ScreeningQuestionsClient({
 
   const [questions, setQuestions] = useState(initialQuestions)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterJobId, setFilterJobId] = useState<string>("")
+  const [filterJobId, setFilterJobId] = useState<string>("all")
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -149,12 +149,12 @@ export function ScreeningQuestionsClient({
     knockout_value: "",
     scoring_weight: 1,
     ideal_answer: "",
-    job_id: "",
+    job_id: "global",
   })
 
   const filteredQuestions = questions.filter((q) => {
     const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesJob = !filterJobId || q.job_id === filterJobId || (filterJobId === "global" && !q.job_id)
+    const matchesJob = filterJobId === "all" || q.job_id === filterJobId || (filterJobId === "global" && !q.job_id)
     return matchesSearch && matchesJob
   })
 
@@ -181,7 +181,7 @@ export function ScreeningQuestionsClient({
       knockout_value: "",
       scoring_weight: 1,
       ideal_answer: "",
-      job_id: "",
+      job_id: "global",
     })
     setEditingQuestion(null)
   }
@@ -202,7 +202,7 @@ export function ScreeningQuestionsClient({
     try {
       const questionData = {
         org_id: organizationId,
-        job_id: formData.job_id || null,
+        job_id: formData.job_id === "global" ? null : (formData.job_id || null),
         question: formData.question,
         question_ar: formData.question_ar || null,
         description: formData.description || null,
@@ -348,7 +348,7 @@ export function ScreeningQuestionsClient({
       knockout_value: question.knockout_value || "",
       scoring_weight: question.scoring_weight || 1,
       ideal_answer: question.ideal_answer || "",
-      job_id: question.job_id || "",
+      job_id: question.job_id || "global",
     })
     setIsDialogOpen(true)
   }
@@ -434,7 +434,7 @@ export function ScreeningQuestionsClient({
             <SelectValue placeholder="All questions" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All questions</SelectItem>
+            <SelectItem value="all">All questions</SelectItem>
             <SelectItem value="global">Global (all jobs)</SelectItem>
             {jobs.map((job) => (
               <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
@@ -728,7 +728,7 @@ export function ScreeningQuestionsClient({
                   <SelectValue placeholder="All jobs (global)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All jobs (global)</SelectItem>
+                  <SelectItem value="global">All jobs (global)</SelectItem>
                   {jobs.map((job) => (
                     <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
                   ))}
