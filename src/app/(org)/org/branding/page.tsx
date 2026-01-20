@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Switch } from "@/components/ui/switch"
 import {
   Loader2,
   Upload,
@@ -22,11 +21,6 @@ import {
   Monitor,
   Sparkles,
   Info,
-  ExternalLink,
-  Copy,
-  Server,
-  CheckCircle2,
-  AlertCircle,
 } from "lucide-react"
 
 interface BrandingSettings {
@@ -42,7 +36,6 @@ interface BrandingSettings {
   secondary_color: string
   website_url: string
   careers_page_url: string
-  subdomain_enabled: boolean
 }
 
 const defaultColors = [
@@ -81,11 +74,7 @@ export default function BrandingPage() {
     secondary_color: "#8B5CF6",
     website_url: "",
     careers_page_url: "",
-    subdomain_enabled: false,
   })
-  const [isCheckingSlug, setIsCheckingSlug] = useState(false)
-  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
-  const [newSlug, setNewSlug] = useState("")
 
   // Generate careers page URL based on slug
   const getCareersPageUrl = (slug: string) => {
@@ -93,77 +82,6 @@ export default function BrandingPage() {
       return `${window.location.origin}/careers/${slug}`
     }
     return `/careers/${slug}`
-  }
-
-  // Generate subdomain URL
-  const getSubdomainUrl = (slug: string) => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname
-      // For localhost, show what it would look like in production
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return `https://${slug}.jadarat-ats.app`
-      }
-      // Extract the main domain (e.g., jadarat-ats.vercel.app -> jadarat-ats.vercel.app)
-      const parts = hostname.split('.')
-      // If already on a subdomain, get the root domain
-      const rootDomain = parts.length > 2 ? parts.slice(-2).join('.') : hostname
-      return `https://${slug}.${rootDomain}`
-    }
-    return `https://${slug}.jadarat-ats.app`
-  }
-
-  // Check slug availability
-  const checkSlugAvailability = async (slug: string) => {
-    if (!slug || slug.length < 3) {
-      setSlugAvailable(null)
-      return
-    }
-
-    // Validate slug format
-    const slugRegex = /^[a-z0-9-]+$/
-    if (!slugRegex.test(slug)) {
-      setSlugAvailable(false)
-      return
-    }
-
-    setIsCheckingSlug(true)
-    try {
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("slug", slug)
-        .neq("id", organizationId)
-        .single()
-
-      // If no data found, slug is available
-      setSlugAvailable(!data && !error?.message?.includes('multiple'))
-    } catch {
-      setSlugAvailable(true)
-    } finally {
-      setIsCheckingSlug(false)
-    }
-  }
-
-  // Update slug
-  const handleUpdateSlug = async () => {
-    if (!newSlug || !slugAvailable || !organizationId) return
-
-    try {
-      const { error } = await supabase
-        .from("organizations")
-        .update({ slug: newSlug, updated_at: new Date().toISOString() })
-        .eq("id", organizationId)
-
-      if (error) throw error
-
-      setSettings({ ...settings, slug: newSlug })
-      setNewSlug("")
-      setSlugAvailable(null)
-      toast.success("Subdomain updated successfully")
-    } catch (error) {
-      console.error("Error updating slug:", error)
-      toast.error("Failed to update subdomain")
-    }
   }
 
   useEffect(() => {
@@ -198,11 +116,8 @@ export default function BrandingPage() {
         if (error) throw error
 
         if (org) {
-          // Cast to include optional fields that may exist in DB but not in types yet
-          const orgData = org as typeof org & {
-            login_image_url?: string | null
-            subdomain_enabled?: boolean
-          }
+          // Handle login_image_url which may not exist in DB yet
+          const orgData = org as Record<string, unknown>
           setSettings({
             company_name: org.name || "",
             company_name_ar: org.name_ar || "",
@@ -211,12 +126,11 @@ export default function BrandingPage() {
             tagline_ar: "",
             logo_url: org.logo_url || "",
             favicon_url: "",
-            login_image_url: orgData.login_image_url || "",
+            login_image_url: (orgData.login_image_url as string) || "",
             primary_color: org.primary_color || "#6366F1",
             secondary_color: org.secondary_color || "#8B5CF6",
             website_url: org.custom_domain || "",
             careers_page_url: getCareersPageUrl(org.slug || ""),
-            subdomain_enabled: orgData.subdomain_enabled || false,
           })
         }
       } catch (error) {
@@ -396,7 +310,6 @@ export default function BrandingPage() {
           primary_color: settings.primary_color,
           secondary_color: settings.secondary_color,
           custom_domain: settings.website_url || null,
-          subdomain_enabled: settings.subdomain_enabled,
           updated_at: new Date().toISOString(),
         })
         .eq("id", organizationId)
@@ -925,264 +838,41 @@ export default function BrandingPage() {
           </CardContent>
         </Card>
 
-        {/* Subdomain Configuration */}
-        <Card className="modern-card lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Server className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
-              Subdomain Configuration
-            </CardTitle>
-            <CardDescription>
-              Set up a custom subdomain for your organization&apos;s login and career pages
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Enable Subdomain */}
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-              <div className="space-y-1">
-                <Label className="text-base font-medium">Enable Subdomain Access</Label>
-                <p className="text-sm text-muted-foreground">
-                  Allow users to access your portal via a custom subdomain
-                </p>
-              </div>
-              <Switch
-                checked={settings.subdomain_enabled}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, subdomain_enabled: checked })
-                }
-              />
-            </div>
-
-            {settings.subdomain_enabled && (
-              <>
-                {/* Current Subdomain */}
-                <div className="space-y-3">
-                  <Label>Your Subdomain URL</Label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 relative">
-                      <Input
-                        value={settings.slug ? getSubdomainUrl(settings.slug) : ""}
-                        readOnly
-                        className="bg-muted/50 pr-24 rounded-xl font-mono text-sm"
-                      />
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                        {settings.subdomain_enabled && settings.slug && (
-                          <Badge className="bg-emerald-500 text-xs">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Active
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (settings.slug) {
-                          navigator.clipboard.writeText(getSubdomainUrl(settings.slug))
-                          toast.success("Subdomain URL copied to clipboard")
-                        }
-                      }}
-                      disabled={!settings.slug}
-                      className="rounded-xl gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (settings.slug) {
-                          window.open(getSubdomainUrl(settings.slug), "_blank")
-                        }
-                      }}
-                      disabled={!settings.slug}
-                      className="rounded-xl gap-2"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Visit
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Change Subdomain */}
-                <div className="space-y-3 pt-4 border-t">
-                  <Label>Change Subdomain</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Your subdomain must be lowercase, contain only letters, numbers, and hyphens
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 relative">
-                      <Input
-                        value={newSlug}
-                        onChange={(e) => {
-                          const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
-                          setNewSlug(value)
-                          checkSlugAvailability(value)
-                        }}
-                        placeholder="your-company"
-                        className="rounded-xl pr-10"
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {isCheckingSlug && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                        {!isCheckingSlug && slugAvailable === true && newSlug && (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        )}
-                        {!isCheckingSlug && slugAvailable === false && newSlug && (
-                          <AlertCircle className="h-4 w-4 text-rose-500" />
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-muted-foreground">.jadarat-ats.app</span>
-                    <Button
-                      onClick={handleUpdateSlug}
-                      disabled={!newSlug || !slugAvailable || isCheckingSlug}
-                      className="rounded-xl"
-                      style={{ background: "var(--brand-gradient)" }}
-                    >
-                      Update
-                    </Button>
-                  </div>
-                  {newSlug && slugAvailable === false && (
-                    <p className="text-sm text-rose-500">
-                      This subdomain is already taken or invalid. Please try another.
-                    </p>
-                  )}
-                  {newSlug && slugAvailable === true && (
-                    <p className="text-sm text-emerald-600">
-                      This subdomain is available!
-                    </p>
-                  )}
-                </div>
-
-                {/* Info Box */}
-                <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
-                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-700 dark:text-blue-300">
-                    <p className="font-medium mb-1">How it works</p>
-                    <ul className="list-disc list-inside space-y-1 text-blue-600 dark:text-blue-400">
-                      <li>Users can access your login page at <strong>{settings.slug || "your-subdomain"}.jadarat-ats.app/login</strong></li>
-                      <li>Your careers page will be available at <strong>{settings.slug || "your-subdomain"}.jadarat-ats.app/careers</strong></li>
-                      <li>All your branding (logo, colors, login image) will be displayed</li>
-                    </ul>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Custom Domain Configuration */}
-        <Card className="modern-card lg:col-span-2">
+        {/* Website Links */}
+        <Card className="modern-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
-              Custom Domain
+              Website Links
             </CardTitle>
             <CardDescription>
-              Use your own domain for a fully white-labeled experience (e.g., careers.yourcompany.com)
+              Configure your website and careers page URLs
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Custom Domain Input */}
-            <div className="space-y-3">
-              <Label>Your Custom Domain</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  value={settings.website_url}
-                  onChange={(e) => setSettings({ ...settings, website_url: e.target.value })}
-                  placeholder="careers.yourcompany.com"
-                  className="rounded-xl font-mono"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (settings.website_url) {
-                      window.open(`https://${settings.website_url.replace(/^https?:\/\//, '')}`, "_blank")
-                    }
-                  }}
-                  disabled={!settings.website_url}
-                  className="rounded-xl gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Test
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Enter your domain without https:// (e.g., careers.yourcompany.com)
-              </p>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="website_url">Company Website</Label>
+              <Input
+                id="website_url"
+                type="url"
+                value={settings.website_url}
+                onChange={(e) =>
+                  setSettings({ ...settings, website_url: e.target.value })
+                }
+                placeholder="https://www.example.com"
+                className="rounded-xl"
+              />
             </div>
-
-            {/* DNS Instructions */}
-            {settings.website_url && (
-              <div className="space-y-4 pt-4 border-t">
-                <Label className="flex items-center gap-2">
-                  <Server className="h-4 w-4" />
-                  DNS Configuration Required
-                </Label>
-                <div className="bg-muted/50 rounded-xl p-4 space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Add the following DNS records to your domain provider:
-                  </p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-2 px-3 font-medium">Type</th>
-                          <th className="text-left py-2 px-3 font-medium">Name</th>
-                          <th className="text-left py-2 px-3 font-medium">Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b">
-                          <td className="py-2 px-3">
-                            <Badge variant="outline">CNAME</Badge>
-                          </td>
-                          <td className="py-2 px-3 font-mono text-xs">
-                            {settings.website_url.replace(/^https?:\/\//, '').split('.')[0]}
-                          </td>
-                          <td className="py-2 px-3 font-mono text-xs">
-                            cname.vercel-dns.com
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>
-                      DNS changes can take up to 48 hours to propagate. After adding the record,
-                      contact support to complete domain verification.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Info Box */}
-            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-700 dark:text-amber-300">
-                <p className="font-medium mb-1">Custom Domain Benefits</p>
-                <ul className="list-disc list-inside space-y-1 text-amber-600 dark:text-amber-400">
-                  <li>Fully white-labeled login and careers pages</li>
-                  <li>Your own SSL certificate (automatically provisioned)</li>
-                  <li>No Jadarat branding visible to candidates</li>
-                  <li>Professional appearance for your organization</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Careers Page URL */}
-            <div className="space-y-3 pt-4 border-t">
-              <Label>Default Careers Page URL</Label>
-              <div className="flex items-center gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="careers_page_url">Careers Page URL</Label>
+              <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Input
+                    id="careers_page_url"
+                    type="url"
                     value={settings.slug ? getCareersPageUrl(settings.slug) : ""}
                     readOnly
-                    className="bg-muted/50 pr-10 rounded-xl font-mono text-sm"
+                    className="bg-muted/50 pr-10 rounded-xl"
                   />
                   <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
@@ -1196,14 +886,13 @@ export default function BrandingPage() {
                     }
                   }}
                   disabled={!settings.slug}
-                  className="rounded-xl gap-2"
+                  className="rounded-xl"
                 >
-                  <Copy className="h-4 w-4" />
                   Copy
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                This is your default careers page URL. You can also use your custom domain if configured.
+                This URL is auto-generated based on your organization slug
               </p>
             </div>
           </CardContent>
