@@ -5,14 +5,12 @@ import {
   Briefcase,
   Users,
   UserSearch,
-  Clock,
   CheckCircle,
   Calendar,
   ArrowRight,
   Sparkles,
   Target,
   Zap,
-  Plus,
   ChevronRight,
 } from "lucide-react"
 
@@ -97,17 +95,6 @@ export default async function OrgDashboardPage() {
             Here&apos;s what&apos;s happening with your recruitment today.
           </p>
         </div>
-        <Link
-          href="/org/jobs/new"
-          className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium transition-all hover:shadow-lg hover:-translate-y-0.5"
-          style={{
-            background: "var(--brand-gradient)",
-            boxShadow: "0 4px 14px -3px var(--brand-primary)"
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Post New Job
-        </Link>
       </div>
 
       {/* Bento Grid */}
@@ -306,7 +293,7 @@ export default async function OrgDashboardPage() {
 
             <div className="space-y-3">
               <Link
-                href="/org/jobs/new"
+                href="/org/jobs"
                 className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-transparent hover:shadow-md hover:bg-card transition-all group"
               >
                 <div
@@ -316,14 +303,14 @@ export default async function OrgDashboardPage() {
                   <Briefcase className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Post a Job</p>
-                  <p className="text-xs text-muted-foreground">Create new opening</p>
+                  <p className="font-medium text-sm">Manage Jobs</p>
+                  <p className="text-xs text-muted-foreground">View all job postings</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
 
               <Link
-                href="/org/candidates/new"
+                href="/org/candidates"
                 className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-transparent hover:shadow-md hover:bg-card transition-all group"
               >
                 <div
@@ -333,8 +320,8 @@ export default async function OrgDashboardPage() {
                   <UserSearch className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Add Candidate</p>
-                  <p className="text-xs text-muted-foreground">Import manually</p>
+                  <p className="font-medium text-sm">View Candidates</p>
+                  <p className="text-xs text-muted-foreground">Browse candidate pool</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -417,11 +404,11 @@ export default async function OrgDashboardPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">No jobs posted yet</p>
                 <Link
-                  href="/org/jobs/new"
+                  href="/org/jobs"
                   className="inline-flex items-center gap-1 text-sm font-medium mt-2"
                   style={{ color: "var(--brand-primary)" }}
                 >
-                  Post your first job <ArrowRight className="h-4 w-4" />
+                  Go to Jobs <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}

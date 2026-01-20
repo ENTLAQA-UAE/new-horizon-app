@@ -24,6 +24,8 @@ export default function OrgLayout({
   const router = useRouter()
 
   useEffect(() => {
+    let isMounted = true
+
     async function fetchUserRole() {
       const supabase = createClient()
 
@@ -38,7 +40,9 @@ export default function OrgLayout({
         const { data: { user } } = await Promise.race([authPromise, timeoutPromise]) as Awaited<typeof authPromise>
 
         if (!user) {
-          router.push("/login")
+          if (isMounted) {
+            router.push("/login")
+          }
           return
         }
 
@@ -47,6 +51,8 @@ export default function OrgLayout({
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
+
+        if (!isMounted) return
 
         if (roles && roles.length > 0) {
           // Prioritize roles: super_admin > org_admin > others
@@ -71,17 +77,24 @@ export default function OrgLayout({
           // No roles assigned, default to recruiter
           setUserRole("recruiter")
         }
+
+        setIsLoading(false)
       } catch (error) {
         console.error("Error fetching user role:", error)
-        // On timeout or error, redirect to login
-        router.push("/login")
-        return
+        if (isMounted) {
+          // On timeout or error, still show the page with default role
+          // instead of redirecting (user might be authenticated but roles query failed)
+          setUserRole("recruiter")
+          setIsLoading(false)
+        }
       }
-
-      setIsLoading(false)
     }
 
     fetchUserRole()
+
+    return () => {
+      isMounted = false
+    }
   }, [router])
 
   if (isLoading) {
