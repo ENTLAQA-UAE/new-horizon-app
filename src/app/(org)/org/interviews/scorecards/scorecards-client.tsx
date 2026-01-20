@@ -251,30 +251,36 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
     setIsLoading(true)
     try {
-      console.log("Creating scorecard template with data:", {
+      const insertData = {
         org_id: organizationId,
         name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+        description_ar: formData.description_ar || null,
         template_type: formData.template_type,
-        criteria_count: formData.criteria.length,
+        criteria: formData.criteria as unknown as Json,
+        rating_scale_type: formData.rating_scale_type,
+        rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
+        is_default: formData.is_default,
+        require_notes_per_criteria: formData.require_notes_per_criteria,
+      }
+
+      console.log("Creating scorecard template with data:", insertData)
+
+      // Add timeout to detect hanging requests (RLS policy blocking)
+      const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) => {
+        setTimeout(() => {
+          resolve({ data: null, error: { message: "Request timed out. Your role may not have permission to create scorecards." } })
+        }, 10000)
       })
 
-      const { data, error } = await supabase
+      const insertPromise = supabase
         .from("scorecard_templates")
-        .insert({
-          org_id: organizationId,
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-          description_ar: formData.description_ar || null,
-          template_type: formData.template_type,
-          criteria: formData.criteria as unknown as Json,
-          rating_scale_type: formData.rating_scale_type,
-          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
-          is_default: formData.is_default,
-          require_notes_per_criteria: formData.require_notes_per_criteria,
-        })
+        .insert(insertData)
         .select()
         .single()
+
+      const { data, error } = await Promise.race([insertPromise, timeoutPromise])
 
       if (error) {
         console.error("Supabase error creating scorecard:", error)
