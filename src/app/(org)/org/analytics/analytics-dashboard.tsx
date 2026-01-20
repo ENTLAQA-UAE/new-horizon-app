@@ -127,18 +127,6 @@ export function AnalyticsDashboard({ stats }: AnalyticsDashboardProps) {
     setTimeout(() => setIsExporting(false), 1000)
   }
 
-  // Export to JSON
-  const exportToJSON = () => {
-    setIsExporting(true)
-    const jsonContent = JSON.stringify(stats, null, 2)
-    const blob = new Blob([jsonContent], { type: "application/json" })
-    const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    link.download = `analytics_report_${new Date().toISOString().split("T")[0]}.json`
-    link.click()
-    setTimeout(() => setIsExporting(false), 1000)
-  }
-
   const getTrendIcon = (change: number) => {
     if (change > 0) return <ArrowUpRight className="h-4 w-4" />
     if (change < 0) return <ArrowDownRight className="h-4 w-4" />
@@ -195,29 +183,17 @@ export function AnalyticsDashboard({ stats }: AnalyticsDashboardProps) {
             </Select>
           </div>
 
-          {/* Export Buttons */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportToCSV}
-              disabled={isExporting}
-              className="gap-2"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              CSV
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={exportToJSON}
-              disabled={isExporting}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              JSON
-            </Button>
-          </div>
+          {/* Export Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportToCSV}
+            disabled={isExporting}
+            className="gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Export CSV
+          </Button>
 
           <Badge variant="secondary" className="text-xs gap-1.5 py-1.5">
             <RefreshCw className="h-3 w-3" />
