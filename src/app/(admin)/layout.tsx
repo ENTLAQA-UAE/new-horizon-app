@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Sidebar, UserRole } from "@/components/layout/sidebar"
+import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
-import { createClient } from "@/lib/supabase/client"
+import { AuthProvider, useAuth } from "@/lib/auth/auth-context"
 import { Loader2, Sparkles } from "lucide-react"
 
 // Apply default Jadarat branding CSS variables
@@ -21,17 +21,11 @@ function applyDefaultBranding() {
 }
 
 /**
- * Admin Layout - For Super Admin routes only
- * No BrandingProvider since super admins see platform branding (Jadarat)
+ * Inner layout component that uses the auth context
  */
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [userRole, setUserRole] = useState<UserRole | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user, isLoading } = useAuth()
   const router = useRouter()
 
   // Apply default Jadarat branding on mount
@@ -39,93 +33,13 @@ export default function AdminLayout({
     applyDefaultBranding()
   }, [])
 
+  // Redirect non-super-admins to org routes
   useEffect(() => {
-    let isMounted = true
-    const supabase = createClient()
-
-    async function fetchUserRole() {
-      try {
-        // Get session (fast, cached)
-        const sessionResult = await supabase.auth.getSession()
-        console.log("AdminLayout: getSession result:", sessionResult)
-
-        // Handle session errors
-        if (sessionResult.error) {
-          console.error("AdminLayout: Session error:", sessionResult.error)
-          if (isMounted) {
-            router.push("/org") // Redirect to org instead of login
-          }
-          return
-        }
-
-        const session = sessionResult.data?.session
-        if (!session?.user) {
-          console.log("AdminLayout: No session found, redirecting to login")
-          if (isMounted) {
-            router.push("/login")
-          }
-          return
-        }
-
-        const user = session.user
-        console.log("AdminLayout: Session user:", user.id)
-
-        // Get user's roles
-        try {
-          const { data: roles, error: rolesError } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-
-          console.log("AdminLayout: Roles result:", { roles, error: rolesError?.message })
-
-          if (!isMounted) return
-
-          if (roles && roles.length > 0) {
-            const roleList = roles.map(r => r.role)
-
-            if (roleList.includes("super_admin")) {
-              setUserRole("super_admin")
-              setIsLoading(false)
-            } else {
-              router.push("/org")
-              return
-            }
-          } else {
-            router.push("/org")
-            return
-          }
-        } catch (rolesError) {
-          console.warn("AdminLayout: Roles fetch failed:", rolesError)
-          router.push("/org")
-        }
-      } catch (error) {
-        console.error("AdminLayout: Error:", error)
-        if (isMounted) {
-          router.push("/org")
-        }
-      }
+    if (!isLoading && user && user.role !== "super_admin") {
+      console.log("AdminLayout: User is not super_admin, redirecting to org")
+      router.push("/org")
     }
-
-    fetchUserRole()
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === "SIGNED_OUT") {
-          router.push("/login")
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Re-fetch user role when auth changes
-          fetchUserRole()
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [router])
+  }, [isLoading, user, router])
 
   if (isLoading) {
     return (
@@ -143,13 +57,22 @@ export default function AdminLayout({
     )
   }
 
+  // Don't render if not super_admin (will redirect)
+  if (user?.role !== "super_admin") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <I18nProvider>
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
-          userRole={userRole || undefined}
+          userRole="super_admin"
         />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
@@ -161,5 +84,21 @@ export default function AdminLayout({
         </div>
       </div>
     </I18nProvider>
+  )
+}
+
+/**
+ * Admin Layout - For Super Admin routes only
+ * Uses AuthProvider for reliable server-verified authentication
+ */
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AuthProvider redirectToLoginOnUnauthenticated={true}>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </AuthProvider>
   )
 }

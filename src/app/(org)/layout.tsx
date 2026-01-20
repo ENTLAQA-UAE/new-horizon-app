@@ -1,143 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Sidebar, UserRole } from "@/components/layout/sidebar"
+import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
 import { BrandingProvider } from "@/lib/branding/branding-context"
-import { createClient } from "@/lib/supabase/client"
+import { AuthProvider, useAuth } from "@/lib/auth/auth-context"
 import { Loader2, Sparkles } from "lucide-react"
+import { useState } from "react"
 
 /**
- * Org Layout - For Organization Admin routes
- * Includes BrandingProvider to apply organization-specific branding
+ * Inner layout component that uses the auth context
  */
-export default function OrgLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function OrgLayoutInner({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [userRole, setUserRole] = useState<UserRole | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
-
-  useEffect(() => {
-    let isMounted = true
-    const supabase = createClient()
-
-    // Safety timeout - always show page after 8 seconds max
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted) {
-        console.warn("Safety timeout triggered - showing page with default role")
-        setUserRole("recruiter")
-        setIsLoading(false)
-      }
-    }, 8000)
-
-    async function fetchUserRole() {
-      console.log("OrgLayout: Starting fetchUserRole...")
-
-      try {
-        // First try to get session (fast, cached) to check if we have any auth
-        const sessionResult = await supabase.auth.getSession()
-        console.log("OrgLayout: getSession result:", sessionResult)
-
-        // Handle session errors
-        if (sessionResult.error) {
-          console.error("OrgLayout: Session error:", sessionResult.error)
-          // Don't redirect on error - show page with default role
-          if (isMounted) {
-            setUserRole("recruiter")
-            setIsLoading(false)
-          }
-          return
-        }
-
-        const session = sessionResult.data?.session
-        if (!session?.user) {
-          console.log("OrgLayout: No session found, redirecting to login")
-          if (isMounted) {
-            router.push("/login")
-          }
-          return
-        }
-
-        const user = session.user
-        console.log("OrgLayout: Session user:", user.id)
-
-        // Get user's roles - but don't fail if this errors
-        try {
-          const { data: roles, error: rolesError } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-
-          console.log("OrgLayout: Roles result:", { roles, error: rolesError?.message })
-
-          if (!isMounted) return
-
-          if (roles && roles.length > 0) {
-            const roleList = roles.map(r => r.role)
-            console.log("OrgLayout: User roles:", roleList)
-
-            if (roleList.includes("super_admin")) {
-              setUserRole("super_admin")
-            } else if (roleList.includes("org_admin")) {
-              setUserRole("org_admin")
-            } else if (roleList.includes("hr_manager")) {
-              setUserRole("hr_manager")
-            } else if (roleList.includes("recruiter")) {
-              setUserRole("recruiter")
-            } else if (roleList.includes("hiring_manager")) {
-              setUserRole("hiring_manager")
-            } else if (roleList.includes("interviewer")) {
-              setUserRole("interviewer")
-            } else {
-              setUserRole("recruiter")
-            }
-          } else {
-            console.log("OrgLayout: No roles found, using default")
-            setUserRole("recruiter")
-          }
-        } catch (rolesError) {
-          console.warn("OrgLayout: Roles fetch failed, using default:", rolesError)
-          setUserRole("recruiter")
-        }
-
-        console.log("OrgLayout: Setting isLoading to false")
-        setIsLoading(false)
-      } catch (error) {
-        console.error("OrgLayout: Error in fetchUserRole:", error)
-        if (isMounted) {
-          // Show page with default role instead of blocking
-          setUserRole("recruiter")
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchUserRole()
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        console.log("OrgLayout: Auth event:", event)
-        if (event === "SIGNED_OUT") {
-          router.push("/login")
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          fetchUserRole()
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      clearTimeout(safetyTimeout)
-      subscription.unsubscribe()
-    }
-  }, [router])
+  const { user, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -155,6 +31,9 @@ export default function OrgLayout({
     )
   }
 
+  // Map the role from auth context to sidebar role type
+  const userRole = user?.role || "recruiter"
+
   return (
     <BrandingProvider>
       <I18nProvider>
@@ -162,7 +41,7 @@ export default function OrgLayout({
           <Sidebar
             collapsed={sidebarCollapsed}
             onCollapse={setSidebarCollapsed}
-            userRole={userRole || undefined}
+            userRole={userRole}
           />
           <div className="flex flex-1 flex-col overflow-hidden">
             <Header />
@@ -175,5 +54,21 @@ export default function OrgLayout({
         </div>
       </I18nProvider>
     </BrandingProvider>
+  )
+}
+
+/**
+ * Org Layout - For Organization routes
+ * Uses AuthProvider for reliable server-verified authentication
+ */
+export default function OrgLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AuthProvider redirectToLoginOnUnauthenticated={true}>
+      <OrgLayoutInner>{children}</OrgLayoutInner>
+    </AuthProvider>
   )
 }
