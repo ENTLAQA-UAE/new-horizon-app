@@ -77,21 +77,44 @@ export function Header({ title, titleAr }: HeaderProps) {
 
   // Fetch user profile
   useEffect(() => {
+    let isMounted = true
+
     async function fetchProfile() {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data } = await supabase
+
+      try {
+        // Use getSession (cached) instead of getUser (network request) to avoid hanging
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user || !isMounted) return
+
+        // Add timeout to profile fetch to prevent hanging
+        const profilePromise = supabase
           .from("profiles")
           .select("first_name, last_name, email, avatar_url")
-          .eq("id", user.id)
+          .eq("id", session.user.id)
           .single()
-        if (data) {
+
+        const timeoutPromise = new Promise<{ data: null }>((resolve) =>
+          setTimeout(() => resolve({ data: null }), 5000)
+        )
+
+        const { data } = await Promise.race([profilePromise, timeoutPromise])
+
+        if (data && isMounted) {
           setProfile(data)
         }
+      } catch (error) {
+        // Silently handle errors - profile will show default values
+        console.error("Error fetching profile:", error)
       }
     }
+
     fetchProfile()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   // Keyboard shortcut for search
@@ -109,14 +132,25 @@ export function Header({ title, titleAr }: HeaderProps) {
   const handleLogout = async () => {
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signOut()
+
+      // Add timeout to signOut to prevent hanging on stale sessions
+      const signOutPromise = supabase.auth.signOut()
+      const timeoutPromise = new Promise<{ error: Error }>((resolve) =>
+        setTimeout(() => resolve({ error: new Error("Sign out timeout") }), 3000)
+      )
+
+      const { error } = await Promise.race([signOutPromise, timeoutPromise])
+
       if (error) {
         console.error("Error signing out:", error)
-        toast.error("Error signing out")
+        // Don't show error toast, just proceed with redirect
       }
     } catch (err) {
       console.error("Logout error:", err)
+      // Continue to redirect even if there's an error
     }
+
+    // Always redirect to login, even if signOut had issues
     window.location.href = "/login"
   }
 
@@ -279,12 +313,18 @@ export function Header({ title, titleAr }: HeaderProps) {
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem className="gap-3 cursor-pointer py-2.5">
+              <DropdownMenuItem
+                onClick={() => router.push("/org/settings")}
+                className="gap-3 cursor-pointer py-2.5"
+              >
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span>{language === "ar" ? "الملف الشخصي" : "Profile"}</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="gap-3 cursor-pointer py-2.5">
+              <DropdownMenuItem
+                onClick={() => router.push("/org/settings")}
+                className="gap-3 cursor-pointer py-2.5"
+              >
                 <Settings className="h-4 w-4 text-muted-foreground" />
                 <span>{t("nav.settings")}</span>
               </DropdownMenuItem>
