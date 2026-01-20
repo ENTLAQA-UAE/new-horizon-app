@@ -43,18 +43,27 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
       const supabase = createClient()
 
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        // Use getSession (cached) instead of getUser (network request) to avoid hanging
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) {
           setBranding({ ...defaultBranding, isLoaded: true })
           return
         }
 
-        // Get user's profile to find org_id
-        const { data: profile } = await supabase
+        const user = session.user
+
+        // Get user's profile to find org_id with timeout
+        const profilePromise = supabase
           .from("profiles")
           .select("org_id")
           .eq("id", user.id)
           .single()
+
+        const timeoutPromise = new Promise<{ data: null }>((resolve) =>
+          setTimeout(() => resolve({ data: null }), 5000)
+        )
+
+        const { data: profile } = await Promise.race([profilePromise, timeoutPromise])
 
         if (!profile?.org_id) {
           setBranding({ ...defaultBranding, isLoaded: true })

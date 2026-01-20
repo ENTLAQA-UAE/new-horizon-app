@@ -26,6 +26,15 @@ export default function OrgLayout({
   useEffect(() => {
     let isMounted = true
 
+    // Safety timeout - always show page after 8 seconds max
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted && isLoading) {
+        console.warn("Safety timeout triggered - showing page with default role")
+        setUserRole("recruiter")
+        setIsLoading(false)
+      }
+    }, 8000)
+
     async function fetchUserRole() {
       const supabase = createClient()
 
@@ -94,8 +103,9 @@ export default function OrgLayout({
 
     return () => {
       isMounted = false
+      clearTimeout(safetyTimeout)
     }
-  }, [router])
+  }, [router, isLoading])
 
   if (isLoading) {
     return (
