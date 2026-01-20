@@ -87,14 +87,9 @@ function LoginPageContent() {
         .single()
 
       if (data) {
-        // Cast to include optional fields that may exist in DB but not in types
-        const orgData = data as typeof data & { login_image_url?: string | null }
         setOrgBranding({
-          name: orgData.name,
-          logo_url: orgData.logo_url,
-          primary_color: orgData.primary_color || "#6366f1",
-          secondary_color: orgData.secondary_color || "#8b5cf6",
-          login_image_url: orgData.login_image_url || null,
+          ...data,
+          login_image_url: (data as Record<string, unknown>).login_image_url as string | null ?? null,
         })
       }
     }
