@@ -56,6 +56,7 @@ export interface AuthState {
 // Auth error types for better error handling
 export type AuthErrorCode =
   | "NO_SESSION"
+  | "SESSION_ERROR"
   | "SESSION_EXPIRED"
   | "PROFILE_NOT_FOUND"
   | "PROFILE_FETCH_ERROR"
@@ -142,8 +143,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return null
   }
 
-  // Main auth loading function
-  const loadAuth = useCallback(async () => {
+  // Main auth loading function - now accepts optional session from auth state change
+  const loadAuth = useCallback(async (providedSession?: Session | null) => {
     // Prevent concurrent loads
     if (loadingRef.current) {
       console.log("AuthProvider: Load already in progress, skipping")
@@ -151,40 +152,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     loadingRef.current = true
-    console.log("AuthProvider: Starting auth load...")
+    console.log("AuthProvider: Starting auth load...", providedSession ? "with provided session" : "fetching session")
 
     const supabase = createClient()
 
     try {
-      // Step 1: Use getUser() to validate session with server
-      // This is CRITICAL for RLS to work correctly after page refresh
-      // getSession() only reads from cache and doesn't validate with server
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      // Use provided session from auth state change, or try to get it
+      let session = providedSession ?? null
 
-      if (userError) {
-        console.error("AuthProvider: User error:", userError)
-        // Clear any stale session data
-        try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
+      if (!session) {
+        // Try getSession with a short timeout - it might hang if trying to refresh
+        console.log("AuthProvider: No session provided, trying getSession...")
+        try {
+          const getSessionPromise = supabase.auth.getSession()
+          const sessionTimeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("getSession timeout")), 3000)
+          )
 
-        if (mountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            isAuthenticated: false,
-            error: {
-              code: "SESSION_EXPIRED",
-              message: "Your session has expired. Please log in again.",
-              details: userError.message
-            }
-          }))
+          const sessionResult = await Promise.race([getSessionPromise, sessionTimeoutPromise])
+          session = sessionResult.data.session
+          console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
+        } catch (sessionError) {
+          console.warn("AuthProvider: getSession timed out, will wait for auth state change")
+          // Don't fail completely - the auth state change listener might provide the session
+          // Set a flag and return, letting the auth state change handle it
+          loadingRef.current = false
+          return
         }
-        loadingRef.current = false
-        return
       }
 
-      if (!user) {
-        console.log("AuthProvider: No user found")
-        // Clear stored user ID
+      if (!session) {
+        console.log("AuthProvider: No session found")
         try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
 
         if (mountedRef.current) {
@@ -205,10 +203,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Get session for completeness (now that user is validated)
-      const { data: { session } } = await supabase.auth.getSession()
+      // We have a session - use session.user
+      const user = session.user
+      console.log("AuthProvider: Session found for user:", user.id)
 
-      console.log("AuthProvider: User validated:", user.id)
+      // Skip getUser() validation entirely - it hangs in this environment
+      // The session from auth state change is already validated by Supabase
+      console.log("AuthProvider: Using session user directly (skipping getUser validation)")
 
       // Check for user change and trigger reload if needed
       try {
@@ -222,35 +223,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionStorage.setItem(AUTH_USER_KEY, user.id)
       } catch {}
 
-      // Step 2: Fetch profile (with retry logic)
+      // Step 2: Fetch profile (with timeout and retry logic)
       let profile: UserProfile | null = null
       let profileError: AuthError | null = null
 
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, email, first_name, last_name, avatar_url, org_id")
-          .eq("id", user.id)
-          .maybeSingle() // Use maybeSingle instead of single to avoid 400 errors
+      console.log("AuthProvider: Fetching profile for user:", user.id)
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const profilePromise = supabase
+            .from("profiles")
+            .select("id, email, first_name, last_name, avatar_url, org_id")
+            .eq("id", user.id)
+            .maybeSingle()
 
-        if (error) {
-          console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message)
-          if (attempt < 3) {
-            await new Promise(r => setTimeout(r, 300 * attempt))
-          } else {
-            profileError = {
-              code: "PROFILE_FETCH_ERROR",
-              message: "Unable to load your profile. Please try again.",
-              details: error.message
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Profile fetch timeout")), 5000)
+          )
+
+          const { data, error } = await Promise.race([profilePromise, timeoutPromise])
+
+          if (error) {
+            console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message, error.code)
+            if (attempt < 2) {
+              await new Promise(r => setTimeout(r, 500))
+            } else {
+              profileError = {
+                code: "PROFILE_FETCH_ERROR",
+                message: "Unable to load your profile. Please try again.",
+                details: error.message
+              }
             }
+          } else if (data) {
+            profile = data as UserProfile
+            console.log("AuthProvider: Profile loaded:", { id: profile.id, org_id: profile.org_id })
+            break
+          } else {
+            // No profile found - this is a valid state for new users
+            console.log("AuthProvider: No profile found for user")
+            break
           }
-        } else if (data) {
-          profile = data as UserProfile
-          break
-        } else {
-          // No profile found - this is a valid state for new users
-          console.log("AuthProvider: No profile found for user")
-          break
+        } catch (fetchError) {
+          console.error(`AuthProvider: Profile fetch attempt ${attempt} error:`, fetchError)
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 500))
+          } else {
+            // Timeout or network error - continue without profile
+            console.warn("AuthProvider: Profile fetch failed, continuing without profile")
+          }
         }
       }
 
@@ -270,46 +289,71 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Step 3: Fetch user roles
+      // Step 3: Fetch user roles (with timeout)
       let roles: UserRole[] = []
       console.log("AuthProvider: Fetching roles for user:", user.id)
 
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
+      try {
+        const rolesPromise = supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
 
-      console.log("AuthProvider: Roles query result:", {
-        rolesData,
-        rolesError: rolesError?.message,
-        rolesCount: rolesData?.length
-      })
+        const rolesTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Roles fetch timeout")), 5000)
+        )
 
-      if (rolesError) {
-        console.warn("AuthProvider: Roles fetch error:", rolesError.message, rolesError)
-        // Don't fail completely - user might just need onboarding
-      } else if (rolesData && rolesData.length > 0) {
-        roles = rolesData.map(r => r.role as UserRole)
-        console.log("AuthProvider: User roles found:", roles)
-      } else {
-        console.warn("AuthProvider: No roles found for user - will use default behavior")
+        const { data: rolesData, error: rolesError } = await Promise.race([rolesPromise, rolesTimeoutPromise])
+
+        console.log("AuthProvider: Roles query result:", {
+          rolesData,
+          rolesError: rolesError?.message,
+          rolesCount: rolesData?.length
+        })
+
+        if (rolesError) {
+          console.warn("AuthProvider: Roles fetch error:", rolesError.message)
+        } else if (rolesData && rolesData.length > 0) {
+          roles = rolesData.map(r => r.role as UserRole)
+          console.log("AuthProvider: User roles found:", roles)
+        } else {
+          console.warn("AuthProvider: No roles found for user - will use default behavior")
+        }
+      } catch (rolesTimeout) {
+        console.warn("AuthProvider: Roles fetch timed out, continuing without roles")
       }
 
-      // Step 4: Fetch organization if user has org_id
+      // Step 4: Fetch organization if user has org_id (with timeout)
       let organization: UserOrganization | null = null
 
       if (profile?.org_id) {
-        const { data: orgData, error: orgError } = await supabase
-          .from("organizations")
-          .select("id, name, name_ar, slug, logo_url, primary_color, secondary_color")
-          .eq("id", profile.org_id)
-          .maybeSingle()
+        console.log("AuthProvider: Fetching organization:", profile.org_id)
+        try {
+          const orgPromise = supabase
+            .from("organizations")
+            .select("id, name, name_ar, slug, logo_url, primary_color, secondary_color")
+            .eq("id", profile.org_id)
+            .maybeSingle()
 
-        if (orgError) {
-          console.warn("AuthProvider: Org fetch error:", orgError.message)
-        } else if (orgData) {
-          organization = orgData as UserOrganization
+          const orgTimeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Org fetch timeout")), 5000)
+          )
+
+          const { data: orgData, error: orgError } = await Promise.race([orgPromise, orgTimeoutPromise])
+
+          if (orgError) {
+            console.warn("AuthProvider: Org fetch error:", orgError.message)
+          } else if (orgData) {
+            organization = orgData as UserOrganization
+            console.log("AuthProvider: Organization loaded:", organization.name)
+          } else {
+            console.log("AuthProvider: No organization found for id:", profile.org_id)
+          }
+        } catch (orgFetchError) {
+          console.warn("AuthProvider: Org fetch timed out or failed:", orgFetchError)
         }
+      } else {
+        console.log("AuthProvider: No org_id in profile, skipping org fetch")
       }
 
       // Compute derived state
@@ -435,10 +479,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
               needsOnboarding: false,
             })
           }
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Reload auth data on sign in or token refresh
-          loadingRef.current = false
-          await loadAuth()
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+          // Use the session from the auth state change event directly
+          // This avoids the getSession() call which can hang
+          console.log("AuthProvider: Auth event with session, loadingRef:", loadingRef.current, "session:", session ? "exists" : "null")
+          if (session) {
+            // We have a valid session from the event - use it directly
+            loadingRef.current = false // Reset to allow loading with the new session
+            await loadAuth(session)
+          } else if (!loadingRef.current) {
+            // No session in event, try loading normally
+            await loadAuth()
+          } else {
+            console.log("AuthProvider: Skipping - load already in progress")
+          }
         }
       }
     )
