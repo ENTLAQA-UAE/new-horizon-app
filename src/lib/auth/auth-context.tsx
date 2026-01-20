@@ -223,23 +223,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionStorage.setItem(AUTH_USER_KEY, user.id)
       } catch {}
 
-      // Step 2: Fetch profile (with retry logic)
+      // Step 2: Fetch profile (with timeout and retry logic)
       let profile: UserProfile | null = null
       let profileError: AuthError | null = null
 
       console.log("AuthProvider: Fetching profile for user:", user.id)
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          const { data, error } = await supabase
+          const profilePromise = supabase
             .from("profiles")
             .select("id, email, first_name, last_name, avatar_url, org_id")
             .eq("id", user.id)
             .maybeSingle()
 
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Profile fetch timeout")), 5000)
+          )
+
+          const { data, error } = await Promise.race([profilePromise, timeoutPromise])
+
           if (error) {
-            console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message, error.code, error.details)
-            if (attempt < 3) {
-              await new Promise(r => setTimeout(r, 300 * attempt))
+            console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message, error.code)
+            if (attempt < 2) {
+              await new Promise(r => setTimeout(r, 500))
             } else {
               profileError = {
                 code: "PROFILE_FETCH_ERROR",
@@ -257,9 +263,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             break
           }
         } catch (fetchError) {
-          console.error(`AuthProvider: Profile fetch attempt ${attempt} threw:`, fetchError)
-          if (attempt < 3) {
-            await new Promise(r => setTimeout(r, 300 * attempt))
+          console.error(`AuthProvider: Profile fetch attempt ${attempt} error:`, fetchError)
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 500))
+          } else {
+            // Timeout or network error - continue without profile
+            console.warn("AuthProvider: Profile fetch failed, continuing without profile")
           }
         }
       }
@@ -280,45 +289,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Step 3: Fetch user roles
+      // Step 3: Fetch user roles (with timeout)
       let roles: UserRole[] = []
       console.log("AuthProvider: Fetching roles for user:", user.id)
 
-      const { data: rolesData, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
+      try {
+        const rolesPromise = supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
 
-      console.log("AuthProvider: Roles query result:", {
-        rolesData,
-        rolesError: rolesError?.message,
-        rolesCount: rolesData?.length
-      })
+        const rolesTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Roles fetch timeout")), 5000)
+        )
 
-      if (rolesError) {
-        console.warn("AuthProvider: Roles fetch error:", rolesError.message, rolesError)
-        // Don't fail completely - user might just need onboarding
-      } else if (rolesData && rolesData.length > 0) {
-        roles = rolesData.map(r => r.role as UserRole)
-        console.log("AuthProvider: User roles found:", roles)
-      } else {
-        console.warn("AuthProvider: No roles found for user - will use default behavior")
+        const { data: rolesData, error: rolesError } = await Promise.race([rolesPromise, rolesTimeoutPromise])
+
+        console.log("AuthProvider: Roles query result:", {
+          rolesData,
+          rolesError: rolesError?.message,
+          rolesCount: rolesData?.length
+        })
+
+        if (rolesError) {
+          console.warn("AuthProvider: Roles fetch error:", rolesError.message)
+        } else if (rolesData && rolesData.length > 0) {
+          roles = rolesData.map(r => r.role as UserRole)
+          console.log("AuthProvider: User roles found:", roles)
+        } else {
+          console.warn("AuthProvider: No roles found for user - will use default behavior")
+        }
+      } catch (rolesTimeout) {
+        console.warn("AuthProvider: Roles fetch timed out, continuing without roles")
       }
 
-      // Step 4: Fetch organization if user has org_id
+      // Step 4: Fetch organization if user has org_id (with timeout)
       let organization: UserOrganization | null = null
 
       if (profile?.org_id) {
         console.log("AuthProvider: Fetching organization:", profile.org_id)
         try {
-          const { data: orgData, error: orgError } = await supabase
+          const orgPromise = supabase
             .from("organizations")
             .select("id, name, name_ar, slug, logo_url, primary_color, secondary_color")
             .eq("id", profile.org_id)
             .maybeSingle()
 
+          const orgTimeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Org fetch timeout")), 5000)
+          )
+
+          const { data: orgData, error: orgError } = await Promise.race([orgPromise, orgTimeoutPromise])
+
           if (orgError) {
-            console.warn("AuthProvider: Org fetch error:", orgError.message, orgError.code, orgError.details)
+            console.warn("AuthProvider: Org fetch error:", orgError.message)
           } else if (orgData) {
             organization = orgData as UserOrganization
             console.log("AuthProvider: Organization loaded:", organization.name)
@@ -326,7 +350,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log("AuthProvider: No organization found for id:", profile.org_id)
           }
         } catch (orgFetchError) {
-          console.error("AuthProvider: Org fetch threw:", orgFetchError)
+          console.warn("AuthProvider: Org fetch timed out or failed:", orgFetchError)
         }
       } else {
         console.log("AuthProvider: No org_id in profile, skipping org fetch")
