@@ -995,11 +995,11 @@ export function PipelinesClient({
                 <div className="space-y-2">
                   <Label>Approvers</Label>
                   <Select
-                    value={stageForm.approvers[0] || ""}
+                    value={stageForm.approvers[0] || "none"}
                     onValueChange={(value) =>
                       setStageForm({
                         ...stageForm,
-                        approvers: value ? [value] : [],
+                        approvers: value === "none" ? [] : [value],
                       })
                     }
                   >
@@ -1007,6 +1007,7 @@ export function PipelinesClient({
                       <SelectValue placeholder="Select approver" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">No approver required</SelectItem>
                       {teamMembers.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.name}
