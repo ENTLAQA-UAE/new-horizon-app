@@ -179,10 +179,14 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
         ))
         toast.success("Template updated successfully")
       } else {
-        // Create new template
+        // Create new template - get current user's org_id
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error("Not authenticated")
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("org_id")
+          .eq("id", user.id)
           .single()
 
         if (!profile?.org_id) throw new Error("Organization not found")
