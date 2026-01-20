@@ -47,7 +47,19 @@ export default function AdminLayout({
       try {
         // ALWAYS use getUser() to verify with the server - never use cached getSession()
         // This prevents showing wrong user's data after page refresh
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        // Add timeout to prevent hanging
+        console.log("AdminLayout: Calling getUser()...")
+
+        const getUserPromise = supabase.auth.getUser()
+        const getUserTimeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
+          setTimeout(() => {
+            console.warn("AdminLayout: getUser() timed out after 5 seconds")
+            resolve({ data: { user: null }, error: new Error("getUser timeout") })
+          }, 5000)
+        )
+
+        const { data: { user }, error: authError } = await Promise.race([getUserPromise, getUserTimeoutPromise])
+        console.log("AdminLayout: getUser result:", { userId: user?.id, error: authError?.message })
 
         if (authError || !user) {
           if (isMounted) {
