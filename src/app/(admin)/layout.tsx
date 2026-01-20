@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Sidebar, UserRole } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
@@ -33,7 +33,6 @@ export default function AdminLayout({
   const [userRole, setUserRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const pathname = usePathname()
 
   // Apply default Jadarat branding on mount
   useEffect(() => {
@@ -41,6 +40,8 @@ export default function AdminLayout({
   }, [])
 
   useEffect(() => {
+    let isMounted = true
+
     async function fetchUserRole() {
       const supabase = createClient()
 
@@ -55,7 +56,9 @@ export default function AdminLayout({
         const { data: { user } } = await Promise.race([authPromise, timeoutPromise]) as Awaited<typeof authPromise>
 
         if (!user) {
-          router.push("/login")
+          if (isMounted) {
+            router.push("/login")
+          }
           return
         }
 
@@ -65,12 +68,15 @@ export default function AdminLayout({
           .select("role")
           .eq("user_id", user.id)
 
+        if (!isMounted) return
+
         if (roles && roles.length > 0) {
           // Prioritize roles: super_admin > org_admin > others
           const roleList = roles.map(r => r.role)
 
           if (roleList.includes("super_admin")) {
             setUserRole("super_admin")
+            setIsLoading(false)
           } else {
             // Non-super admin users should be redirected to org routes
             router.push("/org")
@@ -83,15 +89,18 @@ export default function AdminLayout({
         }
       } catch (error) {
         console.error("Error fetching user role:", error)
-        // On timeout or error, redirect to login
-        router.push("/login")
-        return
+        if (isMounted) {
+          // On timeout or error, redirect to login
+          router.push("/login")
+        }
       }
-
-      setIsLoading(false)
     }
 
     fetchUserRole()
+
+    return () => {
+      isMounted = false
+    }
   }, [router])
 
   if (isLoading) {
