@@ -1073,41 +1073,116 @@ export default function BrandingPage() {
           </CardContent>
         </Card>
 
-        {/* Website Links */}
-        <Card className="modern-card">
+        {/* Custom Domain Configuration */}
+        <Card className="modern-card lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
-              Website Links
+              Custom Domain
             </CardTitle>
             <CardDescription>
-              Configure your website and careers page URLs
+              Use your own domain for a fully white-labeled experience (e.g., careers.yourcompany.com)
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="website_url">Company Website</Label>
-              <Input
-                id="website_url"
-                type="url"
-                value={settings.website_url}
-                onChange={(e) =>
-                  setSettings({ ...settings, website_url: e.target.value })
-                }
-                placeholder="https://www.example.com"
-                className="rounded-xl"
-              />
+          <CardContent className="space-y-6">
+            {/* Custom Domain Input */}
+            <div className="space-y-3">
+              <Label>Your Custom Domain</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  value={settings.website_url}
+                  onChange={(e) => setSettings({ ...settings, website_url: e.target.value })}
+                  placeholder="careers.yourcompany.com"
+                  className="rounded-xl font-mono"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (settings.website_url) {
+                      window.open(`https://${settings.website_url.replace(/^https?:\/\//, '')}`, "_blank")
+                    }
+                  }}
+                  disabled={!settings.website_url}
+                  className="rounded-xl gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Test
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter your domain without https:// (e.g., careers.yourcompany.com)
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="careers_page_url">Careers Page URL</Label>
-              <div className="flex gap-2">
+
+            {/* DNS Instructions */}
+            {settings.website_url && (
+              <div className="space-y-4 pt-4 border-t">
+                <Label className="flex items-center gap-2">
+                  <Server className="h-4 w-4" />
+                  DNS Configuration Required
+                </Label>
+                <div className="bg-muted/50 rounded-xl p-4 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Add the following DNS records to your domain provider:
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-3 font-medium">Type</th>
+                          <th className="text-left py-2 px-3 font-medium">Name</th>
+                          <th className="text-left py-2 px-3 font-medium">Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b">
+                          <td className="py-2 px-3">
+                            <Badge variant="outline">CNAME</Badge>
+                          </td>
+                          <td className="py-2 px-3 font-mono text-xs">
+                            {settings.website_url.replace(/^https?:\/\//, '').split('.')[0]}
+                          </td>
+                          <td className="py-2 px-3 font-mono text-xs">
+                            cname.vercel-dns.com
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      DNS changes can take up to 48 hours to propagate. After adding the record,
+                      contact support to complete domain verification.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Info Box */}
+            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-700 dark:text-amber-300">
+                <p className="font-medium mb-1">Custom Domain Benefits</p>
+                <ul className="list-disc list-inside space-y-1 text-amber-600 dark:text-amber-400">
+                  <li>Fully white-labeled login and careers pages</li>
+                  <li>Your own SSL certificate (automatically provisioned)</li>
+                  <li>No Jadarat branding visible to candidates</li>
+                  <li>Professional appearance for your organization</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Careers Page URL */}
+            <div className="space-y-3 pt-4 border-t">
+              <Label>Default Careers Page URL</Label>
+              <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
                   <Input
-                    id="careers_page_url"
-                    type="url"
                     value={settings.slug ? getCareersPageUrl(settings.slug) : ""}
                     readOnly
-                    className="bg-muted/50 pr-10 rounded-xl"
+                    className="bg-muted/50 pr-10 rounded-xl font-mono text-sm"
                   />
                   <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 </div>
@@ -1121,13 +1196,14 @@ export default function BrandingPage() {
                     }
                   }}
                   disabled={!settings.slug}
-                  className="rounded-xl"
+                  className="rounded-xl gap-2"
                 >
+                  <Copy className="h-4 w-4" />
                   Copy
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                This URL is auto-generated based on your organization slug
+                This is your default careers page URL. You can also use your custom domain if configured.
               </p>
             </div>
           </CardContent>
