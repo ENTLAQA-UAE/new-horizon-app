@@ -51,27 +51,19 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
       loadingRef.current = true
 
       try {
-        // CRITICAL: Always verify user with server - with timeout to prevent hanging
-        console.log("Branding: Calling getUser()...")
+        // Use getSession for fast initial check
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log("Branding: Session check:", { userId: session?.user?.id })
 
-        const getUserPromise = supabase.auth.getUser()
-        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
-          setTimeout(() => {
-            console.warn("Branding: getUser() timed out after 5 seconds")
-            resolve({ data: { user: null }, error: new Error("getUser timeout") })
-          }, 5000)
-        )
-
-        const { data: { user }, error: authError } = await Promise.race([getUserPromise, timeoutPromise])
-        console.log("Branding: getUser result:", { userId: user?.id, error: authError?.message })
-
-        if (authError || !user) {
+        if (!session?.user) {
           // Clear stored user ID when not authenticated
           try { sessionStorage.removeItem(USER_ID_KEY) } catch {}
           setBranding({ ...defaultBranding, isLoaded: true })
           loadingRef.current = false
           return
         }
+
+        const user = session.user
 
         // Check if user ID changed from what we had before
         try {

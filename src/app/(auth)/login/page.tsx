@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createClient, clearSupabaseStorage, resetSupabaseClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -102,13 +102,13 @@ function LoginPageContent() {
     setLoading(true)
 
     try {
-      // CRITICAL: Clear ALL previous session data before logging in
-      // This prevents showing stale data from a previous user
-      clearSupabaseStorage()
-      resetSupabaseClient()
-
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+
+      // Sign out any existing session first to ensure clean state
+      // This is safer than clearing storage manually
+      await supabase.auth.signOut().catch(() => {})
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -118,7 +118,15 @@ function LoginPageContent() {
         return
       }
 
+      // Verify we got a valid session
+      if (!data.session || !data.user) {
+        toast.error("Login failed - no session created")
+        return
+      }
+
+      console.log("Login successful for user:", data.user.id)
       toast.success("Welcome back!")
+
       // Use full page reload to ensure completely fresh state
       window.location.href = "/"
     } catch {
