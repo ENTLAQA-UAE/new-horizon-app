@@ -1,5 +1,4 @@
 // @ts-nocheck
-// Note: This file uses organization_id instead of org_id and non-existent tables
 "use client"
 
 import { useState, useEffect } from "react"
@@ -63,11 +62,11 @@ export default function JobTypesPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("organization_id")
+        .select("org_id")
         .eq("id", user.id)
         .single()
 
-      const orgId = profile?.organization_id
+      const orgId = profile?.org_id
       if (!orgId) {
         setIsLoading(false)
         return
