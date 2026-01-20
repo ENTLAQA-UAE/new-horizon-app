@@ -40,26 +40,44 @@ export default function OrgLayout({
       console.log("OrgLayout: Starting fetchUserRole...")
 
       try {
-        // CRITICAL: Always verify user with server
+        // CRITICAL: Always verify user with server, but with timeout
         console.log("OrgLayout: Calling getUser()...")
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        // Add timeout to getUser() to prevent hanging
+        const getUserPromise = supabase.auth.getUser()
+        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
+          setTimeout(() => {
+            console.warn("OrgLayout: getUser() timed out after 5 seconds")
+            resolve({ data: { user: null }, error: new Error("getUser timeout") })
+          }, 5000)
+        )
+
+        const { data: { user }, error: authError } = await Promise.race([getUserPromise, timeoutPromise])
         console.log("OrgLayout: getUser result:", { userId: user?.id, error: authError?.message })
 
         if (authError || !user) {
-          console.log("OrgLayout: No user, redirecting to login")
+          console.log("OrgLayout: No user or error, redirecting to login")
           if (isMounted) {
             router.push("/login")
           }
           return
         }
 
-        // Get user's roles from user_roles table
+        // Get user's roles from user_roles table with timeout
         console.log("OrgLayout: Fetching roles for user:", user.id)
-        const { data: roles, error: rolesError } = await supabase
+        const rolesPromise = supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
 
+        const rolesTimeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+          setTimeout(() => {
+            console.warn("OrgLayout: roles query timed out")
+            resolve({ data: null, error: new Error("Roles query timeout") })
+          }, 5000)
+        )
+
+        const { data: roles, error: rolesError } = await Promise.race([rolesPromise, rolesTimeoutPromise])
         console.log("OrgLayout: Roles result:", { roles, error: rolesError?.message })
 
         if (!isMounted) return

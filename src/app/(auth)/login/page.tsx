@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { createClient, clearSupabaseStorage, resetSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -102,6 +102,11 @@ function LoginPageContent() {
     setLoading(true)
 
     try {
+      // CRITICAL: Clear ALL previous session data before logging in
+      // This prevents showing stale data from a previous user
+      clearSupabaseStorage()
+      resetSupabaseClient()
+
       const supabase = createClient()
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -114,8 +119,8 @@ function LoginPageContent() {
       }
 
       toast.success("Welcome back!")
-      router.push("/")
-      router.refresh()
+      // Use full page reload to ensure completely fresh state
+      window.location.href = "/"
     } catch {
       toast.error("An unexpected error occurred")
     } finally {

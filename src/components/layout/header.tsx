@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { createClient, clearSupabaseStorage, resetSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -85,8 +85,19 @@ export function Header({ title, titleAr }: HeaderProps) {
 
     async function fetchProfile() {
       try {
-        // CRITICAL: Always verify user with server
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        // CRITICAL: Always verify user with server - with timeout to prevent hanging
+        console.log("Header: Calling getUser()...")
+
+        const getUserPromise = supabase.auth.getUser()
+        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
+          setTimeout(() => {
+            console.warn("Header: getUser() timed out after 5 seconds")
+            resolve({ data: { user: null }, error: new Error("getUser timeout") })
+          }, 5000)
+        )
+
+        const { data: { user }, error: authError } = await Promise.race([getUserPromise, timeoutPromise])
+        console.log("Header: getUser result:", { userId: user?.id, error: authError?.message })
 
         if (authError || !user || !isMounted) {
           setProfile(null)
@@ -179,14 +190,11 @@ export function Header({ title, titleAr }: HeaderProps) {
     try {
       const supabase = createClient()
 
-      // Clear all session storage keys to prevent stale data on next login
-      try {
-        sessionStorage.removeItem("jadarat_current_user_id")
-        sessionStorage.removeItem("jadarat_header_user_id")
-      } catch {}
+      // CRITICAL: Clear ALL Supabase storage to prevent stale session data
+      clearSupabaseStorage()
 
       // Add timeout to signOut to prevent hanging on stale sessions
-      const signOutPromise = supabase.auth.signOut()
+      const signOutPromise = supabase.auth.signOut({ scope: 'global' }) // Sign out from all devices
       const timeoutPromise = new Promise<{ error: Error }>((resolve) =>
         setTimeout(() => resolve({ error: new Error("Sign out timeout") }), 3000)
       )
@@ -195,14 +203,18 @@ export function Header({ title, titleAr }: HeaderProps) {
 
       if (error) {
         console.error("Error signing out:", error)
-        // Don't show error toast, just proceed with redirect
       }
+
+      // Reset the Supabase client singleton to ensure fresh state on next login
+      resetSupabaseClient()
     } catch (err) {
       console.error("Logout error:", err)
-      // Continue to redirect even if there's an error
+      // Still clear storage even if there's an error
+      clearSupabaseStorage()
+      resetSupabaseClient()
     }
 
-    // Always redirect to login, even if signOut had issues
+    // Always redirect to login with full page reload to clear all React state
     window.location.href = "/login"
   }
 
