@@ -1,5 +1,4 @@
 // @ts-nocheck
-// Note: This file uses organization_id instead of org_id
 import { createClient } from "@/lib/supabase/server"
 import { UsersClient } from "./users-client"
 
@@ -26,7 +25,7 @@ async function getUsers() {
       is_active,
       last_login_at,
       created_at,
-      organization_id
+      org_id
     `)
     .order("created_at", { ascending: false })
 
@@ -43,7 +42,7 @@ async function getUsers() {
   // Map organizations and roles to users
   const usersWithData = profiles?.map((profile) => {
     const userRoles = roles?.filter((r) => r.user_id === profile.id) || []
-    const org = organizations?.find((o) => o.id === profile.organization_id)
+    const org = organizations?.find((o) => o.id === profile.org_id)
     return {
       ...profile,
       roles: userRoles.map((r) => r.role),

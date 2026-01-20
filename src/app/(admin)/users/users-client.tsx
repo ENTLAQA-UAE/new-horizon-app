@@ -236,7 +236,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ organization_id: orgId })
+      .update({ org_id: orgId })
       .eq("id", selectedUser.id)
 
     if (error) {

@@ -201,7 +201,7 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
       const { data, error } = await supabase
         .from("documents")
         .insert({
-          organization_id: organizationId,
+          org_id: organizationId,
           name: formData.name,
           description: formData.description || null,
           file_url: urlData.publicUrl,
