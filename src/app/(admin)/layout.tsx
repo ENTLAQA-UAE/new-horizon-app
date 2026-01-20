@@ -46,27 +46,29 @@ export default function AdminLayout({
       const supabase = createClient()
 
       try {
-        // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Auth timeout")), 10000)
-        )
+        // Use getSession first (cached, faster) instead of getUser (network request)
+        const { data: { session } } = await supabase.auth.getSession()
 
-        // Get current user with timeout
-        const authPromise = supabase.auth.getUser()
-        const { data: { user } } = await Promise.race([authPromise, timeoutPromise]) as Awaited<typeof authPromise>
-
-        if (!user) {
+        if (!session?.user) {
           if (isMounted) {
             router.push("/login")
           }
           return
         }
 
-        // Get user's roles from user_roles table
-        const { data: roles } = await supabase
+        const user = session.user
+
+        // Get user's roles from user_roles table with timeout
+        const rolesPromise = supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
+
+        const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: new Error("Roles query timeout") }), 5000)
+        )
+
+        const { data: roles } = await Promise.race([rolesPromise, timeoutPromise])
 
         if (!isMounted) return
 
@@ -88,9 +90,8 @@ export default function AdminLayout({
           return
         }
       } catch (error) {
-        console.error("Error fetching user role:", error)
+        // Silently handle errors - redirect to login
         if (isMounted) {
-          // On timeout or error, redirect to login
           router.push("/login")
         }
       }
