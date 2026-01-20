@@ -1,6 +1,50 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Known root domains (add your production domains here)
+const ROOT_DOMAINS = [
+  'localhost',
+  '127.0.0.1',
+  'jadarat-ats.app',
+  'jadarat-ats.vercel.app',
+  'vercel.app',
+]
+
+// Extract subdomain from hostname
+function getSubdomain(hostname: string): string | null {
+  // Remove port if present
+  const host = hostname.split(':')[0]
+
+  // Check if this is a known root domain or localhost
+  if (ROOT_DOMAINS.some(domain => host === domain || host.endsWith(`.${domain}`))) {
+    const parts = host.split('.')
+
+    // For localhost, no subdomain
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return null
+    }
+
+    // For vercel.app, check if there's a subdomain before the project name
+    // e.g., acme.jadarat-ats.vercel.app -> acme
+    // jadarat-ats.vercel.app -> null
+    if (host.endsWith('.vercel.app')) {
+      // Pattern: subdomain.project.vercel.app (4 parts)
+      if (parts.length >= 4) {
+        return parts[0]
+      }
+      return null
+    }
+
+    // For jadarat-ats.app, check for subdomain
+    // e.g., acme.jadarat-ats.app -> acme
+    if (host.endsWith('.jadarat-ats.app') && parts.length >= 3) {
+      return parts[0]
+    }
+  }
+
+  return null
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -29,6 +73,37 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // Detect subdomain and lookup organization
+  const hostname = request.headers.get('host') || ''
+  const subdomain = getSubdomain(hostname)
+  let orgSlug: string | null = null
+
+  if (subdomain) {
+    // Lookup organization by subdomain (slug)
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('slug, subdomain_enabled')
+      .eq('slug', subdomain)
+      .eq('subdomain_enabled', true)
+      .single()
+
+    if (org) {
+      orgSlug = org.slug
+      // Set org slug in request headers for downstream use
+      supabaseResponse.headers.set('x-org-slug', orgSlug)
+
+      // For login page, redirect to login with org parameter if not already there
+      if (request.nextUrl.pathname === '/login' && !request.nextUrl.searchParams.has('org')) {
+        const url = request.nextUrl.clone()
+        url.searchParams.set('org', orgSlug)
+        // Rewrite instead of redirect to keep the subdomain URL
+        return NextResponse.rewrite(url, {
+          headers: supabaseResponse.headers,
+        })
+      }
+    }
+  }
+
   // IMPORTANT: Avoid writing any logic between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
@@ -38,7 +113,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Define public routes that don't require authentication
-  const publicRoutes = ['/login', '/signup', '/auth/callback', '/careers', '/api/invites']
+  const publicRoutes = ['/login', '/signup', '/auth/callback', '/careers', '/api/invites', '/portal']
   const isPublicRoute = publicRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
@@ -47,6 +122,10 @@ export async function updateSession(request: NextRequest) {
     // No user, redirect to login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    // Preserve org context in redirect
+    if (orgSlug) {
+      url.searchParams.set('org', orgSlug)
+    }
     return NextResponse.redirect(url)
   }
 
