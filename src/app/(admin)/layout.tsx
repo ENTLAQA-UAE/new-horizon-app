@@ -46,8 +46,19 @@ export default function AdminLayout({
     async function fetchUserRole() {
       try {
         // Get session (fast, cached)
-        const { data: { session } } = await supabase.auth.getSession()
+        const sessionResult = await supabase.auth.getSession()
+        console.log("AdminLayout: getSession result:", sessionResult)
 
+        // Handle session errors
+        if (sessionResult.error) {
+          console.error("AdminLayout: Session error:", sessionResult.error)
+          if (isMounted) {
+            router.push("/org") // Redirect to org instead of login
+          }
+          return
+        }
+
+        const session = sessionResult.data?.session
         if (!session?.user) {
           console.log("AdminLayout: No session found, redirecting to login")
           if (isMounted) {
@@ -59,41 +70,39 @@ export default function AdminLayout({
         const user = session.user
         console.log("AdminLayout: Session user:", user.id)
 
-        // Get user's roles from user_roles table with timeout
-        const rolesPromise = supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
+        // Get user's roles
+        try {
+          const { data: roles, error: rolesError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
 
-        const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: new Error("Roles query timeout") }), 5000)
-        )
+          console.log("AdminLayout: Roles result:", { roles, error: rolesError?.message })
 
-        const { data: roles } = await Promise.race([rolesPromise, timeoutPromise])
+          if (!isMounted) return
 
-        if (!isMounted) return
+          if (roles && roles.length > 0) {
+            const roleList = roles.map(r => r.role)
 
-        if (roles && roles.length > 0) {
-          const roleList = roles.map(r => r.role)
-          console.log("AdminLayout: User roles:", roleList)
-
-          if (roleList.includes("super_admin")) {
-            setUserRole("super_admin")
-            setIsLoading(false)
+            if (roleList.includes("super_admin")) {
+              setUserRole("super_admin")
+              setIsLoading(false)
+            } else {
+              router.push("/org")
+              return
+            }
           } else {
-            // Non-super admin users should be redirected to org routes
             router.push("/org")
             return
           }
-        } else {
-          // No roles assigned, redirect to org
+        } catch (rolesError) {
+          console.warn("AdminLayout: Roles fetch failed:", rolesError)
           router.push("/org")
-          return
         }
       } catch (error) {
         console.error("AdminLayout: Error:", error)
         if (isMounted) {
-          router.push("/login")
+          router.push("/org")
         }
       }
     }

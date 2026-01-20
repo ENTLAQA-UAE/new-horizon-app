@@ -41,9 +41,22 @@ export default function OrgLayout({
 
       try {
         // First try to get session (fast, cached) to check if we have any auth
-        const { data: { session } } = await supabase.auth.getSession()
+        const sessionResult = await supabase.auth.getSession()
+        console.log("OrgLayout: getSession result:", sessionResult)
 
-        if (!session) {
+        // Handle session errors
+        if (sessionResult.error) {
+          console.error("OrgLayout: Session error:", sessionResult.error)
+          // Don't redirect on error - show page with default role
+          if (isMounted) {
+            setUserRole("recruiter")
+            setIsLoading(false)
+          }
+          return
+        }
+
+        const session = sessionResult.data?.session
+        if (!session?.user) {
           console.log("OrgLayout: No session found, redirecting to login")
           if (isMounted) {
             router.push("/login")
@@ -51,58 +64,45 @@ export default function OrgLayout({
           return
         }
 
-        // We have a session, use the session user directly for faster loading
         const user = session.user
         console.log("OrgLayout: Session user:", user.id)
 
-        if (!user) {
-          console.log("OrgLayout: No user in session, redirecting to login")
-          if (isMounted) {
-            router.push("/login")
-          }
-          return
-        }
+        // Get user's roles - but don't fail if this errors
+        try {
+          const { data: roles, error: rolesError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id)
 
-        // Get user's roles from user_roles table with timeout
-        console.log("OrgLayout: Fetching roles for user:", user.id)
-        const rolesPromise = supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
+          console.log("OrgLayout: Roles result:", { roles, error: rolesError?.message })
 
-        const rolesTimeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
-          setTimeout(() => {
-            console.warn("OrgLayout: roles query timed out")
-            resolve({ data: null, error: new Error("Roles query timeout") })
-          }, 5000)
-        )
+          if (!isMounted) return
 
-        const { data: roles, error: rolesError } = await Promise.race([rolesPromise, rolesTimeoutPromise])
-        console.log("OrgLayout: Roles result:", { roles, error: rolesError?.message })
+          if (roles && roles.length > 0) {
+            const roleList = roles.map(r => r.role)
+            console.log("OrgLayout: User roles:", roleList)
 
-        if (!isMounted) return
-
-        if (roles && roles.length > 0) {
-          const roleList = roles.map(r => r.role)
-          console.log("OrgLayout: User roles:", roleList)
-
-          if (roleList.includes("super_admin")) {
-            setUserRole("super_admin")
-          } else if (roleList.includes("org_admin")) {
-            setUserRole("org_admin")
-          } else if (roleList.includes("hr_manager")) {
-            setUserRole("hr_manager")
-          } else if (roleList.includes("recruiter")) {
-            setUserRole("recruiter")
-          } else if (roleList.includes("hiring_manager")) {
-            setUserRole("hiring_manager")
-          } else if (roleList.includes("interviewer")) {
-            setUserRole("interviewer")
+            if (roleList.includes("super_admin")) {
+              setUserRole("super_admin")
+            } else if (roleList.includes("org_admin")) {
+              setUserRole("org_admin")
+            } else if (roleList.includes("hr_manager")) {
+              setUserRole("hr_manager")
+            } else if (roleList.includes("recruiter")) {
+              setUserRole("recruiter")
+            } else if (roleList.includes("hiring_manager")) {
+              setUserRole("hiring_manager")
+            } else if (roleList.includes("interviewer")) {
+              setUserRole("interviewer")
+            } else {
+              setUserRole("recruiter")
+            }
           } else {
+            console.log("OrgLayout: No roles found, using default")
             setUserRole("recruiter")
           }
-        } else {
-          console.log("OrgLayout: No roles found, using default")
+        } catch (rolesError) {
+          console.warn("OrgLayout: Roles fetch failed, using default:", rolesError)
           setUserRole("recruiter")
         }
 
@@ -111,6 +111,7 @@ export default function OrgLayout({
       } catch (error) {
         console.error("OrgLayout: Error in fetchUserRole:", error)
         if (isMounted) {
+          // Show page with default role instead of blocking
           setUserRole("recruiter")
           setIsLoading(false)
         }
