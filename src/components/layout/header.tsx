@@ -75,6 +75,9 @@ export function Header({ title, titleAr }: HeaderProps) {
 
   const displayTitle = language === "ar" && titleAr ? titleAr : title || t("nav.dashboard")
 
+  // Track user ID to detect user changes
+  const HEADER_USER_KEY = "jadarat_header_user_id"
+
   // Fetch user profile
   useEffect(() => {
     let isMounted = true
@@ -82,29 +85,54 @@ export function Header({ title, titleAr }: HeaderProps) {
 
     async function fetchProfile() {
       try {
-        // Use getUser to verify the session is still valid (prevents showing wrong user)
+        // CRITICAL: Always verify user with server
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        if (authError || !user || !isMounted) return
+        if (authError || !user || !isMounted) {
+          setProfile(null)
+          return
+        }
 
-        // Add timeout to profile fetch to prevent hanging
-        const profilePromise = supabase
-          .from("profiles")
-          .select("first_name, last_name, email, avatar_url")
-          .eq("id", user.id)
-          .single()
+        // Check if user changed - if so, clear profile and let page reload handle it
+        try {
+          const storedUserId = sessionStorage.getItem(HEADER_USER_KEY)
+          if (storedUserId && storedUserId !== user.id) {
+            console.warn("Header: User changed, clearing profile")
+            setProfile(null)
+            sessionStorage.setItem(HEADER_USER_KEY, user.id)
+            return // Let branding context trigger reload
+          }
+          sessionStorage.setItem(HEADER_USER_KEY, user.id)
+        } catch {}
 
-        const timeoutPromise = new Promise<{ data: null }>((resolve) =>
-          setTimeout(() => resolve({ data: null }), 5000)
-        )
+        // Fetch profile with retry logic
+        let profileData = null
+        let attempts = 0
+        const maxAttempts = 3
 
-        const { data } = await Promise.race([profilePromise, timeoutPromise])
+        while (!profileData && attempts < maxAttempts && isMounted) {
+          attempts++
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, email, avatar_url")
+            .eq("id", user.id)
+            .single()
 
-        if (data && isMounted) {
-          setProfile(data)
+          if (error) {
+            console.warn(`Header profile fetch attempt ${attempts} failed:`, error.message)
+            if (attempts < maxAttempts) {
+              await new Promise(r => setTimeout(r, 500 * attempts))
+            }
+          } else {
+            profileData = data
+          }
+        }
+
+        if (profileData && isMounted) {
+          setProfile(profileData)
+          console.log("Header: Profile loaded for", profileData.first_name, profileData.last_name)
         }
       } catch (error) {
-        // Silently handle errors - profile will show default values
         console.error("Error fetching profile:", error)
       }
     }
@@ -113,12 +141,17 @@ export function Header({ title, titleAr }: HeaderProps) {
 
     // Listen for auth state changes to refresh profile
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
+      (event, session) => {
+        console.log("Header: Auth event", event)
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Reset profile and re-fetch
+          // Store new user ID and re-fetch
+          if (session?.user?.id) {
+            try { sessionStorage.setItem(HEADER_USER_KEY, session.user.id) } catch {}
+          }
           setProfile(null)
           fetchProfile()
         } else if (event === "SIGNED_OUT") {
+          try { sessionStorage.removeItem(HEADER_USER_KEY) } catch {}
           setProfile(null)
         }
       }
@@ -145,6 +178,12 @@ export function Header({ title, titleAr }: HeaderProps) {
   const handleLogout = async () => {
     try {
       const supabase = createClient()
+
+      // Clear all session storage keys to prevent stale data on next login
+      try {
+        sessionStorage.removeItem("jadarat_current_user_id")
+        sessionStorage.removeItem("jadarat_header_user_id")
+      } catch {}
 
       // Add timeout to signOut to prevent hanging on stale sessions
       const signOutPromise = supabase.auth.signOut()
