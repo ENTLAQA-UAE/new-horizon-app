@@ -73,13 +73,13 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Detect subdomain and lookup organization
+  // Detect subdomain or custom domain and lookup organization
   const hostname = request.headers.get('host') || ''
   const subdomain = getSubdomain(hostname)
   let orgSlug: string | null = null
 
+  // First, try subdomain lookup
   if (subdomain) {
-    // Lookup organization by subdomain (slug)
     const { data: org } = await supabase
       .from('organizations')
       .select('slug, subdomain_enabled')
@@ -89,18 +89,42 @@ export async function updateSession(request: NextRequest) {
 
     if (org) {
       orgSlug = org.slug
-      // Set org slug in request headers for downstream use
-      supabaseResponse.headers.set('x-org-slug', orgSlug)
+    }
+  }
 
-      // For login page, redirect to login with org parameter if not already there
-      if (request.nextUrl.pathname === '/login' && !request.nextUrl.searchParams.has('org')) {
-        const url = request.nextUrl.clone()
-        url.searchParams.set('org', orgSlug)
-        // Rewrite instead of redirect to keep the subdomain URL
-        return NextResponse.rewrite(url, {
-          headers: supabaseResponse.headers,
-        })
+  // If no subdomain match, try custom domain lookup
+  if (!orgSlug) {
+    const cleanHostname = hostname.split(':')[0] // Remove port if present
+    // Skip known platform domains
+    const platformDomains = ['localhost', '127.0.0.1', 'jadarat-ats.app', 'vercel.app']
+    const isPlatformDomain = platformDomains.some(d => cleanHostname === d || cleanHostname.endsWith(`.${d}`))
+
+    if (!isPlatformDomain) {
+      // This might be a custom domain - look it up
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('slug, custom_domain')
+        .eq('custom_domain', cleanHostname)
+        .single()
+
+      if (org) {
+        orgSlug = org.slug
       }
+    }
+  }
+
+  // If we found an org, set headers and handle login page
+  if (orgSlug) {
+    supabaseResponse.headers.set('x-org-slug', orgSlug)
+
+    // For login page, add org parameter if not already there
+    if (request.nextUrl.pathname === '/login' && !request.nextUrl.searchParams.has('org')) {
+      const url = request.nextUrl.clone()
+      url.searchParams.set('org', orgSlug)
+      // Rewrite instead of redirect to keep the original URL
+      return NextResponse.rewrite(url, {
+        headers: supabaseResponse.headers,
+      })
     }
   }
 
