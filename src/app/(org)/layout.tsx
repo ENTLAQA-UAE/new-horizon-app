@@ -25,6 +25,7 @@ export default function OrgLayout({
 
   useEffect(() => {
     let isMounted = true
+    const supabase = createClient()
 
     // Safety timeout - always show page after 8 seconds max
     const safetyTimeout = setTimeout(() => {
@@ -36,10 +37,9 @@ export default function OrgLayout({
     }, 8000)
 
     async function fetchUserRole() {
-      const supabase = createClient()
-
       try {
-        // Verify session with getUser to ensure we have the correct authenticated user
+        // ALWAYS use getUser() to verify with the server - never use cached getSession()
+        // This prevents showing wrong user's data after page refresh
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError || !user) {
@@ -99,9 +99,23 @@ export default function OrgLayout({
 
     fetchUserRole()
 
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === "SIGNED_OUT") {
+          router.push("/login")
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          // Re-fetch user role when auth changes
+          setIsLoading(true)
+          fetchUserRole()
+        }
+      }
+    )
+
     return () => {
       isMounted = false
       clearTimeout(safetyTimeout)
+      subscription.unsubscribe()
     }
   }, [router, isLoading])
 

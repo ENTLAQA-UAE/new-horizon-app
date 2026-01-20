@@ -41,22 +41,20 @@ export default function AdminLayout({
 
   useEffect(() => {
     let isMounted = true
+    const supabase = createClient()
 
     async function fetchUserRole() {
-      const supabase = createClient()
-
       try {
-        // Use getSession first (cached, faster) instead of getUser (network request)
-        const { data: { session } } = await supabase.auth.getSession()
+        // ALWAYS use getUser() to verify with the server - never use cached getSession()
+        // This prevents showing wrong user's data after page refresh
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        if (!session?.user) {
+        if (authError || !user) {
           if (isMounted) {
             router.push("/login")
           }
           return
         }
-
-        const user = session.user
 
         // Get user's roles from user_roles table with timeout
         const rolesPromise = supabase
@@ -99,8 +97,21 @@ export default function AdminLayout({
 
     fetchUserRole()
 
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === "SIGNED_OUT") {
+          router.push("/login")
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          // Re-fetch user role when auth changes
+          fetchUserRole()
+        }
+      }
+    )
+
     return () => {
       isMounted = false
+      subscription.unsubscribe()
     }
   }, [router])
 

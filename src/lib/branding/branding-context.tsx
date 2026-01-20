@@ -39,28 +39,18 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding)
 
   useEffect(() => {
+    const supabase = createClient()
+
     async function loadBranding() {
-      const supabase = createClient()
-
       try {
-        // First get cached session for speed
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.user) {
+        // ALWAYS use getUser() to verify with the server - never use cached getSession()
+        // This prevents showing wrong user's branding after page refresh
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
           setBranding({ ...defaultBranding, isLoaded: true })
           return
         }
-
-        // Verify the session is still valid by calling getUser (this catches stale sessions)
-        const { data: { user: verifiedUser }, error: authError } = await supabase.auth.getUser()
-
-        // If verification fails or user changed, use verified user or redirect
-        if (authError || !verifiedUser) {
-          console.warn("Session verification failed, using default branding")
-          setBranding({ ...defaultBranding, isLoaded: true })
-          return
-        }
-
-        const user = verifiedUser
 
         // Get user's profile to find org_id with timeout
         const profilePromise = supabase
@@ -110,6 +100,21 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
     }
 
     loadBranding()
+
+    // Listen for auth state changes to refresh branding when user logs in/out
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event) => {
+        if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+          // Reset to default first, then reload
+          setBranding({ ...defaultBranding, isLoaded: false })
+          loadBranding()
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   return (
