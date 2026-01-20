@@ -57,12 +57,13 @@ interface Offer {
   created_at: string
 }
 
+// Status config with brand-aware colors for primary stages
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  applied: { label: "Applied", color: "bg-blue-100 text-blue-700", icon: Clock },
-  screening: { label: "Screening", color: "bg-purple-100 text-purple-700", icon: AlertCircle },
-  interview: { label: "Interview", color: "bg-yellow-100 text-yellow-700", icon: Calendar },
-  offer: { label: "Offer", color: "bg-green-100 text-green-700", icon: Gift },
-  hired: { label: "Hired", color: "bg-emerald-100 text-emerald-700", icon: CheckCircle },
+  applied: { label: "Applied", color: "bg-[var(--brand-primary,#3b82f6)]/10 text-[var(--brand-primary,#3b82f6)]", icon: Clock },
+  screening: { label: "Screening", color: "bg-[var(--brand-secondary,#8b5cf6)]/10 text-[var(--brand-secondary,#8b5cf6)]", icon: AlertCircle },
+  interview: { label: "Interview", color: "bg-amber-100 text-amber-700", icon: Calendar },
+  offer: { label: "Offer", color: "bg-emerald-100 text-emerald-700", icon: Gift },
+  hired: { label: "Hired", color: "bg-green-100 text-green-700", icon: CheckCircle },
   rejected: { label: "Not Selected", color: "bg-red-100 text-red-700", icon: XCircle },
   withdrawn: { label: "Withdrawn", color: "bg-gray-100 text-gray-700", icon: XCircle },
 }
@@ -259,8 +260,11 @@ export default function CandidateDashboard() {
                     className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Building2 className="h-5 w-5 text-primary" />
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center"
+                        style={{ background: "var(--brand-gradient-subtle, linear-gradient(135deg, #6366f115 0%, #8b5cf615 100%))" }}
+                      >
+                        <Building2 className="h-5 w-5" style={{ color: "var(--brand-primary, #6366f1)" }} />
                       </div>
                       <div>
                         <p className="font-medium">{app.jobs?.title || "Position"}</p>

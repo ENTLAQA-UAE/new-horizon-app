@@ -87,13 +87,24 @@ const roleLabels: Record<string, string> = {
   interviewer: "Interviewer",
 }
 
-const roleColors: Record<string, string> = {
-  super_admin: "bg-red-500",
-  org_admin: "bg-blue-500",
-  hr_manager: "bg-purple-500",
-  recruiter: "bg-green-500",
-  hiring_manager: "bg-orange-500",
-  interviewer: "bg-gray-500",
+// Role colors - using brand-aware styling where possible
+const getRoleColor = (role: string): string => {
+  switch (role) {
+    case "super_admin":
+      return "bg-red-500" // Keep semantic red for super admin
+    case "org_admin":
+      return "bg-[var(--brand-primary,#3b82f6)]" // Use brand primary
+    case "hr_manager":
+      return "bg-[var(--brand-secondary,#8b5cf6)]" // Use brand secondary
+    case "recruiter":
+      return "bg-emerald-500"
+    case "hiring_manager":
+      return "bg-amber-500"
+    case "interviewer":
+      return "bg-slate-500"
+    default:
+      return "bg-gray-500"
+  }
 }
 
 export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
@@ -466,7 +477,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                             <Badge
                               key={role}
                               variant="secondary"
-                              className={`${roleColors[role]} text-white text-xs`}
+                              className={`${getRoleColor(role)} text-white text-xs`}
                             >
                               {roleLabels[role] || role}
                             </Badge>
@@ -571,7 +582,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                       <Badge
                         key={role}
                         variant="secondary"
-                        className={`${roleColors[role]} text-white cursor-pointer`}
+                        className={`${getRoleColor(role)} text-white cursor-pointer`}
                         onClick={() => removeRole(selectedUser, role)}
                       >
                         {roleLabels[role] || role}

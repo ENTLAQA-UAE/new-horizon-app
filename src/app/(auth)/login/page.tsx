@@ -44,11 +44,14 @@ function LoginPageSkeleton() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center animate-pulse">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center animate-pulse"
+          style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
+        >
           <Sparkles className="w-8 h-8 text-white" />
         </div>
         <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+          <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--brand-primary, #6366f1)" }} />
           <span className="text-sm text-gray-500">Loading...</span>
         </div>
       </div>
@@ -234,9 +237,13 @@ function LoginPageContent() {
                 disabled={loading}
                 className={cn(
                   "h-13 px-4 rounded-xl border-2 border-gray-200 bg-white",
-                  "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10",
-                  "transition-all duration-200 text-base"
+                  "focus:ring-4 transition-all duration-200 text-base"
                 )}
+                style={{
+                  "--tw-ring-color": `${primaryColor}15`,
+                } as React.CSSProperties}
+                onFocus={(e) => e.target.style.borderColor = primaryColor}
+                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
               />
             </div>
 
@@ -253,7 +260,8 @@ function LoginPageContent() {
                 </Label>
                 <Link
                   href="/forgot-password"
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                  className="text-sm font-medium transition-colors hover:opacity-80"
+                  style={{ color: primaryColor }}
                 >
                   Forgot password?
                 </Link>
@@ -269,9 +277,13 @@ function LoginPageContent() {
                   disabled={loading}
                   className={cn(
                     "h-13 px-4 pr-12 rounded-xl border-2 border-gray-200 bg-white",
-                    "focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10",
-                    "transition-all duration-200 text-base"
+                    "focus:ring-4 transition-all duration-200 text-base"
                   )}
+                  style={{
+                    "--tw-ring-color": `${primaryColor}15`,
+                  } as React.CSSProperties}
+                  onFocus={(e) => e.target.style.borderColor = primaryColor}
+                  onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
                 />
                 <button
                   type="button"
@@ -323,7 +335,8 @@ function LoginPageContent() {
             Don&apos;t have an account?{" "}
             <Link
               href={orgSlug ? `/signup?org=${orgSlug}` : "/signup"}
-              className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+              className="font-semibold transition-colors hover:opacity-80"
+              style={{ color: primaryColor }}
             >
               Create an account
             </Link>
