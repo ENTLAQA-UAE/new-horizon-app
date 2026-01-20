@@ -43,14 +43,24 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
       const supabase = createClient()
 
       try {
-        // Use getSession (cached) instead of getUser (network request) to avoid hanging
+        // First get cached session for speed
         const { data: { session } } = await supabase.auth.getSession()
         if (!session?.user) {
           setBranding({ ...defaultBranding, isLoaded: true })
           return
         }
 
-        const user = session.user
+        // Verify the session is still valid by calling getUser (this catches stale sessions)
+        const { data: { user: verifiedUser }, error: authError } = await supabase.auth.getUser()
+
+        // If verification fails or user changed, use verified user or redirect
+        if (authError || !verifiedUser) {
+          console.warn("Session verification failed, using default branding")
+          setBranding({ ...defaultBranding, isLoaded: true })
+          return
+        }
+
+        const user = verifiedUser
 
         // Get user's profile to find org_id with timeout
         const profilePromise = supabase
