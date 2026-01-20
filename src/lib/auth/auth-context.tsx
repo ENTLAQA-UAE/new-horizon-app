@@ -250,31 +250,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
       let profile: UserProfile | null = null
       let profileError: AuthError | null = null
 
+      console.log("AuthProvider: Fetching profile for user:", user.id)
       for (let attempt = 1; attempt <= 3; attempt++) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, email, first_name, last_name, avatar_url, org_id")
-          .eq("id", user.id)
-          .maybeSingle() // Use maybeSingle instead of single to avoid 400 errors
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, email, first_name, last_name, avatar_url, org_id")
+            .eq("id", user.id)
+            .maybeSingle()
 
-        if (error) {
-          console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message)
+          if (error) {
+            console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message, error.code, error.details)
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, 300 * attempt))
+            } else {
+              profileError = {
+                code: "PROFILE_FETCH_ERROR",
+                message: "Unable to load your profile. Please try again.",
+                details: error.message
+              }
+            }
+          } else if (data) {
+            profile = data as UserProfile
+            console.log("AuthProvider: Profile loaded:", { id: profile.id, org_id: profile.org_id })
+            break
+          } else {
+            // No profile found - this is a valid state for new users
+            console.log("AuthProvider: No profile found for user")
+            break
+          }
+        } catch (fetchError) {
+          console.error(`AuthProvider: Profile fetch attempt ${attempt} threw:`, fetchError)
           if (attempt < 3) {
             await new Promise(r => setTimeout(r, 300 * attempt))
-          } else {
-            profileError = {
-              code: "PROFILE_FETCH_ERROR",
-              message: "Unable to load your profile. Please try again.",
-              details: error.message
-            }
           }
-        } else if (data) {
-          profile = data as UserProfile
-          break
-        } else {
-          // No profile found - this is a valid state for new users
-          console.log("AuthProvider: No profile found for user")
-          break
         }
       }
 
@@ -323,17 +332,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       let organization: UserOrganization | null = null
 
       if (profile?.org_id) {
-        const { data: orgData, error: orgError } = await supabase
-          .from("organizations")
-          .select("id, name, name_ar, slug, logo_url, primary_color, secondary_color")
-          .eq("id", profile.org_id)
-          .maybeSingle()
+        console.log("AuthProvider: Fetching organization:", profile.org_id)
+        try {
+          const { data: orgData, error: orgError } = await supabase
+            .from("organizations")
+            .select("id, name, name_ar, slug, logo_url, primary_color, secondary_color")
+            .eq("id", profile.org_id)
+            .maybeSingle()
 
-        if (orgError) {
-          console.warn("AuthProvider: Org fetch error:", orgError.message)
-        } else if (orgData) {
-          organization = orgData as UserOrganization
+          if (orgError) {
+            console.warn("AuthProvider: Org fetch error:", orgError.message, orgError.code, orgError.details)
+          } else if (orgData) {
+            organization = orgData as UserOrganization
+            console.log("AuthProvider: Organization loaded:", organization.name)
+          } else {
+            console.log("AuthProvider: No organization found for id:", profile.org_id)
+          }
+        } catch (orgFetchError) {
+          console.error("AuthProvider: Org fetch threw:", orgFetchError)
         }
+      } else {
+        console.log("AuthProvider: No org_id in profile, skipping org fetch")
       }
 
       // Compute derived state
@@ -461,8 +480,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           // Reload auth data on sign in or token refresh
-          loadingRef.current = false
-          await loadAuth()
+          // Don't force reset loadingRef - let the current load complete first
+          // This prevents race conditions with multiple concurrent loads
+          console.log("AuthProvider: Auth event triggering reload, loadingRef:", loadingRef.current)
+          if (!loadingRef.current) {
+            await loadAuth()
+          } else {
+            console.log("AuthProvider: Skipping reload - load already in progress")
+          }
         }
       }
     )
