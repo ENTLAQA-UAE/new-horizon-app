@@ -85,24 +85,16 @@ export function Header({ title, titleAr }: HeaderProps) {
 
     async function fetchProfile() {
       try {
-        // CRITICAL: Always verify user with server - with timeout to prevent hanging
-        console.log("Header: Calling getUser()...")
+        // First check session (fast) to get user ID
+        const { data: { session } } = await supabase.auth.getSession()
 
-        const getUserPromise = supabase.auth.getUser()
-        const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
-          setTimeout(() => {
-            console.warn("Header: getUser() timed out after 5 seconds")
-            resolve({ data: { user: null }, error: new Error("getUser timeout") })
-          }, 5000)
-        )
-
-        const { data: { user }, error: authError } = await Promise.race([getUserPromise, timeoutPromise])
-        console.log("Header: getUser result:", { userId: user?.id, error: authError?.message })
-
-        if (authError || !user || !isMounted) {
+        if (!session?.user || !isMounted) {
           setProfile(null)
           return
         }
+
+        const user = session.user
+        console.log("Header: Session user:", user.id)
 
         // Check if user changed - if so, clear profile and let page reload handle it
         try {

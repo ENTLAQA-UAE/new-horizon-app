@@ -45,23 +45,56 @@ export default function AdminLayout({
 
     async function fetchUserRole() {
       try {
-        // ALWAYS use getUser() to verify with the server - never use cached getSession()
-        // This prevents showing wrong user's data after page refresh
-        // Add timeout to prevent hanging
-        console.log("AdminLayout: Calling getUser()...")
+        // First try to get session (fast, cached) to check if we have any auth
+        const { data: { session } } = await supabase.auth.getSession()
 
-        const getUserPromise = supabase.auth.getUser()
-        const getUserTimeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
-          setTimeout(() => {
-            console.warn("AdminLayout: getUser() timed out after 5 seconds")
-            resolve({ data: { user: null }, error: new Error("getUser timeout") })
-          }, 5000)
-        )
+        if (!session) {
+          console.log("AdminLayout: No session found, redirecting to login")
+          if (isMounted) {
+            router.push("/login")
+          }
+          return
+        }
 
-        const { data: { user }, error: authError } = await Promise.race([getUserPromise, getUserTimeoutPromise])
-        console.log("AdminLayout: getUser result:", { userId: user?.id, error: authError?.message })
+        // We have a session, now verify with server (with longer timeout and retry)
+        console.log("AdminLayout: Session found, verifying with server...")
 
-        if (authError || !user) {
+        let user = null
+        let attempts = 0
+        const maxAttempts = 2
+
+        while (!user && attempts < maxAttempts) {
+          attempts++
+          try {
+            const getUserPromise = supabase.auth.getUser()
+            const timeoutPromise = new Promise<{ data: { user: null }, error: Error }>((resolve) =>
+              setTimeout(() => {
+                console.warn(`AdminLayout: getUser() attempt ${attempts} timed out`)
+                resolve({ data: { user: null }, error: new Error("getUser timeout") })
+              }, 10000)
+            )
+
+            const result = await Promise.race([getUserPromise, timeoutPromise])
+            if (result.data.user) {
+              user = result.data.user
+              console.log("AdminLayout: getUser succeeded:", user.id)
+            } else if (attempts < maxAttempts) {
+              console.log("AdminLayout: Retrying getUser...")
+              await new Promise(r => setTimeout(r, 1000))
+            }
+          } catch (e) {
+            console.warn("AdminLayout: getUser error:", e)
+          }
+        }
+
+        // If getUser failed but we have a session, use the session user as fallback
+        if (!user && session.user) {
+          console.log("AdminLayout: Using session user as fallback:", session.user.id)
+          user = session.user
+        }
+
+        if (!user) {
+          console.log("AdminLayout: No user after all attempts, redirecting to login")
           if (isMounted) {
             router.push("/login")
           }
