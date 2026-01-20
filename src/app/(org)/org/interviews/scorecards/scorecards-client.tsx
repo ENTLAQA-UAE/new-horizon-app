@@ -251,43 +251,57 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
     setIsLoading(true)
     try {
-      console.log("Creating scorecard template with data:", {
+      const insertData = {
         org_id: organizationId,
         name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+        description_ar: formData.description_ar || null,
         template_type: formData.template_type,
-        criteria_count: formData.criteria.length,
-      })
-
-      const { data, error } = await supabase
-        .from("scorecard_templates")
-        .insert({
-          org_id: organizationId,
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-          description_ar: formData.description_ar || null,
-          template_type: formData.template_type,
-          criteria: formData.criteria as unknown as Json,
-          rating_scale_type: formData.rating_scale_type,
-          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
-          is_default: formData.is_default,
-          require_notes_per_criteria: formData.require_notes_per_criteria,
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error("Supabase error creating scorecard:", error)
-        toast.error(`Failed to create template: ${error.message}`)
-        return
+        criteria: formData.criteria as unknown as Json,
+        rating_scale_type: formData.rating_scale_type,
+        rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
+        is_default: formData.is_default,
+        require_notes_per_criteria: formData.require_notes_per_criteria,
       }
 
-      console.log("Scorecard template created successfully:", data)
-      setTemplates([data as unknown as ScorecardTemplate, ...templates])
-      setIsCreateDialogOpen(false)
-      resetForm()
-      toast.success("Scorecard template created successfully")
-      router.refresh()
+      console.log("Creating scorecard template with data:", insertData)
+
+      // Add timeout to detect hanging requests (RLS policy blocking)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+      try {
+        const { data, error } = await supabase
+          .from("scorecard_templates")
+          .insert(insertData)
+          .select()
+          .single()
+          .abortSignal(controller.signal)
+
+        clearTimeout(timeoutId)
+
+        if (error) {
+          console.error("Supabase error creating scorecard:", error)
+          toast.error(`Failed to create template: ${error.message}`)
+          return
+        }
+
+        console.log("Scorecard template created successfully:", data)
+        setTemplates([data as unknown as ScorecardTemplate, ...templates])
+        setIsCreateDialogOpen(false)
+        resetForm()
+        toast.success("Scorecard template created successfully")
+        router.refresh()
+      } catch (abortError) {
+        clearTimeout(timeoutId)
+        if ((abortError as Error).name === 'AbortError') {
+          console.error("Request timed out - likely RLS policy blocking")
+          toast.error("Request timed out. Your role may not have permission to create scorecards.")
+        } else {
+          throw abortError
+        }
+      }
     } catch (err) {
       console.error("Unexpected error creating scorecard:", err)
       toast.error("An unexpected error occurred. Please check the console for details.")
