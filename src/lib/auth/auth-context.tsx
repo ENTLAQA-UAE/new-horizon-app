@@ -156,11 +156,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const supabase = createClient()
 
     try {
-      // Step 1: Get session (fast, from cache)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      // Step 1: Use getUser() to validate session with server
+      // This is CRITICAL for RLS to work correctly after page refresh
+      // getSession() only reads from cache and doesn't validate with server
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-      if (sessionError) {
-        console.error("AuthProvider: Session error:", sessionError)
+      if (userError) {
+        console.error("AuthProvider: User error:", userError)
+        // Clear any stale session data
+        try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
+
         if (mountedRef.current) {
           setState(prev => ({
             ...prev,
@@ -169,7 +174,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             error: {
               code: "SESSION_EXPIRED",
               message: "Your session has expired. Please log in again.",
-              details: sessionError.message
+              details: userError.message
             }
           }))
         }
@@ -177,8 +182,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      if (!session?.user) {
-        console.log("AuthProvider: No session found")
+      if (!user) {
+        console.log("AuthProvider: No user found")
         // Clear stored user ID
         try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
 
@@ -200,8 +205,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      const user = session.user
-      console.log("AuthProvider: User found:", user.id)
+      // Get session for completeness (now that user is validated)
+      const { data: { session } } = await supabase.auth.getSession()
+
+      console.log("AuthProvider: User validated:", user.id)
 
       // Check for user change and trigger reload if needed
       try {
@@ -265,16 +272,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Step 3: Fetch user roles
       let roles: UserRole[] = []
+      console.log("AuthProvider: Fetching roles for user:", user.id)
+
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
 
+      console.log("AuthProvider: Roles query result:", {
+        rolesData,
+        rolesError: rolesError?.message,
+        rolesCount: rolesData?.length
+      })
+
       if (rolesError) {
-        console.warn("AuthProvider: Roles fetch error:", rolesError.message)
+        console.warn("AuthProvider: Roles fetch error:", rolesError.message, rolesError)
         // Don't fail completely - user might just need onboarding
       } else if (rolesData && rolesData.length > 0) {
         roles = rolesData.map(r => r.role as UserRole)
+        console.log("AuthProvider: User roles found:", roles)
+      } else {
+        console.warn("AuthProvider: No roles found for user - will use default behavior")
       }
 
       // Step 4: Fetch organization if user has org_id
