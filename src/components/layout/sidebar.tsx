@@ -244,10 +244,25 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
 
   const homeHref = userRole === "super_admin" ? "/" : "/org"
 
+  // Collect all navigation hrefs to determine active state properly
+  const allHrefs = sections.flatMap(section => section.links.map(link => link.href))
+
   const isLinkActive = (href: string) => {
+    // Exact match is always active
     if (pathname === href) return true
+
+    // For non-root paths, check if current path starts with this href
     if (href !== "/" && href !== "/org" && !href.includes("/settings")) {
-      return pathname.startsWith(href + "/")
+      const wouldMatchAsParent = pathname.startsWith(href + "/")
+
+      // Only mark as active if no more specific link exists that matches the current path
+      // This prevents parent links from being highlighted when a child link matches exactly
+      if (wouldMatchAsParent) {
+        const hasMoreSpecificMatch = allHrefs.some(
+          otherHref => otherHref !== href && otherHref.startsWith(href + "/") && pathname.startsWith(otherHref)
+        )
+        return !hasMoreSpecificMatch
+      }
     }
     return false
   }
