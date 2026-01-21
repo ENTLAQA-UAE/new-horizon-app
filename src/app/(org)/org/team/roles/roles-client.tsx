@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -93,7 +93,6 @@ export function RolesManagementClient({
   rolePermissions: initialRolePermissions,
 }: RolesManagementClientProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [roles, setRoles] = useState(initialRoles)
   const [rolePermissions, setRolePermissions] = useState(initialRolePermissions)
@@ -135,20 +134,16 @@ export function RolesManagementClient({
     try {
       const code = formData.name.toLowerCase().replace(/\s+/g, "_")
 
-      const { data, error } = await supabase
-        .from("roles")
-        .insert({
-          code,
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-          is_system_role: false,
-          is_active: true,
-        })
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert<Role>("roles", {
+        code,
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+        is_system_role: false,
+        is_active: true,
+      })
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setRoles([...roles, data])
       setIsCreateDialogOpen(false)
@@ -168,16 +163,13 @@ export function RolesManagementClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("roles")
-        .update({
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-        })
-        .eq("id", selectedRole.id)
+      const { error } = await supabaseUpdate("roles", {
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+      }, { column: "id", value: selectedRole.id })
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setRoles(
         roles.map((r) =>
@@ -202,11 +194,11 @@ export function RolesManagementClient({
 
     try {
       if (checked) {
-        const { error } = await supabase.from("role_permissions").insert({
+        const { error } = await supabaseInsert("role_permissions", {
           role_id: selectedRole.id,
           permission_id: permissionId,
         })
-        if (error) throw error
+        if (error) throw new Error(error.message)
 
         const permission = permissions.find((p) => p.id === permissionId)
         setRolePermissions([
@@ -222,12 +214,11 @@ export function RolesManagementClient({
           },
         ])
       } else {
-        const { error } = await supabase
-          .from("role_permissions")
-          .delete()
-          .eq("role_id", selectedRole.id)
-          .eq("permission_id", permissionId)
-        if (error) throw error
+        const { error } = await supabaseDelete("role_permissions", [
+          { column: "role_id", value: selectedRole.id },
+          { column: "permission_id", value: permissionId },
+        ])
+        if (error) throw new Error(error.message)
 
         setRolePermissions(
           rolePermissions.filter(

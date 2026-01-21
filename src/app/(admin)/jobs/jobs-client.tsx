@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -165,37 +165,39 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
     setIsLoading(true)
     try {
-      const supabase = createClient()
       const slug = generateSlug(formData.title) + "-" + Date.now()
 
-      const { data, error } = await supabase
-        .from("jobs")
-        .insert({
-          title: formData.title,
-          title_ar: formData.title_ar || null,
-          slug,
-          department_id: formData.department_id || null,
-          location_id: formData.location_id || null,
-          job_type: formData.job_type as any,
-          experience_level: formData.experience_level as any,
-          description: formData.description || null,
-          salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
-          salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
-          positions_count: parseInt(formData.positions_count) || 1,
-          status: "draft",
-          org_id: "00000000-0000-0000-0000-000000000000", // Will be set by RLS
-        })
-        .select(`
-          *,
-          departments (name, name_ar),
-          job_locations (name, name_ar, city, country)
-        `)
-        .single()
+      const { data, error } = await supabaseInsert("jobs", {
+        title: formData.title,
+        title_ar: formData.title_ar || null,
+        slug,
+        department_id: formData.department_id || null,
+        location_id: formData.location_id || null,
+        job_type: formData.job_type as any,
+        experience_level: formData.experience_level as any,
+        description: formData.description || null,
+        salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
+        salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
+        positions_count: parseInt(formData.positions_count) || 1,
+        status: "draft",
+        org_id: "00000000-0000-0000-0000-000000000000", // Will be set by RLS
+      })
 
       if (error) throw error
+      if (!data) throw new Error("No data returned from insert")
 
+      // Add the new job to state with null relations (router.refresh will fetch complete data)
+      const newJob = {
+        ...(data as Record<string, unknown>),
+        departments: formData.department_id
+          ? departments.find((d) => d.id === formData.department_id) || null
+          : null,
+        job_locations: formData.location_id
+          ? locations.find((l) => l.id === formData.location_id) || null
+          : null,
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setJobs([data as any, ...jobs])
+      setJobs([newJob as any, ...jobs])
       setIsCreateOpen(false)
       resetForm()
       toast.success("Job created successfully")
@@ -209,17 +211,16 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
   const handleStatusChange = async (job: Job, newStatus: string) => {
     try {
-      const supabase = createClient()
       const updateData: any = { status: newStatus }
 
       if (newStatus === "open" && !job.published_at) {
         updateData.published_at = new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from("jobs")
-        .update(updateData)
-        .eq("id", job.id)
+      const { error } = await supabaseUpdate("jobs", updateData, {
+        column: "id",
+        value: job.id,
+      })
 
       if (error) throw error
 
@@ -235,8 +236,10 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
     if (!confirm(`Are you sure you want to delete "${job.title}"?`)) return
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from("jobs").delete().eq("id", job.id)
+      const { error } = await supabaseDelete("jobs", {
+        column: "id",
+        value: job.id,
+      })
 
       if (error) throw error
 

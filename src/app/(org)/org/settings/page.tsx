@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -144,15 +145,30 @@ export default function OrgSettingsPage() {
     try {
       const entries = Object.entries(settings)
       for (const [key, value] of entries) {
-        const { error } = await supabase.from("platform_settings").upsert(
-          {
-            key: `org_settings_${key}`,
-            value: JSON.stringify(value),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
+        const settingKey = `org_settings_${key}`
+        const settingData = {
+          key: settingKey,
+          value: JSON.stringify(value),
+          updated_at: new Date().toISOString(),
+        }
+
+        // Try update first (for existing settings)
+        const { data: updateData, error: updateError } = await supabaseUpdate(
+          "platform_settings",
+          { value: settingData.value, updated_at: settingData.updated_at },
+          { column: "key", value: settingKey }
         )
-        if (error) throw error
+
+        if (updateError) throw updateError
+
+        // If no row was updated (data is undefined/null), insert instead
+        if (!updateData) {
+          const { error: insertError } = await supabaseInsert(
+            "platform_settings",
+            settingData
+          )
+          if (insertError) throw insertError
+        }
       }
 
       toast.success("Settings saved successfully")

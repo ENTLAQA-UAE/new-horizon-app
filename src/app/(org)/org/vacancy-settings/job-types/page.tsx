@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -113,19 +114,16 @@ export default function JobTypesPage() {
     setIsSaving(true)
     try {
       if (editingType) {
-        const { error } = await supabase
-          .from("job_types")
-          .update({
-            name: formData.name,
-            name_ar: formData.name_ar || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingType.id)
+        const { error } = await supabaseUpdate('job_types', {
+          name: formData.name,
+          name_ar: formData.name_ar || null,
+          updated_at: new Date().toISOString(),
+        }, { column: 'id', value: editingType.id })
 
         if (error) throw error
         toast.success("Job type updated successfully")
       } else {
-        const { error } = await supabase.from("job_types").insert({
+        const { error } = await supabaseInsert('job_types', {
           org_id: organizationId,
           name: formData.name,
           name_ar: formData.name_ar || null,
@@ -148,10 +146,7 @@ export default function JobTypesPage() {
 
   const handleToggleActive = async (type: JobType) => {
     try {
-      const { error } = await supabase
-        .from("job_types")
-        .update({ is_active: !type.is_active })
-        .eq("id", type.id)
+      const { error } = await supabaseUpdate('job_types', { is_active: !type.is_active }, { column: 'id', value: type.id })
 
       if (error) throw error
       setJobTypes(jobTypes.map(t => t.id === type.id ? { ...t, is_active: !t.is_active } : t))
@@ -171,10 +166,7 @@ export default function JobTypesPage() {
 
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from("job_types")
-        .delete()
-        .eq("id", deletingType.id)
+      const { error } = await supabaseDelete('job_types', { column: 'id', value: deletingType.id })
 
       if (error) throw error
       toast.success("Job type deleted successfully")

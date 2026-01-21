@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -117,20 +118,21 @@ export default function JobGradesPage() {
     setIsSaving(true)
     try {
       if (editingGrade) {
-        const { error } = await supabase
-          .from("job_grades")
-          .update({
+        const { error } = await supabaseUpdate(
+          "job_grades",
+          {
             name: formData.name,
             name_ar: formData.name_ar || null,
             level: formData.level,
             updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingGrade.id)
+          },
+          { column: "id", value: editingGrade.id }
+        )
 
         if (error) throw error
         toast.success("Job grade updated successfully")
       } else {
-        const { error } = await supabase.from("job_grades").insert({
+        const { error } = await supabaseInsert("job_grades", {
           org_id: organizationId,
           name: formData.name,
           name_ar: formData.name_ar || null,
@@ -154,10 +156,11 @@ export default function JobGradesPage() {
 
   const handleToggleActive = async (grade: JobGrade) => {
     try {
-      const { error } = await supabase
-        .from("job_grades")
-        .update({ is_active: !grade.is_active })
-        .eq("id", grade.id)
+      const { error } = await supabaseUpdate(
+        "job_grades",
+        { is_active: !grade.is_active },
+        { column: "id", value: grade.id }
+      )
 
       if (error) throw error
       setGrades(grades.map(g => g.id === grade.id ? { ...g, is_active: !g.is_active } : g))
@@ -177,10 +180,10 @@ export default function JobGradesPage() {
 
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from("job_grades")
-        .delete()
-        .eq("id", deletingGrade.id)
+      const { error } = await supabaseDelete(
+        "job_grades",
+        { column: "id", value: deletingGrade.id }
+      )
 
       if (error) throw error
       toast.success("Job grade deleted successfully")

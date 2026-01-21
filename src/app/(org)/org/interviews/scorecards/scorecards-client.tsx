@@ -424,36 +424,87 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("scorecard_templates")
-        .update({
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-          description_ar: formData.description_ar || null,
-          template_type: formData.template_type,
-          criteria: formData.criteria as unknown as Json,
-          rating_scale_type: formData.rating_scale_type,
-          rating_scale_labels: defaultRatingLabels[formData.rating_scale_type] as unknown as Json,
-          is_default: formData.is_default,
-          require_notes_per_criteria: formData.require_notes_per_criteria,
-        })
-        .eq("id", selectedTemplate.id)
-        .select()
-        .single()
+      // Get access token using the same method as handleCreate
+      let accessToken: string | null = null
 
-      if (error) {
-        toast.error(error.message)
+      try {
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("getSession timeout")), 3000)
+        )
+        const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
+        accessToken = sessionData?.session?.access_token || null
+      } catch {
+        // Fallback to cookies
+        try {
+          const cookies = document.cookie.split(';')
+          for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=')
+            if (name && name.startsWith('sb-') && name.endsWith('-auth-token')) {
+              let decoded = decodeURIComponent(value)
+              if (decoded.startsWith('base64-')) {
+                decoded = atob(decoded.replace('base64-', ''))
+              }
+              const parsed = JSON.parse(decoded)
+              accessToken = parsed?.access_token || null
+              if (accessToken) break
+            }
+          }
+        } catch (e) {
+          console.warn("Could not get token from cookies:", e)
+        }
+      }
+
+      if (!accessToken) {
+        toast.error("No active session. Please refresh the page and try again.")
         return
       }
 
-      setTemplates(templates.map((t) => (t.id === selectedTemplate.id ? data as unknown as ScorecardTemplate : t)))
+      const updateData = {
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+        description_ar: formData.description_ar || null,
+        template_type: formData.template_type,
+        criteria: formData.criteria,
+        rating_scale_type: formData.rating_scale_type,
+        rating_scale_labels: defaultRatingLabels[formData.rating_scale_type],
+        is_default: formData.is_default,
+        require_notes_per_criteria: formData.require_notes_per_criteria,
+      }
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/scorecard_templates?id=eq.${selectedTemplate.id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${accessToken}`,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(updateData),
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        toast.error(errorText || `HTTP ${response.status}`)
+        return
+      }
+
+      const data = await response.json()
+      const updatedTemplate = Array.isArray(data) ? data[0] : data
+
+      setTemplates(templates.map((t) => (t.id === selectedTemplate.id ? updatedTemplate as ScorecardTemplate : t)))
       setIsEditDialogOpen(false)
       setSelectedTemplate(null)
       resetForm()
       toast.success("Scorecard template updated successfully")
       router.refresh()
-    } catch {
+    } catch (err) {
+      console.error("Error updating scorecard:", err)
       toast.error("An unexpected error occurred")
     } finally {
       setIsLoading(false)
@@ -466,13 +517,57 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("scorecard_templates")
-        .delete()
-        .eq("id", selectedTemplate.id)
+      // Get access token
+      let accessToken: string | null = null
 
-      if (error) {
-        toast.error(error.message)
+      try {
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("getSession timeout")), 3000)
+        )
+        const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
+        accessToken = sessionData?.session?.access_token || null
+      } catch {
+        // Fallback to cookies
+        try {
+          const cookies = document.cookie.split(';')
+          for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=')
+            if (name && name.startsWith('sb-') && name.endsWith('-auth-token')) {
+              let decoded = decodeURIComponent(value)
+              if (decoded.startsWith('base64-')) {
+                decoded = atob(decoded.replace('base64-', ''))
+              }
+              const parsed = JSON.parse(decoded)
+              accessToken = parsed?.access_token || null
+              if (accessToken) break
+            }
+          }
+        } catch (e) {
+          console.warn("Could not get token from cookies:", e)
+        }
+      }
+
+      if (!accessToken) {
+        toast.error("No active session. Please refresh the page and try again.")
+        return
+      }
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/scorecard_templates?id=eq.${selectedTemplate.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        toast.error(errorText || `HTTP ${response.status}`)
         return
       }
 
@@ -481,7 +576,8 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
       setSelectedTemplate(null)
       toast.success("Scorecard template deleted successfully")
       router.refresh()
-    } catch {
+    } catch (err) {
+      console.error("Error deleting scorecard:", err)
       toast.error("An unexpected error occurred")
     } finally {
       setIsLoading(false)
@@ -492,33 +588,82 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
   const handleDuplicate = async (template: ScorecardTemplate) => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("scorecard_templates")
-        .insert({
-          org_id: organizationId,
-          name: `${template.name} (Copy)`,
-          name_ar: template.name_ar,
-          description: template.description,
-          description_ar: template.description_ar,
-          template_type: template.template_type,
-          criteria: template.criteria as unknown as Json,
-          rating_scale_type: template.rating_scale_type,
-          rating_scale_labels: template.rating_scale_labels as unknown as Json,
-          is_default: false,
-          require_notes_per_criteria: template.require_notes_per_criteria,
-        })
-        .select()
-        .single()
+      // Get access token
+      let accessToken: string | null = null
 
-      if (error) {
-        toast.error(error.message)
+      try {
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("getSession timeout")), 3000)
+        )
+        const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
+        accessToken = sessionData?.session?.access_token || null
+      } catch {
+        // Fallback to cookies
+        try {
+          const cookies = document.cookie.split(';')
+          for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=')
+            if (name && name.startsWith('sb-') && name.endsWith('-auth-token')) {
+              let decoded = decodeURIComponent(value)
+              if (decoded.startsWith('base64-')) {
+                decoded = atob(decoded.replace('base64-', ''))
+              }
+              const parsed = JSON.parse(decoded)
+              accessToken = parsed?.access_token || null
+              if (accessToken) break
+            }
+          }
+        } catch (e) {
+          console.warn("Could not get token from cookies:", e)
+        }
+      }
+
+      if (!accessToken) {
+        toast.error("No active session. Please refresh the page and try again.")
         return
       }
 
-      setTemplates([data as unknown as ScorecardTemplate, ...templates])
+      const insertData = {
+        org_id: organizationId,
+        name: `${template.name} (Copy)`,
+        name_ar: template.name_ar,
+        description: template.description,
+        description_ar: template.description_ar,
+        template_type: template.template_type,
+        criteria: template.criteria,
+        rating_scale_type: template.rating_scale_type,
+        rating_scale_labels: template.rating_scale_labels,
+        is_default: false,
+        require_notes_per_criteria: template.require_notes_per_criteria,
+      }
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const response = await fetch(`${supabaseUrl}/rest/v1/scorecard_templates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${accessToken}`,
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify(insertData),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        toast.error(errorText || `HTTP ${response.status}`)
+        return
+      }
+
+      const data = await response.json()
+      const createdTemplate = Array.isArray(data) ? data[0] : data
+
+      setTemplates([createdTemplate as ScorecardTemplate, ...templates])
       toast.success("Scorecard template duplicated")
       router.refresh()
-    } catch {
+    } catch (err) {
+      console.error("Error duplicating scorecard:", err)
       toast.error("An unexpected error occurred")
     } finally {
       setIsLoading(false)

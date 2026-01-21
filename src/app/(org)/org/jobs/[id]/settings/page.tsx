@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -293,18 +294,28 @@ export default function JobSettingsPage() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("job_recruiters")
-        .insert({
+      const { data, error } = await supabaseInsert<{ id: string; job_id: string; user_id: string; role: string }>(
+        "job_recruiters",
+        {
           job_id: jobId,
           user_id: selectedRecruiter,
           role: "recruiter",
-        })
-        .select("*, user:profiles(id, full_name, email, avatar_url, role)")
-        .single()
+        }
+      )
 
-      if (error) throw error
-      setJobRecruiters([...jobRecruiters, data])
+      if (error) throw new Error(error.message)
+
+      // Construct the full recruiter object with user data from availableTeam
+      const user = availableTeam.find(t => t.id === selectedRecruiter)
+      if (data && user) {
+        const newRecruiter: JobRecruiter = {
+          id: data.id,
+          user_id: data.user_id,
+          role: data.role,
+          user: user,
+        }
+        setJobRecruiters([...jobRecruiters, newRecruiter])
+      }
       setSelectedRecruiter("")
       toast.success("Recruiter added")
     } catch (error) {
@@ -315,12 +326,9 @@ export default function JobSettingsPage() {
   // Remove recruiter
   const handleRemoveRecruiter = async (recruiterId: string) => {
     try {
-      const { error } = await supabase
-        .from("job_recruiters")
-        .delete()
-        .eq("id", recruiterId)
+      const { error } = await supabaseDelete("job_recruiters", { column: "id", value: recruiterId })
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setJobRecruiters(jobRecruiters.filter(r => r.id !== recruiterId))
       toast.success("Recruiter removed")
     } catch (error) {
@@ -359,12 +367,13 @@ export default function JobSettingsPage() {
         .getPublicUrl(fileName)
 
       // Update job with thumbnail URL
-      const { error: updateError } = await supabase
-        .from('jobs')
-        .update({ thumbnail_url: publicUrl })
-        .eq('id', jobId)
+      const { error: updateError } = await supabaseUpdate(
+        'jobs',
+        { thumbnail_url: publicUrl },
+        { column: 'id', value: jobId }
+      )
 
-      if (updateError) throw updateError
+      if (updateError) throw new Error(updateError.message)
 
       setJob(prev => prev ? { ...prev, thumbnail_url: publicUrl } : null)
       toast.success("Thumbnail uploaded successfully")
@@ -379,12 +388,13 @@ export default function JobSettingsPage() {
   // Remove thumbnail
   const handleRemoveThumbnail = async () => {
     try {
-      const { error } = await supabase
-        .from('jobs')
-        .update({ thumbnail_url: null })
-        .eq('id', jobId)
+      const { error } = await supabaseUpdate(
+        'jobs',
+        { thumbnail_url: null },
+        { column: 'id', value: jobId }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setJob(prev => prev ? { ...prev, thumbnail_url: null } : null)
       toast.success("Thumbnail removed")
     } catch (error) {
@@ -396,8 +406,9 @@ export default function JobSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      // Save sections
-      await supabase.from("job_application_sections").delete().eq("job_id", jobId)
+      // Save sections - delete existing first
+      const { error: deleteSectionsError } = await supabaseDelete("job_application_sections", { column: "job_id", value: jobId })
+      if (deleteSectionsError) throw new Error(deleteSectionsError.message)
 
       const sectionsToInsert = jobSections.map((s, i) => ({
         job_id: jobId,
@@ -407,15 +418,17 @@ export default function JobSettingsPage() {
       }))
 
       if (sectionsToInsert.length > 0) {
-        const { error: sectionsError } = await supabase
-          .from("job_application_sections")
-          .insert(sectionsToInsert)
-
-        if (sectionsError) throw sectionsError
+        // Insert sections one by one using the new utility
+        const sectionInsertResults = await Promise.all(
+          sectionsToInsert.map(section => supabaseInsert("job_application_sections", section))
+        )
+        const sectionError = sectionInsertResults.find(r => r.error)
+        if (sectionError?.error) throw new Error(sectionError.error.message)
       }
 
-      // Save stages
-      await supabase.from("job_hiring_stages").delete().eq("job_id", jobId)
+      // Save stages - delete existing first
+      const { error: deleteStagesError } = await supabaseDelete("job_hiring_stages", { column: "job_id", value: jobId })
+      if (deleteStagesError) throw new Error(deleteStagesError.message)
 
       const stagesToInsert = jobStages.map((s, i) => ({
         job_id: jobId,
@@ -425,11 +438,12 @@ export default function JobSettingsPage() {
       }))
 
       if (stagesToInsert.length > 0) {
-        const { error: stagesError } = await supabase
-          .from("job_hiring_stages")
-          .insert(stagesToInsert)
-
-        if (stagesError) throw stagesError
+        // Insert stages one by one using the new utility
+        const stageInsertResults = await Promise.all(
+          stagesToInsert.map(stage => supabaseInsert("job_hiring_stages", stage))
+        )
+        const stageError = stageInsertResults.find(r => r.error)
+        if (stageError?.error) throw new Error(stageError.error.message)
       }
 
       toast.success("Settings saved successfully")
