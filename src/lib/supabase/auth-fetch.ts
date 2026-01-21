@@ -18,7 +18,7 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
  * Decode a JWT token to extract payload (without verification)
  * Used to get user ID from the access token
  */
-function decodeJwt(token: string): { sub?: string; [key: string]: unknown } | null {
+function decodeJwt(token: string): { sub?: string; exp?: number; [key: string]: unknown } | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
@@ -31,6 +31,17 @@ function decodeJwt(token: string): { sub?: string; [key: string]: unknown } | nu
     console.warn('[auth-fetch] Failed to decode JWT:', e)
     return null
   }
+}
+
+/**
+ * Check if a JWT token is expired
+ */
+function isTokenExpired(token: string): boolean {
+  const payload = decodeJwt(token)
+  if (!payload?.exp) return true // No expiration claim = treat as expired
+  // exp is in seconds, Date.now() is in milliseconds
+  // Add 30 second buffer to avoid edge cases
+  return (payload.exp * 1000) < (Date.now() + 30000)
 }
 
 /**
@@ -47,26 +58,38 @@ export async function getCurrentUserId(): Promise<string | null> {
 
 // Cache for access token to avoid repeated getSession timeouts
 let cachedAccessToken: string | null = null
-let tokenCacheTime: number = 0
-const TOKEN_CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Clear the token cache - call this on sign out
+ */
+export function clearTokenCache(): void {
+  cachedAccessToken = null
+  console.log("[auth-fetch] Token cache cleared")
+}
 
 /**
  * Get the access token from various sources with fallbacks
  *
  * IMPORTANT: Fast methods are tried first to avoid getSession() timeout delays.
  * The token is cached after retrieval to speed up subsequent calls.
+ * Tokens are validated for expiration before being returned.
  *
  * Order of attempts:
- * 1. Memory cache (fastest)
+ * 1. Memory cache (fastest) - only if not expired
  * 2. localStorage sb-*-auth-token pattern (fast)
  * 3. jadarat_pending_session in localStorage (fast)
  * 4. Cookies (fast)
  * 5. Supabase client getSession() with 3s timeout (slow - last resort)
  */
 export async function getAccessToken(): Promise<string | null> {
-  // Method 1: Check memory cache first (fastest)
-  if (cachedAccessToken && Date.now() - tokenCacheTime < TOKEN_CACHE_DURATION) {
+  // Method 1: Check memory cache first (fastest) - but validate it's not expired
+  if (cachedAccessToken && !isTokenExpired(cachedAccessToken)) {
     return cachedAccessToken
+  }
+
+  // Clear expired cache
+  if (cachedAccessToken) {
+    cachedAccessToken = null
   }
 
   let accessToken: string | null = null
@@ -82,10 +105,9 @@ export async function getAccessToken(): Promise<string | null> {
         if (storedData) {
           const parsed = JSON.parse(storedData)
           accessToken = parsed?.access_token || null
-          if (accessToken) {
+          if (accessToken && !isTokenExpired(accessToken)) {
             console.log("[auth-fetch] Token from localStorage sb-* pattern: found")
             cachedAccessToken = accessToken
-            tokenCacheTime = Date.now()
             return accessToken
           }
         }
@@ -100,10 +122,9 @@ export async function getAccessToken(): Promise<string | null> {
       if (pendingSession) {
         const parsed = JSON.parse(pendingSession)
         accessToken = parsed?.access_token || null
-        if (accessToken) {
+        if (accessToken && !isTokenExpired(accessToken)) {
           console.log("[auth-fetch] Token from jadarat_pending_session: found")
           cachedAccessToken = accessToken
-          tokenCacheTime = Date.now()
           return accessToken
         }
       }
@@ -124,10 +145,9 @@ export async function getAccessToken(): Promise<string | null> {
           }
           const parsed = JSON.parse(decoded)
           accessToken = parsed?.access_token || null
-          if (accessToken) {
+          if (accessToken && !isTokenExpired(accessToken)) {
             console.log("[auth-fetch] Token from cookie:", name)
             cachedAccessToken = accessToken
-            tokenCacheTime = Date.now()
             return accessToken
           }
         }
@@ -146,10 +166,9 @@ export async function getAccessToken(): Promise<string | null> {
     )
     const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
     accessToken = sessionData?.session?.access_token || null
-    if (accessToken) {
+    if (accessToken && !isTokenExpired(accessToken)) {
       console.log("[auth-fetch] Token from getSession: found")
       cachedAccessToken = accessToken
-      tokenCacheTime = Date.now()
       return accessToken
     }
   } catch (e) {
