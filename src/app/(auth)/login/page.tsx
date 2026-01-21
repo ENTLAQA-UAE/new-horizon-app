@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { createClient, resetSupabaseClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -153,11 +153,34 @@ function LoginPageContent() {
 
     const attemptLogin = async (retryCount: number): Promise<boolean> => {
       try {
+        // CRITICAL: Clear ALL auth-related storage first to ensure completely clean state
+        // This fixes the issue where re-login after signout fails
+        try {
+          // Clear pending session
+          localStorage.removeItem('jadarat_pending_session')
+
+          // Clear all Supabase storage
+          const localKeysToRemove = Object.keys(localStorage).filter(k =>
+            k.startsWith("sb-") || k.startsWith("jadarat_") || k.includes("supabase")
+          )
+          localKeysToRemove.forEach(k => localStorage.removeItem(k))
+
+          // Clear session storage
+          const sessionKeysToRemove = Object.keys(sessionStorage).filter(k =>
+            k.startsWith("sb-") || k.startsWith("jadarat_") || k.includes("supabase")
+          )
+          sessionKeysToRemove.forEach(k => sessionStorage.removeItem(k))
+        } catch (e) {
+          console.warn("Could not clear storage:", e)
+        }
+
+        // Reset the Supabase client singleton to ensure fresh state
+        resetSupabaseClient()
+
         const supabase = createClient()
 
-        // Sign out any existing session first to ensure clean state
-        // This is safer than clearing storage manually
-        await supabase.auth.signOut().catch(() => {})
+        // Sign out any existing session to ensure clean state
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
