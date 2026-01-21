@@ -36,6 +36,7 @@ GRANT EXECUTE ON FUNCTION public.get_user_org_id(UUID) TO authenticated;
 
 -- Update the VARCHAR signature (used by most existing policies)
 -- This function checks BOTH RBAC systems for compatibility
+-- Uses SECURITY DEFINER to bypass RLS and avoid recursion
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role_code VARCHAR, _org_id UUID DEFAULT NULL)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -45,45 +46,67 @@ SET search_path = public
 AS $$
 DECLARE
   v_has_role BOOLEAN := false;
+  v_has_role_column BOOLEAN := false;
+  v_has_role_id_column BOOLEAN := false;
 BEGIN
-  -- Method 1: Check simple user_roles table with role enum
-  BEGIN
-    SELECT EXISTS (
-      SELECT 1
-      FROM public.user_roles
-      WHERE user_id = _user_id
-      AND role::text = _role_code
-    ) INTO v_has_role;
+  -- First, check which columns exist to avoid runtime errors
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'user_roles'
+    AND column_name = 'role'
+  ) INTO v_has_role_column;
 
-    IF v_has_role THEN
-      RETURN true;
-    END IF;
-  EXCEPTION WHEN undefined_column OR undefined_table THEN
-    -- role column doesn't exist, try other method
-    NULL;
-  END;
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'user_roles'
+    AND column_name = 'role_id'
+  ) INTO v_has_role_id_column;
+
+  -- Method 1: Check simple user_roles table with role enum
+  IF v_has_role_column THEN
+    BEGIN
+      EXECUTE format(
+        'SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = $1 AND role::text = $2)'
+      ) INTO v_has_role USING _user_id, _role_code;
+
+      IF v_has_role THEN
+        RETURN true;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      -- Ignore any errors, continue to next method
+      NULL;
+    END;
+  END IF;
 
   -- Method 2: Check complex RBAC with role_id -> roles table
-  BEGIN
-    SELECT EXISTS (
-      SELECT 1
-      FROM public.user_roles ur
-      JOIN public.roles r ON ur.role_id = r.id
-      WHERE ur.user_id = _user_id
-      AND r.code = _role_code
-      AND r.is_active = true
-      AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
-      AND (_org_id IS NULL OR ur.org_id = _org_id)
-    ) INTO v_has_role;
+  IF v_has_role_id_column THEN
+    BEGIN
+      EXECUTE format(
+        'SELECT EXISTS (
+          SELECT 1 FROM public.user_roles ur
+          JOIN public.roles r ON ur.role_id = r.id
+          WHERE ur.user_id = $1
+          AND r.code = $2
+          AND r.is_active = true
+          AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
+          AND ($3 IS NULL OR ur.org_id = $3)
+        )'
+      ) INTO v_has_role USING _user_id, _role_code, _org_id;
 
-    IF v_has_role THEN
-      RETURN true;
-    END IF;
-  EXCEPTION WHEN undefined_column OR undefined_table THEN
-    -- role_id column or roles table doesn't exist
-    NULL;
-  END;
+      IF v_has_role THEN
+        RETURN true;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      -- Ignore any errors
+      NULL;
+    END;
+  END IF;
 
+  RETURN false;
+EXCEPTION WHEN OTHERS THEN
+  -- Catch any unexpected errors and return false
   RETURN false;
 END;
 $$;
