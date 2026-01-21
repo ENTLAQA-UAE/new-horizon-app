@@ -159,15 +159,96 @@ GRANT EXECUTE ON FUNCTION public.has_recruiter_access(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_interviewer_access(UUID) TO authenticated;
 
 -- =====================================================================
--- VERIFICATION COMMENT
+-- 7. NEW: has_org_access() - Check if user belongs to an organization
 -- =====================================================================
--- After running this migration, verify the fix by:
--- 1. Login as an HR user (not super_admin)
--- 2. Go to Interviews > Scorecards
--- 3. Create a new scorecard template
--- 4. The creation should complete without timeout
+CREATE OR REPLACE FUNCTION public.has_org_access(_user_id UUID, _org_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = _user_id
+    AND org_id = _org_id
+  )
+$$;
+
+GRANT EXECUTE ON FUNCTION public.has_org_access(UUID, UUID) TO authenticated;
+
+-- =====================================================================
+-- 8. NEW: get_user_roles_list() - Get all roles for a user as array
+-- =====================================================================
+CREATE OR REPLACE FUNCTION public.get_user_roles_list(_user_id UUID)
+RETURNS TEXT[]
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+  SELECT COALESCE(
+    ARRAY_AGG(role::text),
+    '{}'::TEXT[]
+  )
+  FROM public.user_roles
+  WHERE user_id = _user_id
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_user_roles_list(UUID) TO authenticated;
+
+-- =====================================================================
+-- Also grant to anon for public routes that need org checking
+-- =====================================================================
+GRANT EXECUTE ON FUNCTION public.get_user_org_id(UUID) TO anon;
+GRANT EXECUTE ON FUNCTION public.is_super_admin(UUID) TO anon;
+
+-- =====================================================================
+-- ROLE ACCESS MATRIX (for reference):
+-- =====================================================================
 --
--- If still timing out, check:
--- - SELECT * FROM pg_proc WHERE proname = 'has_role' to verify row_security setting
--- - Ensure the functions are owned by postgres (superuser)
+-- | Role            | ATS Core | Scorecards | Settings | Analytics |
+-- |-----------------|----------|------------|----------|-----------|
+-- | super_admin     | ALL      | ALL        | ALL      | ALL       |
+-- | org_admin       | READ     | READ       | ALL      | ALL       |
+-- | hr_manager      | ALL      | ALL        | READ     | READ      |
+-- | recruiter       | ALL      | READ       | READ     | READ      |
+-- | hiring_manager  | READ     | READ       | NO       | NO        |
+-- | interviewer     | READ     | OWN        | NO       | NO        |
+-- | employee        | SELF     | SELF       | NO       | NO        |
+--
+-- org_admin: Organization admin (settings, branding, team, integrations, analytics)
+--            NOT responsible for hiring operations (jobs, candidates)
+--
+-- hr_manager: HR operations lead (full ATS access, scorecards, offers)
+--
+-- ATS Core = jobs, candidates, applications, interviews, offers
+-- Scorecards = scorecard_templates, interview_scorecards, offer_templates
+-- Settings = departments, locations, pipeline_stages, integrations, branding
+-- =====================================================================
+
+-- =====================================================================
+-- VERIFICATION QUERIES
+-- =====================================================================
+-- Run these after migration to verify the fix:
+--
+-- -- Test all functions work without recursion/timeout
+-- SELECT has_role('YOUR_USER_ID'::uuid, 'org_admin');
+-- SELECT has_role('YOUR_USER_ID'::uuid, 'hr_manager');
+-- SELECT is_super_admin('YOUR_USER_ID'::uuid);
+-- SELECT has_hr_access('YOUR_USER_ID'::uuid);
+-- SELECT has_recruiter_access('YOUR_USER_ID'::uuid);
+-- SELECT get_user_org_id('YOUR_USER_ID'::uuid);
+-- SELECT get_user_roles_list('YOUR_USER_ID'::uuid);
+--
+-- -- Verify row_security=off is set on functions
+-- SELECT p.proname, p.prosecdef as security_definer, p.proconfig
+-- FROM pg_proc p
+-- JOIN pg_namespace n ON p.pronamespace = n.oid
+-- WHERE n.nspname = 'public'
+-- AND p.proname IN ('has_role', 'is_super_admin', 'has_hr_access',
+--                   'get_user_org_id', 'has_recruiter_access',
+--                   'has_interviewer_access', 'get_user_roles_list');
 -- =====================================================================
