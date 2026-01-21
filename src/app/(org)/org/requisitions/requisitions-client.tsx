@@ -114,6 +114,23 @@ const defaultJobTypes = [
   { value: "internship", label: "Internship" },
 ]
 
+// Available currencies (same as org settings)
+const currencies = [
+  { value: "SAR", label: "SAR - Saudi Riyal" },
+  { value: "AED", label: "AED - UAE Dirham" },
+  { value: "KWD", label: "KWD - Kuwaiti Dinar" },
+  { value: "QAR", label: "QAR - Qatari Riyal" },
+  { value: "BHD", label: "BHD - Bahraini Dinar" },
+  { value: "OMR", label: "OMR - Omani Rial" },
+  { value: "EGP", label: "EGP - Egyptian Pound" },
+  { value: "JOD", label: "JOD - Jordanian Dinar" },
+  { value: "USD", label: "USD - US Dollar" },
+  { value: "EUR", label: "EUR - Euro" },
+  { value: "GBP", label: "GBP - British Pound" },
+  { value: "INR", label: "INR - Indian Rupee" },
+  { value: "PKR", label: "PKR - Pakistani Rupee" },
+]
+
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   draft: { label: "Draft", color: "bg-gray-100 text-gray-800", icon: FileCheck },
   pending: { label: "Pending Approval", color: "bg-yellow-100 text-yellow-800", icon: Clock },
@@ -784,14 +801,15 @@ export function RequisitionsClient({
                   value={formData.salary_currency}
                   onValueChange={(value) => setFormData({ ...formData, salary_currency: value })}
                 >
-                  <SelectTrigger className="w-24">
+                  <SelectTrigger className="w-28">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SAR">SAR</SelectItem>
-                    <SelectItem value="AED">AED</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
+                    {currencies.map((currency) => (
+                      <SelectItem key={currency.value} value={currency.value}>
+                        {currency.value}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Input
