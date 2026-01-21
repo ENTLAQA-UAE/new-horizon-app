@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -146,7 +146,6 @@ const sourceOptions: { value: CandidateSource; label: string }[] = [
 
 export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }: CandidatesClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [candidates, setCandidates] = useState(initialCandidates)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -223,25 +222,21 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("candidates")
-        .insert({
-          org_id: orgId,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          phone: formData.phone || null,
-          city: formData.city || null,
-          country: formData.country || null,
-          nationality: formData.nationality || null,
-          current_title: formData.current_job_title || null,
-          current_company: formData.current_company || null,
-          years_of_experience: formData.years_of_experience || null,
-          skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source as CandidateSource,
-        })
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert("candidates", {
+        org_id: orgId,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        city: formData.city || null,
+        country: formData.country || null,
+        nationality: formData.nationality || null,
+        current_title: formData.current_job_title || null,
+        current_company: formData.current_company || null,
+        years_of_experience: formData.years_of_experience || null,
+        skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
+        source: formData.source as CandidateSource,
+      })
 
       if (error) {
         if (error.code === "23505") {
@@ -252,7 +247,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
         return
       }
 
-      setCandidates([data, ...candidates])
+      if (data) setCandidates([data, ...candidates])
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Candidate added successfully")
@@ -293,24 +288,21 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("candidates")
-        .update({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          phone: formData.phone || null,
-          city: formData.city || null,
-          country: formData.country || null,
-          nationality: formData.nationality || null,
-          current_title: formData.current_job_title || null,
-          current_company: formData.current_company || null,
-          years_of_experience: formData.years_of_experience || null,
-          skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source as CandidateSource,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedCandidate.id)
+      const { error } = await supabaseUpdate("candidates", {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        city: formData.city || null,
+        country: formData.country || null,
+        nationality: formData.nationality || null,
+        current_title: formData.current_job_title || null,
+        current_company: formData.current_company || null,
+        years_of_experience: formData.years_of_experience || null,
+        skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
+        source: formData.source as CandidateSource,
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: selectedCandidate.id })
 
       if (error) {
         toast.error(error.message)
@@ -357,10 +349,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("candidates")
-        .delete()
-        .eq("id", selectedCandidate.id)
+      const { error } = await supabaseDelete("candidates", { column: "id", value: selectedCandidate.id })
 
       if (error) {
         toast.error(error.message)

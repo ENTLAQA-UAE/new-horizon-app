@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -141,8 +141,6 @@ export function CareerPageBuilder({
   initialBlocks,
   jobsCount,
 }: CareerPageBuilderProps) {
-  const supabase = createClient()
-
   // Parse initial config
   const initialConfig = organization.career_page_config || {}
   const [blocks, setBlocks] = useState<CareerPageBlock[]>(() => {
@@ -260,33 +258,35 @@ export function CareerPageBuilder({
     setIsSaving(true)
     try {
       // Delete existing blocks
-      await supabase
-        .from("career_page_blocks")
-        .delete()
-        .eq("org_id", organization.id)
+      const { error: deleteError } = await supabaseDelete(
+        "career_page_blocks",
+        { column: "org_id", value: organization.id }
+      )
+
+      if (deleteError) throw deleteError
 
       // Insert new blocks
       if (blocks.length > 0) {
-        const { error: blocksError } = await supabase
-          .from("career_page_blocks")
-          .insert(
-            blocks.map((b, index) => ({
-              org_id: organization.id,
-              block_type: b.type,
-              block_order: index,
-              enabled: b.enabled,
-              content: b.content,
-              styles: b.styles,
-            }))
-          )
+        const insertPromises = blocks.map((b, index) =>
+          supabaseInsert("career_page_blocks", {
+            org_id: organization.id,
+            block_type: b.type,
+            block_order: index,
+            enabled: b.enabled,
+            content: b.content,
+            styles: b.styles,
+          })
+        )
 
+        const insertResults = await Promise.all(insertPromises)
+        const blocksError = insertResults.find(r => r.error)?.error
         if (blocksError) throw blocksError
       }
 
       // Update organization config
-      const { error: orgError } = await supabase
-        .from("organizations")
-        .update({
+      const { error: orgError } = await supabaseUpdate(
+        "organizations",
+        {
           career_page_config: {
             styles: pageStyles,
             settings: pageSettings,
@@ -294,8 +294,9 @@ export function CareerPageBuilder({
           primary_color: pageStyles.primaryColor,
           secondary_color: pageStyles.secondaryColor,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", organization.id)
+        },
+        { column: "id", value: organization.id }
+      )
 
       if (orgError) throw orgError
 
@@ -316,13 +317,14 @@ export function CareerPageBuilder({
       await handleSave()
 
       // Then toggle publish status
-      const { error } = await supabase
-        .from("organizations")
-        .update({
+      const { error } = await supabaseUpdate(
+        "organizations",
+        {
           career_page_published: !isPublished,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", organization.id)
+        },
+        { column: "id", value: organization.id }
+      )
 
       if (error) throw error
 

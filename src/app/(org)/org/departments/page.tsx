@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -54,7 +55,6 @@ interface Department {
 
 export default function DepartmentsPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [departments, setDepartments] = useState<Department[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -77,24 +77,25 @@ export default function DepartmentsPage() {
   useEffect(() => {
     async function fetchData() {
       // Get current user's organization
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single()
+      const { data: profile } = await supabaseSelect<{ org_id: string }>("profiles", {
+        select: "org_id",
+        filter: [{ column: "id", operator: "eq", value: user.id }],
+        single: true,
+      })
 
       const orgId = profile?.org_id
       if (orgId) {
         setOrganizationId(orgId)
       }
 
-      const { data, error } = await supabase
-        .from("departments")
-        .select("*")
-        .order("name")
+      const { data, error } = await supabaseSelect<Department[]>("departments", {
+        select: "*",
+        order: { column: "name", ascending: true },
+      })
 
       if (error) {
         console.error("Error fetching departments:", error)
@@ -106,7 +107,7 @@ export default function DepartmentsPage() {
     }
 
     fetchData()
-  }, [supabase])
+  }, [])
 
   const resetForm = () => {
     setFormData({ name: "", name_ar: "", description: "" })
@@ -126,24 +127,22 @@ export default function DepartmentsPage() {
 
     setIsSaving(true)
     try {
-      const { data, error } = await supabase
-        .from("departments")
-        .insert({
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-          is_active: true,
-          org_id: organizationId,
-        })
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert<Department>("departments", {
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+        is_active: true,
+        org_id: organizationId,
+      })
 
       if (error) {
         toast.error(error.message)
         return
       }
 
-      setDepartments([...departments, data])
+      if (data) {
+        setDepartments([...departments, data])
+      }
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Department created successfully")
@@ -173,14 +172,11 @@ export default function DepartmentsPage() {
 
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from("departments")
-        .update({
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          description: formData.description || null,
-        })
-        .eq("id", selectedDepartment.id)
+      const { error } = await supabaseUpdate("departments", {
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        description: formData.description || null,
+      }, { column: "id", value: selectedDepartment.id })
 
       if (error) {
         toast.error(error.message)
@@ -208,10 +204,10 @@ export default function DepartmentsPage() {
   // Toggle active status
   const toggleActive = async (dept: Department) => {
     try {
-      const { error } = await supabase
-        .from("departments")
-        .update({ is_active: !dept.is_active })
-        .eq("id", dept.id)
+      const { error } = await supabaseUpdate("departments",
+        { is_active: !dept.is_active },
+        { column: "id", value: dept.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -240,10 +236,7 @@ export default function DepartmentsPage() {
 
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from("departments")
-        .delete()
-        .eq("id", selectedDepartment.id)
+      const { error } = await supabaseDelete("departments", { column: "id", value: selectedDepartment.id })
 
       if (error) {
         toast.error(error.message)

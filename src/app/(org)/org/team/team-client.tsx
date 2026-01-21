@@ -3,7 +3,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -124,7 +124,6 @@ export function TeamClient({
   currentUserId,
 }: TeamClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [members, setMembers] = useState(initialMembers)
   const [invites, setInvites] = useState(initialInvites)
   const [searchQuery, setSearchQuery] = useState("")
@@ -198,19 +197,15 @@ export function TeamClient({
 
       const inviteCode = generateCode()
 
-      const { data, error } = await supabase
-        .from("team_invites")
-        .insert({
-          org_id: organizationId,
-          email: inviteForm.email.toLowerCase(),
-          role: inviteForm.role,
-          invite_code: inviteCode,
-          invited_by: currentUserId,
-          status: "pending",
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        })
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert<Invite>("team_invites", {
+        org_id: organizationId,
+        email: inviteForm.email.toLowerCase(),
+        role: inviteForm.role,
+        invite_code: inviteCode,
+        invited_by: currentUserId,
+        status: "pending",
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      })
 
       if (error) {
         // Handle specific database constraint errors
@@ -271,14 +266,15 @@ export function TeamClient({
 
       const newCode = generateCode()
 
-      const { error } = await supabase
-        .from("team_invites")
-        .update({
+      const { error } = await supabaseUpdate(
+        "team_invites",
+        {
           invite_code: newCode,
           status: "pending",
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        })
-        .eq("id", invite.id)
+        },
+        { column: "id", value: invite.id }
+      )
 
       if (error) throw error
 
@@ -296,10 +292,7 @@ export function TeamClient({
   // Cancel invite - delete instead of updating status to avoid unique constraint issues
   const cancelInvite = async (invite: Invite) => {
     try {
-      const { error } = await supabase
-        .from("team_invites")
-        .delete()
-        .eq("id", invite.id)
+      const { error } = await supabaseDelete("team_invites", { column: "id", value: invite.id })
 
       if (error) throw error
 
@@ -325,26 +318,27 @@ export function TeamClient({
 
     setIsLoading(true)
     try {
-      // Update role in user_roles table
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .upsert({
-          user_id: selectedMember.id,
-          org_id: organizationId,
-          role: editForm.role,
-        }, {
-          onConflict: "user_id,org_id"
-        })
+      // Update role in user_roles table (delete + insert to handle composite key)
+      await supabaseDelete("user_roles", [
+        { column: "user_id", value: selectedMember.id },
+        { column: "org_id", value: organizationId }
+      ])
+      const { error: roleError } = await supabaseInsert("user_roles", {
+        user_id: selectedMember.id,
+        org_id: organizationId,
+        role: editForm.role,
+      })
 
       if (roleError) throw roleError
 
       // Update department in profiles
       const newDepartment = editForm.department === "none" ? null : (editForm.department || null)
       if (newDepartment !== selectedMember.department) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ department: newDepartment })
-          .eq("id", selectedMember.id)
+        const { error: profileError } = await supabaseUpdate(
+          "profiles",
+          { department: newDepartment },
+          { column: "id", value: selectedMember.id }
+        )
 
         if (profileError) throw profileError
       }
@@ -374,10 +368,11 @@ export function TeamClient({
     }
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_active: !member.is_active })
-        .eq("id", member.id)
+      const { error } = await supabaseUpdate(
+        "profiles",
+        { is_active: !member.is_active },
+        { column: "id", value: member.id }
+      )
 
       if (error) throw error
 
@@ -408,19 +403,19 @@ export function TeamClient({
     setIsLoading(true)
     try {
       // Remove org_id from profile (removes from organization)
-      const { error } = await supabase
-        .from("profiles")
-        .update({ org_id: null })
-        .eq("id", selectedMember.id)
+      const { error } = await supabaseUpdate(
+        "profiles",
+        { org_id: null },
+        { column: "id", value: selectedMember.id }
+      )
 
       if (error) throw error
 
       // Remove role
-      await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", selectedMember.id)
-        .eq("org_id", organizationId)
+      await supabaseDelete("user_roles", [
+        { column: "user_id", value: selectedMember.id },
+        { column: "org_id", value: organizationId }
+      ])
 
       setMembers(members.filter((m) => m.id !== selectedMember.id))
       setIsDeleteDialogOpen(false)

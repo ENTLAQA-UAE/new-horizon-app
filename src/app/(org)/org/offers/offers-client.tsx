@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -177,7 +177,6 @@ export function OffersClient({
   organizationId,
 }: OffersClientProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [offers, setOffers] = useState(initialOffers)
   const [searchQuery, setSearchQuery] = useState("")
@@ -277,55 +276,45 @@ export function OffersClient({
 
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("offers")
-        .insert({
-          org_id: organizationId,
-          application_id: formData.application_id,
-          template_id: formData.template_id || null,
-          job_title: formData.job_title,
-          job_title_ar: formData.job_title_ar || null,
-          department: formData.department || null,
-          location: formData.location || null,
-          salary_amount: formData.salary_amount,
-          salary_currency: formData.salary_currency,
-          salary_period: formData.salary_period,
-          signing_bonus: formData.signing_bonus || null,
-          annual_bonus_percentage: formData.annual_bonus_percentage || null,
-          start_date: format(formData.start_date, "yyyy-MM-dd"),
-          offer_expiry_date: format(formData.offer_expiry_date, "yyyy-MM-dd"),
-          probation_period_months: formData.probation_period_months,
-          employment_type: formData.employment_type,
-          benefits: formData.benefits,
-          status: "draft",
-        })
-        .select(`
-          *,
-          applications (
-            id,
-            candidates (
-              id,
-              first_name,
-              last_name,
-              email,
-              phone,
-              current_title
-            ),
-            jobs (
-              id,
-              title,
-              title_ar
-            )
-          )
-        `)
-        .single()
+      const { data, error } = await supabaseInsert<Offer>("offers", {
+        org_id: organizationId,
+        application_id: formData.application_id,
+        template_id: formData.template_id || null,
+        job_title: formData.job_title,
+        job_title_ar: formData.job_title_ar || null,
+        department: formData.department || null,
+        location: formData.location || null,
+        salary_amount: formData.salary_amount,
+        salary_currency: formData.salary_currency,
+        salary_period: formData.salary_period,
+        signing_bonus: formData.signing_bonus || null,
+        annual_bonus_percentage: formData.annual_bonus_percentage || null,
+        start_date: format(formData.start_date, "yyyy-MM-dd"),
+        offer_expiry_date: format(formData.offer_expiry_date, "yyyy-MM-dd"),
+        probation_period_months: formData.probation_period_months,
+        employment_type: formData.employment_type,
+        benefits: formData.benefits,
+        status: "draft",
+      })
 
       if (error) {
         toast.error(error.message)
         return
       }
 
-      setOffers([data as unknown as Offer, ...offers])
+      if (data) {
+        // Find the application to attach nested data for display
+        const app = applications.find((a) => a.id === formData.application_id)
+        const offerWithRelations: Offer = {
+          ...data,
+          applications: app ? {
+            id: app.id,
+            candidates: app.candidates,
+            jobs: app.jobs,
+          } : null,
+        }
+        setOffers([offerWithRelations, ...offers])
+      }
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Offer created successfully")
@@ -341,15 +330,16 @@ export function OffersClient({
   const handleSendOffer = async (offerId: string) => {
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("offers")
-        .update({
+      const { error } = await supabaseUpdate(
+        "offers",
+        {
           status: "sent",
           sent_at: new Date().toISOString(),
-        })
-        .eq("id", offerId)
+        },
+        { column: "id", value: offerId }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setOffers(
         offers.map((o) =>
@@ -373,12 +363,9 @@ export function OffersClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("offers")
-        .delete()
-        .eq("id", selectedOffer.id)
+      const { error } = await supabaseDelete("offers", { column: "id", value: selectedOffer.id })
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setOffers(offers.filter((o) => o.id !== selectedOffer.id))
       setIsDeleteDialogOpen(false)

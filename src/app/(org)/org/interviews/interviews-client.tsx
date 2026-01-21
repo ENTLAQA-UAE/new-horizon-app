@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -160,7 +160,6 @@ export function InterviewsClient({
   organizationId,
 }: InterviewsClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const { generateInterviewQuestions, isLoading: isAILoading } = useAI()
 
   const [interviews, setInterviews] = useState(initialInterviews)
@@ -254,42 +253,20 @@ export function InterviewsClient({
       const scheduledAt = new Date(formData.scheduled_date)
       scheduledAt.setHours(hours, minutes, 0, 0)
 
-      const { data, error } = await supabase
-        .from("interviews")
-        .insert({
-          org_id: organizationId,
-          application_id: formData.application_id,
-          title: formData.title,
-          interview_type: formData.interview_type,
-          scheduled_at: scheduledAt.toISOString(),
-          duration_minutes: formData.duration_minutes,
-          timezone: formData.timezone,
-          location: formData.location || null,
-          meeting_link: formData.meeting_link || null,
-          interviewer_ids: formData.interviewer_ids,
-          internal_notes: formData.internal_notes || null,
-          status: "scheduled",
-        })
-        .select(`
-          *,
-          applications (
-            id,
-            candidates (
-              id,
-              first_name,
-              last_name,
-              email,
-              phone,
-              current_title
-            ),
-            jobs (
-              id,
-              title,
-              title_ar
-            )
-          )
-        `)
-        .single()
+      const { data, error } = await supabaseInsert<Interview>("interviews", {
+        org_id: organizationId,
+        application_id: formData.application_id,
+        title: formData.title,
+        interview_type: formData.interview_type,
+        scheduled_at: scheduledAt.toISOString(),
+        duration_minutes: formData.duration_minutes,
+        timezone: formData.timezone,
+        location: formData.location || null,
+        meeting_link: formData.meeting_link || null,
+        interviewer_ids: formData.interviewer_ids,
+        internal_notes: formData.internal_notes || null,
+        status: "scheduled",
+      })
 
       if (error) {
         toast.error(error.message)
@@ -364,10 +341,7 @@ export function InterviewsClient({
         updateData.cancelled_at = new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from("interviews")
-        .update(updateData)
-        .eq("id", interviewId)
+      const { error } = await supabaseUpdate("interviews", updateData, { column: "id", value: interviewId })
 
       if (error) {
         toast.error(error.message)

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -123,7 +124,6 @@ const sourceOptions = [
 
 export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: OrgCandidatesClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const { parseResume, isLoading: isAiLoading, error: aiError } = useAI()
   const [candidates, setCandidates] = useState(initialCandidates)
   const [searchQuery, setSearchQuery] = useState("")
@@ -215,24 +215,20 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
     setIsLoading(true)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase
-        .from("candidates")
-        .insert({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          phone: formData.phone || null,
-          city: formData.city || null,
-          country: formData.country || null,
-          nationality: formData.nationality || null,
-          current_title: formData.current_job_title || null,
-          current_company: formData.current_company || null,
-          years_of_experience: formData.years_of_experience || null,
-          skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
-        } as any)
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert<any>("candidates", {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        city: formData.city || null,
+        country: formData.country || null,
+        nationality: formData.nationality || null,
+        current_title: formData.current_job_title || null,
+        current_company: formData.current_company || null,
+        years_of_experience: formData.years_of_experience || null,
+        skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
+        source: formData.source as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
+      })
 
       if (error) {
         if (error.code === "23505") {
@@ -249,10 +245,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
         setIsUploadingResume(true)
         resumeUrl = await uploadResume(resumeFile, data.id)
         if (resumeUrl) {
-          await supabase
-            .from("candidates")
-            .update({ resume_url: resumeUrl })
-            .eq("id", data.id)
+          await supabaseUpdate("candidates", { resume_url: resumeUrl }, { column: "id", value: data.id })
           data.resume_url = resumeUrl
         }
         setIsUploadingResume(false)
@@ -301,25 +294,21 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
 
     setIsLoading(true)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase
-        .from("candidates")
-        .update({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          email: formData.email,
-          phone: formData.phone || null,
-          city: formData.city || null,
-          country: formData.country || null,
-          nationality: formData.nationality || null,
-          current_title: formData.current_job_title || null,
-          current_company: formData.current_company || null,
-          years_of_experience: formData.years_of_experience || null,
-          skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
-          source: formData.source as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq("id", selectedCandidate.id)
+      const { error } = await supabaseUpdate("candidates", {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        city: formData.city || null,
+        country: formData.country || null,
+        nationality: formData.nationality || null,
+        current_title: formData.current_job_title || null,
+        current_company: formData.current_company || null,
+        years_of_experience: formData.years_of_experience || null,
+        skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : null,
+        source: formData.source as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: selectedCandidate.id })
 
       if (error) {
         toast.error(error.message)
@@ -366,10 +355,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("candidates")
-        .delete()
-        .eq("id", selectedCandidate.id)
+      const { error } = await supabaseDelete("candidates", { column: "id", value: selectedCandidate.id })
 
       if (error) {
         toast.error(error.message)
@@ -391,10 +377,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
   // STATUS CHANGE
   const handleStatusChange = async (candidateId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from("candidates")
-        .update({ overall_status: newStatus, updated_at: new Date().toISOString() })
-        .eq("id", candidateId)
+      const { error } = await supabaseUpdate("candidates", {
+        overall_status: newStatus,
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: candidateId })
 
       if (error) {
         toast.error(error.message)
@@ -429,12 +415,14 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
     setIsLoading(true)
     try {
       // Check if application already exists
-      const { data: existingApp } = await supabase
-        .from("applications")
-        .select("id")
-        .eq("candidate_id", selectedCandidate.id)
-        .eq("job_id", selectedJobId)
-        .single()
+      const { data: existingApp } = await supabaseSelect<{ id: string }>("applications", {
+        select: "id",
+        filter: [
+          { column: "candidate_id", operator: "eq", value: selectedCandidate.id },
+          { column: "job_id", operator: "eq", value: selectedJobId },
+        ],
+        single: true,
+      })
 
       if (existingApp) {
         toast.error("This candidate has already applied to this job")
@@ -443,26 +431,23 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       }
 
       // Get the first stage (usually "new" or "applied")
-      const { data: stages } = await supabase
-        .from("pipeline_stages")
-        .select("id")
-        .order("sort_order", { ascending: true })
-        .limit(1)
+      const { data: stages } = await supabaseSelect<{ id: string }[]>("pipeline_stages", {
+        select: "id",
+        order: { column: "sort_order", ascending: true },
+        limit: 1,
+      })
 
-      const firstStageId = stages?.[0]?.id || null
+      const firstStageId = Array.isArray(stages) && stages.length > 0 ? stages[0].id : null
 
       // Create the application
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase
-        .from("applications")
-        .insert({
-          candidate_id: selectedCandidate.id,
-          job_id: selectedJobId,
-          stage_id: firstStageId,
-          status: "new",
-          source: (selectedCandidate.source || "direct") as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
-          applied_at: new Date().toISOString(),
-        } as any)
+      const { error } = await supabaseInsert("applications", {
+        candidate_id: selectedCandidate.id,
+        job_id: selectedJobId,
+        stage_id: firstStageId,
+        status: "new",
+        source: (selectedCandidate.source || "direct") as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
+        applied_at: new Date().toISOString(),
+      })
 
       if (error) {
         toast.error(error.message)
@@ -487,6 +472,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
   // Resume upload handler
   const uploadResume = async (file: File, candidateId: string): Promise<string | null> => {
     try {
+      const supabase = createClient()
       const fileExt = file.name.split(".").pop()
       const fileName = `${candidateId}-${Date.now()}.${fileExt}`
       const filePath = `${candidateId}/${fileName}`

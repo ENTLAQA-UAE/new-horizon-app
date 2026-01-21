@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -84,7 +84,6 @@ export function OrganizationsClient({
   tiers,
 }: OrganizationsClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [organizations, setOrganizations] = useState(initialOrganizations)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -163,9 +162,9 @@ export function OrganizationsClient({
       const slug = generateSlug(newOrg.name)
       const selectedTier = tiers.find(t => t.id === newOrg.tier_id)
 
-      const { data, error } = await supabase
-        .from("organizations")
-        .insert({
+      const { data, error } = await supabaseInsert<Organization>(
+        "organizations",
+        {
           name: newOrg.name,
           name_ar: newOrg.name_ar || null,
           slug,
@@ -181,9 +180,8 @@ export function OrganizationsClient({
           max_users: selectedTier?.max_users || 5,
           max_jobs: selectedTier?.max_jobs || 10,
           max_candidates: selectedTier?.max_candidates || 100,
-        })
-        .select(`*, subscription_tiers (id, name, name_ar, price_monthly)`)
-        .single()
+        }
+      )
 
       if (error) {
         if (error.code === "23505") {
@@ -194,7 +192,19 @@ export function OrganizationsClient({
         return
       }
 
-      setOrganizations([data, ...organizations])
+      if (data) {
+        // Add tier info from local tiers array
+        const orgWithTier = {
+          ...data,
+          subscription_tiers: selectedTier ? {
+            id: selectedTier.id,
+            name: selectedTier.name,
+            name_ar: selectedTier.name_ar,
+            price_monthly: selectedTier.price_monthly,
+          } : null,
+        }
+        setOrganizations([orgWithTier as Organization, ...organizations])
+      }
       setIsCreateDialogOpen(false)
       setNewOrg({
         name: "",
@@ -237,9 +247,9 @@ export function OrganizationsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("organizations")
-        .update({
+      const { error } = await supabaseUpdate(
+        "organizations",
+        {
           name: editOrg.name,
           name_ar: editOrg.name_ar || null,
           slug: editOrg.slug,
@@ -249,8 +259,9 @@ export function OrganizationsClient({
           max_candidates: editOrg.max_candidates,
           saudization_enabled: editOrg.saudization_enabled,
           emiratization_enabled: editOrg.emiratization_enabled,
-        })
-        .eq("id", selectedOrg.id)
+        },
+        { column: "id", value: selectedOrg.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -292,15 +303,16 @@ export function OrganizationsClient({
     try {
       const selectedTier = tiers.find(t => t.id === newTierId)
 
-      const { error } = await supabase
-        .from("organizations")
-        .update({
+      const { error } = await supabaseUpdate(
+        "organizations",
+        {
           tier_id: newTierId,
           max_users: selectedTier?.max_users || 5,
           max_jobs: selectedTier?.max_jobs || 10,
           max_candidates: selectedTier?.max_candidates || 100,
-        })
-        .eq("id", selectedOrg.id)
+        },
+        { column: "id", value: selectedOrg.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -355,10 +367,10 @@ export function OrganizationsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("organizations")
-        .delete()
-        .eq("id", selectedOrg.id)
+      const { error } = await supabaseDelete(
+        "organizations",
+        { column: "id", value: selectedOrg.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -383,10 +395,11 @@ export function OrganizationsClient({
     newStatus: string
   ) => {
     try {
-      const { error } = await supabase
-        .from("organizations")
-        .update({ subscription_status: newStatus })
-        .eq("id", orgId)
+      const { error } = await supabaseUpdate(
+        "organizations",
+        { subscription_status: newStatus },
+        { column: "id", value: orgId }
+      )
 
       if (error) {
         toast.error(error.message)
