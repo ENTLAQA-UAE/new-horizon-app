@@ -3,7 +3,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -153,12 +153,12 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
   const toggleUserStatus = async (user: User) => {
     setIsLoading(true)
-    const supabase = createClient()
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_active: !user.is_active })
-      .eq("id", user.id)
+    const { error } = await supabaseUpdate(
+      "profiles",
+      { is_active: !user.is_active },
+      { column: "id", value: user.id }
+    )
 
     if (error) {
       toast.error("Failed to update user status")
@@ -175,14 +175,11 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     if (!selectedUser || !newRole) return
 
     setIsLoading(true)
-    const supabase = createClient()
 
-    const { error } = await supabase
-      .from("user_roles")
-      .insert({
-        user_id: selectedUser.id,
-        role: newRole,
-      })
+    const { error } = await supabaseInsert("user_roles", {
+      user_id: selectedUser.id,
+      role: newRole,
+    })
 
     if (error) {
       if (error.code === "23505") {
@@ -205,13 +202,11 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
   const removeRole = async (user: User, role: string) => {
     setIsLoading(true)
-    const supabase = createClient()
 
-    const { error } = await supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("role", role)
+    const { error } = await supabaseDelete("user_roles", [
+      { column: "user_id", value: user.id },
+      { column: "role", value: role },
+    ])
 
     if (error) {
       toast.error("Failed to remove role")
@@ -230,14 +225,14 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     if (!selectedUser) return
 
     setIsLoading(true)
-    const supabase = createClient()
 
     const orgId = selectedOrgId === "none" ? null : selectedOrgId
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ org_id: orgId })
-      .eq("id", selectedUser.id)
+    const { error } = await supabaseUpdate(
+      "profiles",
+      { org_id: orgId },
+      { column: "id", value: selectedUser.id }
+    )
 
     if (error) {
       toast.error("Failed to assign organization")

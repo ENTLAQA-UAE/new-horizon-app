@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -300,19 +301,16 @@ export default function BrandingPage() {
 
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from("organizations")
-        .update({
-          name: settings.company_name,
-          name_ar: settings.company_name_ar || null,
-          logo_url: settings.logo_url || null,
-          login_image_url: settings.login_image_url || null,
-          primary_color: settings.primary_color,
-          secondary_color: settings.secondary_color,
-          custom_domain: settings.website_url || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", organizationId)
+      const { error } = await supabaseUpdate("organizations", {
+        name: settings.company_name,
+        name_ar: settings.company_name_ar || null,
+        logo_url: settings.logo_url || null,
+        login_image_url: settings.login_image_url || null,
+        primary_color: settings.primary_color,
+        secondary_color: settings.secondary_color,
+        custom_domain: settings.website_url || null,
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: organizationId })
 
       if (error) throw error
 

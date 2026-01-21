@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseSelect, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -91,19 +92,19 @@ export default function OffersPage() {
       if (!user) return
 
       // Get candidate ID
-      const { data: candidate } = await supabase
-        .from("candidates")
-        .select("id")
-        .eq("email", user.email)
-        .single()
+      const { data: candidate } = await supabaseSelect<{ id: string }>("candidates", {
+        select: "id",
+        filter: [{ column: "email", operator: "eq", value: user.email! }],
+        single: true,
+      })
 
       if (!candidate) return
 
       // Get all application IDs for this candidate
-      const { data: applications } = await supabase
-        .from("applications")
-        .select("id")
-        .eq("candidate_id", candidate.id)
+      const { data: applications } = await supabaseSelect<{ id: string }[]>("applications", {
+        select: "id",
+        filter: [{ column: "candidate_id", operator: "eq", value: candidate.id }],
+      })
 
       if (!applications?.length) {
         setIsLoading(false)
@@ -113,36 +114,11 @@ export default function OffersPage() {
       const applicationIds = applications.map(a => a.id)
 
       // Fetch all offers for candidate's applications
-      const { data: offersData } = await supabase
-        .from("offers")
-        .select(`
-          id,
-          status,
-          job_title,
-          job_title_ar,
-          department,
-          location,
-          salary_amount,
-          salary_currency,
-          salary_period,
-          benefits,
-          start_date,
-          expiry_date,
-          offer_letter_url,
-          created_at,
-          accepted_at,
-          rejected_at,
-          applications (
-            jobs (
-              organizations:org_id (
-                name,
-                logo_url
-              )
-            )
-          )
-        `)
-        .in("application_id", applicationIds)
-        .order("created_at", { ascending: false })
+      const { data: offersData } = await supabaseSelect<Offer[]>("offers", {
+        select: `id,status,job_title,job_title_ar,department,location,salary_amount,salary_currency,salary_period,benefits,start_date,expiry_date,offer_letter_url,created_at,accepted_at,rejected_at,applications(jobs(organizations:org_id(name,logo_url)))`,
+        filter: [{ column: "application_id", operator: "in", value: `(${applicationIds.join(",")})` }],
+        order: { column: "created_at", ascending: false },
+      })
 
       setOffers(offersData || [])
     } catch (error) {
@@ -157,8 +133,6 @@ export default function OffersPage() {
 
     setIsSubmitting(true)
     try {
-      const supabase = createClient()
-
       const updateData: Record<string, any> = {
         status: responseType === "accept" ? "accepted" : "rejected",
         candidate_response_notes: responseNotes || null,
@@ -170,10 +144,11 @@ export default function OffersPage() {
         updateData.rejected_at = new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from("offers")
-        .update(updateData)
-        .eq("id", selectedOffer.id)
+      const { error } = await supabaseUpdate(
+        "offers",
+        updateData,
+        { column: "id", value: selectedOffer.id }
+      )
 
       if (error) throw error
 

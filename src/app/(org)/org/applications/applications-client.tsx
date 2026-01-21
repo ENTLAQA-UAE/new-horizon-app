@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -126,7 +126,6 @@ export function ApplicationsClient({
   stages,
 }: ApplicationsClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [applications, setApplications] = useState(initialApplications)
   const [searchQuery, setSearchQuery] = useState("")
   const [stageFilter, setStageFilter] = useState<string>("all")
@@ -191,13 +190,14 @@ export function ApplicationsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("applications")
-        .update({
+      const { error } = await supabaseUpdate(
+        "applications",
+        {
           notes,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedApplication.id)
+        },
+        { column: "id", value: selectedApplication.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -229,10 +229,10 @@ export function ApplicationsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("applications")
-        .delete()
-        .eq("id", selectedApplication.id)
+      const { error } = await supabaseDelete(
+        "applications",
+        { column: "id", value: selectedApplication.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -262,13 +262,14 @@ export function ApplicationsClient({
     )
 
     try {
-      const { error } = await supabase
-        .from("applications")
-        .update({
+      const { error } = await supabaseUpdate(
+        "applications",
+        {
           stage: newStage,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", applicationId)
+        },
+        { column: "id", value: applicationId }
+      )
 
       if (error) {
         // Revert on error

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseSelect, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -81,11 +82,11 @@ export default function ProfilePage() {
 
       if (!user) return
 
-      const { data: candidateData } = await supabase
-        .from("candidates")
-        .select("*")
-        .eq("email", user.email)
-        .single()
+      const { data: candidateData } = await supabaseSelect("candidates", {
+        select: "*",
+        filter: [{ column: "email", value: user.email }],
+        single: true,
+      })
 
       if (candidateData) {
         setCandidate(candidateData)
@@ -103,11 +104,9 @@ export default function ProfilePage() {
 
     setIsSaving(true)
     try {
-      const supabase = createClient()
-
-      const { error } = await supabase
-        .from("candidates")
-        .update({
+      const { error } = await supabaseUpdate(
+        "candidates",
+        {
           first_name: formData.first_name,
           last_name: formData.last_name,
           phone: formData.phone,
@@ -122,8 +121,9 @@ export default function ProfilePage() {
           languages: formData.languages,
           summary: formData.summary,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", candidate.id)
+        },
+        { column: "id", value: candidate.id }
+      )
 
       if (error) throw error
 

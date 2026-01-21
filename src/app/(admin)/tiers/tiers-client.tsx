@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -69,7 +69,6 @@ const defaultFeatures = {
 
 export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [tiers, setTiers] = useState(initialTiers)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -110,26 +109,24 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
 
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("subscription_tiers")
-        .insert({
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          price_monthly: formData.price_monthly,
-          price_yearly: formData.price_yearly,
-          max_jobs: formData.max_jobs,
-          max_users: formData.max_users,
-          max_candidates: formData.max_candidates,
-          features: formData.features,
-          sort_order: formData.sort_order,
-          is_active: true,
-        })
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert<SubscriptionTier>("subscription_tiers", {
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        price_monthly: formData.price_monthly,
+        price_yearly: formData.price_yearly,
+        max_jobs: formData.max_jobs,
+        max_users: formData.max_users,
+        max_candidates: formData.max_candidates,
+        features: formData.features,
+        sort_order: formData.sort_order,
+        is_active: true,
+      })
 
       if (error) throw error
 
-      setTiers([...tiers, data])
+      if (data) {
+        setTiers([...tiers, data])
+      }
       setIsCreateOpen(false)
       resetForm()
       toast.success("Subscription tier created successfully")
@@ -146,20 +143,17 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("subscription_tiers")
-        .update({
-          name: formData.name,
-          name_ar: formData.name_ar || null,
-          price_monthly: formData.price_monthly,
-          price_yearly: formData.price_yearly,
-          max_jobs: formData.max_jobs,
-          max_users: formData.max_users,
-          max_candidates: formData.max_candidates,
-          features: formData.features,
-          sort_order: formData.sort_order,
-        })
-        .eq("id", selectedTier.id)
+      const { error } = await supabaseUpdate("subscription_tiers", {
+        name: formData.name,
+        name_ar: formData.name_ar || null,
+        price_monthly: formData.price_monthly,
+        price_yearly: formData.price_yearly,
+        max_jobs: formData.max_jobs,
+        max_users: formData.max_users,
+        max_candidates: formData.max_candidates,
+        features: formData.features,
+        sort_order: formData.sort_order,
+      }, { column: "id", value: selectedTier.id })
 
       if (error) throw error
 
@@ -184,10 +178,10 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
 
   const handleToggleActive = async (tier: SubscriptionTier) => {
     try {
-      const { error } = await supabase
-        .from("subscription_tiers")
-        .update({ is_active: !tier.is_active })
-        .eq("id", tier.id)
+      const { error } = await supabaseUpdate("subscription_tiers",
+        { is_active: !tier.is_active },
+        { column: "id", value: tier.id }
+      )
 
       if (error) throw error
 
@@ -213,10 +207,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
     if (!confirm(`Are you sure you want to delete "${tier.name}"?`)) return
 
     try {
-      const { error } = await supabase
-        .from("subscription_tiers")
-        .delete()
-        .eq("id", tier.id)
+      const { error } = await supabaseDelete("subscription_tiers", { column: "id", value: tier.id })
 
       if (error) throw error
 

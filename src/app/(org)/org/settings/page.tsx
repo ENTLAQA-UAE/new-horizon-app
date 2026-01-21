@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -84,7 +83,6 @@ const currencies = [
 ]
 
 export default function OrgSettingsPage() {
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [settings, setSettings] = useState<OrgSettings>({
@@ -107,10 +105,10 @@ export default function OrgSettingsPage() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const { data, error } = await supabase
-          .from("platform_settings")
-          .select("*")
-          .like("key", "org_settings_%")
+        const { data, error } = await supabaseSelect<any[]>("platform_settings", {
+          select: "*",
+          filter: [{ column: "key", operator: "like", value: "org_settings_%" }]
+        })
 
         if (error) throw error
 
@@ -138,7 +136,7 @@ export default function OrgSettingsPage() {
     }
 
     loadSettings()
-  }, [supabase])
+  }, [])
 
   const handleSave = async () => {
     setIsSaving(true)

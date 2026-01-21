@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseSelect, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -131,40 +132,33 @@ export default function ApplicationsPage() {
 
       if (!user) return
 
-      // Get candidate ID
-      const { data: candidate } = await supabase
-        .from("candidates")
-        .select("id")
-        .eq("email", user.email)
-        .single()
+      // Get candidate ID using auth-fetch
+      const { data: candidate, error: candidateError } = await supabaseSelect<{ id: string }>(
+        "candidates",
+        {
+          select: "id",
+          filter: [{ column: "email", operator: "eq", value: user.email }],
+          single: true
+        }
+      )
 
-      if (!candidate) return
+      if (candidateError || !candidate) return
 
-      // Fetch all applications
-      const { data: apps } = await supabase
-        .from("applications")
-        .select(`
-          id,
-          status,
-          applied_at,
-          cover_letter,
-          jobs (
-            id,
-            title,
-            job_type,
-            is_remote,
-            organizations:org_id (
-              name,
-              logo_url
-            ),
-            job_locations:location_id (
-              name,
-              city
-            )
-          )
-        `)
-        .eq("candidate_id", candidate.id)
-        .order("applied_at", { ascending: false })
+      // Fetch all applications using auth-fetch
+      const { data: apps, error: appsError } = await supabaseSelect<Application[]>(
+        "applications",
+        {
+          select: `id,status,applied_at,cover_letter,jobs(id,title,job_type,is_remote,organizations:org_id(name,logo_url),job_locations:location_id(name,city))`,
+          filter: [{ column: "candidate_id", operator: "eq", value: candidate.id }],
+          order: { column: "applied_at", ascending: false }
+        }
+      )
+
+      if (appsError) {
+        console.error("Error loading applications:", appsError)
+        toast.error("Failed to load applications")
+        return
+      }
 
       setApplications(apps || [])
     } catch (error) {
@@ -200,13 +194,13 @@ export default function ApplicationsPage() {
 
     setIsWithdrawing(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("applications")
-        .update({ status: "withdrawn" })
-        .eq("id", selectedApp.id)
+      const { error } = await supabaseUpdate(
+        "applications",
+        { status: "withdrawn" },
+        { column: "id", value: selectedApp.id }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       toast.success("Application withdrawn successfully")
       setWithdrawDialogOpen(false)

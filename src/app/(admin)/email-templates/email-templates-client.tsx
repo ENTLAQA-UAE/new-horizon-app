@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -174,7 +174,6 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
     }
 
     setIsLoading(true)
-    const supabase = createClient()
 
     const templateData = {
       name: formData.name,
@@ -189,10 +188,7 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
 
     if (selectedTemplate) {
       // Update
-      const { error } = await supabase
-        .from("email_templates")
-        .update(templateData)
-        .eq("id", selectedTemplate.id)
+      const { error } = await supabaseUpdate("email_templates", templateData, { column: "id", value: selectedTemplate.id })
 
       if (error) {
         toast.error("Failed to update template")
@@ -205,16 +201,12 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
       }
     } else {
       // Create
-      const { data, error } = await supabase
-        .from("email_templates")
-        .insert(templateData)
-        .select()
-        .single()
+      const { data, error } = await supabaseInsert("email_templates", templateData)
 
       if (error) {
         toast.error("Failed to create template")
-      } else {
-        setTemplates([...templates, data])
+      } else if (data) {
+        setTemplates([...templates, data as EmailTemplate])
         toast.success("Template created successfully")
         setIsEditOpen(false)
       }
@@ -224,12 +216,7 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
   }
 
   const toggleActive = async (template: EmailTemplate) => {
-    const supabase = createClient()
-
-    const { error } = await supabase
-      .from("email_templates")
-      .update({ is_active: !template.is_active })
-      .eq("id", template.id)
+    const { error } = await supabaseUpdate("email_templates", { is_active: !template.is_active }, { column: "id", value: template.id })
 
     if (error) {
       toast.error("Failed to update template status")
@@ -242,28 +229,22 @@ export function EmailTemplatesClient({ initialTemplates }: EmailTemplatesClientP
   }
 
   const duplicateTemplate = async (template: EmailTemplate) => {
-    const supabase = createClient()
-
-    const { data, error } = await supabase
-      .from("email_templates")
-      .insert({
-        name: `${template.name} (Copy)`,
-        slug: `${template.slug}-copy-${Date.now()}`,
-        subject: template.subject,
-        subject_ar: template.subject_ar,
-        body_html: template.body_html,
-        body_html_ar: template.body_html_ar,
-        variables: template.variables,
-        category: template.category,
-        is_active: false,
-      })
-      .select()
-      .single()
+    const { data, error } = await supabaseInsert("email_templates", {
+      name: `${template.name} (Copy)`,
+      slug: `${template.slug}-copy-${Date.now()}`,
+      subject: template.subject,
+      subject_ar: template.subject_ar,
+      body_html: template.body_html,
+      body_html_ar: template.body_html_ar,
+      variables: template.variables,
+      category: template.category,
+      is_active: false,
+    })
 
     if (error) {
       toast.error("Failed to duplicate template")
-    } else {
-      setTemplates([...templates, data])
+    } else if (data) {
+      setTemplates([...templates, data as EmailTemplate])
       toast.success("Template duplicated successfully")
     }
   }

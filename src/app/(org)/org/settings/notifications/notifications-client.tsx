@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -92,8 +92,6 @@ export function NotificationSettingsClient({
   defaultTemplates,
   teamMembers,
 }: NotificationSettingsClientProps) {
-  const supabase = createClient()
-
   const [searchQuery, setSearchQuery] = useState("")
   const [activeCategory, setActiveCategory] = useState<NotificationCategory | "all">("all")
   const [settings, setSettings] = useState<OrgNotificationSetting[]>(initialSettings)
@@ -162,10 +160,11 @@ export function NotificationSettingsClient({
     try {
       if (existingSetting) {
         // Update existing setting
-        const { error } = await supabase
-          .from("org_notification_settings")
-          .update({ enabled: newEnabled })
-          .eq("id", existingSetting.id)
+        const { error } = await supabaseUpdate(
+          "org_notification_settings",
+          { enabled: newEnabled },
+          { column: "id", value: existingSetting.id }
+        )
 
         if (error) throw error
 
@@ -176,18 +175,14 @@ export function NotificationSettingsClient({
         )
       } else {
         // Create new setting
-        const { data, error } = await supabase
-          .from("org_notification_settings")
-          .insert({
-            org_id: organization.id,
-            event_id: event.id,
-            enabled: false,
-            channels: event.default_channels,
-            audience_roles: [],
-            audience_users: [],
-          })
-          .select()
-          .single()
+        const { data, error } = await supabaseInsert("org_notification_settings", {
+          org_id: organization.id,
+          event_id: event.id,
+          enabled: false,
+          channels: event.default_channels,
+          audience_roles: [],
+          audience_users: [],
+        })
 
         if (error) throw error
         setSettings([...settings, data])
@@ -211,14 +206,15 @@ export function NotificationSettingsClient({
 
     try {
       if (existingSetting) {
-        const { error } = await supabase
-          .from("org_notification_settings")
-          .update({
+        const { error } = await supabaseUpdate(
+          "org_notification_settings",
+          {
             channels,
             audience_roles: audienceRoles,
             audience_users: audienceUsers,
-          })
-          .eq("id", existingSetting.id)
+          },
+          { column: "id", value: existingSetting.id }
+        )
 
         if (error) throw error
 
@@ -230,18 +226,14 @@ export function NotificationSettingsClient({
           )
         )
       } else {
-        const { data, error } = await supabase
-          .from("org_notification_settings")
-          .insert({
-            org_id: organization.id,
-            event_id: eventId,
-            enabled: true,
-            channels,
-            audience_roles: audienceRoles,
-            audience_users: audienceUsers,
-          })
-          .select()
-          .single()
+        const { data, error } = await supabaseInsert("org_notification_settings", {
+          org_id: organization.id,
+          event_id: eventId,
+          enabled: true,
+          channels,
+          audience_roles: audienceRoles,
+          audience_users: audienceUsers,
+        })
 
         if (error) throw error
         setSettings([...settings, data])
@@ -267,15 +259,16 @@ export function NotificationSettingsClient({
 
     try {
       if (existingTemplate) {
-        const { error } = await supabase
-          .from("org_email_templates")
-          .update({
+        const { error } = await supabaseUpdate(
+          "org_email_templates",
+          {
             subject,
             subject_ar: subjectAr,
             body_html: bodyHtml,
             body_html_ar: bodyHtmlAr,
-          })
-          .eq("id", existingTemplate.id)
+          },
+          { column: "id", value: existingTemplate.id }
+        )
 
         if (error) throw error
 
@@ -287,18 +280,14 @@ export function NotificationSettingsClient({
           )
         )
       } else {
-        const { data, error } = await supabase
-          .from("org_email_templates")
-          .insert({
-            org_id: organization.id,
-            event_id: eventId,
-            subject,
-            subject_ar: subjectAr,
-            body_html: bodyHtml,
-            body_html_ar: bodyHtmlAr,
-          })
-          .select()
-          .single()
+        const { data, error } = await supabaseInsert("org_email_templates", {
+          org_id: organization.id,
+          event_id: eventId,
+          subject,
+          subject_ar: subjectAr,
+          body_html: bodyHtml,
+          body_html_ar: bodyHtmlAr,
+        })
 
         if (error) throw error
         setTemplates([...templates, data])

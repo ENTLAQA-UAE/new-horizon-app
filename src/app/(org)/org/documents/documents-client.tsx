@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -198,28 +199,22 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
         .getPublicUrl(filePath)
 
       // Create document record
-      const { data, error } = await supabase
-        .from("documents")
-        .insert({
-          org_id: organizationId,
-          name: formData.name,
-          description: formData.description || null,
-          file_url: urlData.publicUrl,
-          file_type: selectedFile.type,
-          file_size: selectedFile.size,
-          document_type: formData.document_type,
-          candidate_id: formData.candidate_id === "none" ? null : (formData.candidate_id || null),
-        })
-        .select(`
-          *,
-          candidates (id, first_name, last_name),
-          applications (id, jobs (title))
-        `)
-        .single()
+      const { data, error } = await supabaseInsert<Document>("documents", {
+        org_id: organizationId,
+        name: formData.name,
+        description: formData.description || null,
+        file_url: urlData.publicUrl,
+        file_type: selectedFile.type,
+        file_size: selectedFile.size,
+        document_type: formData.document_type,
+        candidate_id: formData.candidate_id === "none" ? null : (formData.candidate_id || null),
+      })
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
-      setDocuments([data, ...documents])
+      if (data) {
+        setDocuments([data, ...documents])
+      }
       setIsUploadOpen(false)
       resetForm()
       toast.success("Document uploaded successfully")
@@ -233,10 +228,7 @@ export function DocumentsClient({ documents: initialDocuments, candidates, organ
   }
 
   const handleDelete = async (documentId: string) => {
-    const { error } = await supabase
-      .from("documents")
-      .delete()
-      .eq("id", documentId)
+    const { error } = await supabaseDelete("documents", { column: "id", value: documentId })
 
     if (error) {
       toast.error("Failed to delete document")
