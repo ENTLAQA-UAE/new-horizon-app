@@ -295,10 +295,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (supabaseUrl && supabaseKey) {
         try {
           const profileStart = Date.now()
+
+          // Add timeout to profile fetch to prevent hanging
+          const profileController = new AbortController()
+          const profileTimeoutId = setTimeout(() => profileController.abort(), 10000)
+
           const profileResponse = await fetch(
             `${supabaseUrl}/rest/v1/profiles?select=id,email,first_name,last_name,avatar_url,org_id&id=eq.${user.id}`,
-            { headers: authHeaders }
+            { headers: authHeaders, signal: profileController.signal }
           )
+
+          clearTimeout(profileTimeoutId)
 
           console.log("AuthProvider: Profile fetch response:", {
             status: profileResponse.status,
@@ -312,12 +319,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
               console.log("AuthProvider: Profile loaded:", { id: profile.id, org_id: profile.org_id })
             } else {
               console.log("AuthProvider: No profile found for user")
+              profileError = {
+                code: "PROFILE_NOT_FOUND",
+                message: "User profile not found. Please contact support.",
+              }
             }
           } else {
             console.warn("AuthProvider: Profile fetch failed with status:", profileResponse.status)
+            profileError = {
+              code: "PROFILE_FETCH_ERROR",
+              message: "Failed to load user profile. Please try again.",
+              details: `Status: ${profileResponse.status}`
+            }
           }
         } catch (profileFetchErr) {
           console.error("AuthProvider: Profile fetch error:", profileFetchErr)
+          const isTimeout = profileFetchErr instanceof Error && profileFetchErr.name === 'AbortError'
+          profileError = {
+            code: isTimeout ? "NETWORK_ERROR" : "PROFILE_FETCH_ERROR",
+            message: isTimeout
+              ? "Profile loading timed out. Please check your connection and try again."
+              : "Failed to load user profile. Please try again.",
+            details: profileFetchErr instanceof Error ? profileFetchErr.message : String(profileFetchErr)
+          }
+        }
+      } else {
+        profileError = {
+          code: "UNKNOWN_ERROR",
+          message: "Missing Supabase configuration. Please contact support.",
         }
       }
 
@@ -344,10 +373,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (supabaseUrl && supabaseKey) {
         try {
           const rolesStart = Date.now()
+
+          // Add timeout to roles fetch to prevent hanging
+          const rolesController = new AbortController()
+          const rolesTimeoutId = setTimeout(() => rolesController.abort(), 10000)
+
           const rolesResponse = await fetch(
             `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${user.id}`,
-            { headers: authHeaders }
+            { headers: authHeaders, signal: rolesController.signal }
           )
+
+          clearTimeout(rolesTimeoutId)
 
           console.log("AuthProvider: Roles fetch response:", {
             status: rolesResponse.status,
@@ -366,7 +402,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.warn("AuthProvider: Roles fetch failed with status:", rolesResponse.status)
           }
         } catch (rolesFetchErr) {
-          console.error("AuthProvider: Roles fetch error:", rolesFetchErr)
+          const isTimeout = rolesFetchErr instanceof Error && rolesFetchErr.name === 'AbortError'
+          console.error("AuthProvider: Roles fetch error:", isTimeout ? "Timeout" : rolesFetchErr)
         }
       }
 
@@ -377,10 +414,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log("AuthProvider: Fetching organization:", profile.org_id)
         try {
           const orgStart = Date.now()
+
+          // Add timeout to org fetch to prevent hanging
+          const orgController = new AbortController()
+          const orgTimeoutId = setTimeout(() => orgController.abort(), 10000)
+
           const orgResponse = await fetch(
             `${supabaseUrl}/rest/v1/organizations?select=id,name,name_ar,slug,logo_url,primary_color,secondary_color&id=eq.${profile.org_id}`,
-            { headers: authHeaders }
+            { headers: authHeaders, signal: orgController.signal }
           )
+
+          clearTimeout(orgTimeoutId)
 
           console.log("AuthProvider: Org fetch response:", {
             status: orgResponse.status,
@@ -399,7 +443,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.warn("AuthProvider: Org fetch failed with status:", orgResponse.status)
           }
         } catch (orgFetchError) {
-          console.error("AuthProvider: Org fetch error:", orgFetchError)
+          const isTimeout = orgFetchError instanceof Error && orgFetchError.name === 'AbortError'
+          console.error("AuthProvider: Org fetch error:", isTimeout ? "Timeout" : orgFetchError)
         }
       } else if (!profile?.org_id) {
         console.log("AuthProvider: No org_id in profile, skipping org fetch")
