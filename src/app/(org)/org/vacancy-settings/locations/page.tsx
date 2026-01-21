@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,10 +63,24 @@ export default function LocationsPage() {
 
   const loadData = async () => {
     try {
-      // Get user's org_id from profiles using auth-fetch
+      // Get current user
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        console.error("No user found")
+        setIsLoading(false)
+        return
+      }
+
+      // Get user's org_id from profiles
       const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
         "profiles",
-        { select: "org_id", limit: 1 }
+        {
+          select: "org_id",
+          filter: [{ column: "id", operator: "eq", value: user.id }],
+          limit: 1
+        }
       )
 
       if (profileError || !profileData?.[0]?.org_id) {
