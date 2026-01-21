@@ -184,10 +184,11 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
       })
 
       if (error) throw error
+      if (!data) throw new Error("No data returned from insert")
 
       // Add the new job to state with null relations (router.refresh will fetch complete data)
       const newJob = {
-        ...data,
+        ...(data as Record<string, unknown>),
         departments: formData.department_id
           ? departments.find((d) => d.id === formData.department_id) || null
           : null,
