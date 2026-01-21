@@ -318,14 +318,18 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
           }
         }
 
-        // Method 3: Try cookies (Supabase SSR stores tokens here)
+        // Method 3: Try cookies (Supabase SSR stores tokens here as base64)
         if (!accessToken) {
           try {
             const cookies = document.cookie.split(';')
             for (const cookie of cookies) {
               const [name, value] = cookie.trim().split('=')
-              if (name.startsWith('sb-') && name.endsWith('-auth-token')) {
-                const decoded = decodeURIComponent(value)
+              if (name && name.startsWith('sb-') && name.endsWith('-auth-token')) {
+                let decoded = decodeURIComponent(value)
+                // Supabase SSR stores as base64-encoded JSON
+                if (decoded.startsWith('base64-')) {
+                  decoded = atob(decoded.replace('base64-', ''))
+                }
                 const parsed = JSON.parse(decoded)
                 accessToken = parsed?.access_token || null
                 if (accessToken) {
