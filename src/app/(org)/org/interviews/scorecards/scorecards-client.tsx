@@ -267,24 +267,48 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
       console.log("Creating scorecard template with data:", insertData)
 
-      // First, check if we have a valid session
+      // Get session with timeout - the Supabase client's getSession can hang
       console.log("Checking auth session...")
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      console.log("Session check result:", {
-        hasSession: !!sessionData?.session,
-        userId: sessionData?.session?.user?.id,
-        error: sessionError
-      })
+      let accessToken: string | null = null
 
-      if (!sessionData?.session) {
+      try {
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("getSession timeout")), 3000)
+        )
+        const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
+        accessToken = sessionData?.session?.access_token || null
+        console.log("Session from getSession:", accessToken ? "found" : "not found")
+      } catch (e) {
+        console.warn("getSession timed out, trying localStorage fallback")
+      }
+
+      // Fallback: try to get token from localStorage if getSession failed
+      if (!accessToken) {
+        try {
+          const storageKeys = Object.keys(localStorage).filter(
+            k => k.startsWith("sb-") && k.endsWith("-auth-token")
+          )
+          if (storageKeys.length > 0) {
+            const storedData = localStorage.getItem(storageKeys[0])
+            if (storedData) {
+              const parsed = JSON.parse(storedData)
+              accessToken = parsed?.access_token || null
+              console.log("Session from localStorage:", accessToken ? "found" : "not found")
+            }
+          }
+        } catch (e) {
+          console.warn("Could not get token from localStorage:", e)
+        }
+      }
+
+      if (!accessToken) {
         toast.error("No active session. Please refresh the page and try again.")
         return
       }
 
-      // Use direct fetch instead of Supabase client to bypass potential client issues
+      // Use direct fetch instead of Supabase client
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const accessToken = sessionData.session.access_token
-
       console.log("Making direct fetch request to Supabase...")
       const startTime = Date.now()
 
