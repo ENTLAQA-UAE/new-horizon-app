@@ -234,6 +234,10 @@ function LoginPageContent() {
 
         toast.success("Welcome back!")
 
+        // Wait a moment for Supabase to persist the session to localStorage
+        // This helps prevent race conditions where the redirect happens before persistence
+        await new Promise(resolve => setTimeout(resolve, 100))
+
         // Use full page reload to ensure completely fresh state
         window.location.href = "/"
         return true

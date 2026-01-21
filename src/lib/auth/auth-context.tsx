@@ -178,15 +178,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           // First try our pending session key (set by login page before redirect)
           // This handles the race condition where redirect happens before Supabase persists
+          // We keep this as a persistent backup - don't clear it immediately
           try {
             const pendingSession = localStorage.getItem('jadarat_pending_session')
             if (pendingSession) {
               const parsed = JSON.parse(pendingSession)
               if (parsed?.access_token && parsed?.user) {
-                console.log("AuthProvider: Found pending session from login, using it")
-                session = parsed as Session
-                // Clear it after use to avoid stale sessions
-                localStorage.removeItem('jadarat_pending_session')
+                // Check if token is not expired (with 30s buffer)
+                try {
+                  const payload = JSON.parse(atob(parsed.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+                  const isExpired = payload.exp && (payload.exp * 1000) < (Date.now() + 30000)
+                  if (!isExpired) {
+                    console.log("AuthProvider: Found pending session from login, using it")
+                    session = parsed as Session
+                    // Sync the session to Supabase client for consistency
+                    try {
+                      await supabase.auth.setSession({
+                        access_token: parsed.access_token,
+                        refresh_token: parsed.refresh_token || '',
+                      })
+                      console.log("AuthProvider: Session synced to Supabase client")
+                    } catch (setSessionError) {
+                      console.warn("AuthProvider: Could not sync session to client:", setSessionError)
+                    }
+                  } else {
+                    console.log("AuthProvider: Pending session expired, clearing it")
+                    localStorage.removeItem('jadarat_pending_session')
+                  }
+                } catch (decodeError) {
+                  console.warn("AuthProvider: Could not decode token for expiry check:", decodeError)
+                  // Still try to use the session
+                  session = parsed as Session
+                }
               }
             }
           } catch (pendingError) {
@@ -205,6 +228,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   if (parsed?.access_token && parsed?.user) {
                     console.log("AuthProvider: Found session in localStorage, using it")
                     session = parsed as Session
+                    // Sync the session to Supabase client for consistency
+                    try {
+                      await supabase.auth.setSession({
+                        access_token: parsed.access_token,
+                        refresh_token: parsed.refresh_token || '',
+                      })
+                      console.log("AuthProvider: Session synced to Supabase client")
+                    } catch (setSessionError) {
+                      console.warn("AuthProvider: Could not sync session to client:", setSessionError)
+                    }
                   }
                 }
               }
@@ -467,6 +500,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         primaryRole,
         needsOnboarding,
       })
+
+      // Save session to jadarat_pending_session as a backup for page refreshes
+      // This ensures we have a reliable fallback when getSession() times out
+      try {
+        localStorage.setItem('jadarat_pending_session', JSON.stringify(session))
+        console.log("AuthProvider: Session backed up to localStorage")
+      } catch (e) {
+        console.warn("AuthProvider: Could not backup session:", e)
+      }
 
       if (mountedRef.current) {
         setState({
