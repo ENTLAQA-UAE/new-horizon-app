@@ -1,0 +1,181 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import { Loader2, Sparkles } from "lucide-react"
+
+/**
+ * Root Redirect Page
+ *
+ * This page handles the post-login redirect logic:
+ * - super_admin users → /admin (admin dashboard)
+ * - org users with org_id → /org (organization dashboard)
+ * - users without org_id → /onboarding
+ * - unauthenticated users → /login
+ *
+ * This prevents race conditions by doing a single auth check
+ * and redirecting to the final destination immediately.
+ */
+export default function RootRedirectPage() {
+  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function determineRedirect() {
+      const supabase = createClient()
+
+      try {
+        // First try to get session from pending storage (set by login page)
+        let session = null
+        try {
+          const pendingSession = localStorage.getItem('jadarat_pending_session')
+          if (pendingSession) {
+            const parsed = JSON.parse(pendingSession)
+            if (parsed?.access_token && parsed?.user) {
+              console.log("RootRedirect: Found pending session from login")
+              session = parsed
+              // Clear pending session after use
+              localStorage.removeItem('jadarat_pending_session')
+            }
+          }
+        } catch (e) {
+          console.warn("RootRedirect: Could not read pending session:", e)
+        }
+
+        // If no pending session, try getSession with timeout
+        if (!session) {
+          try {
+            const sessionPromise = supabase.auth.getSession()
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("getSession timeout")), 5000)
+            )
+            const result = await Promise.race([sessionPromise, timeoutPromise])
+            session = result.data.session
+          } catch (e) {
+            console.warn("RootRedirect: getSession timed out, checking localStorage")
+
+            // Try Supabase's localStorage
+            const storageKeys = Object.keys(localStorage).filter(
+              k => k.startsWith("sb-") && k.endsWith("-auth-token")
+            )
+            if (storageKeys.length > 0) {
+              const storedData = localStorage.getItem(storageKeys[0])
+              if (storedData) {
+                const parsed = JSON.parse(storedData)
+                if (parsed?.access_token && parsed?.user) {
+                  session = parsed
+                }
+              }
+            }
+          }
+        }
+
+        if (!session?.user) {
+          console.log("RootRedirect: No session found, redirecting to login")
+          router.replace("/login")
+          return
+        }
+
+        console.log("RootRedirect: Session found for user:", session.user.id)
+
+        // Fetch user's roles and profile to determine redirect destination
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+        if (!supabaseUrl || !supabaseKey) {
+          console.error("RootRedirect: Missing Supabase configuration")
+          router.replace("/login")
+          return
+        }
+
+        const authHeaders = {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        }
+
+        // Fetch roles and profile in parallel
+        const [rolesResponse, profileResponse] = await Promise.all([
+          fetch(
+            `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${session.user.id}`,
+            { headers: authHeaders }
+          ),
+          fetch(
+            `${supabaseUrl}/rest/v1/profiles?select=id,org_id&id=eq.${session.user.id}`,
+            { headers: authHeaders }
+          )
+        ])
+
+        let roles: string[] = []
+        let orgId: string | null = null
+
+        if (rolesResponse.ok) {
+          const rolesData = await rolesResponse.json()
+          roles = rolesData.map((r: { role: string }) => r.role)
+          console.log("RootRedirect: User roles:", roles)
+        }
+
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json()
+          if (profileData && profileData.length > 0) {
+            orgId = profileData[0].org_id
+            console.log("RootRedirect: User org_id:", orgId)
+          }
+        }
+
+        // Determine redirect destination based on role and org_id
+        const isSuperAdmin = roles.includes("super_admin")
+
+        if (isSuperAdmin) {
+          console.log("RootRedirect: User is super_admin, redirecting to /admin")
+          router.replace("/admin")
+        } else if (orgId) {
+          console.log("RootRedirect: User has org_id, redirecting to /org")
+          router.replace("/org")
+        } else {
+          console.log("RootRedirect: User needs onboarding, redirecting to /onboarding")
+          router.replace("/onboarding")
+        }
+      } catch (err) {
+        console.error("RootRedirect: Error determining redirect:", err)
+        setError("Something went wrong. Please try logging in again.")
+        // Fallback to login after a delay
+        setTimeout(() => router.replace("/login"), 2000)
+      }
+    }
+
+    determineRedirect()
+  }, [router])
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+            style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
+          >
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
+          style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
+        >
+          <Sparkles className="w-8 h-8 text-white" />
+        </div>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Redirecting...</p>
+      </div>
+    </div>
+  )
+}
