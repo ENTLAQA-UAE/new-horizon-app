@@ -144,6 +144,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return null
   }
 
+  // Helper function to check if a JWT token is expired
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+      // exp is in seconds, Date.now() is in milliseconds. Add 30s buffer.
+      return payload.exp && (payload.exp * 1000) < (Date.now() + 30000)
+    } catch {
+      return true // Treat decode failures as expired
+    }
+  }
+
   // Main auth loading function - now accepts optional session from auth state change
   const loadAuth = useCallback(async (providedSession?: Session | null) => {
     // Prevent concurrent loads
@@ -162,121 +173,103 @@ export function AuthProvider({ children }: AuthProviderProps) {
       let session = providedSession ?? null
 
       if (!session) {
-        // Try getSession with a short timeout - it might hang if trying to refresh
-        console.log("AuthProvider: No session provided, trying getSession...")
+        // OPTIMIZATION: Check localStorage sources FIRST (fast) before calling getSession() (slow)
+        // This avoids the 3-second timeout delay when we already have a valid session in storage
+
+        // Method 1: Try jadarat_pending_session first (set by login page before redirect)
+        // This handles the race condition where redirect happens before Supabase persists
         try {
-          const getSessionPromise = supabase.auth.getSession()
-          const sessionTimeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("getSession timeout")), 3000)
-          )
+          const pendingSession = localStorage.getItem('jadarat_pending_session')
+          if (pendingSession) {
+            const parsed = JSON.parse(pendingSession)
+            if (parsed?.access_token && parsed?.user && !isTokenExpired(parsed.access_token)) {
+              console.log("AuthProvider: Found valid pending session from login, using it")
+              session = parsed as Session
+            } else if (parsed?.access_token && isTokenExpired(parsed.access_token)) {
+              console.log("AuthProvider: Pending session expired, clearing it")
+              localStorage.removeItem('jadarat_pending_session')
+            }
+          }
+        } catch (e) {
+          // Silent fail, try next method
+        }
 
-          const sessionResult = await Promise.race([getSessionPromise, sessionTimeoutPromise])
-          session = sessionResult.data.session
-          console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
-        } catch (sessionError) {
-          console.warn("AuthProvider: getSession timed out, trying to retrieve session from storage")
-
-          // First try our pending session key (set by login page before redirect)
-          // This handles the race condition where redirect happens before Supabase persists
-          // We keep this as a persistent backup - don't clear it immediately
+        // Method 2: Try Supabase's localStorage key (sb-<project-ref>-auth-token)
+        if (!session) {
           try {
-            const pendingSession = localStorage.getItem('jadarat_pending_session')
-            if (pendingSession) {
-              const parsed = JSON.parse(pendingSession)
-              if (parsed?.access_token && parsed?.user) {
-                // Check if token is not expired (with 30s buffer)
-                try {
-                  const payload = JSON.parse(atob(parsed.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-                  const isExpired = payload.exp && (payload.exp * 1000) < (Date.now() + 30000)
-                  if (!isExpired) {
-                    console.log("AuthProvider: Found pending session from login, using it")
-                    session = parsed as Session
-                    // Sync the session to Supabase client in background (don't block)
-                    // setSession can hang, so we fire-and-forget with a timeout
-                    // This is non-critical since we're already using the session directly
-                    const setSessionPromise = supabase.auth.setSession({
-                      access_token: parsed.access_token,
-                      refresh_token: parsed.refresh_token || '',
-                    })
-                    Promise.race([
-                      setSessionPromise,
-                      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
-                    ]).then(() => {
-                      console.log("AuthProvider: Session synced to Supabase client")
-                    }).catch(() => {
-                      // Non-critical: session is already being used directly
-                      console.log("AuthProvider: Background session sync skipped (timeout)")
-                    })
-                  } else {
-                    console.log("AuthProvider: Pending session expired, clearing it")
-                    localStorage.removeItem('jadarat_pending_session')
-                  }
-                } catch (decodeError) {
-                  console.warn("AuthProvider: Could not decode token for expiry check:", decodeError)
-                  // Still try to use the session
+            const storageKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
+            if (storageKeys.length > 0) {
+              const storedData = localStorage.getItem(storageKeys[0])
+              if (storedData) {
+                const parsed = JSON.parse(storedData)
+                if (parsed?.access_token && parsed?.user && !isTokenExpired(parsed.access_token)) {
+                  console.log("AuthProvider: Found valid session in Supabase localStorage, using it")
                   session = parsed as Session
                 }
               }
             }
-          } catch (pendingError) {
-            console.warn("AuthProvider: Could not retrieve pending session:", pendingError)
+          } catch (e) {
+            // Silent fail, try next method
           }
+        }
 
-          // If no pending session, try Supabase's localStorage key
-          // Supabase stores the session in localStorage with a key like sb-<project-ref>-auth-token
-          if (!session) {
-            try {
-              const storageKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
-              if (storageKeys.length > 0) {
-                const storedData = localStorage.getItem(storageKeys[0])
-                if (storedData) {
-                  const parsed = JSON.parse(storedData)
-                  if (parsed?.access_token && parsed?.user) {
-                    console.log("AuthProvider: Found session in localStorage, using it")
-                    session = parsed as Session
-                    // Sync the session to Supabase client in background (don't block)
-                    // This is non-critical since we're already using the session directly
-                    const setSessionPromise = supabase.auth.setSession({
-                      access_token: parsed.access_token,
-                      refresh_token: parsed.refresh_token || '',
-                    })
-                    Promise.race([
-                      setSessionPromise,
-                      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
-                    ]).then(() => {
-                      console.log("AuthProvider: Session synced to Supabase client")
-                    }).catch(() => {
-                      // Non-critical: session is already being used directly
-                      console.log("AuthProvider: Background session sync skipped (timeout)")
-                    })
-                  }
-                }
-              }
-            } catch (storageError) {
-              console.warn("AuthProvider: Could not retrieve session from storage:", storageError)
-            }
-          }
+        // Method 3: Only call getSession() if no valid localStorage session found
+        // This is the slow path (can timeout) so we try it last
+        if (!session) {
+          console.log("AuthProvider: No localStorage session found, trying getSession()...")
+          try {
+            const getSessionPromise = supabase.auth.getSession()
+            const sessionTimeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("getSession timeout")), 3000)
+            )
 
-          // If we still don't have a session, set unauthenticated state instead of leaving loading forever
-          if (!session) {
-            console.log("AuthProvider: No session available, setting unauthenticated state")
-            if (mountedRef.current) {
-              setState(prev => ({
-                ...prev,
-                isLoading: false,
-                isAuthenticated: false,
-                user: null,
-                session: null,
-                profile: null,
-                organization: null,
-                roles: [],
-                primaryRole: null,
-                error: null,
-              }))
-            }
-            loadingRef.current = false
-            return
+            const sessionResult = await Promise.race([getSessionPromise, sessionTimeoutPromise])
+            session = sessionResult.data.session
+            console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
+          } catch (sessionError) {
+            // getSession timed out - this is expected when Supabase client is slow
+            // We've already checked localStorage above, so if we're here, there's no session
+            console.log("AuthProvider: getSession timed out, no session available")
           }
+        }
+
+        // If we found a session from localStorage, sync to Supabase client in background
+        // This is non-blocking and non-critical since we're already using the session directly
+        if (session && !providedSession) {
+          const setSessionPromise = supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token || '',
+          })
+          Promise.race([
+            setSessionPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000))
+          ]).then(() => {
+            console.log("AuthProvider: Session synced to Supabase client")
+          }).catch(() => {
+            // Non-critical: session is already being used directly
+            // Don't log warning - this is expected behavior in some environments
+          })
+        }
+
+        // If we still don't have a session, set unauthenticated state
+        if (!session) {
+          console.log("AuthProvider: No session available, setting unauthenticated state")
+          if (mountedRef.current) {
+            setState(prev => ({
+              ...prev,
+              isLoading: false,
+              isAuthenticated: false,
+              user: null,
+              session: null,
+              profile: null,
+              organization: null,
+              roles: [],
+              primaryRole: null,
+              error: null,
+            }))
+          }
+          loadingRef.current = false
+          return
         }
       }
 
