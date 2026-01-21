@@ -176,6 +176,23 @@ const experienceLevels = [
   { value: "executive", label: "Executive" },
 ]
 
+// Available currencies (same as org settings and requisitions)
+const currencies = [
+  { value: "SAR", label: "SAR - Saudi Riyal" },
+  { value: "AED", label: "AED - UAE Dirham" },
+  { value: "KWD", label: "KWD - Kuwaiti Dinar" },
+  { value: "QAR", label: "QAR - Qatari Riyal" },
+  { value: "BHD", label: "BHD - Bahraini Dinar" },
+  { value: "OMR", label: "OMR - Omani Rial" },
+  { value: "EGP", label: "EGP - Egyptian Pound" },
+  { value: "JOD", label: "JOD - Jordanian Dinar" },
+  { value: "USD", label: "USD - US Dollar" },
+  { value: "EUR", label: "EUR - Euro" },
+  { value: "GBP", label: "GBP - British Pound" },
+  { value: "INR", label: "INR - Indian Rupee" },
+  { value: "PKR", label: "PKR - Pakistani Rupee" },
+]
+
 export function JobsClient({
   jobs: initialJobs,
   departments,
@@ -750,10 +767,11 @@ export function JobsClient({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="SAR">SAR</SelectItem>
-              <SelectItem value="AED">AED</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
+              {currencies.map((currency) => (
+                <SelectItem key={currency.value} value={currency.value}>
+                  {currency.value}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
