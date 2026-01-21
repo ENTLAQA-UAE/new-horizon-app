@@ -15,6 +15,37 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 /**
+ * Decode a JWT token to extract payload (without verification)
+ * Used to get user ID from the access token
+ */
+function decodeJwt(token: string): { sub?: string; [key: string]: unknown } | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = parts[1]
+    // Base64 decode (handle URL-safe base64)
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const decoded = atob(base64)
+    return JSON.parse(decoded)
+  } catch (e) {
+    console.warn('[auth-fetch] Failed to decode JWT:', e)
+    return null
+  }
+}
+
+/**
+ * Get the current user ID from the access token
+ * This avoids calling auth.getUser() which can hang
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+  const token = await getAccessToken()
+  if (!token) return null
+
+  const payload = decodeJwt(token)
+  return payload?.sub || null
+}
+
+/**
  * Get the access token from various sources with fallbacks
  *
  * Order of attempts:

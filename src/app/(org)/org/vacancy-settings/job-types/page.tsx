@@ -2,8 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect, getCurrentUserId } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,11 +56,10 @@ export default function JobTypesPage() {
 
   const loadData = async () => {
     try {
-      // Get current user
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      // Get current user ID from token (avoids getSession hang)
+      const userId = await getCurrentUserId()
 
-      if (!user) {
+      if (!userId) {
         console.error("No user found")
         setIsLoading(false)
         return
@@ -72,7 +70,7 @@ export default function JobTypesPage() {
         "profiles",
         {
           select: "org_id",
-          filter: [{ column: "id", operator: "eq", value: user.id }],
+          filter: [{ column: "id", operator: "eq", value: userId }],
           limit: 1
         }
       )
