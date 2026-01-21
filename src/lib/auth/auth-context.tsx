@@ -191,16 +191,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   if (!isExpired) {
                     console.log("AuthProvider: Found pending session from login, using it")
                     session = parsed as Session
-                    // Sync the session to Supabase client for consistency
-                    try {
-                      await supabase.auth.setSession({
-                        access_token: parsed.access_token,
-                        refresh_token: parsed.refresh_token || '',
-                      })
+                    // Sync the session to Supabase client in background (don't block)
+                    // setSession can hang, so we fire-and-forget with a short timeout
+                    const setSessionPromise = supabase.auth.setSession({
+                      access_token: parsed.access_token,
+                      refresh_token: parsed.refresh_token || '',
+                    })
+                    Promise.race([
+                      setSessionPromise,
+                      new Promise((_, reject) => setTimeout(() => reject(new Error("setSession timeout")), 2000))
+                    ]).then(() => {
                       console.log("AuthProvider: Session synced to Supabase client")
-                    } catch (setSessionError) {
-                      console.warn("AuthProvider: Could not sync session to client:", setSessionError)
-                    }
+                    }).catch((e) => {
+                      console.warn("AuthProvider: setSession timed out or failed:", e)
+                    })
                   } else {
                     console.log("AuthProvider: Pending session expired, clearing it")
                     localStorage.removeItem('jadarat_pending_session')
@@ -228,16 +232,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   if (parsed?.access_token && parsed?.user) {
                     console.log("AuthProvider: Found session in localStorage, using it")
                     session = parsed as Session
-                    // Sync the session to Supabase client for consistency
-                    try {
-                      await supabase.auth.setSession({
-                        access_token: parsed.access_token,
-                        refresh_token: parsed.refresh_token || '',
-                      })
+                    // Sync the session to Supabase client in background (don't block)
+                    const setSessionPromise = supabase.auth.setSession({
+                      access_token: parsed.access_token,
+                      refresh_token: parsed.refresh_token || '',
+                    })
+                    Promise.race([
+                      setSessionPromise,
+                      new Promise((_, reject) => setTimeout(() => reject(new Error("setSession timeout")), 2000))
+                    ]).then(() => {
                       console.log("AuthProvider: Session synced to Supabase client")
-                    } catch (setSessionError) {
-                      console.warn("AuthProvider: Could not sync session to client:", setSessionError)
-                    }
+                    }).catch((e) => {
+                      console.warn("AuthProvider: setSession timed out or failed:", e)
+                    })
                   }
                 }
               }
