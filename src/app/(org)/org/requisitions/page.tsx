@@ -60,6 +60,25 @@ export default async function RequisitionsPage() {
     .eq("is_active", true)
     .order("name")
 
+  // Get job types from org's configured job_types
+  const { data: jobTypes } = await supabase
+    .from("job_types")
+    .select("id, name, name_ar")
+    .eq("org_id", orgId)
+    .eq("is_active", true)
+    .order("name")
+
+  // Get org's default currency from settings
+  const { data: currencySetting } = await supabase
+    .from("platform_settings")
+    .select("value")
+    .eq("key", "org_settings_currency")
+    .single()
+
+  const defaultCurrency = currencySetting?.value
+    ? JSON.parse(currencySetting.value)
+    : "SAR"
+
   // Get team members for approvers
   const { data: teamMembers } = await supabase
     .from("profiles")
@@ -72,6 +91,8 @@ export default async function RequisitionsPage() {
       approvals={approvals || []}
       departments={departments || []}
       locations={locations || []}
+      jobTypes={jobTypes || []}
+      defaultCurrency={defaultCurrency}
       teamMembers={
         teamMembers?.map((m) => ({
           id: m.id,

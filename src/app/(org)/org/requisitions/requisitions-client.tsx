@@ -98,12 +98,15 @@ interface RequisitionsClientProps {
   approvals: RequisitionApproval[]
   departments: { id: string; name: string; name_ar: string | null }[]
   locations: { id: string; name: string; city: string }[]
+  jobTypes: { id: string; name: string; name_ar: string | null }[]
+  defaultCurrency: string
   teamMembers: { id: string; name: string }[]
   organizationId: string
   currentUserId: string
 }
 
-const jobTypes = [
+// Fallback job types if none configured
+const defaultJobTypes = [
   { value: "full_time", label: "Full Time" },
   { value: "part_time", label: "Part Time" },
   { value: "contract", label: "Contract" },
@@ -124,11 +127,18 @@ export function RequisitionsClient({
   approvals: initialApprovals,
   departments,
   locations,
+  jobTypes: orgJobTypes,
+  defaultCurrency,
   teamMembers,
   organizationId,
   currentUserId,
 }: RequisitionsClientProps) {
   const router = useRouter()
+
+  // Use org's configured job types or fallback to defaults
+  const jobTypes = orgJobTypes.length > 0
+    ? orgJobTypes.map(jt => ({ value: jt.id, label: jt.name }))
+    : defaultJobTypes
 
   const [requisitions, setRequisitions] = useState(initialRequisitions)
   const [approvals, setApprovals] = useState(initialApprovals)
@@ -150,11 +160,11 @@ export function RequisitionsClient({
     department_id: "",
     location_id: "",
     justification: "",
-    job_type: "full_time",
+    job_type: jobTypes[0]?.value || "full_time",
     positions_count: 1,
     salary_range_min: "",
     salary_range_max: "",
-    salary_currency: "SAR",
+    salary_currency: defaultCurrency || "SAR",
     approvers: [] as string[],
   })
 
@@ -193,11 +203,11 @@ export function RequisitionsClient({
       department_id: "",
       location_id: "",
       justification: "",
-      job_type: "full_time",
+      job_type: jobTypes[0]?.value || "full_time",
       positions_count: 1,
       salary_range_min: "",
       salary_range_max: "",
-      salary_currency: "SAR",
+      salary_currency: defaultCurrency || "SAR",
       approvers: [],
     })
     setEditingRequisition(null)

@@ -106,7 +106,11 @@ export default function JobTypesPage() {
   }
 
   const handleSave = async () => {
-    if (!formData.name || !organizationId) {
+    if (!organizationId) {
+      toast.error("Organization not found. Please refresh the page and try again.")
+      return
+    }
+    if (!formData.name) {
       toast.error("Please enter a job type name")
       return
     }
