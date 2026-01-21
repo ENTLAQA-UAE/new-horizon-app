@@ -550,6 +550,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     mountedRef.current = true
     const supabase = createClient()
 
+    // Safety timeout: if auth loading takes too long, set not authenticated
+    // This prevents infinite loading state
+    const safetyTimeoutId = setTimeout(() => {
+      // Use setState with callback to check current state (avoids stale closure)
+      setState(prev => {
+        if (mountedRef.current && prev.isLoading) {
+          console.warn("AuthProvider: Safety timeout reached, setting unauthenticated state")
+          loadingRef.current = false
+          return {
+            ...prev,
+            isLoading: false,
+            isAuthenticated: false,
+            error: {
+              code: "NETWORK_ERROR" as const,
+              message: "Authentication timed out. Please try logging in again.",
+            }
+          }
+        }
+        return prev
+      })
+    }, 20000) // 20 second maximum
+
     // Load auth on mount
     loadAuth()
 
@@ -596,6 +618,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       mountedRef.current = false
+      clearTimeout(safetyTimeoutId)
       subscription.unsubscribe()
     }
   }, [loadAuth])

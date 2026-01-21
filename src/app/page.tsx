@@ -22,6 +22,12 @@ export default function RootRedirectPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Safety timeout: if redirect takes too long, default to /org
+    const safetyTimeoutId = setTimeout(() => {
+      console.warn("RootRedirect: Safety timeout reached, defaulting to /org")
+      router.replace("/org")
+    }, 15000) // 15 second maximum
+
     async function determineRedirect() {
       const supabase = createClient()
 
@@ -149,6 +155,29 @@ export default function RootRedirectPage() {
       } catch (err) {
         console.error("RootRedirect: Error determining redirect:", err)
         const isTimeout = err instanceof Error && err.name === 'AbortError'
+
+        // CRITICAL FIX: If we have a valid session but fetches failed,
+        // default to /org instead of /login to prevent infinite redirect loop
+        // The org layout will handle proper auth checking
+        try {
+          const pendingSession = localStorage.getItem('jadarat_pending_session')
+          const storageKeys = Object.keys(localStorage).filter(
+            k => k.startsWith("sb-") && k.endsWith("-auth-token")
+          )
+          const hasSession = pendingSession || storageKeys.length > 0
+
+          if (hasSession) {
+            console.log("RootRedirect: Fetch failed but session exists, defaulting to /org")
+            // Clear the pending session since we're using it
+            localStorage.removeItem('jadarat_pending_session')
+            router.replace("/org")
+            return
+          }
+        } catch (storageErr) {
+          console.warn("RootRedirect: Could not check session storage:", storageErr)
+        }
+
+        // Only show error and redirect to login if no session exists
         const errorMessage = isTimeout
           ? "Connection timed out. Please check your internet and try again."
           : "Something went wrong. Please try logging in again."
@@ -158,7 +187,13 @@ export default function RootRedirectPage() {
       }
     }
 
-    determineRedirect()
+    determineRedirect().finally(() => {
+      clearTimeout(safetyTimeoutId)
+    })
+
+    return () => {
+      clearTimeout(safetyTimeoutId)
+    }
   }, [router])
 
   if (error) {
