@@ -223,78 +223,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionStorage.setItem(AUTH_USER_KEY, user.id)
       } catch {}
 
-      // Step 2: Fetch profile (with timeout and retry logic)
+      // Step 2: Fetch profile using raw fetch (Supabase client was timing out)
       let profile: UserProfile | null = null
       let profileError: AuthError | null = null
 
-      // Debug: Log Supabase URL to verify configuration
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      const authHeaders = {
+        'apikey': supabaseKey || '',
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      }
+
       console.log("AuthProvider: Supabase URL:", supabaseUrl)
       console.log("AuthProvider: Fetching profile for user:", user.id)
 
-      // Debug: Test raw fetch to Supabase to check connectivity
-      if (supabaseUrl) {
+      if (supabaseUrl && supabaseKey) {
         try {
-          const testStart = Date.now()
-          const testResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?select=id&limit=1`, {
-            headers: {
-              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-              'Authorization': `Bearer ${session.access_token}`,
-            }
-          })
-          console.log("AuthProvider: Raw fetch test:", {
-            status: testResponse.status,
-            ok: testResponse.ok,
-            time: Date.now() - testStart + 'ms'
-          })
-        } catch (fetchErr) {
-          console.error("AuthProvider: Raw fetch test FAILED:", fetchErr)
-        }
-      }
-
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          console.log(`AuthProvider: Profile fetch attempt ${attempt} starting...`)
-          const profilePromise = supabase
-            .from("profiles")
-            .select("id, email, first_name, last_name, avatar_url, org_id")
-            .eq("id", user.id)
-            .maybeSingle()
-
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Profile fetch timeout")), 5000)
+          const profileStart = Date.now()
+          const profileResponse = await fetch(
+            `${supabaseUrl}/rest/v1/profiles?select=id,email,first_name,last_name,avatar_url,org_id&id=eq.${user.id}`,
+            { headers: authHeaders }
           )
 
-          const { data, error } = await Promise.race([profilePromise, timeoutPromise])
+          console.log("AuthProvider: Profile fetch response:", {
+            status: profileResponse.status,
+            time: Date.now() - profileStart + 'ms'
+          })
 
-          if (error) {
-            console.warn(`AuthProvider: Profile fetch attempt ${attempt} failed:`, error.message, error.code)
-            if (attempt < 2) {
-              await new Promise(r => setTimeout(r, 500))
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json()
+            if (profileData && profileData.length > 0) {
+              profile = profileData[0] as UserProfile
+              console.log("AuthProvider: Profile loaded:", { id: profile.id, org_id: profile.org_id })
             } else {
-              profileError = {
-                code: "PROFILE_FETCH_ERROR",
-                message: "Unable to load your profile. Please try again.",
-                details: error.message
-              }
+              console.log("AuthProvider: No profile found for user")
             }
-          } else if (data) {
-            profile = data as UserProfile
-            console.log("AuthProvider: Profile loaded:", { id: profile.id, org_id: profile.org_id })
-            break
           } else {
-            // No profile found - this is a valid state for new users
-            console.log("AuthProvider: No profile found for user")
-            break
+            console.warn("AuthProvider: Profile fetch failed with status:", profileResponse.status)
           }
-        } catch (fetchError) {
-          console.error(`AuthProvider: Profile fetch attempt ${attempt} error:`, fetchError)
-          if (attempt < 2) {
-            await new Promise(r => setTimeout(r, 500))
-          } else {
-            // Timeout or network error - continue without profile
-            console.warn("AuthProvider: Profile fetch failed, continuing without profile")
-          }
+        } catch (profileFetchErr) {
+          console.error("AuthProvider: Profile fetch error:", profileFetchErr)
         }
       }
 
@@ -314,70 +283,71 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Step 3: Fetch user roles (with timeout)
+      // Step 3: Fetch user roles using raw fetch
       let roles: UserRole[] = []
       console.log("AuthProvider: Fetching roles for user:", user.id)
 
-      try {
-        const rolesPromise = supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id)
-
-        const rolesTimeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Roles fetch timeout")), 5000)
-        )
-
-        const { data: rolesData, error: rolesError } = await Promise.race([rolesPromise, rolesTimeoutPromise])
-
-        console.log("AuthProvider: Roles query result:", {
-          rolesData,
-          rolesError: rolesError?.message,
-          rolesCount: rolesData?.length
-        })
-
-        if (rolesError) {
-          console.warn("AuthProvider: Roles fetch error:", rolesError.message)
-        } else if (rolesData && rolesData.length > 0) {
-          roles = rolesData.map(r => r.role as UserRole)
-          console.log("AuthProvider: User roles found:", roles)
-        } else {
-          console.warn("AuthProvider: No roles found for user - will use default behavior")
-        }
-      } catch (rolesTimeout) {
-        console.warn("AuthProvider: Roles fetch timed out, continuing without roles")
-      }
-
-      // Step 4: Fetch organization if user has org_id (with timeout)
-      let organization: UserOrganization | null = null
-
-      if (profile?.org_id) {
-        console.log("AuthProvider: Fetching organization:", profile.org_id)
+      if (supabaseUrl && supabaseKey) {
         try {
-          const orgPromise = supabase
-            .from("organizations")
-            .select("id, name, name_ar, slug, logo_url, primary_color, secondary_color")
-            .eq("id", profile.org_id)
-            .maybeSingle()
-
-          const orgTimeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Org fetch timeout")), 5000)
+          const rolesStart = Date.now()
+          const rolesResponse = await fetch(
+            `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${user.id}`,
+            { headers: authHeaders }
           )
 
-          const { data: orgData, error: orgError } = await Promise.race([orgPromise, orgTimeoutPromise])
+          console.log("AuthProvider: Roles fetch response:", {
+            status: rolesResponse.status,
+            time: Date.now() - rolesStart + 'ms'
+          })
 
-          if (orgError) {
-            console.warn("AuthProvider: Org fetch error:", orgError.message)
-          } else if (orgData) {
-            organization = orgData as UserOrganization
-            console.log("AuthProvider: Organization loaded:", organization.name)
+          if (rolesResponse.ok) {
+            const rolesData = await rolesResponse.json()
+            if (rolesData && rolesData.length > 0) {
+              roles = rolesData.map((r: { role: string }) => r.role as UserRole)
+              console.log("AuthProvider: User roles found:", roles)
+            } else {
+              console.warn("AuthProvider: No roles found for user - will use default behavior")
+            }
           } else {
-            console.log("AuthProvider: No organization found for id:", profile.org_id)
+            console.warn("AuthProvider: Roles fetch failed with status:", rolesResponse.status)
+          }
+        } catch (rolesFetchErr) {
+          console.error("AuthProvider: Roles fetch error:", rolesFetchErr)
+        }
+      }
+
+      // Step 4: Fetch organization if user has org_id using raw fetch
+      let organization: UserOrganization | null = null
+
+      if (profile?.org_id && supabaseUrl && supabaseKey) {
+        console.log("AuthProvider: Fetching organization:", profile.org_id)
+        try {
+          const orgStart = Date.now()
+          const orgResponse = await fetch(
+            `${supabaseUrl}/rest/v1/organizations?select=id,name,name_ar,slug,logo_url,primary_color,secondary_color&id=eq.${profile.org_id}`,
+            { headers: authHeaders }
+          )
+
+          console.log("AuthProvider: Org fetch response:", {
+            status: orgResponse.status,
+            time: Date.now() - orgStart + 'ms'
+          })
+
+          if (orgResponse.ok) {
+            const orgData = await orgResponse.json()
+            if (orgData && orgData.length > 0) {
+              organization = orgData[0] as UserOrganization
+              console.log("AuthProvider: Organization loaded:", organization.name)
+            } else {
+              console.log("AuthProvider: No organization found for id:", profile.org_id)
+            }
+          } else {
+            console.warn("AuthProvider: Org fetch failed with status:", orgResponse.status)
           }
         } catch (orgFetchError) {
-          console.warn("AuthProvider: Org fetch timed out or failed:", orgFetchError)
+          console.error("AuthProvider: Org fetch error:", orgFetchError)
         }
-      } else {
+      } else if (!profile?.org_id) {
         console.log("AuthProvider: No org_id in profile, skipping org fetch")
       }
 
