@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { createClient, fullCleanup, resetSupabaseClient } from "@/lib/supabase/client"
 import { User, Session } from "@supabase/supabase-js"
 
 // User role types - centralized definition
@@ -503,34 +503,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Sign out function
   const signOut = useCallback(async () => {
-    const supabase = createClient()
+    console.log("AuthProvider: Signing out...")
+
+    // CRITICAL: Reset loading flag first to prevent re-login issues
+    loadingRef.current = false
 
     try {
-      // Clear storage first
-      try {
-        sessionStorage.removeItem(AUTH_USER_KEY)
-        // Clear any other auth-related storage
-        const keysToRemove = Object.keys(sessionStorage).filter(k =>
-          k.startsWith("jadarat_") || k.startsWith("sb-")
-        )
-        keysToRemove.forEach(k => sessionStorage.removeItem(k))
+      const supabase = createClient()
 
-        const localKeysToRemove = Object.keys(localStorage).filter(k =>
-          k.startsWith("sb-") || k.startsWith("jadarat_")
-        )
-        localKeysToRemove.forEach(k => localStorage.removeItem(k))
-      } catch {}
-
-      // Sign out with timeout
-      const signOutPromise = supabase.auth.signOut({ scope: 'global' })
+      // Sign out with timeout (don't wait too long)
+      const signOutPromise = supabase.auth.signOut({ scope: 'local' })
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Sign out timeout")), 3000)
+        setTimeout(() => reject(new Error("Sign out timeout")), 2000)
       )
 
-      await Promise.race([signOutPromise, timeoutPromise]).catch(() => {})
+      await Promise.race([signOutPromise, timeoutPromise]).catch((e) => {
+        console.warn("AuthProvider: Sign out timed out or failed:", e)
+      })
     } catch (error) {
       console.error("AuthProvider: Sign out error:", error)
     }
+
+    // CRITICAL: Full cleanup - clear ALL storage and reset Supabase client singleton
+    // This ensures next login starts with completely fresh state
+    try {
+      fullCleanup()
+      sessionStorage.removeItem(AUTH_USER_KEY)
+    } catch (e) {
+      console.warn("AuthProvider: Cleanup error:", e)
+    }
+
+    console.log("AuthProvider: Sign out complete, redirecting to login...")
 
     // Always redirect to login with full page reload
     window.location.href = "/login"

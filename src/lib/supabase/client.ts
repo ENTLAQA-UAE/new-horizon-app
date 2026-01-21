@@ -36,7 +36,7 @@ export function clearSupabaseStorage() {
     const keysToRemove: string[] = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key && (key.includes('supabase') || key.includes('sb-'))) {
+      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('jadarat'))) {
         keysToRemove.push(key)
       }
     }
@@ -56,4 +56,10 @@ export function clearSupabaseStorage() {
   } catch (e) {
     console.warn('Error clearing Supabase storage:', e)
   }
+}
+
+// Complete cleanup - resets client AND clears storage
+export function fullCleanup() {
+  clearSupabaseStorage()
+  resetSupabaseClient()
 }
