@@ -10,6 +10,9 @@
 -- - has_role() function signature conflicts
 -- - is_super_admin() compatibility
 -- - All role-checking functions now work with BOTH schemas
+--
+-- IMPORTANT: We use CREATE OR REPLACE to update functions without
+-- breaking existing RLS policies that depend on them.
 -- =====================================================================
 
 -- =====================================================================
@@ -28,15 +31,12 @@ $$;
 GRANT EXECUTE ON FUNCTION public.get_user_org_id(UUID) TO authenticated;
 
 -- =====================================================================
--- 2. FIX has_role() - Unified function supporting BOTH RBAC systems
+-- 2. FIX has_role() - Keep ALL existing signatures, update implementations
 -- =====================================================================
 
--- Drop existing functions to avoid conflicts
-DROP FUNCTION IF EXISTS public.has_role(UUID, VARCHAR, UUID);
-DROP FUNCTION IF EXISTS public.has_role(UUID, public.app_role);
-
--- Create unified has_role function that checks BOTH systems
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role_code TEXT)
+-- Update the VARCHAR signature (used by most existing policies)
+-- This function checks BOTH RBAC systems for compatibility
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role_code VARCHAR, _org_id UUID DEFAULT NULL)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 STABLE
@@ -46,7 +46,7 @@ AS $$
 DECLARE
   v_has_role BOOLEAN := false;
 BEGIN
-  -- Method 1: Check simple user_roles table with role enum (20260115 schema)
+  -- Method 1: Check simple user_roles table with role enum
   BEGIN
     SELECT EXISTS (
       SELECT 1
@@ -63,7 +63,7 @@ BEGIN
     NULL;
   END;
 
-  -- Method 2: Check complex RBAC with role_id -> roles table (20240125 schema)
+  -- Method 2: Check complex RBAC with role_id -> roles table
   BEGIN
     SELECT EXISTS (
       SELECT 1
@@ -73,6 +73,7 @@ BEGIN
       AND r.code = _role_code
       AND r.is_active = true
       AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
+      AND (_org_id IS NULL OR ur.org_id = _org_id)
     ) INTO v_has_role;
 
     IF v_has_role THEN
@@ -87,7 +88,7 @@ BEGIN
 END;
 $$;
 
--- Also create the enum-based overload for backward compatibility
+-- Update the app_role enum signature (for type safety)
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -95,10 +96,10 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT public.has_role(_user_id, _role::text)
+  SELECT public.has_role(_user_id, _role::varchar, NULL)
 $$;
 
-GRANT EXECUTE ON FUNCTION public.has_role(UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(UUID, VARCHAR, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) TO authenticated;
 
 -- =====================================================================
@@ -111,15 +112,9 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_is_admin BOOLEAN := false;
 BEGIN
   -- Use the unified has_role function
-  IF public.has_role(_user_id, 'super_admin') THEN
-    RETURN true;
-  END IF;
-
-  RETURN false;
+  RETURN public.has_role(_user_id, 'super_admin'::varchar, NULL);
 END;
 $$;
 
@@ -135,19 +130,17 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE
-  v_has_access BOOLEAN := false;
 BEGIN
   -- Check for HR-level roles using unified has_role function
-  IF public.has_role(_user_id, 'super_admin') THEN
+  IF public.has_role(_user_id, 'super_admin'::varchar, NULL) THEN
     RETURN true;
   END IF;
 
-  IF public.has_role(_user_id, 'org_admin') THEN
+  IF public.has_role(_user_id, 'org_admin'::varchar, NULL) THEN
     RETURN true;
   END IF;
 
-  IF public.has_role(_user_id, 'hr_manager') THEN
+  IF public.has_role(_user_id, 'hr_manager'::varchar, NULL) THEN
     RETURN true;
   END IF;
 
@@ -174,7 +167,7 @@ BEGIN
   END IF;
 
   -- Check recruiter role
-  IF public.has_role(_user_id, 'recruiter') THEN
+  IF public.has_role(_user_id, 'recruiter'::varchar, NULL) THEN
     RETURN true;
   END IF;
 
@@ -201,11 +194,11 @@ BEGIN
   END IF;
 
   -- Check interviewer and hiring_manager roles
-  IF public.has_role(_user_id, 'interviewer') THEN
+  IF public.has_role(_user_id, 'interviewer'::varchar, NULL) THEN
     RETURN true;
   END IF;
 
-  IF public.has_role(_user_id, 'hiring_manager') THEN
+  IF public.has_role(_user_id, 'hiring_manager'::varchar, NULL) THEN
     RETURN true;
   END IF;
 
@@ -273,7 +266,7 @@ GRANT EXECUTE ON FUNCTION public.get_user_roles_list(UUID) TO authenticated;
 -- 8. FIX SCORECARD_TEMPLATES RLS POLICIES
 -- =====================================================================
 
--- Drop existing policies
+-- Drop existing policies (use IF EXISTS to be safe)
 DROP POLICY IF EXISTS "Users can view scorecard templates in their org" ON public.scorecard_templates;
 DROP POLICY IF EXISTS "HR can create scorecard templates" ON public.scorecard_templates;
 DROP POLICY IF EXISTS "HR can update scorecard templates" ON public.scorecard_templates;
@@ -361,12 +354,15 @@ END $$;
 -- =====================================================================
 -- SUMMARY OF CHANGES:
 -- 1. get_user_org_id() - Confirmed working
--- 2. has_role(UUID, TEXT) - Unified function checking BOTH RBAC systems
--- 3. has_role(UUID, app_role) - Overload for backward compatibility
+-- 2. has_role(UUID, VARCHAR, UUID) - Updated to check BOTH RBAC systems
+-- 3. has_role(UUID, app_role) - Calls the VARCHAR version
 -- 4. is_super_admin() - Uses unified has_role()
 -- 5. has_hr_access() - FIXED: No longer references profiles.role
 -- 6. has_recruiter_access() - NEW: For recruiter-level checks
 -- 7. has_interviewer_access() - NEW: For interviewer-level checks
 -- 8. get_user_roles_list() - NEW: Get all user roles as array
 -- 9. Scorecard policies - Recreated with fixed functions
+--
+-- All existing policies continue to work because we used
+-- CREATE OR REPLACE instead of DROP + CREATE.
 -- =====================================================================
