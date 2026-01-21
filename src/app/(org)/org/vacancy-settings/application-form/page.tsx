@@ -2,8 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect, supabaseRpc } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -96,7 +95,6 @@ const iconMap: Record<string, any> = {
 }
 
 export default function ApplicationFormPage() {
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -133,61 +131,68 @@ export default function ApplicationFormPage() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      // Get user's org_id from profiles using auth-fetch
+      const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
+        "profiles",
+        { select: "org_id", limit: 1 }
+      )
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single()
-
-      const orgId = profile?.org_id
-      if (!orgId) {
+      if (profileError || !profileData?.[0]?.org_id) {
+        console.error("Error loading profile:", profileError)
         setIsLoading(false)
         return
       }
 
+      const orgId = profileData[0].org_id
       setOrganizationId(orgId)
 
       // Check if sections exist, if not seed defaults
-      const { data: existingSections, error: checkError } = await supabase
-        .from("application_form_sections")
-        .select("id")
-        .eq("org_id", orgId)
-        .limit(1)
+      const { data: existingSections } = await supabaseSelect<{ id: string }[]>(
+        "application_form_sections",
+        {
+          select: "id",
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          limit: 1,
+        }
+      )
 
       if (!existingSections?.length) {
         // Seed default form - call RPC function
-        await supabase.rpc("seed_default_application_form", { p_org_id: orgId })
+        await supabaseRpc("seed_default_application_form", { p_org_id: orgId })
       }
 
-      // Load sections with fields
-      const { data: sectionsData, error: sectionsError } = await supabase
-        .from("application_form_sections")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("sort_order")
+      // Load sections
+      const { data: sectionsData, error: sectionsError } = await supabaseSelect<FormSection[]>(
+        "application_form_sections",
+        {
+          select: "*",
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          order: { column: "sort_order", ascending: true },
+        }
+      )
 
-      if (sectionsError) throw sectionsError
+      if (sectionsError) throw new Error(sectionsError.message)
 
       // Load fields for each section
       const sectionsWithFields = await Promise.all(
         (sectionsData || []).map(async (section) => {
-          const { data: fields } = await supabase
-            .from("application_form_fields")
-            .select("*")
-            .eq("section_id", section.id)
-            .order("sort_order")
+          const { data: fields } = await supabaseSelect<FormField[]>(
+            "application_form_fields",
+            {
+              select: "*",
+              filter: [{ column: "section_id", operator: "eq", value: section.id }],
+              order: { column: "sort_order", ascending: true },
+            }
+          )
 
           return { ...section, fields: fields || [] }
         })
       )
 
       setSections(sectionsWithFields)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading data:", error)
-      toast.error("Failed to load application form")
+      toast.error(error.message || "Failed to load application form")
     } finally {
       setIsLoading(false)
     }

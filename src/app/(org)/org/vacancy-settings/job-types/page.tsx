@@ -2,8 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,7 +35,6 @@ interface JobType {
 }
 
 export default function JobTypesPage() {
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -58,34 +56,36 @@ export default function JobTypesPage() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      // Get user's org_id from profiles using auth-fetch
+      const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
+        "profiles",
+        { select: "org_id", limit: 1 }
+      )
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single()
-
-      const orgId = profile?.org_id
-      if (!orgId) {
+      if (profileError || !profileData?.[0]?.org_id) {
+        console.error("Error loading profile:", profileError)
         setIsLoading(false)
         return
       }
 
+      const orgId = profileData[0].org_id
       setOrganizationId(orgId)
 
-      const { data, error } = await supabase
-        .from("job_types")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("name")
+      // Get job types using auth-fetch
+      const { data, error } = await supabaseSelect<JobType[]>(
+        "job_types",
+        {
+          select: "*",
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          order: { column: "name", ascending: true },
+        }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setJobTypes(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading job types:", error)
-      toast.error("Failed to load job types")
+      toast.error(error.message || "Failed to load job types")
     } finally {
       setIsLoading(false)
     }

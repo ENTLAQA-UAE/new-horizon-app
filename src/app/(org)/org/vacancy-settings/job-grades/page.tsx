@@ -2,8 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -37,7 +36,6 @@ interface JobGrade {
 }
 
 export default function JobGradesPage() {
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -60,34 +58,36 @@ export default function JobGradesPage() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      // Get user's org_id from profiles using auth-fetch
+      const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
+        "profiles",
+        { select: "org_id", limit: 1 }
+      )
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single()
-
-      const orgId = profile?.org_id
-      if (!orgId) {
+      if (profileError || !profileData?.[0]?.org_id) {
+        console.error("Error loading profile:", profileError)
         setIsLoading(false)
         return
       }
 
+      const orgId = profileData[0].org_id
       setOrganizationId(orgId)
 
-      const { data, error } = await supabase
-        .from("job_grades")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("level")
+      // Get job grades using auth-fetch
+      const { data, error } = await supabaseSelect<JobGrade[]>(
+        "job_grades",
+        {
+          select: "*",
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          order: { column: "level", ascending: true },
+        }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setGrades(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading job grades:", error)
-      toast.error("Failed to load job grades")
+      toast.error(error.message || "Failed to load job grades")
     } finally {
       setIsLoading(false)
     }

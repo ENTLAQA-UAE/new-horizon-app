@@ -3,7 +3,13 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import {
+  supabaseInsert,
+  supabaseUpdate,
+  supabaseDelete,
+  supabaseSelect,
+  getAccessToken,
+} from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -151,14 +157,13 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
     }
 
     setIsLoading(true)
-    const supabase = createClient()
 
     try {
       if (editingTemplate) {
         // Update existing template
-        const { error } = await supabase
-          .from("offer_templates")
-          .update({
+        const { error } = await supabaseUpdate(
+          "offer_templates",
+          {
             name: formData.name,
             name_ar: formData.name_ar || null,
             description: formData.description || null,
@@ -167,10 +172,12 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
             body_html: formData.body_html,
             body_html_ar: formData.body_html_ar || null,
             is_default: formData.is_default,
-          })
-          .eq("id", editingTemplate.id)
+            updated_at: new Date().toISOString(),
+          },
+          { column: "id", value: editingTemplate.id }
+        )
 
-        if (error) throw error
+        if (error) throw new Error(error.message)
 
         setTemplates(templates.map(t =>
           t.id === editingTemplate.id
@@ -179,22 +186,32 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
         ))
         toast.success("Template updated successfully")
       } else {
-        // Create new template - get current user's org_id
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error("Not authenticated")
+        // Create new template - get org_id from first template (passed via props)
+        const orgId = templates.length > 0 ? templates[0].org_id : null
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("org_id")
-          .eq("id", user.id)
-          .single()
+        if (!orgId) {
+          // Fetch org_id from profiles using auth-fetch
+          const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
+            "profiles",
+            {
+              select: "org_id",
+              limit: 1,
+            }
+          )
 
-        if (!profile?.org_id) throw new Error("Organization not found")
+          if (profileError || !profileData?.[0]?.org_id) {
+            throw new Error("Organization not found. Please refresh and try again.")
+          }
 
-        const { data, error } = await supabase
-          .from("offer_templates")
-          .insert({
-            org_id: profile.org_id,
+          var finalOrgId = profileData[0].org_id
+        } else {
+          var finalOrgId = orgId
+        }
+
+        const { data, error } = await supabaseInsert<OfferTemplate>(
+          "offer_templates",
+          {
+            org_id: finalOrgId,
             name: formData.name,
             name_ar: formData.name_ar || null,
             description: formData.description || null,
@@ -203,11 +220,11 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
             body_html: formData.body_html,
             body_html_ar: formData.body_html_ar || null,
             is_default: formData.is_default,
-          })
-          .select()
-          .single()
+          }
+        )
 
-        if (error) throw error
+        if (error) throw new Error(error.message)
+        if (!data) throw new Error("Failed to create template")
 
         if (formData.is_default) {
           setTemplates([data, ...templates.map(t => ({ ...t, is_default: false }))])
@@ -230,14 +247,10 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this template?")) return
 
-    const supabase = createClient()
-    const { error } = await supabase
-      .from("offer_templates")
-      .delete()
-      .eq("id", id)
+    const { error } = await supabaseDelete("offer_templates", { column: "id", value: id })
 
     if (error) {
-      toast.error("Failed to delete template")
+      toast.error(error.message || "Failed to delete template")
       return
     }
 
@@ -246,11 +259,9 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
   }
 
   const handleDuplicate = async (template: OfferTemplate) => {
-    const supabase = createClient()
-
-    const { data, error } = await supabase
-      .from("offer_templates")
-      .insert({
+    const { data, error } = await supabaseInsert<OfferTemplate>(
+      "offer_templates",
+      {
         org_id: template.org_id,
         name: `${template.name} (Copy)`,
         name_ar: template.name_ar ? `${template.name_ar} (نسخة)` : null,
@@ -260,17 +271,18 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
         body_html: template.body_html,
         body_html_ar: template.body_html_ar,
         is_default: false,
-      })
-      .select()
-      .single()
+      }
+    )
 
     if (error) {
-      toast.error("Failed to duplicate template")
+      toast.error(error.message || "Failed to duplicate template")
       return
     }
 
-    setTemplates([data, ...templates])
-    toast.success("Template duplicated successfully")
+    if (data) {
+      setTemplates([data, ...templates])
+      toast.success("Template duplicated successfully")
+    }
   }
 
   const handlePreview = (content: string) => {
