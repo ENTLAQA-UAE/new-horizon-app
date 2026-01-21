@@ -173,11 +173,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
           session = sessionResult.data.session
           console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
         } catch (sessionError) {
-          console.warn("AuthProvider: getSession timed out, will wait for auth state change")
-          // Don't fail completely - the auth state change listener might provide the session
-          // Set a flag and return, letting the auth state change handle it
-          loadingRef.current = false
-          return
+          console.warn("AuthProvider: getSession timed out, trying to retrieve session from storage")
+          // Try to get the session from localStorage as a fallback
+          // Supabase stores the session in localStorage with a key like sb-<project-ref>-auth-token
+          try {
+            const storageKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
+            if (storageKeys.length > 0) {
+              const storedData = localStorage.getItem(storageKeys[0])
+              if (storedData) {
+                const parsed = JSON.parse(storedData)
+                if (parsed?.access_token && parsed?.user) {
+                  console.log("AuthProvider: Found session in localStorage, using it")
+                  session = parsed as Session
+                }
+              }
+            }
+          } catch (storageError) {
+            console.warn("AuthProvider: Could not retrieve session from storage:", storageError)
+          }
+
+          // If we still don't have a session, set unauthenticated state instead of leaving loading forever
+          if (!session) {
+            console.log("AuthProvider: No session available, setting unauthenticated state")
+            if (mountedRef.current) {
+              setState(prev => ({
+                ...prev,
+                isLoading: false,
+                isAuthenticated: false,
+                user: null,
+                session: null,
+                profile: null,
+                organization: null,
+                roles: [],
+                primaryRole: null,
+                error: null,
+              }))
+            }
+            loadingRef.current = false
+            return
+          }
         }
       }
 
