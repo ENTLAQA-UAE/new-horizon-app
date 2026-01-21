@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -122,22 +123,23 @@ export default function LocationsPage() {
     setIsSaving(true)
     try {
       if (editingLocation) {
-        const { error } = await supabase
-          .from("locations")
-          .update({
+        const { error } = await supabaseUpdate(
+          "locations",
+          {
             name: formData.name,
             name_ar: formData.name_ar || null,
             address: formData.address || null,
             city: formData.city || null,
             country: formData.country || null,
             updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingLocation.id)
+          },
+          { column: "id", value: editingLocation.id }
+        )
 
         if (error) throw error
         toast.success("Location updated successfully")
       } else {
-        const { error } = await supabase.from("locations").insert({
+        const { error } = await supabaseInsert("locations", {
           org_id: organizationId,
           name: formData.name,
           name_ar: formData.name_ar || null,
@@ -163,10 +165,11 @@ export default function LocationsPage() {
 
   const handleToggleActive = async (location: Location) => {
     try {
-      const { error } = await supabase
-        .from("locations")
-        .update({ is_active: !location.is_active })
-        .eq("id", location.id)
+      const { error } = await supabaseUpdate(
+        "locations",
+        { is_active: !location.is_active },
+        { column: "id", value: location.id }
+      )
 
       if (error) throw error
       setLocations(locations.map(l => l.id === location.id ? { ...l, is_active: !l.is_active } : l))
@@ -186,10 +189,10 @@ export default function LocationsPage() {
 
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from("locations")
-        .delete()
-        .eq("id", deletingLocation.id)
+      const { error } = await supabaseDelete(
+        "locations",
+        { column: "id", value: deletingLocation.id }
+      )
 
       if (error) throw error
       toast.success("Location deleted successfully")

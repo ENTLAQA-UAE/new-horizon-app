@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -218,22 +219,23 @@ export default function ApplicationFormPage() {
     setIsSaving(true)
     try {
       if (editingSection) {
-        const { error } = await supabase
-          .from("application_form_sections")
-          .update({
+        const { error } = await supabaseUpdate(
+          "application_form_sections",
+          {
             name: sectionForm.name,
             name_ar: sectionForm.name_ar || null,
             description: sectionForm.description || null,
             icon: sectionForm.icon,
             updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingSection.id)
+          },
+          { column: "id", value: editingSection.id }
+        )
 
         if (error) throw error
         toast.success("Section updated successfully")
       } else {
         const maxOrder = Math.max(...sections.map((s) => s.sort_order), 0)
-        const { error } = await supabase.from("application_form_sections").insert({
+        const { error } = await supabaseInsert("application_form_sections", {
           org_id: organizationId,
           name: sectionForm.name,
           name_ar: sectionForm.name_ar || null,
@@ -265,10 +267,11 @@ export default function ApplicationFormPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from("application_form_sections")
-        .update({ is_enabled: !section.is_enabled, updated_at: new Date().toISOString() })
-        .eq("id", section.id)
+      const { error } = await supabaseUpdate(
+        "application_form_sections",
+        { is_enabled: !section.is_enabled, updated_at: new Date().toISOString() },
+        { column: "id", value: section.id }
+      )
 
       if (error) throw error
 
@@ -311,23 +314,24 @@ export default function ApplicationFormPage() {
       const section = sections.find((s) => s.id === selectedSectionId)
 
       if (editingField) {
-        const { error } = await supabase
-          .from("application_form_fields")
-          .update({
+        const { error } = await supabaseUpdate(
+          "application_form_fields",
+          {
             name: fieldForm.name,
             name_ar: fieldForm.name_ar || null,
             field_type: fieldForm.field_type,
             placeholder: fieldForm.placeholder || null,
             is_required: fieldForm.is_required,
             updated_at: new Date().toISOString(),
-          })
-          .eq("id", editingField.id)
+          },
+          { column: "id", value: editingField.id }
+        )
 
         if (error) throw error
         toast.success("Field updated successfully")
       } else {
         const maxOrder = Math.max(...(section?.fields.map((f) => f.sort_order) || []), 0)
-        const { error } = await supabase.from("application_form_fields").insert({
+        const { error } = await supabaseInsert("application_form_fields", {
           section_id: selectedSectionId,
           org_id: organizationId,
           name: fieldForm.name,
@@ -356,10 +360,11 @@ export default function ApplicationFormPage() {
 
   const handleToggleField = async (field: FormField) => {
     try {
-      const { error } = await supabase
-        .from("application_form_fields")
-        .update({ is_enabled: !field.is_enabled, updated_at: new Date().toISOString() })
-        .eq("id", field.id)
+      const { error } = await supabaseUpdate(
+        "application_form_fields",
+        { is_enabled: !field.is_enabled, updated_at: new Date().toISOString() },
+        { column: "id", value: field.id }
+      )
 
       if (error) throw error
       loadData()
@@ -376,10 +381,11 @@ export default function ApplicationFormPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from("application_form_fields")
-        .update({ is_required: !field.is_required, updated_at: new Date().toISOString() })
-        .eq("id", field.id)
+      const { error } = await supabaseUpdate(
+        "application_form_fields",
+        { is_required: !field.is_required, updated_at: new Date().toISOString() },
+        { column: "id", value: field.id }
+      )
 
       if (error) throw error
       loadData()
@@ -404,7 +410,7 @@ export default function ApplicationFormPage() {
     setIsSaving(true)
     try {
       const table = deletingItem.type === "section" ? "application_form_sections" : "application_form_fields"
-      const { error } = await supabase.from(table).delete().eq("id", deletingItem.item.id)
+      const { error } = await supabaseDelete(table, { column: "id", value: deletingItem.item.id })
 
       if (error) throw error
       toast.success(`${deletingItem.type === "section" ? "Section" : "Field"} deleted successfully`)

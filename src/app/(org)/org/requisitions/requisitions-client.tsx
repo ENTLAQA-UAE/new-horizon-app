@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -129,7 +129,6 @@ export function RequisitionsClient({
   currentUserId,
 }: RequisitionsClientProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [requisitions, setRequisitions] = useState(initialRequisitions)
   const [approvals, setApprovals] = useState(initialApprovals)
@@ -234,52 +233,69 @@ export function RequisitionsClient({
       }
 
       if (editingRequisition) {
-        const { data, error } = await supabase
-          .from("job_requisitions")
-          .update(requisitionData)
-          .eq("id", editingRequisition.id)
-          .select(`
-            *,
-            departments (id, name),
-            job_locations (id, name, city)
-          `)
-          .single()
+        const { error } = await supabaseUpdate(
+          'job_requisitions',
+          requisitionData,
+          { column: 'id', value: editingRequisition.id }
+        )
 
-        if (error) throw error
-        setRequisitions(requisitions.map((r) => (r.id === editingRequisition.id ? data : r)))
+        if (error) throw new Error(error.message)
+
+        // Fetch the updated data with joins
+        const { data, error: selectError } = await supabaseSelect<Requisition>(
+          'job_requisitions',
+          {
+            select: '*, departments (id, name), job_locations (id, name, city)',
+            filter: [{ column: 'id', operator: 'eq', value: editingRequisition.id }],
+            single: true
+          }
+        )
+
+        if (selectError) throw new Error(selectError.message)
+        if (data) setRequisitions(requisitions.map((r) => (r.id === editingRequisition.id ? data : r)))
         toast.success("Requisition updated successfully")
       } else {
-        const { data, error } = await supabase
-          .from("job_requisitions")
-          .insert(requisitionData)
-          .select(`
-            *,
-            departments (id, name),
-            job_locations (id, name, city)
-          `)
-          .single()
+        const { data: insertData, error } = await supabaseInsert<{ id: string }>(
+          'job_requisitions',
+          requisitionData
+        )
 
-        if (error) throw error
+        if (error) throw new Error(error.message)
+
+        // Fetch the inserted data with joins
+        const { data, error: selectError } = await supabaseSelect<Requisition>(
+          'job_requisitions',
+          {
+            select: '*, departments (id, name), job_locations (id, name, city)',
+            filter: [{ column: 'id', operator: 'eq', value: insertData!.id }],
+            single: true
+          }
+        )
+
+        if (selectError) throw new Error(selectError.message)
 
         // Create approvals if approvers selected
-        if (formData.approvers.length > 0) {
-          const approvalInserts = formData.approvers.map((approverId, index) => ({
-            requisition_id: data.id,
-            approver_id: approverId,
-            approval_order: index + 1,
-            status: "pending",
-          }))
-
-          const { data: newApprovals, error: approvalError } = await supabase
-            .from("requisition_approvals")
-            .insert(approvalInserts)
-            .select()
-
-          if (approvalError) console.error("Error creating approvals:", approvalError)
-          if (newApprovals) setApprovals([...approvals, ...newApprovals])
+        if (formData.approvers.length > 0 && data) {
+          const newApprovals: RequisitionApproval[] = []
+          for (let index = 0; index < formData.approvers.length; index++) {
+            const approverId = formData.approvers[index]
+            const approvalData = {
+              requisition_id: data.id,
+              approver_id: approverId,
+              approval_order: index + 1,
+              status: "pending",
+            }
+            const { data: approvalResult, error: approvalError } = await supabaseInsert<RequisitionApproval>(
+              'requisition_approvals',
+              approvalData
+            )
+            if (approvalError) console.error("Error creating approval:", approvalError)
+            if (approvalResult) newApprovals.push(approvalResult)
+          }
+          if (newApprovals.length > 0) setApprovals([...approvals, ...newApprovals])
         }
 
-        setRequisitions([data, ...requisitions])
+        if (data) setRequisitions([data, ...requisitions])
         toast.success("Requisition created successfully")
       }
 
@@ -309,16 +325,17 @@ export function RequisitionsClient({
     setIsLoading(true)
     try {
       // Update approval status
-      const { error: approvalError } = await supabase
-        .from("requisition_approvals")
-        .update({
+      const { error: approvalError } = await supabaseUpdate(
+        'requisition_approvals',
+        {
           status: approved ? "approved" : "rejected",
           responded_at: new Date().toISOString(),
           comments: approvalComment || null,
-        })
-        .eq("id", myApproval.id)
+        },
+        { column: 'id', value: myApproval.id }
+      )
 
-      if (approvalError) throw approvalError
+      if (approvalError) throw new Error(approvalError.message)
 
       // Check if all approvers have approved
       const requisitionApprovals = approvals.filter((a) => a.requisition_id === selectedRequisition.id)
@@ -328,12 +345,13 @@ export function RequisitionsClient({
 
       // Update requisition status
       const newStatus = !approved ? "rejected" : allApproved ? "approved" : "pending"
-      const { error: requisitionError } = await supabase
-        .from("job_requisitions")
-        .update({ status: newStatus })
-        .eq("id", selectedRequisition.id)
+      const { error: requisitionError } = await supabaseUpdate(
+        'job_requisitions',
+        { status: newStatus },
+        { column: 'id', value: selectedRequisition.id }
+      )
 
-      if (requisitionError) throw requisitionError
+      if (requisitionError) throw new Error(requisitionError.message)
 
       // Update local state
       setApprovals(
@@ -366,12 +384,12 @@ export function RequisitionsClient({
     setIsLoading(true)
     try {
       // Delete approvals first
-      await supabase.from("requisition_approvals").delete().eq("requisition_id", selectedRequisition.id)
+      await supabaseDelete('requisition_approvals', { column: 'requisition_id', value: selectedRequisition.id })
 
       // Delete requisition
-      const { error } = await supabase.from("job_requisitions").delete().eq("id", selectedRequisition.id)
+      const { error } = await supabaseDelete('job_requisitions', { column: 'id', value: selectedRequisition.id })
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setRequisitions(requisitions.filter((r) => r.id !== selectedRequisition.id))
       setApprovals(approvals.filter((a) => a.requisition_id !== selectedRequisition.id))

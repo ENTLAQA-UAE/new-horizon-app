@@ -4,7 +4,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -141,7 +141,6 @@ export function PipelinesClient({
   organizationId,
 }: PipelinesClientProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [pipelines, setPipelines] = useState(initialPipelines)
   const [allStages, setAllStages] = useState(initialStages)
@@ -233,27 +232,28 @@ export function PipelinesClient({
     setIsLoading(true)
     try {
       if (editingPipeline) {
-        const { data, error } = await supabase
-          .from("pipelines")
-          .update({
+        const { data, error } = await supabaseUpdate<Pipeline>(
+          "pipelines",
+          {
             name: pipelineForm.name,
             name_ar: pipelineForm.name_ar || null,
             description: pipelineForm.description || null,
             description_ar: pipelineForm.description_ar || null,
             is_default: pipelineForm.is_default,
-          })
-          .eq("id", editingPipeline.id)
-          .select()
-          .single()
+          },
+          { column: "id", value: editingPipeline.id }
+        )
 
         if (error) throw error
-        setPipelines(pipelines.map((p) => (p.id === editingPipeline.id ? data : p)))
+        if (data) {
+          setPipelines(pipelines.map((p) => (p.id === editingPipeline.id ? data : p)))
+        }
         toast.success("Pipeline updated successfully")
       } else {
         // Create the pipeline
-        const { data, error } = await supabase
-          .from("pipelines")
-          .insert({
+        const { data, error } = await supabaseInsert<Pipeline>(
+          "pipelines",
+          {
             org_id: organizationId,
             name: pipelineForm.name,
             name_ar: pipelineForm.name_ar || null,
@@ -261,17 +261,18 @@ export function PipelinesClient({
             description_ar: pipelineForm.description_ar || null,
             is_default: pipelineForm.is_default,
             is_active: true,
-          })
-          .select()
-          .single()
+          }
+        )
 
         if (error) throw error
+        if (!data) throw new Error("No data returned from insert")
 
         // Auto-create mandatory system stages (Applied, Hired, Rejected)
-        const { data: stagesData, error: stagesError } = await supabase
-          .from("pipeline_stages")
-          .insert(
-            systemStages.map((stage) => ({
+        const createdStages: PipelineStage[] = []
+        for (const stage of systemStages) {
+          const { data: stageData, error: stageError } = await supabaseInsert<PipelineStage>(
+            "pipeline_stages",
+            {
               org_id: organizationId,
               pipeline_id: data.id,
               name: stage.name,
@@ -282,14 +283,17 @@ export function PipelinesClient({
               is_system: true,
               requires_approval: false,
               approvers: [],
-            }))
+            }
           )
-          .select()
+          if (stageError) {
+            console.error("Failed to create system stage:", stageError)
+          } else if (stageData) {
+            createdStages.push(stageData)
+          }
+        }
 
-        if (stagesError) {
-          console.error("Failed to create system stages:", stagesError)
-        } else if (stagesData) {
-          setAllStages([...allStages, ...stagesData])
+        if (createdStages.length > 0) {
+          setAllStages([...allStages, ...createdStages])
         }
 
         setPipelines([data, ...pipelines])
@@ -312,10 +316,10 @@ export function PipelinesClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("pipelines")
-        .delete()
-        .eq("id", selectedPipeline.id)
+      const { error } = await supabaseDelete(
+        "pipelines",
+        { column: "id", value: selectedPipeline.id }
+      )
 
       if (error) throw error
 
@@ -337,9 +341,9 @@ export function PipelinesClient({
     setIsLoading(true)
     try {
       // Create new pipeline
-      const { data: newPipeline, error: pipelineError } = await supabase
-        .from("pipelines")
-        .insert({
+      const { data: newPipeline, error: pipelineError } = await supabaseInsert<Pipeline>(
+        "pipelines",
+        {
           org_id: organizationId,
           name: `${pipeline.name} (Copy)`,
           name_ar: pipeline.name_ar,
@@ -347,35 +351,42 @@ export function PipelinesClient({
           description_ar: pipeline.description_ar,
           is_default: false,
           is_active: true,
-        })
-        .select()
-        .single()
+        }
+      )
 
       if (pipelineError) throw pipelineError
+      if (!newPipeline) throw new Error("No data returned from insert")
 
       // Copy stages (preserve is_system flag)
       const pipelineStages = getPipelineStages(pipeline.id)
       if (pipelineStages.length > 0) {
-        const { data: copiedStages, error: stagesError } = await supabase.from("pipeline_stages").insert(
-          pipelineStages.map((s) => ({
-            org_id: organizationId,
-            pipeline_id: newPipeline.id,
-            name: s.name,
-            name_ar: s.name_ar,
-            description: s.description,
-            color: s.color,
-            sort_order: s.sort_order,
-            stage_type: s.stage_type,
-            is_system: s.is_system,
-            requires_approval: s.requires_approval,
-            approvers: s.approvers,
-            auto_email_template_id: s.auto_email_template_id,
-          }))
-        ).select()
+        const copiedStages: PipelineStage[] = []
+        for (const s of pipelineStages) {
+          const { data: stageData, error: stageError } = await supabaseInsert<PipelineStage>(
+            "pipeline_stages",
+            {
+              org_id: organizationId,
+              pipeline_id: newPipeline.id,
+              name: s.name,
+              name_ar: s.name_ar,
+              description: s.description,
+              color: s.color,
+              sort_order: s.sort_order,
+              stage_type: s.stage_type,
+              is_system: s.is_system,
+              requires_approval: s.requires_approval,
+              approvers: s.approvers,
+              auto_email_template_id: s.auto_email_template_id,
+            }
+          )
+          if (stageError) {
+            console.error("Failed to copy stage:", stageError)
+          } else if (stageData) {
+            copiedStages.push(stageData)
+          }
+        }
 
-        if (stagesError) {
-          console.error("Failed to copy stages:", stagesError)
-        } else if (copiedStages) {
+        if (copiedStages.length > 0) {
           setAllStages([...allStages, ...copiedStages])
         }
       }
@@ -413,9 +424,9 @@ export function PipelinesClient({
     setIsLoading(true)
     try {
       if (editingStage) {
-        const { data, error } = await supabase
-          .from("pipeline_stages")
-          .update({
+        const { data, error } = await supabaseUpdate<PipelineStage>(
+          "pipeline_stages",
+          {
             name: stageForm.name,
             name_ar: stageForm.name_ar || null,
             stage_type: stageForm.stage_type,
@@ -427,13 +438,14 @@ export function PipelinesClient({
             auto_reject_days: stageForm.auto_reject_enabled ? stageForm.auto_reject_days : null,
             sla_warning_days: stageForm.sla_warning_days || null,
             sla_critical_days: stageForm.sla_critical_days || null,
-          })
-          .eq("id", editingStage.id)
-          .select()
-          .single()
+          },
+          { column: "id", value: editingStage.id }
+        )
 
         if (error) throw error
-        setAllStages(allStages.map((s) => (s.id === editingStage.id ? data : s)))
+        if (data) {
+          setAllStages(allStages.map((s) => (s.id === editingStage.id ? data : s)))
+        }
         toast.success("Stage updated successfully")
       } else {
         const pipelineStages = getPipelineStages(selectedPipeline.id)
@@ -441,9 +453,9 @@ export function PipelinesClient({
           ? Math.max(...pipelineStages.map((s) => s.sort_order))
           : 0
 
-        const { data, error } = await supabase
-          .from("pipeline_stages")
-          .insert({
+        const { data, error } = await supabaseInsert<PipelineStage>(
+          "pipeline_stages",
+          {
             org_id: organizationId,
             pipeline_id: selectedPipeline.id,
             name: stageForm.name,
@@ -458,12 +470,13 @@ export function PipelinesClient({
             auto_reject_days: stageForm.auto_reject_enabled ? stageForm.auto_reject_days : null,
             sla_warning_days: stageForm.sla_warning_days || null,
             sla_critical_days: stageForm.sla_critical_days || null,
-          })
-          .select()
-          .single()
+          }
+        )
 
         if (error) throw error
-        setAllStages([...allStages, data])
+        if (data) {
+          setAllStages([...allStages, data])
+        }
         toast.success("Stage added successfully")
       }
 
@@ -481,10 +494,10 @@ export function PipelinesClient({
   const handleDeleteStage = async (stageId: string) => {
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("pipeline_stages")
-        .delete()
-        .eq("id", stageId)
+      const { error } = await supabaseDelete(
+        "pipeline_stages",
+        { column: "id", value: stageId }
+      )
 
       if (error) throw error
 
