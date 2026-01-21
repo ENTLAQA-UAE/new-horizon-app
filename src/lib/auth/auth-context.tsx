@@ -102,6 +102,37 @@ export function useAuth() {
 // Storage key for user tracking
 const AUTH_USER_KEY = "jadarat_auth_user_id"
 
+// Helper function to clear all auth-related cookies
+function clearAuthCookies() {
+  try {
+    const cookies = document.cookie.split(";")
+
+    for (const cookie of cookies) {
+      const [name] = cookie.split("=")
+      const cookieName = name.trim()
+
+      // Clear cookies that match Supabase or auth patterns
+      if (
+        cookieName.startsWith("sb-") ||
+        cookieName.includes("supabase") ||
+        cookieName.includes("auth") ||
+        cookieName.includes("token") ||
+        cookieName.includes("session") ||
+        cookieName.includes("jadarat")
+      ) {
+        // Clear cookie for current path and root path
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
+        // Also try without domain for localhost
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=;`
+        console.log("AuthProvider: Cleared cookie:", cookieName)
+      }
+    }
+  } catch (e) {
+    console.warn("AuthProvider: Error clearing cookies:", e)
+  }
+}
+
 interface AuthProviderProps {
   children: ReactNode
 }
@@ -526,10 +557,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const supabase = createClient()
 
-      // Sign out with timeout (don't wait too long)
-      const signOutPromise = supabase.auth.signOut({ scope: 'local' })
+      // Sign out with scope: 'global' to call the Supabase logout API
+      // This invalidates the session on the server, not just locally
+      const signOutPromise = supabase.auth.signOut({ scope: 'global' })
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Sign out timeout")), 2000)
+        setTimeout(() => reject(new Error("Sign out timeout")), 5000)
       )
 
       await Promise.race([signOutPromise, timeoutPromise]).catch((e) => {
@@ -539,12 +571,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("AuthProvider: Sign out error:", error)
     }
 
-    // CRITICAL: Full cleanup - clear ALL storage and reset Supabase client singleton
+    // CRITICAL: Full cleanup - clear ALL storage, cookies, and reset Supabase client singleton
     // This ensures next login starts with completely fresh state
     try {
       clearTokenCache() // Clear auth-fetch token cache
       fullCleanup()
       sessionStorage.removeItem(AUTH_USER_KEY)
+
+      // Clear all auth-related cookies
+      clearAuthCookies()
     } catch (e) {
       console.warn("AuthProvider: Cleanup error:", e)
     }
