@@ -318,9 +318,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         sessionStorage.setItem(AUTH_USER_KEY, user.id)
       } catch {}
 
-      // Step 2: Fetch profile using raw fetch (Supabase client was timing out)
+      // Step 2: Fetch profile, roles, and org in PARALLEL for faster loading
       let profile: UserProfile | null = null
       let profileError: AuthError | null = null
+      let roles: UserRole[] = []
+      let organization: UserOrganization | null = null
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -331,57 +333,107 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       console.log("AuthProvider: Supabase URL:", supabaseUrl)
-      console.log("AuthProvider: Fetching profile for user:", user.id)
+      console.log("AuthProvider: Fetching profile and roles in parallel for user:", user.id)
 
       if (supabaseUrl && supabaseKey) {
-        try {
-          const profileStart = Date.now()
+        const parallelStart = Date.now()
 
-          // Add timeout to profile fetch to prevent hanging
-          const profileController = new AbortController()
-          const profileTimeoutId = setTimeout(() => profileController.abort(), 10000)
+        // Create fetch functions for parallel execution
+        const fetchProfile = async (): Promise<{ profile: UserProfile | null; error: AuthError | null }> => {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-          const profileResponse = await fetch(
-            `${supabaseUrl}/rest/v1/profiles?select=id,email,first_name,last_name,avatar_url,org_id&id=eq.${user.id}`,
-            { headers: authHeaders, signal: profileController.signal }
-          )
+            const response = await fetch(
+              `${supabaseUrl}/rest/v1/profiles?select=id,email,first_name,last_name,avatar_url,org_id&id=eq.${user.id}`,
+              { headers: authHeaders, signal: controller.signal }
+            )
 
-          clearTimeout(profileTimeoutId)
+            clearTimeout(timeoutId)
 
-          console.log("AuthProvider: Profile fetch response:", {
-            status: profileResponse.status,
-            time: Date.now() - profileStart + 'ms'
-          })
+            if (response.ok) {
+              const data = await response.json()
+              if (data && data.length > 0) {
+                return { profile: data[0] as UserProfile, error: null }
+              }
+              return { profile: null, error: { code: "PROFILE_NOT_FOUND", message: "User profile not found." } }
+            }
+            return { profile: null, error: { code: "PROFILE_FETCH_ERROR", message: "Failed to load profile.", details: `Status: ${response.status}` } }
+          } catch (err) {
+            const isTimeout = err instanceof Error && err.name === 'AbortError'
+            return { profile: null, error: { code: isTimeout ? "NETWORK_ERROR" : "PROFILE_FETCH_ERROR", message: isTimeout ? "Profile loading timed out." : "Failed to load profile." } }
+          }
+        }
 
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json()
-            if (profileData && profileData.length > 0) {
-              profile = profileData[0] as UserProfile
-              console.log("AuthProvider: Profile loaded:", { id: profile.id, org_id: profile.org_id })
-            } else {
-              console.log("AuthProvider: No profile found for user")
-              profileError = {
-                code: "PROFILE_NOT_FOUND",
-                message: "User profile not found. Please contact support.",
+        const fetchRoles = async (): Promise<UserRole[]> => {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+            const response = await fetch(
+              `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${user.id}`,
+              { headers: authHeaders, signal: controller.signal }
+            )
+
+            clearTimeout(timeoutId)
+
+            if (response.ok) {
+              const data = await response.json()
+              if (data && data.length > 0) {
+                return data.map((r: { role: string }) => r.role as UserRole)
               }
             }
-          } else {
-            console.warn("AuthProvider: Profile fetch failed with status:", profileResponse.status)
-            profileError = {
-              code: "PROFILE_FETCH_ERROR",
-              message: "Failed to load user profile. Please try again.",
-              details: `Status: ${profileResponse.status}`
-            }
+            return []
+          } catch {
+            return []
           }
-        } catch (profileFetchErr) {
-          console.error("AuthProvider: Profile fetch error:", profileFetchErr)
-          const isTimeout = profileFetchErr instanceof Error && profileFetchErr.name === 'AbortError'
-          profileError = {
-            code: isTimeout ? "NETWORK_ERROR" : "PROFILE_FETCH_ERROR",
-            message: isTimeout
-              ? "Profile loading timed out. Please check your connection and try again."
-              : "Failed to load user profile. Please try again.",
-            details: profileFetchErr instanceof Error ? profileFetchErr.message : String(profileFetchErr)
+        }
+
+        const fetchOrg = async (orgId: string): Promise<UserOrganization | null> => {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+            const response = await fetch(
+              `${supabaseUrl}/rest/v1/organizations?select=id,name,name_ar,slug,logo_url,primary_color,secondary_color&id=eq.${orgId}`,
+              { headers: authHeaders, signal: controller.signal }
+            )
+
+            clearTimeout(timeoutId)
+
+            if (response.ok) {
+              const data = await response.json()
+              if (data && data.length > 0) {
+                return data[0] as UserOrganization
+              }
+            }
+            return null
+          } catch {
+            return null
+          }
+        }
+
+        // Execute profile and roles fetch in parallel
+        const [profileResult, rolesResult] = await Promise.all([
+          fetchProfile(),
+          fetchRoles()
+        ])
+
+        profile = profileResult.profile
+        profileError = profileResult.error
+        roles = rolesResult
+
+        console.log("AuthProvider: Parallel fetch completed in", Date.now() - parallelStart + 'ms', {
+          hasProfile: !!profile,
+          rolesCount: roles.length
+        })
+
+        // Fetch org only if we have profile with org_id (this is fast, ~100ms)
+        if (profile?.org_id) {
+          console.log("AuthProvider: Fetching organization:", profile.org_id)
+          organization = await fetchOrg(profile.org_id)
+          if (organization) {
+            console.log("AuthProvider: Organization loaded:", organization.name)
           }
         }
       } else {
@@ -405,90 +457,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         loadingRef.current = false
         return
-      }
-
-      // Step 3: Fetch user roles using raw fetch
-      let roles: UserRole[] = []
-      console.log("AuthProvider: Fetching roles for user:", user.id)
-
-      if (supabaseUrl && supabaseKey) {
-        try {
-          const rolesStart = Date.now()
-
-          // Add timeout to roles fetch to prevent hanging
-          const rolesController = new AbortController()
-          const rolesTimeoutId = setTimeout(() => rolesController.abort(), 10000)
-
-          const rolesResponse = await fetch(
-            `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${user.id}`,
-            { headers: authHeaders, signal: rolesController.signal }
-          )
-
-          clearTimeout(rolesTimeoutId)
-
-          console.log("AuthProvider: Roles fetch response:", {
-            status: rolesResponse.status,
-            time: Date.now() - rolesStart + 'ms'
-          })
-
-          if (rolesResponse.ok) {
-            const rolesData = await rolesResponse.json()
-            if (rolesData && rolesData.length > 0) {
-              roles = rolesData.map((r: { role: string }) => r.role as UserRole)
-              console.log("AuthProvider: User roles found:", roles)
-            } else {
-              console.warn("AuthProvider: No roles found for user - will use default behavior")
-            }
-          } else {
-            console.warn("AuthProvider: Roles fetch failed with status:", rolesResponse.status)
-          }
-        } catch (rolesFetchErr) {
-          const isTimeout = rolesFetchErr instanceof Error && rolesFetchErr.name === 'AbortError'
-          console.error("AuthProvider: Roles fetch error:", isTimeout ? "Timeout" : rolesFetchErr)
-        }
-      }
-
-      // Step 4: Fetch organization if user has org_id using raw fetch
-      let organization: UserOrganization | null = null
-
-      if (profile?.org_id && supabaseUrl && supabaseKey) {
-        console.log("AuthProvider: Fetching organization:", profile.org_id)
-        try {
-          const orgStart = Date.now()
-
-          // Add timeout to org fetch to prevent hanging
-          const orgController = new AbortController()
-          const orgTimeoutId = setTimeout(() => orgController.abort(), 10000)
-
-          const orgResponse = await fetch(
-            `${supabaseUrl}/rest/v1/organizations?select=id,name,name_ar,slug,logo_url,primary_color,secondary_color&id=eq.${profile.org_id}`,
-            { headers: authHeaders, signal: orgController.signal }
-          )
-
-          clearTimeout(orgTimeoutId)
-
-          console.log("AuthProvider: Org fetch response:", {
-            status: orgResponse.status,
-            time: Date.now() - orgStart + 'ms'
-          })
-
-          if (orgResponse.ok) {
-            const orgData = await orgResponse.json()
-            if (orgData && orgData.length > 0) {
-              organization = orgData[0] as UserOrganization
-              console.log("AuthProvider: Organization loaded:", organization.name)
-            } else {
-              console.log("AuthProvider: No organization found for id:", profile.org_id)
-            }
-          } else {
-            console.warn("AuthProvider: Org fetch failed with status:", orgResponse.status)
-          }
-        } catch (orgFetchError) {
-          const isTimeout = orgFetchError instanceof Error && orgFetchError.name === 'AbortError'
-          console.error("AuthProvider: Org fetch error:", isTimeout ? "Timeout" : orgFetchError)
-        }
-      } else if (!profile?.org_id) {
-        console.log("AuthProvider: No org_id in profile, skipping org fetch")
       }
 
       // Compute derived state

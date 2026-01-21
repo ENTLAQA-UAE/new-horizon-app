@@ -179,9 +179,6 @@ function LoginPageContent() {
 
         const supabase = createClient()
 
-        // Sign out any existing session to ensure clean state
-        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
