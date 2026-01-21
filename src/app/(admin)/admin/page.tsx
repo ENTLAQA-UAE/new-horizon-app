@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Building2, Users, Briefcase, TrendingUp, CheckCircle, Clock, DollarSign, BarChart3 } from "lucide-react"
 import Link from "next/link"
-import { DashboardCharts } from "./dashboard-charts"
+import { DashboardCharts } from "../dashboard-charts"
 
 async function getStats() {
   const supabase = await createClient()

@@ -73,7 +73,7 @@ interface SidebarProps {
 const superAdminSections: NavSection[] = [
   {
     links: [
-      { href: "/", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+      { href: "/admin", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
       { href: "/organizations", label: "Organizations", labelAr: "المؤسسات", icon: Building2 },
       { href: "/users", label: "Users", labelAr: "المستخدمون", icon: Users },
       { href: "/tiers", label: "Subscription Tiers", labelAr: "باقات الاشتراك", icon: Layers },
@@ -252,7 +252,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
     if (pathname === href) return true
 
     // For non-root paths, check if current path starts with this href
-    if (href !== "/" && href !== "/org" && !href.includes("/settings")) {
+    if (href !== "/" && href !== "/org" && href !== "/admin" && !href.includes("/settings")) {
       const wouldMatchAsParent = pathname.startsWith(href + "/")
 
       // Only mark as active if no more specific link exists that matches the current path

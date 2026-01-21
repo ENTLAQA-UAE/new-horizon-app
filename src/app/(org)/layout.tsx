@@ -35,6 +35,8 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
     primaryRole,
     needsOnboarding,
     refreshAuth,
+    isSuperAdmin,
+    profile,
   } = useAuth()
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -50,13 +52,27 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
       return
     }
 
+    // Super admin users should use the admin dashboard
+    if (isSuperAdmin) {
+      console.log("OrgLayout: User is super_admin, redirecting to admin dashboard")
+      router.push("/admin")
+      return
+    }
+
+    // Users without org_id need onboarding
+    if (!profile?.org_id) {
+      console.log("OrgLayout: User has no org_id, redirecting to onboarding")
+      router.push("/onboarding")
+      return
+    }
+
     // Needs onboarding - redirect to onboarding
     if (needsOnboarding) {
       console.log("OrgLayout: User needs onboarding, redirecting")
       router.push("/onboarding")
       return
     }
-  }, [isLoading, isAuthenticated, needsOnboarding, router])
+  }, [isLoading, isAuthenticated, needsOnboarding, isSuperAdmin, profile?.org_id, router])
 
   // Show loading state
   if (isLoading) {
@@ -70,6 +86,16 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Not authenticated (will redirect via useEffect)
   if (!isAuthenticated) {
+    return <OrgLoadingScreen />
+  }
+
+  // Super admin (will redirect via useEffect)
+  if (isSuperAdmin) {
+    return <OrgLoadingScreen />
+  }
+
+  // No org_id (will redirect via useEffect)
+  if (!profile?.org_id) {
     return <OrgLoadingScreen />
   }
 
