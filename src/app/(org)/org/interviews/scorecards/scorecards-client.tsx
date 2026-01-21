@@ -267,36 +267,60 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
 
       console.log("Creating scorecard template with data:", insertData)
 
-      // Add timeout to detect hanging requests (RLS policy blocking)
-      const timeoutPromise = new Promise<{ data: null; error: { message: string } }>((resolve) => {
-        setTimeout(() => {
-          resolve({ data: null, error: { message: "Request timed out. Your role may not have permission to create scorecards." } })
-        }, 10000)
+      // First, check if we have a valid session
+      console.log("Checking auth session...")
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      console.log("Session check result:", {
+        hasSession: !!sessionData?.session,
+        userId: sessionData?.session?.user?.id,
+        error: sessionError
       })
 
-      const insertPromise = supabase
-        .from("scorecard_templates")
-        .insert(insertData)
-        .select()
-        .single()
-
-      const { data, error } = await Promise.race([insertPromise, timeoutPromise])
-
-      if (error) {
-        console.error("Supabase error creating scorecard:", error)
-        toast.error(`Failed to create template: ${error.message}`)
+      if (!sessionData?.session) {
+        toast.error("No active session. Please refresh the page and try again.")
         return
       }
 
+      // Use direct fetch instead of Supabase client to bypass potential client issues
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const accessToken = sessionData.session.access_token
+
+      console.log("Making direct fetch request to Supabase...")
+      const startTime = Date.now()
+
+      const response = await fetch(`${supabaseUrl}/rest/v1/scorecard_templates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${accessToken}`,
+          'Prefer': 'return=representation',
+        },
+        body: JSON.stringify(insertData),
+      })
+
+      console.log("Fetch completed in", Date.now() - startTime, "ms, status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("Supabase error response:", errorText)
+        throw new Error(errorText || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
       console.log("Scorecard template created successfully:", data)
-      setTemplates([data as unknown as ScorecardTemplate, ...templates])
+
+      // Handle array response (PostgREST returns array for single insert with Prefer: return=representation)
+      const createdTemplate = Array.isArray(data) ? data[0] : data
+      setTemplates([createdTemplate as ScorecardTemplate, ...templates])
       setIsCreateDialogOpen(false)
       resetForm()
       toast.success("Scorecard template created successfully")
       router.refresh()
     } catch (err) {
       console.error("Unexpected error creating scorecard:", err)
-      toast.error("An unexpected error occurred. Please check the console for details.")
+      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
+      toast.error(`Failed to create template: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
