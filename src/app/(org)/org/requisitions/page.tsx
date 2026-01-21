@@ -52,9 +52,9 @@ export default async function RequisitionsPage() {
     .eq("is_active", true)
     .order("name")
 
-  // Get locations
+  // Get locations (from 'locations' table used by vacancy settings)
   const { data: locations } = await supabase
-    .from("job_locations")
+    .from("locations")
     .select("id, name, city")
     .eq("org_id", orgId)
     .eq("is_active", true)
@@ -68,16 +68,32 @@ export default async function RequisitionsPage() {
     .eq("is_active", true)
     .order("name")
 
-  // Get org's default currency from settings
+  // Get org's default currency from settings (org-specific key)
   const { data: currencySetting } = await supabase
     .from("platform_settings")
     .select("value")
-    .eq("key", "org_settings_currency")
+    .eq("key", `org_settings_currency_${orgId}`)
     .single()
 
-  const defaultCurrency = currencySetting?.value
-    ? JSON.parse(currencySetting.value)
-    : "SAR"
+  // Fallback to global setting if org-specific not found
+  let defaultCurrency = "SAR"
+  if (currencySetting?.value) {
+    defaultCurrency = typeof currencySetting.value === 'string'
+      ? JSON.parse(currencySetting.value)
+      : currencySetting.value
+  } else {
+    // Try global setting as fallback
+    const { data: globalCurrency } = await supabase
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "org_settings_currency")
+      .single()
+    if (globalCurrency?.value) {
+      defaultCurrency = typeof globalCurrency.value === 'string'
+        ? JSON.parse(globalCurrency.value)
+        : globalCurrency.value
+    }
+  }
 
   // Get team members for approvers
   const { data: teamMembers } = await supabase
