@@ -4,7 +4,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import {
+  supabaseInsert,
+  supabaseUpdate,
+  supabaseDelete,
+} from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -121,7 +125,6 @@ export function ScreeningQuestionsClient({
   organizationId,
 }: ScreeningQuestionsClientProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [questions, setQuestions] = useState(initialQuestions)
   const [searchQuery, setSearchQuery] = useState("")
@@ -209,7 +212,7 @@ export function ScreeningQuestionsClient({
         description_ar: formData.description_ar || null,
         question_type: formData.question_type,
         options: (formData.question_type === "select" || formData.question_type === "multiselect")
-          ? formData.options.filter(o => o.trim()) as unknown as Json
+          ? formData.options.filter(o => o.trim())
           : null,
         is_required: formData.is_required,
         min_value: formData.question_type === "number" ? formData.min_value : null,
@@ -225,38 +228,40 @@ export function ScreeningQuestionsClient({
       }
 
       if (editingQuestion) {
-        const { data, error } = await supabase
-          .from("screening_questions")
-          .update(questionData)
-          .eq("id", editingQuestion.id)
-          .select()
-          .single()
+        const { data, error } = await supabaseUpdate<ScreeningQuestion>(
+          "screening_questions",
+          { ...questionData, updated_at: new Date().toISOString() },
+          { column: "id", value: editingQuestion.id }
+        )
 
-        if (error) throw error
-        setQuestions(questions.map((q) => (q.id === editingQuestion.id ? data : q)))
+        if (error) throw new Error(error.message)
+        if (data) {
+          setQuestions(questions.map((q) => (q.id === editingQuestion.id ? data : q)))
+        }
         toast.success("Question updated successfully")
       } else {
         const maxOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.sort_order)) : 0
-        const { data, error } = await supabase
-          .from("screening_questions")
-          .insert({
+        const { data, error } = await supabaseInsert<ScreeningQuestion>(
+          "screening_questions",
+          {
             ...questionData,
             sort_order: maxOrder + 1,
             is_active: true,
-          })
-          .select()
-          .single()
+          }
+        )
 
-        if (error) throw error
-        setQuestions([...questions, data])
+        if (error) throw new Error(error.message)
+        if (data) {
+          setQuestions([...questions, data])
+        }
         toast.success("Question created successfully")
       }
 
       setIsDialogOpen(false)
       resetForm()
       router.refresh()
-    } catch (error) {
-      toast.error("Failed to save question")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save question")
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -268,20 +273,20 @@ export function ScreeningQuestionsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("screening_questions")
-        .delete()
-        .eq("id", deletingQuestion.id)
+      const { error } = await supabaseDelete(
+        "screening_questions",
+        { column: "id", value: deletingQuestion.id }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setQuestions(questions.filter((q) => q.id !== deletingQuestion.id))
       setIsDeleteDialogOpen(false)
       setDeletingQuestion(null)
       toast.success("Question deleted successfully")
       router.refresh()
-    } catch (error) {
-      toast.error("Failed to delete question")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete question")
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -292,9 +297,9 @@ export function ScreeningQuestionsClient({
     setIsLoading(true)
     try {
       const maxOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.sort_order)) : 0
-      const { data, error } = await supabase
-        .from("screening_questions")
-        .insert({
+      const { data, error } = await supabaseInsert<ScreeningQuestion>(
+        "screening_questions",
+        {
           org_id: organizationId,
           job_id: question.job_id,
           question: `${question.question} (Copy)`,
@@ -302,7 +307,7 @@ export function ScreeningQuestionsClient({
           description: question.description,
           description_ar: question.description_ar,
           question_type: question.question_type,
-          options: question.options as unknown as Json,
+          options: question.options,
           is_required: question.is_required,
           min_value: question.min_value,
           max_value: question.max_value,
@@ -314,16 +319,17 @@ export function ScreeningQuestionsClient({
           ideal_answer: question.ideal_answer,
           sort_order: maxOrder + 1,
           is_active: true,
-        })
-        .select()
-        .single()
+        }
+      )
 
-      if (error) throw error
-      setQuestions([...questions, data])
-      toast.success("Question duplicated successfully")
+      if (error) throw new Error(error.message)
+      if (data) {
+        setQuestions([...questions, data])
+        toast.success("Question duplicated successfully")
+      }
       router.refresh()
-    } catch (error) {
-      toast.error("Failed to duplicate question")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to duplicate question")
       console.error(error)
     } finally {
       setIsLoading(false)

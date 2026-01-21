@@ -2,8 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,7 +38,6 @@ interface Location {
 }
 
 export default function LocationsPage() {
-  const supabase = createClient()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -64,34 +62,36 @@ export default function LocationsPage() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      // Get user's org_id from profiles using auth-fetch
+      const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
+        "profiles",
+        { select: "org_id", limit: 1 }
+      )
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single()
-
-      const orgId = profile?.org_id
-      if (!orgId) {
+      if (profileError || !profileData?.[0]?.org_id) {
+        console.error("Error loading profile:", profileError)
         setIsLoading(false)
         return
       }
 
+      const orgId = profileData[0].org_id
       setOrganizationId(orgId)
 
-      const { data, error } = await supabase
-        .from("locations")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("name")
+      // Get locations using auth-fetch
+      const { data, error } = await supabaseSelect<Location[]>(
+        "locations",
+        {
+          select: "*",
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          order: { column: "name", ascending: true },
+        }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
       setLocations(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading locations:", error)
-      toast.error("Failed to load locations")
+      toast.error(error.message || "Failed to load locations")
     } finally {
       setIsLoading(false)
     }
