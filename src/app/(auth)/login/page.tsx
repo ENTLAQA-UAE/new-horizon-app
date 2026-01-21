@@ -125,6 +125,16 @@ function LoginPageContent() {
       }
 
       console.log("Login successful for user:", data.user.id)
+
+      // Store session explicitly before redirect to prevent race condition
+      // This ensures the new page can access the session even if Supabase
+      // hasn't finished persisting to localStorage yet
+      try {
+        localStorage.setItem('jadarat_pending_session', JSON.stringify(data.session))
+      } catch (e) {
+        console.warn("Could not store pending session:", e)
+      }
+
       toast.success("Welcome back!")
 
       // Use full page reload to ensure completely fresh state
