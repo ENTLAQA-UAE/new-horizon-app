@@ -174,22 +174,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log("AuthProvider: getSession completed, session:", session ? "exists" : "null")
         } catch (sessionError) {
           console.warn("AuthProvider: getSession timed out, trying to retrieve session from storage")
-          // Try to get the session from localStorage as a fallback
-          // Supabase stores the session in localStorage with a key like sb-<project-ref>-auth-token
+
+          // First try our pending session key (set by login page before redirect)
+          // This handles the race condition where redirect happens before Supabase persists
           try {
-            const storageKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
-            if (storageKeys.length > 0) {
-              const storedData = localStorage.getItem(storageKeys[0])
-              if (storedData) {
-                const parsed = JSON.parse(storedData)
-                if (parsed?.access_token && parsed?.user) {
-                  console.log("AuthProvider: Found session in localStorage, using it")
-                  session = parsed as Session
-                }
+            const pendingSession = localStorage.getItem('jadarat_pending_session')
+            if (pendingSession) {
+              const parsed = JSON.parse(pendingSession)
+              if (parsed?.access_token && parsed?.user) {
+                console.log("AuthProvider: Found pending session from login, using it")
+                session = parsed as Session
+                // Clear it after use to avoid stale sessions
+                localStorage.removeItem('jadarat_pending_session')
               }
             }
-          } catch (storageError) {
-            console.warn("AuthProvider: Could not retrieve session from storage:", storageError)
+          } catch (pendingError) {
+            console.warn("AuthProvider: Could not retrieve pending session:", pendingError)
+          }
+
+          // If no pending session, try Supabase's localStorage key
+          // Supabase stores the session in localStorage with a key like sb-<project-ref>-auth-token
+          if (!session) {
+            try {
+              const storageKeys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"))
+              if (storageKeys.length > 0) {
+                const storedData = localStorage.getItem(storageKeys[0])
+                if (storedData) {
+                  const parsed = JSON.parse(storedData)
+                  if (parsed?.access_token && parsed?.user) {
+                    console.log("AuthProvider: Found session in localStorage, using it")
+                    session = parsed as Session
+                  }
+                }
+              }
+            } catch (storageError) {
+              console.warn("AuthProvider: Could not retrieve session from storage:", storageError)
+            }
           }
 
           // If we still don't have a session, set unauthenticated state instead of leaving loading forever
@@ -451,7 +471,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         keysToRemove.forEach(k => sessionStorage.removeItem(k))
 
         const localKeysToRemove = Object.keys(localStorage).filter(k =>
-          k.startsWith("sb-")
+          k.startsWith("sb-") || k.startsWith("jadarat_")
         )
         localKeysToRemove.forEach(k => localStorage.removeItem(k))
       } catch {}
