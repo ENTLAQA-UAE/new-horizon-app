@@ -209,19 +209,24 @@ GRANT EXECUTE ON FUNCTION public.is_super_admin(UUID) TO anon;
 -- ROLE ACCESS MATRIX (for reference):
 -- =====================================================================
 --
--- | Role            | ATS Core | Scorecards | Settings | Admin Panel |
--- |-----------------|----------|------------|----------|-------------|
--- | super_admin     | ALL      | ALL        | ALL      | YES         |
--- | org_admin       | ALL      | ALL        | ALL      | NO          |
--- | hr_manager      | ALL      | ALL        | READ     | NO          |
--- | recruiter       | ALL      | READ       | READ     | NO          |
--- | hiring_manager  | READ     | READ       | NO       | NO          |
--- | interviewer     | READ     | OWN        | NO       | NO          |
--- | employee        | SELF     | SELF       | NO       | NO          |
+-- | Role            | ATS Core | Scorecards | Settings | Analytics |
+-- |-----------------|----------|------------|----------|-----------|
+-- | super_admin     | ALL      | ALL        | ALL      | ALL       |
+-- | org_admin       | READ     | READ       | ALL      | ALL       |
+-- | hr_manager      | ALL      | ALL        | READ     | READ      |
+-- | recruiter       | ALL      | READ       | READ     | READ      |
+-- | hiring_manager  | READ     | READ       | NO       | NO        |
+-- | interviewer     | READ     | OWN        | NO       | NO        |
+-- | employee        | SELF     | SELF       | NO       | NO        |
 --
--- ATS Core = jobs, candidates, applications, interviews
--- Scorecards = scorecard_templates, interview_scorecards
--- Settings = departments, locations, pipeline_stages, workflows
+-- org_admin: Organization admin (settings, branding, team, integrations, analytics)
+--            NOT responsible for hiring operations (jobs, candidates)
+--
+-- hr_manager: HR operations lead (full ATS access, scorecards, offers)
+--
+-- ATS Core = jobs, candidates, applications, interviews, offers
+-- Scorecards = scorecard_templates, interview_scorecards, offer_templates
+-- Settings = departments, locations, pipeline_stages, integrations, branding
 -- =====================================================================
 
 -- =====================================================================
