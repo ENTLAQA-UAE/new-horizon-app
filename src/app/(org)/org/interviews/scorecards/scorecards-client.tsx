@@ -283,8 +283,11 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
         console.warn("getSession timed out, trying localStorage fallback")
       }
 
-      // Fallback: try to get token from localStorage if getSession failed
+      // Fallback: try multiple sources if getSession failed
       if (!accessToken) {
+        console.log("Trying fallback methods to get access token...")
+
+        // Method 1: Try localStorage sb-*-auth-token pattern
         try {
           const storageKeys = Object.keys(localStorage).filter(
             k => k.startsWith("sb-") && k.endsWith("-auth-token")
@@ -294,12 +297,63 @@ export function ScorecardsClient({ templates: initialTemplates, organizationId }
             if (storedData) {
               const parsed = JSON.parse(storedData)
               accessToken = parsed?.access_token || null
-              console.log("Session from localStorage:", accessToken ? "found" : "not found")
+              if (accessToken) console.log("Token from localStorage sb-* pattern: found")
             }
           }
         } catch (e) {
-          console.warn("Could not get token from localStorage:", e)
+          console.warn("Could not get token from localStorage sb-* pattern:", e)
         }
+
+        // Method 2: Try jadarat_pending_session
+        if (!accessToken) {
+          try {
+            const pendingSession = localStorage.getItem('jadarat_pending_session')
+            if (pendingSession) {
+              const parsed = JSON.parse(pendingSession)
+              accessToken = parsed?.access_token || null
+              if (accessToken) console.log("Token from jadarat_pending_session: found")
+            }
+          } catch (e) {
+            console.warn("Could not get token from jadarat_pending_session:", e)
+          }
+        }
+
+        // Method 3: Try cookies (Supabase SSR stores tokens here)
+        if (!accessToken) {
+          try {
+            const cookies = document.cookie.split(';')
+            for (const cookie of cookies) {
+              const [name, value] = cookie.trim().split('=')
+              if (name.startsWith('sb-') && name.endsWith('-auth-token')) {
+                const decoded = decodeURIComponent(value)
+                const parsed = JSON.parse(decoded)
+                accessToken = parsed?.access_token || null
+                if (accessToken) {
+                  console.log("Token from cookie:", name)
+                  break
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("Could not get token from cookies:", e)
+          }
+        }
+
+        // Method 4: Try to extract from Supabase client internal state
+        if (!accessToken) {
+          try {
+            // @ts-expect-error - accessing internal property
+            const internalSession = supabase.auth.session
+            if (internalSession?.access_token) {
+              accessToken = internalSession.access_token
+              console.log("Token from Supabase internal session: found")
+            }
+          } catch (e) {
+            console.warn("Could not get token from Supabase internal state:", e)
+          }
+        }
+
+        console.log("Fallback result:", accessToken ? "token found" : "no token found")
       }
 
       if (!accessToken) {
