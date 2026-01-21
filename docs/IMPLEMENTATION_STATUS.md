@@ -1,7 +1,58 @@
 # Jadarat ATS - Implementation Status & Remaining Tasks
 
-**Last Updated:** January 16, 2026
+**Last Updated:** January 21, 2026
 **Overall Progress:** ~40%
+
+---
+
+## CRITICAL BLOCKER: Authentication Redirect Loop
+
+**Status:** UNRESOLVED - Login still not working on production
+
+### Symptoms
+Users can authenticate successfully but are immediately redirected back to login in an infinite loop.
+
+### Console Log Flow (from jadarat-ats.vercel.app/login)
+```
+1. RootRedirect: Found pending session from login ✓
+2. RootRedirect: Session found for user ✓
+3. RootRedirect: User roles: ['super_admin'] ✓
+4. RootRedirect: User is super_admin, redirecting to /admin ✓
+5. AuthProvider: Starting auth load... fetching session
+6. AuthProvider: No session provided, trying getSession...
+7. ⚠️ AuthProvider: getSession timed out (after 3s)
+8. AuthProvider: trying to retrieve session from storage
+9. AuthProvider: No session available, setting unauthenticated state
+10. AdminLayout: Not authenticated, redirecting to login ← LOOP
+```
+
+### Root Cause Analysis
+- `supabase.auth.getSession()` is timing out (3 second limit)
+- Pending session stored in localStorage during login IS being found by RootRedirect
+- BUT AuthProvider on /admin page cannot find the session
+- localStorage `jadarat_pending_session` is being cleared by RootRedirect before AuthProvider can use it
+- Supabase's own localStorage key `sb-*-auth-token` may not be persisting correctly
+
+### Recent Commits Attempting to Fix This
+| Commit | Description | Result |
+|--------|-------------|--------|
+| `fed419e` | Fix organization-specific role auth redirect issue | Partial |
+| `c0ab493` | Fix session persistence race condition after login redirect | Not working |
+| `b9c148a` | Fix getSession timeout leaving app in infinite loading state | Partial |
+| `b2c383d` | Replace Supabase client with raw fetch for auth queries | Partial |
+| `1c98b9b` | Add debug logging to diagnose Supabase connectivity issue | Done |
+
+### Files Involved
+- `src/lib/auth/auth-context.tsx` - AuthProvider with getSession timeout logic
+- `src/app/page.tsx` - RootRedirect that handles post-login routing
+- `src/app/(auth)/login/page.tsx` - Login page that stores pending session
+- `src/app/(admin)/layout.tsx` - AdminLayout that checks auth state
+
+### Proposed Fix (Next Steps)
+1. **Don't clear `jadarat_pending_session` in RootRedirect** - Let AuthProvider clear it instead
+2. **Increase getSession timeout** or use a different approach
+3. **Pass session via URL parameter** during redirect (encoded token)
+4. **Use cookies instead of localStorage** for session persistence
 
 ---
 
@@ -344,12 +395,31 @@ CREATE POLICY "auth_all" ON interviews FOR ALL USING (auth.role() = 'authenticat
 
 ## TECHNICAL DEBT
 
-1. **Authentication:** Currently using basic Supabase auth, needs proper role-based access
+1. **Authentication:** CRITICAL - Auth redirect loop still blocking all logins (see top of this doc)
 2. **Multi-tenancy:** org_id filtering not fully implemented
 3. **Error handling:** Needs consistent error handling across all pages
 4. **Loading states:** Some pages missing skeleton loaders
 5. **Mobile responsiveness:** Needs testing and optimization
 6. **Tests:** No unit or integration tests
+
+---
+
+## AUTH WORK COMPLETED (But Still Broken)
+
+### What Was Done
+- [x] Added debug logging throughout auth flow
+- [x] Replaced Supabase client calls with raw fetch for profile/roles/org queries
+- [x] Added 3-second timeout to getSession() to prevent infinite loading
+- [x] Added fallback to localStorage when getSession times out
+- [x] Created `jadarat_pending_session` storage mechanism
+- [x] Fixed organization-specific role redirect logic in RootRedirect
+- [x] Added session persistence between login and redirect
+
+### What Still Needs Fixing
+- [ ] **CRITICAL:** Session not persisting from login → /admin page transition
+- [ ] getSession() timeout on /admin page - Supabase client not finding session
+- [ ] Race condition: RootRedirect clears pending session before AuthProvider reads it
+- [ ] Consider using cookies/server-side session instead of localStorage
 
 ---
 

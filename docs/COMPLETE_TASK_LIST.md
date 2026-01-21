@@ -7,6 +7,38 @@
 
 ---
 
+# ⚠️ CRITICAL BLOCKER: AUTHENTICATION (Must Fix First)
+
+**Status:** 🔴 BLOCKING ALL PROGRESS - Users cannot log in to the application
+
+## Problem Summary
+Login succeeds but users are redirected back to login in an infinite loop. The session is not persisting correctly between the login page and the dashboard.
+
+## Console Evidence (from jadarat-ats.vercel.app)
+```
+RootRedirect: Session found ✓ → redirects to /admin
+AuthProvider: getSession timed out ⚠️ → No session found → redirects to /login
+```
+
+## Tasks to Fix Authentication
+- ✅ AUTH.1 Add debug logging to diagnose issue (commit 1c98b9b)
+- ✅ AUTH.2 Replace Supabase client with raw fetch for queries (commit b2c383d)
+- ✅ AUTH.3 Fix getSession timeout causing infinite loading (commit b9c148a)
+- ✅ AUTH.4 Fix session persistence race condition (commit c0ab493)
+- ✅ AUTH.5 Fix organization-specific role redirect (commit fed419e)
+- ⬜ AUTH.6 Fix race condition: RootRedirect clears session before AuthProvider reads it
+- ⬜ AUTH.7 Ensure Supabase stores session in localStorage correctly
+- ⬜ AUTH.8 Consider using cookies/middleware for session instead of localStorage
+- ⬜ AUTH.9 Test login flow end-to-end on production
+
+## Key Files
+- `src/lib/auth/auth-context.tsx` - AuthProvider
+- `src/app/page.tsx` - RootRedirect
+- `src/app/(auth)/login/page.tsx` - Login page
+- `src/app/(admin)/layout.tsx` - AdminLayout auth check
+
+---
+
 # SECTION 1: USER ROLES & PERMISSIONS (38 Tasks) ✅ COMPLETED
 
 ## 1.1 Database Schema for RBAC
@@ -596,4 +628,22 @@
 ---
 
 *This task list should be updated as tasks are completed.*
-*Last Updated: January 18, 2026*
+*Last Updated: January 21, 2026*
+
+---
+
+## Session Notes for Future Claude Sessions
+
+**Current Blocker:** Authentication redirect loop on production. See top of this document for details.
+
+**What Works:**
+- Login authentication succeeds (user/password validated)
+- RootRedirect correctly identifies user role and redirects
+- All other features work once authenticated (tested locally?)
+
+**What's Broken:**
+- Session not persisting after redirect from login → /admin
+- `supabase.auth.getSession()` times out on /admin page
+- `jadarat_pending_session` localStorage key is cleared too early
+
+**Next Action:** Fix the session persistence issue before any other work can proceed.
