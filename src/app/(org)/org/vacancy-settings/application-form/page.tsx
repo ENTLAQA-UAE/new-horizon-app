@@ -161,6 +161,50 @@ export default function ApplicationFormPage() {
         await supabaseRpc("seed_default_application_form", { p_org_id: orgId })
       }
 
+      // Ensure Basic Information section has Phone Number field (for existing orgs)
+      const { data: basicInfoSection } = await supabaseSelect<{ id: string }[]>(
+        "application_form_sections",
+        {
+          select: "id",
+          filter: [
+            { column: "org_id", operator: "eq", value: orgId },
+            { column: "name", operator: "eq", value: "Basic Information" },
+          ],
+          limit: 1,
+        }
+      )
+
+      if (basicInfoSection?.[0]?.id) {
+        const basicInfoId = basicInfoSection[0].id
+        // Check if Phone Number field exists
+        const { data: phoneField } = await supabaseSelect<{ id: string }[]>(
+          "application_form_fields",
+          {
+            select: "id",
+            filter: [
+              { column: "section_id", operator: "eq", value: basicInfoId },
+              { column: "name", operator: "eq", value: "Phone Number" },
+            ],
+            limit: 1,
+          }
+        )
+
+        // Add Phone Number if missing
+        if (!phoneField?.length) {
+          await supabaseInsert("application_form_fields", {
+            section_id: basicInfoId,
+            org_id: orgId,
+            name: "Phone Number",
+            name_ar: "رقم الهاتف",
+            field_type: "phone",
+            is_default: true,
+            is_required: true,
+            is_enabled: true,
+            sort_order: 4,
+          })
+        }
+      }
+
       // Load sections
       const { data: sectionsData, error: sectionsError } = await supabaseSelect<FormSection[]>(
         "application_form_sections",
@@ -216,7 +260,11 @@ export default function ApplicationFormPage() {
   }
 
   const handleSaveSection = async () => {
-    if (!sectionForm.name || !organizationId) {
+    if (!organizationId) {
+      toast.error("Organization not found. Please refresh the page and try again.")
+      return
+    }
+    if (!sectionForm.name) {
       toast.error("Please enter a section name")
       return
     }
@@ -309,7 +357,15 @@ export default function ApplicationFormPage() {
   }
 
   const handleSaveField = async () => {
-    if (!fieldForm.name || !selectedSectionId || !organizationId) {
+    if (!organizationId) {
+      toast.error("Organization not found. Please refresh the page and try again.")
+      return
+    }
+    if (!selectedSectionId) {
+      toast.error("Please select a section first")
+      return
+    }
+    if (!fieldForm.name) {
       toast.error("Please enter a field name")
       return
     }
