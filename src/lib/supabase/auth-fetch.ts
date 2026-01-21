@@ -45,37 +45,33 @@ export async function getCurrentUserId(): Promise<string | null> {
   return payload?.sub || null
 }
 
+// Cache for access token to avoid repeated getSession timeouts
+let cachedAccessToken: string | null = null
+let tokenCacheTime: number = 0
+const TOKEN_CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
 /**
  * Get the access token from various sources with fallbacks
  *
+ * IMPORTANT: Fast methods are tried first to avoid getSession() timeout delays.
+ * The token is cached after retrieval to speed up subsequent calls.
+ *
  * Order of attempts:
- * 1. Supabase client getSession() with 3s timeout
- * 2. localStorage sb-*-auth-token pattern
- * 3. jadarat_pending_session in localStorage
- * 4. Cookies (where @supabase/ssr stores tokens as base64)
- * 5. Supabase client internal session state
+ * 1. Memory cache (fastest)
+ * 2. localStorage sb-*-auth-token pattern (fast)
+ * 3. jadarat_pending_session in localStorage (fast)
+ * 4. Cookies (fast)
+ * 5. Supabase client getSession() with 3s timeout (slow - last resort)
  */
 export async function getAccessToken(): Promise<string | null> {
-  const supabase = createClient()
-  let accessToken: string | null = null
-
-  // Method 1: Try getSession with timeout
-  try {
-    const sessionPromise = supabase.auth.getSession()
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("getSession timeout")), 3000)
-    )
-    const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
-    accessToken = sessionData?.session?.access_token || null
-    if (accessToken) {
-      console.log("[auth-fetch] Token from getSession: found")
-      return accessToken
-    }
-  } catch (e) {
-    console.warn("[auth-fetch] getSession timed out, trying fallbacks")
+  // Method 1: Check memory cache first (fastest)
+  if (cachedAccessToken && Date.now() - tokenCacheTime < TOKEN_CACHE_DURATION) {
+    return cachedAccessToken
   }
 
-  // Method 2: Try localStorage sb-*-auth-token pattern
+  let accessToken: string | null = null
+
+  // Method 2: Try localStorage sb-*-auth-token pattern (fast)
   if (typeof window !== 'undefined') {
     try {
       const storageKeys = Object.keys(localStorage).filter(
@@ -88,15 +84,17 @@ export async function getAccessToken(): Promise<string | null> {
           accessToken = parsed?.access_token || null
           if (accessToken) {
             console.log("[auth-fetch] Token from localStorage sb-* pattern: found")
+            cachedAccessToken = accessToken
+            tokenCacheTime = Date.now()
             return accessToken
           }
         }
       }
     } catch (e) {
-      console.warn("[auth-fetch] Could not get token from localStorage sb-* pattern:", e)
+      // Silent fail, try next method
     }
 
-    // Method 3: Try jadarat_pending_session
+    // Method 3: Try jadarat_pending_session (fast)
     try {
       const pendingSession = localStorage.getItem('jadarat_pending_session')
       if (pendingSession) {
@@ -104,14 +102,16 @@ export async function getAccessToken(): Promise<string | null> {
         accessToken = parsed?.access_token || null
         if (accessToken) {
           console.log("[auth-fetch] Token from jadarat_pending_session: found")
+          cachedAccessToken = accessToken
+          tokenCacheTime = Date.now()
           return accessToken
         }
       }
     } catch (e) {
-      console.warn("[auth-fetch] Could not get token from jadarat_pending_session:", e)
+      // Silent fail, try next method
     }
 
-    // Method 4: Try cookies (Supabase SSR stores tokens here as base64)
+    // Method 4: Try cookies (fast)
     try {
       const cookies = document.cookie.split(';')
       for (const cookie of cookies) {
@@ -126,26 +126,34 @@ export async function getAccessToken(): Promise<string | null> {
           accessToken = parsed?.access_token || null
           if (accessToken) {
             console.log("[auth-fetch] Token from cookie:", name)
+            cachedAccessToken = accessToken
+            tokenCacheTime = Date.now()
             return accessToken
           }
         }
       }
     } catch (e) {
-      console.warn("[auth-fetch] Could not get token from cookies:", e)
+      // Silent fail, try next method
     }
   }
 
-  // Method 5: Try Supabase client internal state
+  // Method 5: Try getSession with timeout (slow - last resort)
   try {
-    // @ts-expect-error - accessing internal property
-    const internalSession = supabase.auth.session
-    if (internalSession?.access_token) {
-      accessToken = internalSession.access_token
-      console.log("[auth-fetch] Token from Supabase internal session: found")
+    const supabase = createClient()
+    const sessionPromise = supabase.auth.getSession()
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("getSession timeout")), 3000)
+    )
+    const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise])
+    accessToken = sessionData?.session?.access_token || null
+    if (accessToken) {
+      console.log("[auth-fetch] Token from getSession: found")
+      cachedAccessToken = accessToken
+      tokenCacheTime = Date.now()
       return accessToken
     }
   } catch (e) {
-    console.warn("[auth-fetch] Could not get token from Supabase internal state:", e)
+    console.warn("[auth-fetch] getSession timed out or failed")
   }
 
   console.warn("[auth-fetch] No access token found from any source")
