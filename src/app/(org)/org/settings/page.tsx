@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseSelect, getCurrentUserId } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -85,6 +85,7 @@ const currencies = [
 export default function OrgSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [settings, setSettings] = useState<OrgSettings>({
     timezone: "Asia/Riyadh",
     language: "both",
@@ -105,9 +106,36 @@ export default function OrgSettingsPage() {
   useEffect(() => {
     async function loadSettings() {
       try {
+        // Get current user's org_id
+        const userId = await getCurrentUserId()
+        if (!userId) {
+          console.error("No user found")
+          setIsLoading(false)
+          return
+        }
+
+        const { data: profileData } = await supabaseSelect<{ org_id: string }[]>(
+          "profiles",
+          {
+            select: "org_id",
+            filter: [{ column: "id", operator: "eq", value: userId }],
+            limit: 1
+          }
+        )
+
+        if (!profileData?.[0]?.org_id) {
+          console.error("No org_id found")
+          setIsLoading(false)
+          return
+        }
+
+        const orgId = profileData[0].org_id
+        setOrganizationId(orgId)
+
+        // Load org-specific settings
         const { data, error } = await supabaseSelect<any[]>("platform_settings", {
           select: "*",
-          filter: [{ column: "key", operator: "like", value: "org_settings_%" }]
+          filter: [{ column: "key", operator: "like", value: `org_settings_%_${orgId}` }]
         })
 
         if (error) throw error
@@ -115,7 +143,8 @@ export default function OrgSettingsPage() {
         if (data && data.length > 0) {
           const settingsMap: Record<string, any> = {}
           data.forEach((s) => {
-            const key = s.key.replace("org_settings_", "")
+            // Remove both prefix and org_id suffix: org_settings_currency_uuid -> currency
+            const key = s.key.replace(`org_settings_`, "").replace(`_${orgId}`, "")
             try {
               settingsMap[key] = typeof s.value === "string" ? JSON.parse(s.value) : s.value
             } catch {
@@ -139,11 +168,17 @@ export default function OrgSettingsPage() {
   }, [])
 
   const handleSave = async () => {
+    if (!organizationId) {
+      toast.error("Organization not found. Please refresh the page.")
+      return
+    }
+
     setIsSaving(true)
     try {
       const entries = Object.entries(settings)
       for (const [key, value] of entries) {
-        const settingKey = `org_settings_${key}`
+        // Use org-specific key: org_settings_currency_uuid
+        const settingKey = `org_settings_${key}_${organizationId}`
         const settingData = {
           key: settingKey,
           value: JSON.stringify(value),
