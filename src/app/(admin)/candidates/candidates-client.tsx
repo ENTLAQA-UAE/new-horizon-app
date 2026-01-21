@@ -222,7 +222,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
     setIsLoading(true)
     try {
-      const { data, error } = await supabaseInsert("candidates", {
+      const { data, error } = await supabaseInsert<Candidate>("candidates", {
         org_id: orgId,
         first_name: formData.first_name,
         last_name: formData.last_name,
