@@ -35,8 +35,8 @@ export default function RootRedirectPage() {
             if (parsed?.access_token && parsed?.user) {
               console.log("RootRedirect: Found pending session from login")
               session = parsed
-              // Clear pending session after use
-              localStorage.removeItem('jadarat_pending_session')
+              // DO NOT remove pending session here - let AuthProvider handle it
+              // This ensures the session is available when the destination page loads
             }
           }
         } catch (e) {
