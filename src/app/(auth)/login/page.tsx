@@ -59,6 +59,9 @@ function LoginPageSkeleton() {
   )
 }
 
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function LoginPageContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -66,9 +69,24 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [orgBranding, setOrgBranding] = useState<OrgBranding | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
   const orgSlug = searchParams.get("org")
+
+  // Validate email on blur
+  const validateEmail = (emailValue: string) => {
+    if (!emailValue) {
+      setEmailError(null)
+      return true
+    }
+    if (!EMAIL_REGEX.test(emailValue)) {
+      setEmailError("Please enter a valid email address")
+      return false
+    }
+    setEmailError(null)
+    return true
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -79,18 +97,35 @@ function LoginPageContent() {
     async function fetchOrgBranding() {
       if (!orgSlug) return
 
-      const supabase = createClient()
-      const { data } = await supabase
-        .from("organizations")
-        .select("name, logo_url, primary_color, secondary_color")
-        .eq("slug", orgSlug)
-        .single()
+      try {
+        const supabase = createClient()
 
-      if (data) {
-        setOrgBranding({
-          ...data,
-          login_image_url: (data as Record<string, unknown>).login_image_url as string | null ?? null,
-        })
+        // Create a timeout promise
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error("Org branding fetch timeout")), 5000)
+        )
+
+        // Race between fetch and timeout
+        const fetchPromise = supabase
+          .from("organizations")
+          .select("name, logo_url, primary_color, secondary_color")
+          .eq("slug", orgSlug)
+          .single()
+
+        const result = await Promise.race([fetchPromise, timeoutPromise])
+
+        if (result && 'data' in result && result.data) {
+          setOrgBranding({
+            name: result.data.name,
+            logo_url: result.data.logo_url,
+            primary_color: result.data.primary_color || "#6366f1",
+            secondary_color: result.data.secondary_color || "#8b5cf6",
+            login_image_url: null,
+          })
+        }
+      } catch (error) {
+        console.warn("Failed to fetch org branding:", error)
+        // Continue with default branding
       }
     }
 
@@ -99,48 +134,111 @@ function LoginPageContent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate email before submission
+    if (!validateEmail(email)) {
+      return
+    }
+
+    if (!password) {
+      toast.error("Please enter your password")
+      return
+    }
+
     setLoading(true)
 
-    try {
-      const supabase = createClient()
+    // Retry configuration for network failures
+    const maxRetries = 3
+    const retryDelays = [1000, 2000, 4000] // exponential backoff
 
-      // Sign out any existing session first to ensure clean state
-      // This is safer than clearing storage manually
-      await supabase.auth.signOut().catch(() => {})
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        toast.error(error.message)
-        return
-      }
-
-      // Verify we got a valid session
-      if (!data.session || !data.user) {
-        toast.error("Login failed - no session created")
-        return
-      }
-
-      console.log("Login successful for user:", data.user.id)
-
-      // Store session explicitly before redirect to prevent race condition
-      // This ensures the new page can access the session even if Supabase
-      // hasn't finished persisting to localStorage yet
+    const attemptLogin = async (retryCount: number): Promise<boolean> => {
       try {
-        localStorage.setItem('jadarat_pending_session', JSON.stringify(data.session))
-      } catch (e) {
-        console.warn("Could not store pending session:", e)
+        const supabase = createClient()
+
+        // Sign out any existing session first to ensure clean state
+        // This is safer than clearing storage manually
+        await supabase.auth.signOut().catch(() => {})
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) {
+          // Check if it's a network error that might benefit from retry
+          const isNetworkError = error.message.toLowerCase().includes('network') ||
+            error.message.toLowerCase().includes('fetch') ||
+            error.message.toLowerCase().includes('timeout') ||
+            error.message.toLowerCase().includes('connection')
+
+          if (isNetworkError && retryCount < maxRetries) {
+            console.log(`Login attempt ${retryCount + 1} failed with network error, retrying...`)
+            toast.error(`Connection issue. Retrying... (${retryCount + 1}/${maxRetries})`)
+            await new Promise(resolve => setTimeout(resolve, retryDelays[retryCount]))
+            return attemptLogin(retryCount + 1)
+          }
+
+          // Map common error messages to user-friendly messages
+          let errorMessage = error.message
+          if (error.message.includes("Invalid login credentials")) {
+            errorMessage = "Invalid email or password. Please try again."
+          } else if (error.message.includes("Email not confirmed")) {
+            errorMessage = "Please verify your email before logging in."
+          } else if (error.message.includes("Too many requests")) {
+            errorMessage = "Too many login attempts. Please wait a moment and try again."
+          }
+
+          toast.error(errorMessage)
+          return false
+        }
+
+        // Verify we got a valid session
+        if (!data.session || !data.user) {
+          toast.error("Login failed - no session created. Please try again.")
+          return false
+        }
+
+        console.log("Login successful for user:", data.user.id)
+
+        // Store session explicitly before redirect to prevent race condition
+        // This ensures the new page can access the session even if Supabase
+        // hasn't finished persisting to localStorage yet
+        try {
+          localStorage.setItem('jadarat_pending_session', JSON.stringify(data.session))
+        } catch (e) {
+          console.warn("Could not store pending session:", e)
+        }
+
+        toast.success("Welcome back!")
+
+        // Use full page reload to ensure completely fresh state
+        window.location.href = "/"
+        return true
+      } catch (err) {
+        console.error("Login error:", err)
+
+        // Check if it's a network error that might benefit from retry
+        const isNetworkError = err instanceof TypeError ||
+          (err instanceof Error && (
+            err.message.toLowerCase().includes('network') ||
+            err.message.toLowerCase().includes('fetch') ||
+            err.message.toLowerCase().includes('failed')
+          ))
+
+        if (isNetworkError && retryCount < maxRetries) {
+          console.log(`Login attempt ${retryCount + 1} failed with error, retrying...`)
+          toast.error(`Connection issue. Retrying... (${retryCount + 1}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, retryDelays[retryCount]))
+          return attemptLogin(retryCount + 1)
+        }
+
+        toast.error("Unable to connect. Please check your internet connection and try again.")
+        return false
       }
+    }
 
-      toast.success("Welcome back!")
-
-      // Use full page reload to ensure completely fresh state
-      window.location.href = "/"
-    } catch {
-      toast.error("An unexpected error occurred")
+    try {
+      await attemptLogin(0)
     } finally {
       setLoading(false)
     }
@@ -255,19 +353,29 @@ function LoginPageContent() {
                 type="email"
                 placeholder="you@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (emailError) setEmailError(null)
+                }}
                 required
                 disabled={loading}
                 className={cn(
-                  "h-13 px-4 rounded-xl border-2 border-gray-200 bg-white",
-                  "focus:ring-4 transition-all duration-200 text-base"
+                  "h-13 px-4 rounded-xl border-2 bg-white",
+                  "focus:ring-4 transition-all duration-200 text-base",
+                  emailError ? "border-red-500" : "border-gray-200"
                 )}
                 style={{
                   "--tw-ring-color": `${primaryColor}15`,
                 } as React.CSSProperties}
-                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
+                onFocus={(e) => e.target.style.borderColor = emailError ? "#ef4444" : primaryColor}
+                onBlur={(e) => {
+                  validateEmail(email)
+                  e.target.style.borderColor = emailError ? "#ef4444" : "#e5e7eb"
+                }}
               />
+              {emailError && (
+                <p className="text-sm text-red-500 mt-1">{emailError}</p>
+              )}
             </div>
 
             <div

@@ -95,17 +95,26 @@ export default function RootRedirectPage() {
           'Content-Type': 'application/json',
         }
 
-        // Fetch roles and profile in parallel
+        // Create abort controllers for timeout handling
+        const rolesController = new AbortController()
+        const profileController = new AbortController()
+        const rolesTimeoutId = setTimeout(() => rolesController.abort(), 10000)
+        const profileTimeoutId = setTimeout(() => profileController.abort(), 10000)
+
+        // Fetch roles and profile in parallel with timeout
         const [rolesResponse, profileResponse] = await Promise.all([
           fetch(
             `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${session.user.id}`,
-            { headers: authHeaders }
+            { headers: authHeaders, signal: rolesController.signal }
           ),
           fetch(
             `${supabaseUrl}/rest/v1/profiles?select=id,org_id&id=eq.${session.user.id}`,
-            { headers: authHeaders }
+            { headers: authHeaders, signal: profileController.signal }
           )
         ])
+
+        clearTimeout(rolesTimeoutId)
+        clearTimeout(profileTimeoutId)
 
         let roles: string[] = []
         let orgId: string | null = null
@@ -139,7 +148,11 @@ export default function RootRedirectPage() {
         }
       } catch (err) {
         console.error("RootRedirect: Error determining redirect:", err)
-        setError("Something went wrong. Please try logging in again.")
+        const isTimeout = err instanceof Error && err.name === 'AbortError'
+        const errorMessage = isTimeout
+          ? "Connection timed out. Please check your internet and try again."
+          : "Something went wrong. Please try logging in again."
+        setError(errorMessage)
         // Fallback to login after a delay
         setTimeout(() => router.replace("/login"), 2000)
       }
