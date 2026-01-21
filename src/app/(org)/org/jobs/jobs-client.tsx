@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -293,42 +294,41 @@ export function JobsClient({
 
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("jobs")
-        .insert({
-          title: formData.title,
-          title_ar: formData.title_ar || null,
-          description: formData.description || null,
-          description_ar: formData.description_ar || null,
-          department_id: formData.department_id || null,
-          location_id: formData.location_id || null,
-          location: formData.location || null,
-          location_ar: formData.location_ar || null,
-          job_type_id: formData.job_type_id || null,
-          employment_type: formData.job_type_id ? null : formData.employment_type,
-          job_grade_id: formData.job_grade_id || null,
-          experience_level: formData.job_grade_id ? null : formData.experience_level,
-          salary_min: formData.salary_min || null,
-          salary_max: formData.salary_max || null,
-          salary_currency: formData.salary_currency,
-          is_remote: formData.is_remote,
-          closes_at: formData.closes_at || null,
-          status: "draft",
-        })
-        .select()
-        .single()
+      // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
+      const { data, error } = await supabaseInsert<Job>("jobs", {
+        title: formData.title,
+        title_ar: formData.title_ar || null,
+        description: formData.description || null,
+        description_ar: formData.description_ar || null,
+        department_id: formData.department_id || null,
+        location_id: formData.location_id || null,
+        location: formData.location || null,
+        location_ar: formData.location_ar || null,
+        job_type_id: formData.job_type_id || null,
+        employment_type: formData.job_type_id ? null : formData.employment_type,
+        job_grade_id: formData.job_grade_id || null,
+        experience_level: formData.job_grade_id ? null : formData.experience_level,
+        salary_min: formData.salary_min || null,
+        salary_max: formData.salary_max || null,
+        salary_currency: formData.salary_currency,
+        is_remote: formData.is_remote,
+        closes_at: formData.closes_at || null,
+        status: "draft",
+      })
 
       if (error) {
         toast.error(error.message)
         return
       }
 
-      setJobs([data, ...jobs])
-      setIsCreateDialogOpen(false)
-      resetForm()
-      toast.success("Job created successfully! Configure settings...")
-      // Redirect to settings page to configure form sections, stages, and team
-      router.push(`/org/jobs/${data.id}/settings`)
+      if (data) {
+        setJobs([data, ...jobs])
+        setIsCreateDialogOpen(false)
+        resetForm()
+        toast.success("Job created successfully! Configure settings...")
+        // Redirect to settings page to configure form sections, stages, and team
+        router.push(`/org/jobs/${data.id}/settings`)
+      }
     } catch {
       toast.error("An unexpected error occurred")
     } finally {
@@ -369,9 +369,10 @@ export function JobsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("jobs")
-        .update({
+      // Use supabaseUpdate which gets token from localStorage (bypasses getSession timeout)
+      const { error } = await supabaseUpdate(
+        "jobs",
+        {
           title: formData.title,
           title_ar: formData.title_ar || null,
           description: formData.description || null,
@@ -390,8 +391,9 @@ export function JobsClient({
           is_remote: formData.is_remote,
           closes_at: formData.closes_at || null,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", selectedJob.id)
+        },
+        { column: "id", value: selectedJob.id }
+      )
 
       if (error) {
         toast.error(error.message)
@@ -434,10 +436,8 @@ export function JobsClient({
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
-        .from("jobs")
-        .delete()
-        .eq("id", selectedJob.id)
+      // Use supabaseDelete which gets token from localStorage (bypasses getSession timeout)
+      const { error } = await supabaseDelete("jobs", { column: "id", value: selectedJob.id })
 
       if (error) {
         toast.error(error.message)
@@ -459,7 +459,7 @@ export function JobsClient({
   // STATUS CHANGE
   const handleStatusChange = async (jobId: string, newStatus: string) => {
     try {
-      const updateData: Record<string, any> = {
+      const updateData: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString(),
       }
@@ -468,10 +468,8 @@ export function JobsClient({
         updateData.published_at = new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from("jobs")
-        .update(updateData)
-        .eq("id", jobId)
+      // Use supabaseUpdate which gets token from localStorage (bypasses getSession timeout)
+      const { error } = await supabaseUpdate("jobs", updateData, { column: "id", value: jobId })
 
       if (error) {
         toast.error(error.message)
@@ -494,35 +492,34 @@ export function JobsClient({
   const handleDuplicate = async (job: Job) => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from("jobs")
-        .insert({
-          title: `${job.title} (Copy)`,
-          title_ar: job.title_ar ? `${job.title_ar} (نسخة)` : null,
-          description: job.description,
-          description_ar: job.description_ar,
-          department_id: job.department_id,
-          location: job.location,
-          location_ar: job.location_ar,
-          employment_type: job.employment_type,
-          experience_level: job.experience_level,
-          salary_min: job.salary_min,
-          salary_max: job.salary_max,
-          salary_currency: job.salary_currency,
-          is_remote: job.is_remote,
-          status: "draft",
-        })
-        .select()
-        .single()
+      // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
+      const { data, error } = await supabaseInsert<Job>("jobs", {
+        title: `${job.title} (Copy)`,
+        title_ar: job.title_ar ? `${job.title_ar} (نسخة)` : null,
+        description: job.description,
+        description_ar: job.description_ar,
+        department_id: job.department_id,
+        location: job.location,
+        location_ar: job.location_ar,
+        employment_type: job.employment_type,
+        experience_level: job.experience_level,
+        salary_min: job.salary_min,
+        salary_max: job.salary_max,
+        salary_currency: job.salary_currency,
+        is_remote: job.is_remote,
+        status: "draft",
+      })
 
       if (error) {
         toast.error(error.message)
         return
       }
 
-      setJobs([data, ...jobs])
-      toast.success("Job duplicated successfully")
-      router.refresh()
+      if (data) {
+        setJobs([data, ...jobs])
+        toast.success("Job duplicated successfully")
+        router.refresh()
+      }
     } catch {
       toast.error("An unexpected error occurred")
     } finally {
