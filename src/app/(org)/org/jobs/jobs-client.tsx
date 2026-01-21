@@ -86,7 +86,7 @@ interface Job {
   is_remote: boolean | null
   status: string | null
   published_at: string | null
-  closes_at: string | null
+  closing_date: string | null
   created_at: string | null
 }
 
@@ -237,7 +237,7 @@ export function JobsClient({
     salary_max: 0,
     salary_currency: "SAR",
     is_remote: false,
-    closes_at: "",
+    closing_date: "",
   })
 
   const filteredJobs = jobs.filter((job) => {
@@ -281,7 +281,7 @@ export function JobsClient({
       salary_max: 0,
       salary_currency: "SAR",
       is_remote: false,
-      closes_at: "",
+      closing_date: "",
     })
   }
 
@@ -312,7 +312,7 @@ export function JobsClient({
         salary_max: formData.salary_max || null,
         salary_currency: formData.salary_currency,
         is_remote: formData.is_remote,
-        closes_at: formData.closes_at || null,
+        closing_date: formData.closing_date || null,
         status: "draft",
       })
 
@@ -356,7 +356,7 @@ export function JobsClient({
       salary_max: job.salary_max || 0,
       salary_currency: job.salary_currency || "SAR",
       is_remote: job.is_remote || false,
-      closes_at: job.closes_at?.split("T")[0] || "",
+      closing_date: job.closing_date?.split("T")[0] || "",
     })
     setIsEditDialogOpen(true)
   }
@@ -389,7 +389,7 @@ export function JobsClient({
           salary_max: formData.salary_max || null,
           salary_currency: formData.salary_currency,
           is_remote: formData.is_remote,
-          closes_at: formData.closes_at || null,
+          closing_date: formData.closing_date || null,
           updated_at: new Date().toISOString(),
         },
         { column: "id", value: selectedJob.id }
@@ -776,12 +776,12 @@ export function JobsClient({
 
       {/* Closing Date */}
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-closes_at`}>Application Deadline</Label>
+        <Label htmlFor={`${idPrefix}-closing_date`}>Application Deadline</Label>
         <Input
-          id={`${idPrefix}-closes_at`}
+          id={`${idPrefix}-closing_date`}
           type="date"
-          value={formData.closes_at}
-          onChange={(e) => setFormData({ ...formData, closes_at: e.target.value })}
+          value={formData.closing_date}
+          onChange={(e) => setFormData({ ...formData, closing_date: e.target.value })}
         />
       </div>
     </div>
@@ -956,8 +956,8 @@ export function JobsClient({
                       <Badge className={cn("capitalize w-fit", statusStyles[job.status || "draft"])}>
                         {job.status || "draft"}
                       </Badge>
-                      {job.status === "published" && job.closes_at && (() => {
-                        const daysLeft = getDaysUntilDeadline(job.closes_at)
+                      {job.status === "published" && job.closing_date && (() => {
+                        const daysLeft = getDaysUntilDeadline(job.closing_date)
                         if (daysLeft === null) return null
                         const badgeStyle = getDeadlineBadgeStyle(daysLeft)
                         return (
@@ -1152,10 +1152,10 @@ export function JobsClient({
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span>{formatSalary(selectedJob.salary_min, selectedJob.salary_max, selectedJob.salary_currency)}</span>
                 </div>
-                {selectedJob.closes_at && (
+                {selectedJob.closing_date && (
                   <div className="flex items-center gap-2 col-span-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>Closes: {new Date(selectedJob.closes_at).toLocaleDateString()}</span>
+                    <span>Closes: {new Date(selectedJob.closing_date).toLocaleDateString()}</span>
                   </div>
                 )}
               </div>

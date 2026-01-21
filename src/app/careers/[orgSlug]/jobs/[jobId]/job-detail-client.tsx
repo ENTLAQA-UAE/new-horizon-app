@@ -57,7 +57,7 @@ interface Job {
   salary_currency: string | null
   remote_allowed: boolean | null
   published_at: string | null
-  closes_at: string | null
+  closing_date: string | null
   skills_required: string[] | null
 }
 
@@ -403,13 +403,13 @@ export function JobDetailClient({ organization, job, branding }: JobDetailClient
                     </div>
                   )}
 
-                  {job.closes_at && (
+                  {job.closing_date && (
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-sm text-muted-foreground">Application Deadline</p>
                         <p className="font-medium">
-                          {new Date(job.closes_at).toLocaleDateString()}
+                          {new Date(job.closing_date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
