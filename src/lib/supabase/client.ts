@@ -29,6 +29,43 @@ export function resetSupabaseClient() {
   supabaseClient = null
 }
 
+// Clear all auth-related cookies
+function clearAuthCookies() {
+  if (typeof document === 'undefined') return
+
+  try {
+    const cookies = document.cookie.split(";")
+    let clearedCount = 0
+
+    for (const cookie of cookies) {
+      const [name] = cookie.split("=")
+      const cookieName = name.trim()
+
+      // Clear cookies that match Supabase or auth patterns
+      if (
+        cookieName.startsWith("sb-") ||
+        cookieName.includes("supabase") ||
+        cookieName.includes("auth") ||
+        cookieName.includes("token") ||
+        cookieName.includes("session") ||
+        cookieName.includes("jadarat")
+      ) {
+        // Clear cookie for multiple paths and domains to ensure removal
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=;`
+        clearedCount++
+      }
+    }
+
+    if (clearedCount > 0) {
+      console.log('Cleared auth cookies:', clearedCount)
+    }
+  } catch (e) {
+    console.warn('Error clearing cookies:', e)
+  }
+}
+
 // Clear all Supabase-related storage to ensure clean state
 export function clearSupabaseStorage() {
   try {
@@ -51,6 +88,9 @@ export function clearSupabaseStorage() {
       }
     }
     sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key))
+
+    // Also clear auth-related cookies
+    clearAuthCookies()
 
     console.log('Cleared Supabase storage:', { localStorage: keysToRemove.length, sessionStorage: sessionKeysToRemove.length })
   } catch (e) {
