@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from "react"
 import { createClient, fullCleanup, resetSupabaseClient } from "@/lib/supabase/client"
+import { clearTokenCache } from "@/lib/supabase/auth-fetch"
 import { User, Session } from "@supabase/supabase-js"
 
 // User role types - centralized definition
@@ -527,6 +528,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // CRITICAL: Full cleanup - clear ALL storage and reset Supabase client singleton
     // This ensures next login starts with completely fresh state
     try {
+      clearTokenCache() // Clear auth-fetch token cache
       fullCleanup()
       sessionStorage.removeItem(AUTH_USER_KEY)
     } catch (e) {
