@@ -346,9 +346,7 @@ export function JobsClient({
         setJobs([data, ...jobs])
         setIsCreateDialogOpen(false)
         resetForm()
-        toast.success("Job created successfully! Configure settings...")
-        // Redirect to settings page to configure form sections, stages, and team
-        router.push(`/org/jobs/${data.id}/settings`)
+        toast.success("Job created as draft. Use the menu to configure settings or publish.")
       }
     } catch {
       toast.error("An unexpected error occurred")
