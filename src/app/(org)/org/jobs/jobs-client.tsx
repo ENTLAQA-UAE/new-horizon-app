@@ -313,8 +313,8 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
-      // Note: only include columns that exist in the database schema
-      // (location/location_ar text columns don't exist, only location_id FK)
+      // Note: location_id is set to null because we query from 'locations' table (vacancy settings)
+      // but the FK references 'job_locations' table. Location is for display only.
       // IMPORTANT: org_id and slug are required for RLS policies and DB constraints
       const { data, error } = await supabaseInsert<Job>("jobs", {
         org_id: profile.org_id,
@@ -324,7 +324,7 @@ export function JobsClient({
         description: formData.description || null,
         description_ar: formData.description_ar || null,
         department_id: formData.department_id || null,
-        location_id: formData.location_id || null,
+        location_id: null, // FK references job_locations, not vacancy settings locations
         job_type_id: formData.job_type_id || null,
         job_type: formData.job_type || "full_time",
         job_grade_id: formData.job_grade_id || null,
@@ -516,7 +516,7 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
-      // Note: only include columns that exist in the database schema
+      // Note: location_id set to null - FK references job_locations, not vacancy settings
       // IMPORTANT: org_id and slug are required for RLS policies and DB constraints
       const { data, error } = await supabaseInsert<Job>("jobs", {
         org_id: profile.org_id,
@@ -526,7 +526,7 @@ export function JobsClient({
         description: job.description,
         description_ar: job.description_ar,
         department_id: job.department_id,
-        location_id: job.location_id,
+        location_id: null, // FK references job_locations table
         job_type_id: job.job_type_id,
         job_type: job.job_type || "full_time",
         job_grade_id: job.job_grade_id,

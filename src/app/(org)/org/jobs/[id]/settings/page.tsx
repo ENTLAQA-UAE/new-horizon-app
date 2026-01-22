@@ -63,6 +63,24 @@ interface FormSection {
   sort_order: number
 }
 
+interface Pipeline {
+  id: string
+  name: string
+  name_ar: string | null
+  description: string | null
+  is_default: boolean
+}
+
+interface PipelineStage {
+  id: string
+  pipeline_id: string
+  name: string
+  name_ar: string | null
+  color: string
+  stage_type: string
+  sort_order: number
+}
+
 interface HiringStage {
   id: string
   name: string
@@ -75,10 +93,12 @@ interface HiringStage {
 
 interface TeamMember {
   id: string
-  full_name: string
+  first_name?: string
+  last_name?: string
+  full_name?: string // Computed for display
   email: string
   avatar_url: string | null
-  role: string
+  role?: string
 }
 
 interface JobSection {
@@ -131,6 +151,9 @@ export default function JobSettingsPage() {
   const [availableSections, setAvailableSections] = useState<FormSection[]>([])
   const [availableStages, setAvailableStages] = useState<HiringStage[]>([])
   const [availableTeam, setAvailableTeam] = useState<TeamMember[]>([])
+  const [pipelines, setPipelines] = useState<Pipeline[]>([])
+  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([])
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null)
 
   // Job-specific selections
   const [jobSections, setJobSections] = useState<JobSection[]>([])
@@ -190,16 +213,25 @@ export default function JobSettingsPage() {
           order: { column: "sort_order", ascending: true },
         }).catch(() => ({ data: null, error: null })),
 
-        // Load team members
+        // Load team members - profiles table has first_name/last_name, not full_name
+        // role is in user_roles table, so we skip it here
         supabaseSelect<TeamMember[]>("profiles", {
-          select: "id,full_name,email,avatar_url,role",
-          filter: [{ column: "org_id", operator: "eq", value: orgId }],
-        }).catch(() => ({ data: null, error: null })),
+          select: "id,first_name,last_name,email,avatar_url",
+          filter: [
+            { column: "org_id", operator: "eq", value: orgId },
+            { column: "is_active", operator: "eq", value: true },
+          ],
+        }).catch((e) => { console.error("Team query error:", e); return { data: null, error: null }; }),
       ])
 
       const sections = sectionsResult?.data || []
       const stages = stagesResult?.data || []
-      const team = teamResult?.data || []
+      // Process team data to compute full_name from first_name + last_name
+      const rawTeam = teamResult?.data || []
+      const team = rawTeam.map((t: TeamMember) => ({
+        ...t,
+        full_name: [t.first_name, t.last_name].filter(Boolean).join(' ') || t.email,
+      }))
 
       setAvailableSections(sections)
       setAvailableStages(stages)
@@ -350,7 +382,14 @@ export default function JobSettingsPage() {
   // Handle thumbnail upload
   const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file || !organizationId) return
+    if (!file) return
+
+    // Use profile.org_id as fallback if organizationId state not set
+    const orgId = organizationId || profile?.org_id
+    if (!orgId) {
+      toast.error("Organization not found. Please refresh the page.")
+      return
+    }
 
     if (!file.type.startsWith('image/')) {
       toast.error("Please upload an image file")
@@ -365,7 +404,7 @@ export default function JobSettingsPage() {
     setIsUploadingThumbnail(true)
     try {
       const fileExt = file.name.split('.').pop()
-      const fileName = `${organizationId}/jobs/${jobId}/thumbnail.${fileExt}`
+      const fileName = `${orgId}/jobs/${jobId}/thumbnail.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
         .from('organization-assets')
