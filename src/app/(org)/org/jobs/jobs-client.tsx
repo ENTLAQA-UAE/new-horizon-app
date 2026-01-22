@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -204,6 +205,7 @@ export function JobsClient({
 }: JobsClientProps) {
   const router = useRouter()
   const supabase = createClient()
+  const { profile } = useAuth()
   const [jobs, setJobs] = useState(initialJobs)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -292,12 +294,19 @@ export function JobsClient({
       return
     }
 
+    if (!profile?.org_id) {
+      toast.error("Organization not found. Please refresh the page.")
+      return
+    }
+
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
       // Note: only include columns that exist in the database schema
       // (location/location_ar text columns don't exist, only location_id FK)
+      // IMPORTANT: org_id is required for RLS policies to allow the insert
       const { data, error } = await supabaseInsert<Job>("jobs", {
+        org_id: profile.org_id,
         title: formData.title,
         title_ar: formData.title_ar || null,
         description: formData.description || null,
@@ -489,11 +498,18 @@ export function JobsClient({
 
   // DUPLICATE
   const handleDuplicate = async (job: Job) => {
+    if (!profile?.org_id) {
+      toast.error("Organization not found. Please refresh the page.")
+      return
+    }
+
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
       // Note: only include columns that exist in the database schema
+      // IMPORTANT: org_id is required for RLS policies to allow the insert
       const { data, error } = await supabaseInsert<Job>("jobs", {
+        org_id: profile.org_id,
         title: `${job.title} (Copy)`,
         title_ar: job.title_ar ? `${job.title_ar} (نسخة)` : null,
         description: job.description,
