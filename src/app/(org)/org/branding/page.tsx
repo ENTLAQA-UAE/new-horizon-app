@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { supabaseUpdate, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { supabaseUpdate } from "@/lib/supabase/auth-fetch"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -52,12 +53,12 @@ const defaultColors = [
 
 export default function BrandingPage() {
   const supabase = createClient()
+  const { profile, organization, isLoading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false)
   const [isUploadingLoginImage, setIsUploadingLoginImage] = useState(false)
-  const [organizationId, setOrganizationId] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const faviconInputRef = useRef<HTMLInputElement>(null)
   const loginImageInputRef = useRef<HTMLInputElement>(null)
@@ -77,6 +78,9 @@ export default function BrandingPage() {
     careers_page_url: "",
   })
 
+  // Get organization ID from auth context
+  const organizationId = profile?.org_id || null
+
   // Generate careers page URL based on slug
   const getCareersPageUrl = (slug: string) => {
     if (typeof window !== 'undefined') {
@@ -85,84 +89,69 @@ export default function BrandingPage() {
     return `/careers/${slug}`
   }
 
+  // Initialize settings from auth context organization data
   useEffect(() => {
-    async function loadBranding() {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return
+    }
+
+    // If no organization in auth context, we're done loading
+    if (!organization || !organizationId) {
+      setIsLoading(false)
+      return
+    }
+
+    // Use organization data from auth context (already loaded by parent layout)
+    // Then fetch additional fields not in auth context (login_image_url, custom_domain)
+    async function loadAdditionalBrandingData() {
       try {
-        // Get current user's organization using auth-fetch helper
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        // Fetch additional branding fields not in auth context
+        // Use type assertion since these columns exist but types may not be regenerated
+        const { data } = await supabase
+          .from("organizations")
+          .select("login_image_url, custom_domain")
+          .eq("id", organizationId)
+          .single() as { data: { login_image_url?: string; custom_domain?: string } | null }
 
-        const { data: profile, error: profileError } = await supabaseSelect<{ org_id: string }>("profiles", {
-          select: "org_id",
-          filter: [{ column: "id", operator: "eq", value: user.id }],
-          single: true,
+        setSettings({
+          company_name: organization.name || "",
+          company_name_ar: organization.name_ar || "",
+          slug: organization.slug || "",
+          tagline: "",
+          tagline_ar: "",
+          logo_url: organization.logo_url || "",
+          favicon_url: "",
+          login_image_url: data?.login_image_url || "",
+          primary_color: organization.primary_color || "#6366F1",
+          secondary_color: organization.secondary_color || "#8B5CF6",
+          website_url: data?.custom_domain || "",
+          careers_page_url: getCareersPageUrl(organization.slug || ""),
         })
-
-        if (profileError) {
-          console.error("Error fetching profile:", profileError)
-          toast.error("Failed to load profile")
-          setIsLoading(false)
-          return
-        }
-
-        const orgId = profile?.org_id
-        if (!orgId) {
-          console.error("User has no organization")
-          setIsLoading(false)
-          return
-        }
-
-        setOrganizationId(orgId)
-
-        // Load organization branding using auth-fetch helper
-        const { data: org, error } = await supabaseSelect<{
-          name: string
-          name_ar: string | null
-          slug: string | null
-          logo_url: string | null
-          primary_color: string | null
-          secondary_color: string | null
-          custom_domain: string | null
-          login_image_url: string | null
-        }>("organizations", {
-          select: "name, name_ar, slug, logo_url, primary_color, secondary_color, custom_domain, login_image_url",
-          filter: [{ column: "id", operator: "eq", value: orgId }],
-          single: true,
-        })
-
-        if (error) {
-          console.error("Error loading organization:", error)
-          toast.error("Failed to load branding settings")
-          setIsLoading(false)
-          return
-        }
-
-        if (org) {
-          setSettings({
-            company_name: org.name || "",
-            company_name_ar: org.name_ar || "",
-            slug: org.slug || "",
-            tagline: "",
-            tagline_ar: "",
-            logo_url: org.logo_url || "",
-            favicon_url: "",
-            login_image_url: org.login_image_url || "",
-            primary_color: org.primary_color || "#6366F1",
-            secondary_color: org.secondary_color || "#8B5CF6",
-            website_url: org.custom_domain || "",
-            careers_page_url: getCareersPageUrl(org.slug || ""),
-          })
-        }
       } catch (error) {
-        console.error("Error loading branding:", error)
-        toast.error("Failed to load branding settings")
+        console.error("Error loading additional branding:", error)
+        // Still set what we have from auth context
+        setSettings({
+          company_name: organization.name || "",
+          company_name_ar: organization.name_ar || "",
+          slug: organization.slug || "",
+          tagline: "",
+          tagline_ar: "",
+          logo_url: organization.logo_url || "",
+          favicon_url: "",
+          login_image_url: "",
+          primary_color: organization.primary_color || "#6366F1",
+          secondary_color: organization.secondary_color || "#8B5CF6",
+          website_url: "",
+          careers_page_url: getCareersPageUrl(organization.slug || ""),
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadBranding()
-  }, [])
+    loadAdditionalBrandingData()
+  }, [authLoading, organization, organizationId, supabase])
 
   // Handle logo file upload
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
