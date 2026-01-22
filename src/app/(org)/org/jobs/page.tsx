@@ -58,9 +58,10 @@ async function getJobGrades() {
 async function getLocations() {
   const supabase = await createClient()
 
-  // Use job_locations table which is the correct FK reference for jobs.location_id
+  // Use 'locations' table from vacancy settings (configured by HR)
+  // instead of 'job_locations' which may be empty
   const { data } = await supabase
-    .from("job_locations")
+    .from("locations")
     .select("id, name, name_ar, city, country")
     .eq("is_active", true)
     .order("name")
