@@ -128,7 +128,6 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
   const [candidates, setCandidates] = useState(initialCandidates)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [sourceFilter, setSourceFilter] = useState<string>("all")
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -173,8 +172,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
       candidate.current_job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       candidate.current_company?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || candidate.overall_status === statusFilter
-    const matchesSource = sourceFilter === "all" || candidate.source === sourceFilter
-    return matchesSearch && matchesStatus && matchesSource
+    return matchesSearch && matchesStatus
   })
 
   const stats = {
@@ -947,19 +945,6 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
             <SelectItem value="offered">Offered</SelectItem>
             <SelectItem value="hired">Hired</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sourceFilter} onValueChange={setSourceFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Source" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
-            {sourceOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
           </SelectContent>
         </Select>
       </div>
