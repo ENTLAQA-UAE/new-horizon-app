@@ -137,9 +137,10 @@ interface JobsClientProps {
 
 const statusStyles: Record<string, string> = {
   draft: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-  published: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  open: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   paused: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   closed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  filled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
 }
 
 // Helper to calculate days until deadline
@@ -265,7 +266,7 @@ export function JobsClient({
 
   const stats = {
     total: jobs.length,
-    published: jobs.filter((j) => j.status === "published").length,
+    open: jobs.filter((j) => j.status === "open").length,
     draft: jobs.filter((j) => j.status === "draft").length,
     closed: jobs.filter((j) => j.status === "closed").length,
   }
@@ -481,7 +482,7 @@ export function JobsClient({
         updated_at: new Date().toISOString(),
       }
 
-      if (newStatus === "published") {
+      if (newStatus === "open") {
         updateData.published_at = new Date().toISOString()
       }
 
@@ -498,7 +499,7 @@ export function JobsClient({
           j.id === jobId ? { ...j, status: newStatus, ...updateData } : j
         )
       )
-      toast.success(`Job ${newStatus === "published" ? "published" : newStatus}`)
+      toast.success(`Job ${newStatus === "open" ? "published" : newStatus}`)
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -845,7 +846,7 @@ export function JobsClient({
             <CardTitle className="text-sm font-medium text-muted-foreground">Published</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.published}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.open}</div>
           </CardContent>
         </Card>
         <Card>
@@ -885,7 +886,7 @@ export function JobsClient({
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="open">Published</SelectItem>
             <SelectItem value="paused">Paused</SelectItem>
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
@@ -983,7 +984,7 @@ export function JobsClient({
                       <Badge className={cn("capitalize w-fit", statusStyles[job.status || "draft"])}>
                         {job.status || "draft"}
                       </Badge>
-                      {job.status === "published" && job.closing_date && (() => {
+                      {job.status === "open" && job.closing_date && (() => {
                         const daysLeft = getDaysUntilDeadline(job.closing_date)
                         if (daysLeft === null) return null
                         const badgeStyle = getDeadlineBadgeStyle(daysLeft)
@@ -1042,14 +1043,14 @@ export function JobsClient({
                         <DropdownMenuSeparator />
                         {job.status === "draft" && (
                           <DropdownMenuItem
-                            onSelect={() => handleStatusChange(job.id, "published")}
+                            onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
                           >
                             <Globe className="mr-2 h-4 w-4" />
                             Publish
                           </DropdownMenuItem>
                         )}
-                        {job.status === "published" && (
+                        {job.status === "open" && (
                           <DropdownMenuItem
                             onSelect={() => handleStatusChange(job.id, "paused")}
                           >
@@ -1059,14 +1060,14 @@ export function JobsClient({
                         )}
                         {job.status === "paused" && (
                           <DropdownMenuItem
-                            onSelect={() => handleStatusChange(job.id, "published")}
+                            onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
                           >
                             <Globe className="mr-2 h-4 w-4" />
                             Resume
                           </DropdownMenuItem>
                         )}
-                        {(job.status === "published" || job.status === "paused") && (
+                        {(job.status === "open" || job.status === "paused") && (
                           <DropdownMenuItem
                             onSelect={() => handleStatusChange(job.id, "closed")}
                             className="text-red-600"

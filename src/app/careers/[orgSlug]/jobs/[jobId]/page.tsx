@@ -29,7 +29,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     .select("*")
     .eq("id", jobId)
     .eq("org_id", organization.id)
-    .eq("status", "published")
+    .eq("status", "open")
     .single()
 
   if (!job) {

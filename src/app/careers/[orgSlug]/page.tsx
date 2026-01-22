@@ -45,7 +45,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
     `
     )
     .eq("org_id", organization.id)
-    .eq("status", "published")
+    .eq("status", "open")
     .order("published_at", { ascending: false })
 
   // Get career page blocks

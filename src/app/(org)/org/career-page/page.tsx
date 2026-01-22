@@ -59,7 +59,7 @@ export default async function CareerPageBuilderPage() {
     .from("jobs")
     .select("*", { count: "exact", head: true })
     .eq("org_id", profile.org_id)
-    .eq("status", "published")
+    .eq("status", "open")
 
   return (
     <CareerPageBuilder
