@@ -15,14 +15,24 @@ async function getApplications() {
         email,
         phone,
         current_job_title,
-        resume_url
+        resume_url,
+        avatar_url
       ),
       jobs (
         id,
         title,
         title_ar,
         department_id,
-        location
+        location_id,
+        pipeline_id
+      ),
+      pipeline_stages (
+        id,
+        name,
+        name_ar,
+        color,
+        sort_order,
+        stage_type
       )
     `)
     .order("created_at", { ascending: false })
@@ -35,48 +45,54 @@ async function getApplications() {
   return applications || []
 }
 
-async function getJobs() {
+async function getJobsWithPipelines() {
   const supabase = await createClient()
 
+  // Get jobs that have applications, with their pipeline stages
   const { data: jobs, error } = await supabase
     .from("jobs")
-    .select("id, title, title_ar, status")
+    .select(`
+      id,
+      title,
+      title_ar,
+      status,
+      pipeline_id,
+      pipelines:pipeline_id (
+        id,
+        name,
+        name_ar,
+        pipeline_stages (
+          id,
+          name,
+          name_ar,
+          color,
+          sort_order,
+          stage_type,
+          is_system
+        )
+      )
+    `)
     .order("title")
 
   if (error) {
-    console.error("Error fetching jobs:", error)
+    console.error("Error fetching jobs with pipelines:", error)
     return []
   }
 
   return jobs || []
 }
 
-async function getPipelineStages() {
-  // Default pipeline stages for ATS
-  return [
-    { id: "applied", name: "Applied", color: "#3B82F6" },
-    { id: "screening", name: "Screening", color: "#F59E0B" },
-    { id: "interview", name: "Interview", color: "#8B5CF6" },
-    { id: "assessment", name: "Assessment", color: "#06B6D4" },
-    { id: "offer", name: "Offer", color: "#10B981" },
-    { id: "hired", name: "Hired", color: "#059669" },
-    { id: "rejected", name: "Rejected", color: "#EF4444" },
-  ]
-}
-
 export default async function OrgApplicationsPage() {
-  const [applications, jobs, stages] = await Promise.all([
+  const [applications, jobsWithPipelines] = await Promise.all([
     getApplications(),
-    getJobs(),
-    getPipelineStages(),
+    getJobsWithPipelines(),
   ])
 
   return (
     <ApplicationsClient
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       applications={applications as any}
-      jobs={jobs}
-      stages={stages}
+      jobsWithPipelines={jobsWithPipelines as any}
     />
   )
 }
