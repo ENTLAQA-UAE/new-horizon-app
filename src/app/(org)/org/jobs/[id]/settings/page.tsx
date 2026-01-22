@@ -303,7 +303,7 @@ export default function JobSettingsPage() {
       setJob(jobResult as unknown as Job)
 
       // Load other data in parallel, with error handling for each
-      const [sectionsResult, stagesResult, teamResult, pipelinesResult] = await Promise.all([
+      const [sectionsResult, stagesResult, teamResult, userRolesResult, pipelinesResult] = await Promise.all([
         // Load available sections (may not exist)
         supabaseSelect<FormSection[]>("application_form_sections", {
           filter: [
@@ -319,36 +319,21 @@ export default function JobSettingsPage() {
           order: { column: "sort_order", ascending: true },
         }).catch(() => ({ data: null, error: null })),
 
-        // Load team members with recruiter role only
-        // Query user_roles to get recruiters, then join with profiles
-        (async () => {
-          try {
-            // First get user IDs with recruiter role
-            const { data: recruiterRoles } = await supabase
-              .from("user_roles")
-              .select("user_id")
-              .eq("role", "recruiter")
+        // Load team members (all active profiles in org)
+        // We'll filter to recruiters client-side using user_roles
+        supabaseSelect<TeamMember[]>("profiles", {
+          select: "id,first_name,last_name,email,avatar_url",
+          filter: [
+            { column: "org_id", operator: "eq", value: orgId },
+            { column: "is_active", operator: "eq", value: true },
+          ],
+        }).catch(() => ({ data: null, error: null })),
 
-            if (!recruiterRoles || recruiterRoles.length === 0) {
-              return { data: [], error: null }
-            }
-
-            const recruiterUserIds = recruiterRoles.map(r => r.user_id)
-
-            // Then get their profiles filtered by org_id
-            const { data: profiles, error } = await supabase
-              .from("profiles")
-              .select("id,first_name,last_name,email,avatar_url")
-              .eq("org_id", orgId)
-              .eq("is_active", true)
-              .in("id", recruiterUserIds)
-
-            return { data: profiles, error }
-          } catch (e) {
-            console.error("Team query error:", e)
-            return { data: null, error: null }
-          }
-        })(),
+        // Load user_roles to filter recruiters
+        supabaseSelect<{user_id: string; role: string}[]>("user_roles", {
+          select: "user_id,role",
+          filter: [{ column: "role", operator: "eq", value: "recruiter" }],
+        }).catch(() => ({ data: null, error: null })),
 
         // Load pipelines for vacancy stages selection
         supabaseSelect<Pipeline[]>("pipelines", {
@@ -377,9 +362,11 @@ export default function JobSettingsPage() {
         }).catch(() => ({ data: null, error: null }))
         setPipelineStages(stagesData || [])
       }
-      // Process team data to compute full_name from first_name + last_name
+      // Process team data: filter to recruiters only and compute full_name
       const rawTeam = teamResult?.data || []
-      const team = rawTeam.map((t: TeamMember) => ({
+      const recruiterUserIds = (userRolesResult?.data || []).map((r: {user_id: string}) => r.user_id)
+      const recruitersOnly = rawTeam.filter((t: TeamMember) => recruiterUserIds.includes(t.id))
+      const team = recruitersOnly.map((t: TeamMember) => ({
         ...t,
         full_name: [t.first_name, t.last_name].filter(Boolean).join(' ') || t.email,
       }))
@@ -403,7 +390,7 @@ export default function JobSettingsPage() {
         }).catch(() => ({ data: null, error: null })),
 
         supabaseSelect<JobRecruiter[]>("job_recruiters", {
-          select: "*,user:profiles(id,full_name,email,avatar_url,role)",
+          select: "*,user:profiles(id,first_name,last_name,email,avatar_url)",
           filter: [{ column: "job_id", operator: "eq", value: jobId }],
         }).catch(() => ({ data: null, error: null })),
       ])
