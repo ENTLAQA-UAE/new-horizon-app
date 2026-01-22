@@ -17,11 +17,11 @@ import {
 async function getOrgStats() {
   const supabase = await createClient()
 
-  // Get active jobs count (only published/open jobs, not drafts)
+  // Get active jobs count (only open jobs, not drafts)
   const { count: jobsCount } = await supabase
     .from("jobs")
     .select("*", { count: "exact", head: true })
-    .in("status", ["published", "open"])
+    .eq("status", "open")
 
   // Get candidates count
   const { count: candidatesCount } = await supabase
