@@ -254,11 +254,19 @@ export function JobsClient({
     closing_date: "",
   })
 
+  // Get location name from locations array using location_id
+  const getLocationName = (locationId: string | null | undefined) => {
+    if (!locationId) return null
+    const loc = locations.find(l => l.id === locationId)
+    return loc ? `${loc.name}${loc.city ? ` (${loc.city})` : ''}` : null
+  }
+
   const filteredJobs = jobs.filter((job) => {
+    const locationName = getLocationName(job.location_id)
     const matchesSearch =
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.title_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location?.toLowerCase().includes(searchQuery.toLowerCase())
+      locationName?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || job.status === statusFilter
     const matchesDepartment = departmentFilter === "all" || job.department_id === departmentFilter
     return matchesSearch && matchesStatus && matchesDepartment
@@ -325,8 +333,6 @@ export function JobsClient({
         description_ar: formData.description_ar || null,
         department_id: formData.department_id || null,
         location_id: formData.location_id || null,
-        location: formData.location || null,
-        location_ar: formData.location_ar || null,
         job_type_id: formData.job_type_id || null,
         job_type: formData.job_type || "full_time",
         job_grade_id: formData.job_grade_id || null,
@@ -401,8 +407,6 @@ export function JobsClient({
           description_ar: formData.description_ar || null,
           department_id: formData.department_id || null,
           location_id: formData.location_id || null,
-          location: formData.location || null,
-          location_ar: formData.location_ar || null,
           job_type_id: formData.job_type_id || null,
           job_type: formData.job_type || "full_time",
           job_grade_id: formData.job_grade_id || null,
@@ -965,7 +969,7 @@ export function JobsClient({
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <MapPin className="h-3 w-3 text-muted-foreground" />
-                      <span>{job.location || "Not specified"}</span>
+                      <span>{getLocationName(job.location_id) || "Not specified"}</span>
                       {job.is_remote && (
                         <Badge variant="outline" className="ml-1 text-xs">
                           Remote
@@ -1170,7 +1174,7 @@ export function JobsClient({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedJob.location || "Not specified"}</span>
+                  <span>{getLocationName(selectedJob.location_id) || "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
@@ -1240,8 +1244,8 @@ export function JobsClient({
             <div className="py-4">
               <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                 <p className="font-medium text-destructive">{selectedJob.title}</p>
-                {selectedJob.location && (
-                  <p className="text-sm text-muted-foreground">{selectedJob.location}</p>
+                {getLocationName(selectedJob.location_id) && (
+                  <p className="text-sm text-muted-foreground">{getLocationName(selectedJob.location_id)}</p>
                 )}
               </div>
             </div>
