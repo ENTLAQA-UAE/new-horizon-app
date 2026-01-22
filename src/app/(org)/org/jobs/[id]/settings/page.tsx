@@ -5,7 +5,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -115,6 +116,7 @@ export default function JobSettingsPage() {
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
+  const { profile } = useAuth()
   const jobId = params.id as string
 
   const [isLoading, setIsLoading] = useState(true)
@@ -138,78 +140,98 @@ export default function JobSettingsPage() {
   const [selectedRecruiter, setSelectedRecruiter] = useState("")
 
   useEffect(() => {
-    loadData()
-  }, [jobId])
+    if (profile?.org_id) {
+      loadData()
+    } else if (profile === null) {
+      // Profile loaded but no org_id
+      setIsLoading(false)
+    }
+    // If profile is undefined, still loading auth
+  }, [jobId, profile?.org_id])
 
   const loadData = async () => {
+    const orgId = profile?.org_id
+    if (!orgId) {
+      setIsLoading(false)
+      return
+    }
+
+    setOrganizationId(orgId)
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      // Load job first - this is essential
+      const { data: jobResult } = await supabaseSelect<Job[]>("jobs", {
+        select: "id,title,title_ar,status,thumbnail_url",
+        filter: [{ column: "id", operator: "eq", value: jobId }],
+        single: true,
+      })
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("org_id")
-        .eq("id", user.id)
-        .single()
-
-      const orgId = profile?.org_id
-      if (!orgId) {
+      if (!jobResult) {
+        toast.error("Job not found")
         setIsLoading(false)
         return
       }
+      setJob(jobResult as unknown as Job)
 
-      setOrganizationId(orgId)
+      // Load other data in parallel, with error handling for each
+      const [sectionsResult, stagesResult, teamResult] = await Promise.all([
+        // Load available sections (may not exist)
+        supabaseSelect<FormSection[]>("application_form_sections", {
+          filter: [
+            { column: "org_id", operator: "eq", value: orgId },
+            { column: "is_enabled", operator: "eq", value: true },
+          ],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
 
-      // Load job
-      const { data: jobData, error: jobError } = await supabase
-        .from("jobs")
-        .select("id, title, title_ar, status")
-        .eq("id", jobId)
-        .single()
+        // Load available stages (may not exist)
+        supabaseSelect<HiringStage[]>("hiring_stages", {
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
 
-      if (jobError) throw jobError
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setJob(jobData as any)
+        // Load team members
+        supabaseSelect<TeamMember[]>("profiles", {
+          select: "id,full_name,email,avatar_url,role",
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+        }).catch(() => ({ data: null, error: null })),
+      ])
 
-      // Load available sections
-      const { data: sections } = await supabase
-        .from("application_form_sections")
-        .select("*")
-        .eq("org_id", orgId)
-        .eq("is_enabled", true)
-        .order("sort_order")
+      const sections = sectionsResult?.data || []
+      const stages = stagesResult?.data || []
+      const team = teamResult?.data || []
 
-      setAvailableSections(sections || [])
+      setAvailableSections(sections)
+      setAvailableStages(stages)
+      setAvailableTeam(team)
 
-      // Load available stages
-      const { data: stages } = await supabase
-        .from("hiring_stages")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("sort_order")
+      // Load job-specific configurations in parallel
+      const [jobSectionsResult, jobStagesResult, recruitersResult] = await Promise.all([
+        supabaseSelect<JobSection[]>("job_application_sections", {
+          select: "*,section:application_form_sections(*)",
+          filter: [{ column: "job_id", operator: "eq", value: jobId }],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
 
-      setAvailableStages(stages || [])
+        supabaseSelect<JobStage[]>("job_hiring_stages", {
+          select: "*,stage:hiring_stages(*)",
+          filter: [{ column: "job_id", operator: "eq", value: jobId }],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
 
-      // Load team members
-      const { data: team } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, avatar_url, role")
-        .eq("org_id", orgId)
+        supabaseSelect<JobRecruiter[]>("job_recruiters", {
+          select: "*,user:profiles(id,full_name,email,avatar_url,role)",
+          filter: [{ column: "job_id", operator: "eq", value: jobId }],
+        }).catch(() => ({ data: null, error: null })),
+      ])
 
-      setAvailableTeam(team || [])
-
-      // Load job-specific sections
-      const { data: jobSectionsData } = await supabase
-        .from("job_application_sections")
-        .select("*, section:application_form_sections(*)")
-        .eq("job_id", jobId)
-        .order("sort_order")
-
+      // Set job sections
+      const jobSectionsData = jobSectionsResult?.data
       if (jobSectionsData && jobSectionsData.length > 0) {
         setJobSections(jobSectionsData)
       } else {
         // Initialize with all available sections
-        const initialSections = (sections || []).map((s, i) => ({
+        const initialSections = sections.map((s, i) => ({
           id: `temp-${s.id}`,
           section_id: s.id,
           is_enabled: true,
@@ -219,18 +241,13 @@ export default function JobSettingsPage() {
         setJobSections(initialSections)
       }
 
-      // Load job-specific stages
-      const { data: jobStagesData } = await supabase
-        .from("job_hiring_stages")
-        .select("*, stage:hiring_stages(*)")
-        .eq("job_id", jobId)
-        .order("sort_order")
-
+      // Set job stages
+      const jobStagesData = jobStagesResult?.data
       if (jobStagesData && jobStagesData.length > 0) {
         setJobStages(jobStagesData)
       } else {
         // Initialize with all available stages
-        const initialStages = (stages || []).map((s, i) => ({
+        const initialStages = stages.map((s, i) => ({
           id: `temp-${s.id}`,
           stage_id: s.id,
           is_enabled: true,
@@ -240,13 +257,7 @@ export default function JobSettingsPage() {
         setJobStages(initialStages)
       }
 
-      // Load job recruiters
-      const { data: recruitersData } = await supabase
-        .from("job_recruiters")
-        .select("*, user:profiles(id, full_name, email, avatar_url, role)")
-        .eq("job_id", jobId)
-
-      setJobRecruiters(recruitersData || [])
+      setJobRecruiters(recruitersResult?.data || [])
 
     } catch (error) {
       console.error("Error loading data:", error)
