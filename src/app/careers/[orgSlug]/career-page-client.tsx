@@ -47,18 +47,19 @@ interface Job {
   id: string
   title: string
   title_ar: string | null
+  slug: string | null
   description: string | null
   description_ar: string | null
   location: string | null
+  location_ar: string | null
   department: string | null
+  department_ar: string | null
   employment_type: string | null
   experience_level: string | null
-  salary_min: number | null
-  salary_max: number | null
-  salary_currency: string | null
   remote_allowed: boolean | null
   published_at: string | null
   closing_date: string | null
+  thumbnail_url: string | null
 }
 
 interface Organization {
@@ -753,7 +754,17 @@ function BlockRenderer({
                     style={{ borderRadius: styles.borderRadius }}
                   >
                     <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center gap-4">
+                      <div className="flex flex-col md:flex-row md:items-start gap-4">
+                        {/* Job Thumbnail */}
+                        {job.thumbnail_url && (
+                          <div className="shrink-0">
+                            <img
+                              src={job.thumbnail_url}
+                              alt={job.title}
+                              className="w-full md:w-32 h-24 object-cover rounded-lg"
+                            />
+                          </div>
+                        )}
                         <div className="flex-1">
                           <div className="flex items-start gap-3 mb-2 flex-wrap">
                             <h3 className="text-xl font-semibold">
@@ -794,12 +805,6 @@ function BlockRenderer({
                             )}
                           </div>
 
-                          {formatSalary(job) && (
-                            <div className="flex items-center gap-1 text-sm font-medium text-green-600 mb-3">
-                              <DollarSign className="h-4 w-4" />
-                              {formatSalary(job)}
-                            </div>
-                          )}
 
                           {job.description && (
                             <p className="text-muted-foreground line-clamp-2">
