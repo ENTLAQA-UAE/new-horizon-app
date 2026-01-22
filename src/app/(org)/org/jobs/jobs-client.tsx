@@ -161,6 +161,17 @@ const getDeadlineBadgeStyle = (daysLeft: number | null) => {
   return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
 }
 
+// Helper to generate URL-friendly slug from title
+const generateSlug = (title: string): string => {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')      // Replace spaces with hyphens
+    .replace(/-+/g, '-')       // Replace multiple hyphens with single
+  return `${base}-${Date.now()}`
+}
+
 const employmentTypes = [
   { value: "full_time", label: "Full Time" },
   { value: "part_time", label: "Part Time" },
@@ -304,9 +315,10 @@ export function JobsClient({
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
       // Note: only include columns that exist in the database schema
       // (location/location_ar text columns don't exist, only location_id FK)
-      // IMPORTANT: org_id is required for RLS policies to allow the insert
+      // IMPORTANT: org_id and slug are required for RLS policies and DB constraints
       const { data, error } = await supabaseInsert<Job>("jobs", {
         org_id: profile.org_id,
+        slug: generateSlug(formData.title),
         title: formData.title,
         title_ar: formData.title_ar || null,
         description: formData.description || null,
@@ -507,9 +519,10 @@ export function JobsClient({
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
       // Note: only include columns that exist in the database schema
-      // IMPORTANT: org_id is required for RLS policies to allow the insert
+      // IMPORTANT: org_id and slug are required for RLS policies and DB constraints
       const { data, error } = await supabaseInsert<Job>("jobs", {
         org_id: profile.org_id,
+        slug: generateSlug(`${job.title} copy`),
         title: `${job.title} (Copy)`,
         title_ar: job.title_ar ? `${job.title_ar} (نسخة)` : null,
         description: job.description,
