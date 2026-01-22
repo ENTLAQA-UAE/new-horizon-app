@@ -313,10 +313,8 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
-      // Note: location_id is set to null because we query from 'locations' table (vacancy settings)
-      // but the FK references 'job_locations' table. Store location name for display instead.
       // IMPORTANT: org_id and slug are required for RLS policies and DB constraints
-      const selectedLocation = locations.find(l => l.id === formData.location_id)
+      // location_id now references locations table (vacancy settings) after FK migration
       const { data, error } = await supabaseInsert<Job>("jobs", {
         org_id: profile.org_id,
         slug: generateSlug(formData.title),
@@ -325,9 +323,7 @@ export function JobsClient({
         description: formData.description || null,
         description_ar: formData.description_ar || null,
         department_id: formData.department_id || null,
-        location_id: null, // FK references job_locations, not vacancy settings locations
-        location: selectedLocation?.name || null,
-        location_ar: selectedLocation?.name_ar || null,
+        location_id: formData.location_id || null,
         job_type_id: formData.job_type_id || null,
         job_type: formData.job_type || "full_time",
         job_grade_id: formData.job_grade_id || null,
@@ -392,9 +388,7 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseUpdate which gets token from localStorage (bypasses getSession timeout)
-      // Note: location_id is set to null because we query from 'locations' table (vacancy settings)
-      // but the FK references 'job_locations' table. Store location name for display instead.
-      const selectedLocation = locations.find(l => l.id === formData.location_id)
+      // location_id now references locations table (vacancy settings) after FK migration
       const { error } = await supabaseUpdate(
         "jobs",
         {
@@ -403,9 +397,7 @@ export function JobsClient({
           description: formData.description || null,
           description_ar: formData.description_ar || null,
           department_id: formData.department_id || null,
-          location_id: null, // FK references job_locations, not vacancy settings locations
-          location: selectedLocation?.name || formData.location || null,
-          location_ar: selectedLocation?.name_ar || formData.location_ar || null,
+          location_id: formData.location_id || null,
           job_type_id: formData.job_type_id || null,
           job_type: formData.job_type || "full_time",
           job_grade_id: formData.job_grade_id || null,
