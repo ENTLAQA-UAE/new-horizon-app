@@ -71,6 +71,9 @@ export default async function CareerPage({ params }: CareerPageProps) {
     // Map field names
     employment_type: job.job_type,
     experience_level: job.experience_level,
+    salary_min: job.salary_min,
+    salary_max: job.salary_max,
+    salary_currency: job.salary_currency,
     remote_allowed: job.is_remote,
     published_at: job.published_at,
     closing_date: job.closing_date,

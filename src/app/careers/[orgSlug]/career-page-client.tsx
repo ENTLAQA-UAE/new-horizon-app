@@ -56,6 +56,9 @@ interface Job {
   department_ar: string | null
   employment_type: string | null
   experience_level: string | null
+  salary_min: number | null
+  salary_max: number | null
+  salary_currency: string | null
   remote_allowed: boolean | null
   published_at: string | null
   closing_date: string | null
