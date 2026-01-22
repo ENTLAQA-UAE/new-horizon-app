@@ -19,6 +19,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
+import {
   MapPin,
   Briefcase,
   Clock,
@@ -34,6 +44,7 @@ import {
   X,
   Loader2,
   Send,
+  AlertCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -72,10 +83,28 @@ interface Branding {
   logo_url: string | null
 }
 
+interface ScreeningQuestion {
+  id: string
+  question: string
+  question_ar: string | null
+  description: string | null
+  description_ar: string | null
+  question_type: string
+  options: string[] | null
+  is_required: boolean
+  is_knockout: boolean
+  knockout_value: string | null
+  min_value: number | null
+  max_value: number | null
+  min_length: number | null
+  max_length: number | null
+}
+
 interface JobDetailClientProps {
   organization: Organization
   job: Job
   branding: Branding | null
+  screeningQuestions?: ScreeningQuestion[]
 }
 
 const employmentTypeLabels: Record<string, string> = {
@@ -105,7 +134,7 @@ const educationLabels: Record<string, string> = {
   phd: "PhD / Doctorate",
 }
 
-export function JobDetailClient({ organization, job, branding }: JobDetailClientProps) {
+export function JobDetailClient({ organization, job, branding, screeningQuestions = [] }: JobDetailClientProps) {
   const router = useRouter()
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -120,6 +149,28 @@ export function JobDetailClient({ organization, job, branding }: JobDetailClient
     linkedIn: "",
     coverLetter: "",
   })
+
+  // Screening question answers - keyed by question ID
+  const [screeningAnswers, setScreeningAnswers] = useState<Record<string, any>>({})
+
+  // Update screening answer
+  const handleScreeningAnswer = (questionId: string, value: any) => {
+    setScreeningAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }))
+  }
+
+  // Handle multiselect toggle
+  const handleMultiselectToggle = (questionId: string, option: string) => {
+    setScreeningAnswers(prev => {
+      const current = prev[questionId] || []
+      const newValue = current.includes(option)
+        ? current.filter((o: string) => o !== option)
+        : [...current, option]
+      return { ...prev, [questionId]: newValue }
+    })
+  }
 
   const primaryColor = branding?.primary_color || "#3b82f6"
 
@@ -168,6 +219,18 @@ export function JobDetailClient({ organization, job, branding }: JobDetailClient
       return
     }
 
+    // Validate required screening questions
+    for (const question of screeningQuestions) {
+      if (question.is_required) {
+        const answer = screeningAnswers[question.id]
+        if (answer === undefined || answer === null || answer === '' ||
+            (Array.isArray(answer) && answer.length === 0)) {
+          toast.error(`Please answer: ${question.question}`)
+          return
+        }
+      }
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -182,6 +245,11 @@ export function JobDetailClient({ organization, job, branding }: JobDetailClient
       submitData.append("linkedIn", formData.linkedIn)
       submitData.append("coverLetter", formData.coverLetter)
       submitData.append("resume", resumeFile)
+
+      // Add screening question answers
+      if (screeningQuestions.length > 0) {
+        submitData.append("screeningAnswers", JSON.stringify(screeningAnswers))
+      }
 
       const response = await fetch("/api/careers/apply", {
         method: "POST",
@@ -564,6 +632,117 @@ export function JobDetailClient({ organization, job, branding }: JobDetailClient
                 rows={4}
               />
             </div>
+
+            {/* Screening Questions */}
+            {screeningQuestions.length > 0 && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Additional Questions</p>
+                </div>
+                {screeningQuestions.map((question) => (
+                  <div key={question.id} className="space-y-2">
+                    <Label>
+                      {question.question}
+                      {question.is_required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    {question.description && (
+                      <p className="text-xs text-muted-foreground">{question.description}</p>
+                    )}
+
+                    {/* Text input */}
+                    {question.question_type === "text" && (
+                      <Input
+                        value={screeningAnswers[question.id] || ""}
+                        onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
+                        placeholder="Your answer..."
+                        maxLength={question.max_length || undefined}
+                      />
+                    )}
+
+                    {/* Textarea */}
+                    {question.question_type === "textarea" && (
+                      <Textarea
+                        value={screeningAnswers[question.id] || ""}
+                        onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
+                        placeholder="Your answer..."
+                        rows={3}
+                        maxLength={question.max_length || undefined}
+                      />
+                    )}
+
+                    {/* Number input */}
+                    {question.question_type === "number" && (
+                      <Input
+                        type="number"
+                        value={screeningAnswers[question.id] || ""}
+                        onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
+                        placeholder="Enter a number..."
+                        min={question.min_value || undefined}
+                        max={question.max_value || undefined}
+                      />
+                    )}
+
+                    {/* Boolean (Yes/No) */}
+                    {question.question_type === "boolean" && (
+                      <div className="flex items-center gap-4">
+                        <RadioGroup
+                          value={screeningAnswers[question.id]?.toString() || ""}
+                          onValueChange={(value) => handleScreeningAnswer(question.id, value === "true")}
+                          className="flex gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id={`${question.id}-yes`} />
+                            <Label htmlFor={`${question.id}-yes`}>Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id={`${question.id}-no`} />
+                            <Label htmlFor={`${question.id}-no`}>No</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    )}
+
+                    {/* Single Select */}
+                    {question.question_type === "select" && question.options && (
+                      <Select
+                        value={screeningAnswers[question.id] || ""}
+                        onValueChange={(value) => handleScreeningAnswer(question.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an option..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {question.options.map((option, idx) => (
+                            <SelectItem key={idx} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {/* Multi Select */}
+                    {question.question_type === "multiselect" && question.options && (
+                      <div className="space-y-2">
+                        {question.options.map((option, idx) => (
+                          <div key={idx} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${question.id}-${idx}`}
+                              checked={(screeningAnswers[question.id] || []).includes(option)}
+                              onCheckedChange={() => handleMultiselectToggle(question.id, option)}
+                            />
+                            <Label htmlFor={`${question.id}-${idx}`} className="font-normal">
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsApplyDialogOpen(false)}>

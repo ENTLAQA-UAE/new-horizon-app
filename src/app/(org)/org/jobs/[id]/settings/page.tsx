@@ -41,6 +41,15 @@ import {
   Globe,
   GraduationCap,
   Briefcase,
+  HelpCircle,
+  AlertTriangle,
+  Plus,
+  Type,
+  List,
+  ToggleLeft,
+  Hash,
+  CheckSquare,
+  FileUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -140,6 +149,30 @@ interface JobRecruiter {
   user_id: string
   role: string
   user: TeamMember
+}
+
+interface ScreeningQuestion {
+  id: string
+  org_id: string
+  job_id: string | null
+  question: string
+  question_ar: string | null
+  question_type: string
+  options: string[] | null
+  is_required: boolean
+  is_knockout: boolean
+  knockout_value: string | null
+  sort_order: number
+  is_active: boolean
+}
+
+interface JobScreeningQuestion {
+  id: string
+  job_id: string
+  question_id: string
+  is_enabled: boolean
+  sort_order: number
+  question: ScreeningQuestion
 }
 
 const iconMap: Record<string, any> = {
@@ -247,6 +280,10 @@ export default function JobSettingsPage() {
   const [jobRecruiters, setJobRecruiters] = useState<JobRecruiter[]>([])
 
   const [selectedRecruiter, setSelectedRecruiter] = useState("")
+
+  // Screening questions
+  const [availableQuestions, setAvailableQuestions] = useState<ScreeningQuestion[]>([])
+  const [jobScreeningQuestions, setJobScreeningQuestions] = useState<JobScreeningQuestion[]>([])
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -429,6 +466,44 @@ export default function JobSettingsPage() {
 
       setJobRecruiters(recruitersResult?.data || [])
 
+      // Load screening questions for this job
+      const [availableQuestionsResult, jobQuestionsResult] = await Promise.all([
+        // Load all org's screening questions (global ones where job_id is null)
+        supabaseSelect<ScreeningQuestion[]>("screening_questions", {
+          filter: [
+            { column: "org_id", operator: "eq", value: orgId },
+            { column: "job_id", operator: "is", value: null },
+            { column: "is_active", operator: "eq", value: true },
+          ],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
+
+        // Load job-specific screening question assignments
+        supabaseSelect<JobScreeningQuestion[]>("job_screening_questions", {
+          select: "*,question:screening_questions(*)",
+          filter: [{ column: "job_id", operator: "eq", value: jobId }],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
+      ])
+
+      setAvailableQuestions(availableQuestionsResult?.data || [])
+
+      const jobQuestionsData = jobQuestionsResult?.data
+      if (jobQuestionsData && jobQuestionsData.length > 0) {
+        setJobScreeningQuestions(jobQuestionsData)
+      } else {
+        // Initialize: all available questions are enabled by default
+        const initialQuestions = (availableQuestionsResult?.data || []).map((q, i) => ({
+          id: `temp-${q.id}`,
+          job_id: jobId,
+          question_id: q.id,
+          is_enabled: true,
+          sort_order: i,
+          question: q,
+        }))
+        setJobScreeningQuestions(initialQuestions)
+      }
+
     } catch (error) {
       console.error("Error loading data:", error)
       toast.error("Failed to load job settings")
@@ -477,6 +552,17 @@ export default function JobSettingsPage() {
       console.error("Error loading pipeline stages:", error)
       toast.error("Failed to load pipeline stages")
     }
+  }
+
+  // Toggle screening question
+  const handleToggleQuestion = (questionId: string) => {
+    setJobScreeningQuestions(prev =>
+      prev.map(q =>
+        q.question_id === questionId
+          ? { ...q, is_enabled: !q.is_enabled }
+          : q
+      )
+    )
   }
 
   // Add recruiter
@@ -659,6 +745,25 @@ export default function JobSettingsPage() {
         if (stageError?.error) throw new Error(stageError.error.message)
       }
 
+      // Save screening questions - delete existing first
+      const { error: deleteQuestionsError } = await supabaseDelete("job_screening_questions", { column: "job_id", value: jobId })
+      if (deleteQuestionsError) throw new Error(deleteQuestionsError.message)
+
+      const questionsToInsert = jobScreeningQuestions.map((q, i) => ({
+        job_id: jobId,
+        question_id: q.question_id,
+        is_enabled: q.is_enabled,
+        sort_order: i,
+      }))
+
+      if (questionsToInsert.length > 0) {
+        const questionInsertResults = await Promise.all(
+          questionsToInsert.map(question => supabaseInsert("job_screening_questions", question))
+        )
+        const questionError = questionInsertResults.find(r => r.error)
+        if (questionError?.error) throw new Error(questionError.error.message)
+      }
+
       toast.success("Settings saved successfully")
     } catch (error) {
       console.error("Error saving settings:", error)
@@ -745,6 +850,13 @@ export default function JobSettingsPage() {
             >
               <ImageIcon className="mr-2 h-4 w-4" />
               Thumbnail Image
+            </TabsTrigger>
+            <TabsTrigger
+              value="screening-questions"
+              className="w-full justify-start data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <HelpCircle className="mr-2 h-4 w-4" />
+              Screening Questions
             </TabsTrigger>
           </TabsList>
         </div>
@@ -1029,6 +1141,97 @@ export default function JobSettingsPage() {
                       <p className="text-xs text-muted-foreground">
                         Recommended: 1200x630px, max 5MB
                       </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Screening Questions Tab */}
+            <TabsContent value="screening-questions" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Screening Questions</CardTitle>
+                  <CardDescription>
+                    Select which screening questions to include in the application form for this job.
+                    Questions are managed in{" "}
+                    <Link href="/org/screening-questions" className="text-primary underline">
+                      Screening Questions
+                    </Link>.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {jobScreeningQuestions.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No screening questions available.</p>
+                      <p className="text-sm">
+                        Create questions in{" "}
+                        <Link href="/org/screening-questions" className="text-primary underline">
+                          Screening Questions
+                        </Link>{" "}
+                        to add them here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {jobScreeningQuestions.map((item) => {
+                        const question = item.question
+                        const questionTypeIcons: Record<string, any> = {
+                          text: Type,
+                          textarea: Type,
+                          select: List,
+                          multiselect: CheckSquare,
+                          boolean: ToggleLeft,
+                          number: Hash,
+                          file: FileUp,
+                        }
+                        const IconComponent = questionTypeIcons[question.question_type] || HelpCircle
+
+                        return (
+                          <div
+                            key={item.question_id}
+                            className={cn(
+                              "flex items-center justify-between p-4 rounded-lg border bg-background",
+                              !item.is_enabled && "opacity-50"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <IconComponent className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{question.question}</p>
+                                  {question.is_required && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Required
+                                    </Badge>
+                                  )}
+                                  {question.is_knockout && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Knockout
+                                    </Badge>
+                                  )}
+                                </div>
+                                {question.question_ar && (
+                                  <p className="text-sm text-muted-foreground" dir="rtl">
+                                    {question.question_ar}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground capitalize">
+                                  Type: {question.question_type.replace('_', ' ')}
+                                </p>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={item.is_enabled}
+                              onCheckedChange={() => handleToggleQuestion(item.question_id)}
+                            />
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </CardContent>

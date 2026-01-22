@@ -18,6 +18,8 @@ export async function POST(request: NextRequest) {
     const linkedIn = formData.get("linkedIn") as string
     const coverLetter = formData.get("coverLetter") as string
     const resumeFile = formData.get("resume") as File
+    const screeningAnswersRaw = formData.get("screeningAnswers") as string | null
+    const screeningAnswers = screeningAnswersRaw ? JSON.parse(screeningAnswersRaw) : {}
 
     // Validate required fields
     if (!jobId || !firstName || !lastName || !email || !resumeFile) {
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
     const firstStageId = stages?.[0]?.id || null
 
     // Create application
-    const { error: appError } = await supabase
+    const { data: application, error: appError } = await supabase
       .from("applications")
       .insert({
         candidate_id: candidateId,
@@ -150,13 +152,69 @@ export async function POST(request: NextRequest) {
         cover_letter: coverLetter || null,
         applied_at: new Date().toISOString(),
       })
+      .select("id")
+      .single()
 
-    if (appError) {
+    if (appError || !application) {
       console.error("Failed to create application:", appError)
       return NextResponse.json(
         { error: "Failed to submit application" },
         { status: 500 }
       )
+    }
+
+    // Save screening question responses
+    if (Object.keys(screeningAnswers).length > 0) {
+      // Get screening questions to check for knockouts
+      const { data: questions } = await supabase
+        .from("screening_questions")
+        .select("id, is_knockout, knockout_value")
+        .in("id", Object.keys(screeningAnswers))
+
+      let isKnockout = false
+
+      // Prepare responses for insertion
+      const responses = Object.entries(screeningAnswers).map(([questionId, answer]) => {
+        const question = questions?.find(q => q.id === questionId)
+        const answerStr = typeof answer === 'object' ? JSON.stringify(answer) : String(answer)
+
+        // Check for knockout
+        let knockoutTriggered = false
+        if (question?.is_knockout && question.knockout_value) {
+          // For boolean questions, compare the string values
+          if (answerStr === question.knockout_value ||
+              answerStr === String(question.knockout_value)) {
+            knockoutTriggered = true
+            isKnockout = true
+          }
+        }
+
+        return {
+          application_id: application.id,
+          question_id: questionId,
+          answer: typeof answer === 'string' ? answer : null,
+          answer_json: typeof answer === 'object' ? answer : null,
+          is_knockout_triggered: knockoutTriggered,
+        }
+      })
+
+      // Insert responses
+      const { error: responsesError } = await supabase
+        .from("screening_responses")
+        .insert(responses)
+
+      if (responsesError) {
+        console.error("Failed to save screening responses:", responsesError)
+        // Don't fail the whole application, just log the error
+      }
+
+      // If knockout was triggered, update application status
+      if (isKnockout) {
+        await supabase
+          .from("applications")
+          .update({ status: "rejected" })
+          .eq("id", application.id)
+      }
     }
 
     // Send confirmation email (async, don't wait)
