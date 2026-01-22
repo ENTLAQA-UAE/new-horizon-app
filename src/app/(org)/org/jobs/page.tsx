@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema yet (job_types, job_grades, locations, hiring_stages)
+// Note: This file uses tables that may not exist in the database schema yet (job_types, job_grades, hiring_stages)
 import { createClient } from "@/lib/supabase/server"
 import { JobsClient } from "./jobs-client"
 
@@ -58,8 +58,9 @@ async function getJobGrades() {
 async function getLocations() {
   const supabase = await createClient()
 
+  // Use job_locations table which is the correct FK reference for jobs.location_id
   const { data } = await supabase
-    .from("locations")
+    .from("job_locations")
     .select("id, name, name_ar, city, country")
     .eq("is_active", true)
     .order("name")
