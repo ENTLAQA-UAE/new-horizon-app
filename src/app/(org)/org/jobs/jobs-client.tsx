@@ -77,7 +77,7 @@ interface Job {
   location: string | null
   location_ar: string | null
   job_type_id: string | null
-  employment_type: string | null
+  job_type: string | null
   job_grade_id: string | null
   experience_level: string | null
   salary_min: number | null
@@ -230,7 +230,7 @@ export function JobsClient({
     location: "",
     location_ar: "",
     job_type_id: "",
-    employment_type: "full_time",
+    job_type: "full_time",
     job_grade_id: "",
     experience_level: "mid",
     salary_min: 0,
@@ -274,7 +274,7 @@ export function JobsClient({
       location: "",
       location_ar: "",
       job_type_id: "",
-      employment_type: "full_time",
+      job_type: "full_time",
       job_grade_id: "",
       experience_level: "mid",
       salary_min: 0,
@@ -305,7 +305,7 @@ export function JobsClient({
         location: formData.location || null,
         location_ar: formData.location_ar || null,
         job_type_id: formData.job_type_id || null,
-        employment_type: formData.job_type_id ? null : formData.employment_type,
+        job_type: formData.job_type_id ? null : formData.job_type,
         job_grade_id: formData.job_grade_id || null,
         experience_level: formData.job_grade_id ? null : formData.experience_level,
         salary_min: formData.salary_min || null,
@@ -349,7 +349,7 @@ export function JobsClient({
       location: job.location || "",
       location_ar: job.location_ar || "",
       job_type_id: job.job_type_id || "",
-      employment_type: job.employment_type || "full_time",
+      job_type: job.job_type || "full_time",
       job_grade_id: job.job_grade_id || "",
       experience_level: job.experience_level || "mid",
       salary_min: job.salary_min || 0,
@@ -382,7 +382,7 @@ export function JobsClient({
           location: formData.location || null,
           location_ar: formData.location_ar || null,
           job_type_id: formData.job_type_id || null,
-          employment_type: formData.job_type_id ? null : formData.employment_type,
+          job_type: formData.job_type_id ? null : formData.job_type,
           job_grade_id: formData.job_grade_id || null,
           experience_level: formData.job_grade_id ? null : formData.experience_level,
           salary_min: formData.salary_min || null,
@@ -501,7 +501,7 @@ export function JobsClient({
         department_id: job.department_id,
         location: job.location,
         location_ar: job.location_ar,
-        employment_type: job.employment_type,
+        job_type: job.job_type,
         experience_level: job.experience_level,
         salary_min: job.salary_min,
         salary_max: job.salary_max,
@@ -943,7 +943,7 @@ export function JobsClient({
                   </TableCell>
                   <TableCell>
                     <span className="text-sm capitalize">
-                      {job.employment_type?.replace("_", " ") || "-"}
+                      {job.job_type?.replace("_", " ") || "-"}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -1142,7 +1142,7 @@ export function JobsClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="capitalize">{selectedJob.employment_type?.replace("_", " ") || "-"}</span>
+                  <span className="capitalize">{selectedJob.job_type?.replace("_", " ") || "-"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
