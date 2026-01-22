@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
@@ -62,6 +62,7 @@ import {
   User,
   Briefcase,
   GripVertical,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -73,6 +74,24 @@ interface Candidate {
   phone: string | null
   current_job_title: string | null
   resume_url: string | null
+  avatar_url: string | null
+}
+
+interface PipelineStage {
+  id: string
+  name: string
+  name_ar: string | null
+  color: string
+  sort_order: number
+  stage_type: string
+  is_system?: boolean
+}
+
+interface Pipeline {
+  id: string
+  name: string
+  name_ar: string | null
+  pipeline_stages: PipelineStage[]
 }
 
 interface Job {
@@ -80,37 +99,43 @@ interface Job {
   title: string
   title_ar: string | null
   department_id: string | null
-  location: string | null
+  location_id: string | null
+  pipeline_id: string | null
+}
+
+interface JobWithPipeline {
+  id: string
+  title: string
+  title_ar: string | null
+  status: string
+  pipeline_id: string | null
+  pipelines: Pipeline | null
 }
 
 interface Application {
   id: string
   candidate_id: string
   job_id: string
-  stage: string | null
+  stage_id: string | null
   status: string | null
-  score: number | null
+  ai_match_score: number | null
+  manual_score: number | null
   notes: string | null
   applied_at: string | null
   created_at: string | null
   updated_at: string | null
   candidates: Candidate | null
   jobs: Job | null
-}
-
-interface Stage {
-  id: string
-  name: string
-  color: string
+  pipeline_stages: PipelineStage | null
 }
 
 interface ApplicationsClientProps {
   applications: Application[]
-  jobs: { id: string; title: string; title_ar: string | null; status: string }[]
-  stages: Stage[]
+  jobsWithPipelines: JobWithPipeline[]
 }
 
-const stageStyles: Record<string, string> = {
+// Default stage colors by type
+const stageTypeColors: Record<string, string> = {
   applied: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   screening: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   interview: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
@@ -122,15 +147,17 @@ const stageStyles: Record<string, string> = {
 
 export function ApplicationsClient({
   applications: initialApplications,
-  jobs,
-  stages,
+  jobsWithPipelines,
 }: ApplicationsClientProps) {
   const router = useRouter()
   const [applications, setApplications] = useState(initialApplications)
   const [searchQuery, setSearchQuery] = useState("")
   const [stageFilter, setStageFilter] = useState<string>("all")
   const [jobFilter, setJobFilter] = useState<string>("all")
-  const [viewMode, setViewMode] = useState<"pipeline" | "table">("pipeline")
+  const [viewMode, setViewMode] = useState<"list" | "pipeline">("list")
+
+  // For pipeline view - selected job
+  const [selectedPipelineJob, setSelectedPipelineJob] = useState<string | null>(null)
 
   // Dialog states
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -142,20 +169,80 @@ export function ApplicationsClient({
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [notes, setNotes] = useState("")
 
-  const filteredApplications = applications.filter((app) => {
-    const candidateName = `${app.candidates?.first_name || ""} ${app.candidates?.last_name || ""}`.toLowerCase()
-    const jobTitle = app.jobs?.title?.toLowerCase() || ""
-    const matchesSearch =
-      candidateName.includes(searchQuery.toLowerCase()) ||
-      jobTitle.includes(searchQuery.toLowerCase()) ||
-      app.candidates?.email?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStage = stageFilter === "all" || app.stage === stageFilter
-    const matchesJob = jobFilter === "all" || app.job_id === jobFilter
-    return matchesSearch && matchesStage && matchesJob
-  })
+  // Get jobs that have applications
+  const jobsWithApplications = useMemo(() => {
+    const jobIds = new Set(applications.map(a => a.job_id))
+    return jobsWithPipelines.filter(j => jobIds.has(j.id))
+  }, [applications, jobsWithPipelines])
+
+  // Get all unique stages from all pipelines for the list view filter
+  const allStages = useMemo(() => {
+    const stageMap = new Map<string, PipelineStage>()
+    jobsWithPipelines.forEach(job => {
+      job.pipelines?.pipeline_stages?.forEach(stage => {
+        if (!stageMap.has(stage.id)) {
+          stageMap.set(stage.id, stage)
+        }
+      })
+    })
+    return Array.from(stageMap.values()).sort((a, b) => a.sort_order - b.sort_order)
+  }, [jobsWithPipelines])
+
+  // Get stages for selected job in pipeline view
+  const selectedJobStages = useMemo(() => {
+    if (!selectedPipelineJob) return []
+    const job = jobsWithPipelines.find(j => j.id === selectedPipelineJob)
+    return job?.pipelines?.pipeline_stages?.sort((a, b) => a.sort_order - b.sort_order) || []
+  }, [selectedPipelineJob, jobsWithPipelines])
+
+  // Filter applications
+  const filteredApplications = useMemo(() => {
+    return applications.filter((app) => {
+      const candidateName = `${app.candidates?.first_name || ""} ${app.candidates?.last_name || ""}`.toLowerCase()
+      const jobTitle = app.jobs?.title?.toLowerCase() || ""
+      const matchesSearch =
+        candidateName.includes(searchQuery.toLowerCase()) ||
+        jobTitle.includes(searchQuery.toLowerCase()) ||
+        app.candidates?.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesStage = stageFilter === "all" || app.stage_id === stageFilter
+      const matchesJob = jobFilter === "all" || app.job_id === jobFilter
+      return matchesSearch && matchesStage && matchesJob
+    })
+  }, [applications, searchQuery, stageFilter, jobFilter])
+
+  // Applications for pipeline view (filtered by selected job)
+  const pipelineApplications = useMemo(() => {
+    if (!selectedPipelineJob) return []
+    return applications.filter(app => app.job_id === selectedPipelineJob)
+  }, [applications, selectedPipelineJob])
 
   const getApplicationsByStage = (stageId: string) => {
-    return filteredApplications.filter((app) => app.stage === stageId)
+    return pipelineApplications.filter((app) => app.stage_id === stageId)
+  }
+
+  // Get stage name for an application
+  const getStageName = (app: Application) => {
+    if (app.pipeline_stages?.name) return app.pipeline_stages.name
+    // Fallback: find stage from job's pipeline
+    const job = jobsWithPipelines.find(j => j.id === app.job_id)
+    const stage = job?.pipelines?.pipeline_stages?.find(s => s.id === app.stage_id)
+    return stage?.name || "Unknown"
+  }
+
+  // Get stage color
+  const getStageColor = (app: Application) => {
+    if (app.pipeline_stages?.color) return app.pipeline_stages.color
+    const job = jobsWithPipelines.find(j => j.id === app.job_id)
+    const stage = job?.pipelines?.pipeline_stages?.find(s => s.id === app.stage_id)
+    return stage?.color || "#6B7280"
+  }
+
+  // Get stage type for styling
+  const getStageType = (app: Application) => {
+    if (app.pipeline_stages?.stage_type) return app.pipeline_stages.stage_type
+    const job = jobsWithPipelines.find(j => j.id === app.job_id)
+    const stage = job?.pipelines?.pipeline_stages?.find(s => s.id === app.stage_id)
+    return stage?.stage_type || "applied"
   }
 
   const stats = {
@@ -166,10 +253,11 @@ export function ApplicationsClient({
       weekAgo.setDate(weekAgo.getDate() - 7)
       return date > weekAgo
     }).length,
-    inProgress: applications.filter((a) =>
-      ["screening", "interview", "assessment"].includes(a.stage || "")
-    ).length,
-    hired: applications.filter((a) => a.stage === "hired").length,
+    inProgress: applications.filter((a) => {
+      const stageType = getStageType(a)
+      return ["screening", "interview", "assessment"].includes(stageType)
+    }).length,
+    hired: applications.filter((a) => getStageType(a) === "hired").length,
   }
 
   // VIEW
@@ -252,12 +340,16 @@ export function ApplicationsClient({
   }
 
   // STAGE CHANGE
-  const handleStageChange = async (applicationId: string, newStage: string) => {
+  const handleStageChange = async (applicationId: string, newStageId: string) => {
+    // Find the stage for the toast message
+    const stage = selectedJobStages.find(s => s.id === newStageId) ||
+                  allStages.find(s => s.id === newStageId)
+
     // Optimistically update UI
     const previousApplications = [...applications]
     setApplications(
       applications.map((a) =>
-        a.id === applicationId ? { ...a, stage: newStage } : a
+        a.id === applicationId ? { ...a, stage_id: newStageId } : a
       )
     )
 
@@ -265,7 +357,7 @@ export function ApplicationsClient({
       const { error } = await supabaseUpdate(
         "applications",
         {
-          stage: newStage,
+          stage_id: newStageId,
           updated_at: new Date().toISOString(),
         },
         { column: "id", value: applicationId }
@@ -278,8 +370,7 @@ export function ApplicationsClient({
         return
       }
 
-      const stageName = stages.find(s => s.id === newStage)?.name || newStage
-      toast.success(`Moved to ${stageName}`)
+      toast.success(`Moved to ${stage?.name || "new stage"}`)
     } catch {
       // Revert on error
       setApplications(previousApplications)
@@ -291,10 +382,8 @@ export function ApplicationsClient({
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result
 
-    // Dropped outside a valid area
     if (!destination) return
 
-    // Dropped in the same position
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
@@ -302,9 +391,8 @@ export function ApplicationsClient({
       return
     }
 
-    // Update the stage
-    const newStage = destination.droppableId
-    handleStageChange(draggableId, newStage)
+    const newStageId = destination.droppableId
+    handleStageChange(draggableId, newStageId)
   }
 
   const formatDate = (date: string | null) => {
@@ -373,8 +461,8 @@ export function ApplicationsClient({
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {stages
-                .filter((s) => s.id !== app.stage)
+              {selectedJobStages
+                .filter((s) => s.id !== app.stage_id)
                 .map((stage) => (
                   <DropdownMenuItem
                     key={stage.id}
@@ -400,23 +488,19 @@ export function ApplicationsClient({
         </div>
         <div className="mt-3 space-y-2">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Briefcase className="h-3 w-3" />
-            <span className="truncate">{app.jobs?.title || "No job"}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>Applied {formatDate(app.applied_at || app.created_at)}</span>
           </div>
         </div>
-        {app.score !== null && (
+        {(app.ai_match_score !== null || app.manual_score !== null) && (
           <div className="mt-3 flex items-center gap-2">
             <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full"
-                style={{ width: `${app.score}%` }}
+                style={{ width: `${app.ai_match_score || app.manual_score || 0}%` }}
               />
             </div>
-            <span className="text-xs font-medium">{app.score}%</span>
+            <span className="text-xs font-medium">{app.ai_match_score || app.manual_score}%</span>
           </div>
         )}
       </CardContent>
@@ -443,9 +527,9 @@ export function ApplicationsClient({
             Pipeline
           </Button>
           <Button
-            variant={viewMode === "table" ? "default" : "outline"}
+            variant={viewMode === "list" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode("table")}
+            onClick={() => setViewMode("list")}
           >
             <List className="mr-2 h-4 w-4" />
             Table
@@ -497,52 +581,144 @@ export function ApplicationsClient({
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or job..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+      {/* List View Filters */}
+      {viewMode === "list" && (
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email, or job..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={stageFilter} onValueChange={setStageFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Stage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Stages</SelectItem>
+              {allStages.map((stage) => (
+                <SelectItem key={stage.id} value={stage.id}>
+                  {stage.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={jobFilter} onValueChange={setJobFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Job" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Jobs</SelectItem>
+              {jobsWithPipelines.map((job) => (
+                <SelectItem key={job.id} value={job.id}>
+                  {job.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={stageFilter} onValueChange={setStageFilter}>
-          <SelectTrigger className="w-40">
-            <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Stage" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Stages</SelectItem>
-            {stages.map((stage) => (
-              <SelectItem key={stage.id} value={stage.id}>
-                {stage.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={jobFilter} onValueChange={setJobFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Job" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Jobs</SelectItem>
-            {jobs.map((job) => (
-              <SelectItem key={job.id} value={job.id}>
-                {job.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      )}
+
+      {/* Pipeline View - Job Selector */}
+      {viewMode === "pipeline" && !selectedPipelineJob && (
+        <Card className="p-8">
+          <div className="text-center space-y-4">
+            <LayoutGrid className="h-12 w-12 mx-auto text-muted-foreground" />
+            <div>
+              <h3 className="text-lg font-semibold">Select a Job to View Pipeline</h3>
+              <p className="text-muted-foreground text-sm mt-1">
+                Each job has its own hiring pipeline. Select a job to manage its applications.
+              </p>
+            </div>
+            {jobsWithApplications.length === 0 ? (
+              <p className="text-muted-foreground">No jobs with applications yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                {jobsWithApplications.map((job) => {
+                  const jobApps = applications.filter(a => a.job_id === job.id)
+                  return (
+                    <Card
+                      key={job.id}
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => setSelectedPipelineJob(job.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-medium">{job.title}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {jobApps.length} application{jobApps.length !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                          <Badge variant="outline">{job.status}</Badge>
+                        </div>
+                        {job.pipelines && (
+                          <div className="mt-3 flex items-center gap-1">
+                            {job.pipelines.pipeline_stages?.slice(0, 4).map((stage, idx) => (
+                              <div key={stage.id} className="flex items-center">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: stage.color }}
+                                  title={stage.name}
+                                />
+                                {idx < Math.min(3, (job.pipelines?.pipeline_stages?.length || 0) - 1) && (
+                                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                )}
+                              </div>
+                            ))}
+                            {(job.pipelines.pipeline_stages?.length || 0) > 4 && (
+                              <span className="text-xs text-muted-foreground ml-1">
+                                +{(job.pipelines.pipeline_stages?.length || 0) - 4} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Pipeline View - Selected Job Header */}
+      {viewMode === "pipeline" && selectedPipelineJob && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedPipelineJob(null)}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <div>
+              <span className="text-sm text-muted-foreground">Pipeline for:</span>
+              <span className="font-medium ml-2">
+                {jobsWithPipelines.find(j => j.id === selectedPipelineJob)?.title}
+              </span>
+            </div>
+          </div>
+          <Badge variant="secondary">
+            {pipelineApplications.length} application{pipelineApplications.length !== 1 ? "s" : ""}
+          </Badge>
+        </div>
+      )}
 
       {/* Pipeline View with Drag and Drop */}
-      {viewMode === "pipeline" && (
+      {viewMode === "pipeline" && selectedPipelineJob && selectedJobStages.length > 0 && (
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-4 min-w-max">
-              {stages.map((stage) => {
+              {selectedJobStages.map((stage) => {
                 const stageApps = getApplicationsByStage(stage.id)
                 return (
                   <div key={stage.id} className="w-80 flex-shrink-0">
@@ -566,7 +742,7 @@ export function ApplicationsClient({
                             snapshot.isDraggingOver && "bg-primary/5 ring-2 ring-primary/20"
                           )}
                         >
-                          <ScrollArea className="h-[calc(100vh-420px)]">
+                          <ScrollArea className="h-[calc(100vh-480px)]">
                             {stageApps.length === 0 && !snapshot.isDraggingOver ? (
                               <Card className="border-dashed">
                                 <CardContent className="py-8 text-center">
@@ -607,8 +783,8 @@ export function ApplicationsClient({
         </DragDropContext>
       )}
 
-      {/* Table View */}
-      {viewMode === "table" && (
+      {/* List/Table View */}
+      {viewMode === "list" && (
         <Card>
           <Table>
             <TableHeader>
@@ -630,108 +806,123 @@ export function ApplicationsClient({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredApplications.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary">
-                            {app.candidates?.first_name?.[0] || "?"}{app.candidates?.last_name?.[0] || "?"}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {app.candidates?.first_name} {app.candidates?.last_name}
+                filteredApplications.map((app) => {
+                  const stageName = getStageName(app)
+                  const stageColor = getStageColor(app)
+                  const stageType = getStageType(app)
+                  const job = jobsWithPipelines.find(j => j.id === app.job_id)
+                  const jobStages = job?.pipelines?.pipeline_stages || []
+
+                  return (
+                    <TableRow key={app.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-primary">
+                              {app.candidates?.first_name?.[0] || "?"}{app.candidates?.last_name?.[0] || "?"}
+                            </span>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {app.candidates?.email}
+                          <div>
+                            <div className="font-medium">
+                              {app.candidates?.first_name} {app.candidates?.last_name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {app.candidates?.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">{app.jobs?.title || "N/A"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={cn("capitalize", stageStyles[app.stage || "applied"])}>
-                        {app.stage || "applied"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {formatDate(app.applied_at || app.created_at)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {app.score !== null ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full"
-                              style={{ width: `${app.score}%` }}
-                            />
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{app.jobs?.title || "N/A"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          style={{
+                            backgroundColor: `${stageColor}20`,
+                            color: stageColor,
+                            borderColor: stageColor
+                          }}
+                          variant="outline"
+                        >
+                          {stageName}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(app.applied_at || app.created_at)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {(app.ai_match_score !== null || app.manual_score !== null) ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full"
+                                style={{ width: `${app.ai_match_score || app.manual_score || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium">{app.ai_match_score || app.manual_score}%</span>
                           </div>
-                          <span className="text-xs font-medium">{app.score}%</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={(e) => {
-                              e.preventDefault()
-                              openViewDialog(app)
-                            }}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={(e) => {
-                              e.preventDefault()
-                              openNotesDialog(app)
-                            }}
-                          >
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Add Notes
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {stages
-                            .filter((s) => s.id !== app.stage)
-                            .slice(0, 3)
-                            .map((stage) => (
-                              <DropdownMenuItem
-                                key={stage.id}
-                                onSelect={() => handleStageChange(app.id, stage.id)}
-                              >
-                                <ChevronRight className="mr-2 h-4 w-4" />
-                                Move to {stage.name}
-                              </DropdownMenuItem>
-                            ))}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={(e) => {
-                              e.preventDefault()
-                              openDeleteDialog(app)
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onSelect={(e) => {
+                                e.preventDefault()
+                                openViewDialog(app)
+                              }}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={(e) => {
+                                e.preventDefault()
+                                openNotesDialog(app)
+                              }}
+                            >
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Add Notes
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {jobStages
+                              .filter((s) => s.id !== app.stage_id)
+                              .slice(0, 4)
+                              .map((stage) => (
+                                <DropdownMenuItem
+                                  key={stage.id}
+                                  onSelect={() => handleStageChange(app.id, stage.id)}
+                                >
+                                  <ChevronRight className="mr-2 h-4 w-4" />
+                                  Move to {stage.name}
+                                </DropdownMenuItem>
+                              ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onSelect={(e) => {
+                                e.preventDefault()
+                                openDeleteDialog(app)
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -762,12 +953,15 @@ export function ApplicationsClient({
                     {selectedApplication.candidates?.current_job_title || "No title"}
                   </p>
                   <Badge
-                    className={cn(
-                      "capitalize mt-1",
-                      stageStyles[selectedApplication.stage || "applied"]
-                    )}
+                    style={{
+                      backgroundColor: `${getStageColor(selectedApplication)}20`,
+                      color: getStageColor(selectedApplication),
+                      borderColor: getStageColor(selectedApplication)
+                    }}
+                    variant="outline"
+                    className="mt-1"
                   >
-                    {selectedApplication.stage || "applied"}
+                    {getStageName(selectedApplication)}
                   </Badge>
                 </div>
               </div>
@@ -782,29 +976,21 @@ export function ApplicationsClient({
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Email:</span>
                   <span>{selectedApplication.candidates?.email}</span>
                 </div>
                 {selectedApplication.candidates?.phone && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">Phone:</span>
                     <span>{selectedApplication.candidates.phone}</span>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    Applied{" "}
-                    {formatDate(
-                      selectedApplication.applied_at || selectedApplication.created_at
-                    )}
-                  </span>
+                  <span className="font-medium">Applied:</span>
+                  <span>{formatDate(selectedApplication.applied_at || selectedApplication.created_at)}</span>
                 </div>
-                {selectedApplication.score !== null && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>Match Score: {selectedApplication.score}%</span>
-                  </div>
-                )}
               </div>
 
               {selectedApplication.notes && (
@@ -818,33 +1004,18 @@ export function ApplicationsClient({
                   </div>
                 </>
               )}
-
-              <Separator />
-
-              <div className="flex gap-2">
-                {stages
-                  .filter((s) => s.id !== selectedApplication.stage)
-                  .slice(0, 3)
-                  .map((stage) => (
-                    <Button
-                      key={stage.id}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        handleStageChange(selectedApplication.id, stage.id)
-                        setIsViewDialogOpen(false)
-                      }}
-                    >
-                      Move to {stage.name}
-                    </Button>
-                  ))}
-              </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
+            {selectedApplication?.candidates?.resume_url && (
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
+                Download Resume
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -853,19 +1024,17 @@ export function ApplicationsClient({
       <Dialog open={isNotesDialogOpen} onOpenChange={setIsNotesDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Application Notes</DialogTitle>
+            <DialogTitle>Add Notes</DialogTitle>
             <DialogDescription>
-              Add notes about this candidate&apos;s application
+              Add notes about this application
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Enter your notes here..."
-              rows={6}
-            />
-          </div>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Enter your notes here..."
+            className="min-h-[150px]"
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNotesDialogOpen(false)}>
               Cancel
@@ -884,19 +1053,17 @@ export function ApplicationsClient({
           <DialogHeader>
             <DialogTitle>Delete Application</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this application? This action cannot be
-              undone.
+              Are you sure you want to delete this application? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           {selectedApplication && (
             <div className="py-4">
               <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                 <p className="font-medium text-destructive">
-                  {selectedApplication.candidates?.first_name}{" "}
-                  {selectedApplication.candidates?.last_name}
+                  {selectedApplication.candidates?.first_name} {selectedApplication.candidates?.last_name}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {selectedApplication.jobs?.title || "No job"}
+                  Applied for: {selectedApplication.jobs?.title}
                 </p>
               </div>
             </div>
@@ -907,7 +1074,7 @@ export function ApplicationsClient({
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Application
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
