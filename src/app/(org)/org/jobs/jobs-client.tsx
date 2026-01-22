@@ -64,6 +64,9 @@ import {
   Calendar,
   Globe,
   Settings,
+  Share2,
+  Link,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -133,6 +136,7 @@ interface JobsClientProps {
   jobGrades: JobGrade[]
   locations: Location[]
   hiringStages: HiringStage[]
+  orgSlug: string | null
 }
 
 const statusStyles: Record<string, string> = {
@@ -214,6 +218,7 @@ export function JobsClient({
   jobGrades,
   locations,
   hiringStages,
+  orgSlug,
 }: JobsClientProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -561,6 +566,48 @@ export function JobsClient({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // SHARE JOB
+  const getJobUrl = (job: Job) => {
+    if (!orgSlug) return null
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    return `${baseUrl}/careers/${orgSlug}/jobs/${job.id}`
+  }
+
+  const handleCopyLink = async (job: Job) => {
+    const url = getJobUrl(job)
+    if (!url) {
+      toast.error("Could not generate job link")
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success("Job link copied to clipboard!")
+    } catch {
+      toast.error("Failed to copy link")
+    }
+  }
+
+  const handleShareLinkedIn = (job: Job) => {
+    const url = getJobUrl(job)
+    if (!url) {
+      toast.error("Could not generate job link")
+      return
+    }
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+    window.open(linkedInUrl, '_blank', 'width=600,height=600')
+  }
+
+  const handleShareTwitter = (job: Job) => {
+    const url = getJobUrl(job)
+    if (!url) {
+      toast.error("Could not generate job link")
+      return
+    }
+    const text = `Check out this job opportunity: ${job.title}`
+    const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`
+    window.open(twitterUrl, '_blank', 'width=600,height=600')
   }
 
   const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
@@ -1027,27 +1074,48 @@ export function JobsClient({
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault()
-                            openEditDialog(job)
-                          }}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => router.push(`/org/jobs/${job.id}/settings`)}
-                        >
-                          <Settings className="mr-2 h-4 w-4" />
-                          Settings
-                        </DropdownMenuItem>
+                        {job.status === "draft" && (
+                          <DropdownMenuItem
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              openEditDialog(job)
+                            }}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                        )}
+                        {job.status === "draft" && (
+                          <DropdownMenuItem
+                            onSelect={() => router.push(`/org/jobs/${job.id}/settings`)}
+                          >
+                            <Settings className="mr-2 h-4 w-4" />
+                            Settings
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onSelect={() => handleDuplicate(job)}
                         >
                           <Copy className="mr-2 h-4 w-4" />
                           Duplicate
                         </DropdownMenuItem>
+                        {job.status === "open" && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => handleCopyLink(job)}>
+                              <Link className="mr-2 h-4 w-4" />
+                              Copy Link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleShareLinkedIn(job)}>
+                              <Share2 className="mr-2 h-4 w-4" />
+                              Share on LinkedIn
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleShareTwitter(job)}>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              Share on X (Twitter)
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         <DropdownMenuSeparator />
                         {job.status === "draft" && (
                           <DropdownMenuItem
@@ -1220,13 +1288,21 @@ export function JobsClient({
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            <Button onClick={() => {
-              setIsViewDialogOpen(false)
-              if (selectedJob) openEditDialog(selectedJob)
-            }}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
+            {selectedJob?.status === "draft" && (
+              <Button onClick={() => {
+                setIsViewDialogOpen(false)
+                if (selectedJob) openEditDialog(selectedJob)
+              }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
+            {selectedJob?.status === "open" && (
+              <Button variant="outline" onClick={() => selectedJob && handleCopyLink(selectedJob)}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Share
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -81,14 +81,38 @@ async function getHiringStages() {
   return data || []
 }
 
+async function getOrgSlug() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.org_id) return null
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("slug")
+    .eq("id", profile.org_id)
+    .single()
+
+  return org?.slug || null
+}
+
 export default async function OrgJobsPage() {
-  const [jobs, departments, jobTypes, jobGrades, locations, hiringStages] = await Promise.all([
+  const [jobs, departments, jobTypes, jobGrades, locations, hiringStages, orgSlug] = await Promise.all([
     getJobs(),
     getDepartments(),
     getJobTypes(),
     getJobGrades(),
     getLocations(),
     getHiringStages(),
+    getOrgSlug(),
   ])
 
   return (
@@ -99,6 +123,7 @@ export default async function OrgJobsPage() {
       jobGrades={jobGrades}
       locations={locations}
       hiringStages={hiringStages}
+      orgSlug={orgSlug}
     />
   )
 }
