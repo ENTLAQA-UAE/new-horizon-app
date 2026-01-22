@@ -80,6 +80,20 @@ export default async function CareerPage({ params }: CareerPageProps) {
     thumbnail_url: job.thumbnail_url,
   }))
 
+  // Get job types for this organization (from vacancy settings)
+  const { data: jobTypesRaw } = await supabase
+    .from("job_types")
+    .select("id, name, name_ar")
+    .eq("org_id", organization.id)
+    .eq("is_active", true)
+    .order("name")
+
+  const jobTypes = (jobTypesRaw || []).map((jt: any) => ({
+    value: jt.name.toLowerCase().replace(/\s+/g, '_'),
+    label: jt.name,
+    labelAr: jt.name_ar,
+  }))
+
   // Get career page blocks
   const { data: blocks } = await supabase
     .from("career_page_blocks")
@@ -130,6 +144,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
         logoUrl: organization.logo_url,
       }}
       jobs={jobs || []}
+      jobTypes={jobTypes}
       blocks={careerBlocks}
       styles={pageStyles}
       settings={pageSettings}

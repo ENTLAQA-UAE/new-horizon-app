@@ -103,9 +103,16 @@ interface PageSettings {
   defaultLanguage: "en" | "ar"
 }
 
+interface JobType {
+  value: string
+  label: string
+  labelAr: string | null
+}
+
 interface CareerPageClientProps {
   organization: Organization
   jobs: Job[]
+  jobTypes: JobType[]
   blocks: CareerBlock[]
   styles: PageStyles
   settings: PageSettings
@@ -161,6 +168,7 @@ const paddingMap: Record<string, string> = {
 export function CareerPageClient({
   organization,
   jobs,
+  jobTypes,
   blocks,
   styles,
   settings,
@@ -202,9 +210,17 @@ export function CareerPageClient({
     return `Up to ${currency} ${job.salary_max?.toLocaleString()}`
   }
 
+  // Helper to get job type label from jobTypes array
+  const getJobTypeLabel = (type: string | null, isRtl: boolean) => {
+    if (!type) return null
+    const jt = jobTypes.find(j => j.value === type)
+    if (jt) return isRtl && jt.labelAr ? jt.labelAr : jt.label
+    return employmentTypeLabels[type] || type.replace(/_/g, " ")
+  }
+
   // If no blocks configured, show default layout
   if (blocks.length === 0) {
-    return <DefaultCareerPage organization={organization} jobs={jobs} styles={styles} settings={settings} />
+    return <DefaultCareerPage organization={organization} jobs={jobs} jobTypes={jobTypes} styles={styles} settings={settings} />
   }
 
   return (
@@ -287,6 +303,8 @@ export function CareerPageClient({
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
           departments={departments}
+          jobTypes={jobTypes}
+          getJobTypeLabel={getJobTypeLabel}
           formatSalary={formatSalary}
         />
       ))}
@@ -340,6 +358,8 @@ function BlockRenderer({
   typeFilter,
   setTypeFilter,
   departments,
+  jobTypes,
+  getJobTypeLabel,
   formatSalary,
 }: {
   block: CareerBlock
@@ -356,6 +376,8 @@ function BlockRenderer({
   typeFilter: string
   setTypeFilter: (v: string) => void
   departments: (string | null)[]
+  jobTypes: JobType[]
+  getJobTypeLabel: (type: string | null, isRtl: boolean) => string | null
   formatSalary: (job: Job) => string | null
 }) {
   const isRtl = language === "ar"
@@ -708,11 +730,18 @@ function BlockRenderer({
                             <SelectItem value="all">
                               {isRtl ? "جميع الأنواع" : "All Types"}
                             </SelectItem>
-                            {Object.entries(employmentTypeLabels).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
+                            {jobTypes.length > 0
+                              ? jobTypes.map((jt) => (
+                                  <SelectItem key={jt.value} value={jt.value}>
+                                    {isRtl && jt.labelAr ? jt.labelAr : jt.label}
+                                  </SelectItem>
+                                ))
+                              : Object.entries(employmentTypeLabels).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))
+                            }
                           </SelectContent>
                         </Select>
                       </>
@@ -797,7 +826,7 @@ function BlockRenderer({
                             {job.employment_type && (
                               <span className="flex items-center gap-1">
                                 <Briefcase className="h-4 w-4" />
-                                {employmentTypeLabels[job.employment_type] || job.employment_type}
+                                {getJobTypeLabel(job.employment_type, isRtl)}
                               </span>
                             )}
                             {job.experience_level && (
@@ -1016,11 +1045,13 @@ function BlockRenderer({
 function DefaultCareerPage({
   organization,
   jobs,
+  jobTypes,
   styles,
   settings,
 }: {
   organization: Organization
   jobs: Job[]
+  jobTypes: JobType[]
   styles: PageStyles
   settings: PageSettings
 }) {
@@ -1029,6 +1060,14 @@ function DefaultCareerPage({
   const [typeFilter, setTypeFilter] = useState<string>("all")
 
   const departments = [...new Set(jobs.map((j) => j.department).filter(Boolean))]
+
+  // Helper to get job type label
+  const getJobTypeLabel = (type: string | null) => {
+    if (!type) return null
+    const jt = jobTypes.find(j => j.value === type)
+    if (jt) return jt.label
+    return employmentTypeLabels[type] || type.replace(/_/g, " ")
+  }
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
@@ -1112,11 +1151,18 @@ function DefaultCareerPage({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  {Object.entries(employmentTypeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  {jobTypes.length > 0
+                    ? jobTypes.map((jt) => (
+                        <SelectItem key={jt.value} value={jt.value}>
+                          {jt.label}
+                        </SelectItem>
+                      ))
+                    : Object.entries(employmentTypeLabels).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))
+                  }
                 </SelectContent>
               </Select>
             </div>
@@ -1153,16 +1199,10 @@ function DefaultCareerPage({
                         {job.employment_type && (
                           <span className="flex items-center gap-1">
                             <Briefcase className="h-4 w-4" />
-                            {employmentTypeLabels[job.employment_type] || job.employment_type}
+                            {getJobTypeLabel(job.employment_type)}
                           </span>
                         )}
                       </div>
-                      {formatSalary(job) && (
-                        <div className="flex items-center gap-1 text-sm font-medium text-green-600">
-                          <DollarSign className="h-4 w-4" />
-                          {formatSalary(job)}
-                        </div>
-                      )}
                     </div>
                     <Link href={`/careers/${organization.slug}/jobs/${job.id}`}>
                       <Button style={{ backgroundColor: styles.primaryColor }}>
