@@ -23,7 +23,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
   }
 
   // Get published jobs for this organization with related data
-  const { data: jobs } = await supabase
+  const { data: jobsRaw } = await supabase
     .from("jobs")
     .select(
       `
@@ -43,6 +43,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
       is_remote,
       published_at,
       closing_date,
+      thumbnail_url,
       departments:department_id(id, name, name_ar),
       locations:location_id(id, name, name_ar, city)
     `
@@ -50,6 +51,34 @@ export default async function CareerPage({ params }: CareerPageProps) {
     .eq("org_id", organization.id)
     .eq("status", "open")
     .order("published_at", { ascending: false })
+
+  // Transform jobs data to match client interface
+  const jobs = (jobsRaw || []).map((job: any) => ({
+    id: job.id,
+    title: job.title,
+    title_ar: job.title_ar,
+    slug: job.slug,
+    description: job.description,
+    description_ar: job.description_ar,
+    // Map nested location to flat string
+    location: job.locations?.name
+      ? `${job.locations.name}${job.locations.city ? `, ${job.locations.city}` : ''}`
+      : null,
+    location_ar: job.locations?.name_ar || null,
+    // Map nested department to flat string
+    department: job.departments?.name || null,
+    department_ar: job.departments?.name_ar || null,
+    // Map field names
+    employment_type: job.job_type,
+    experience_level: job.experience_level,
+    salary_min: job.salary_min,
+    salary_max: job.salary_max,
+    salary_currency: job.salary_currency,
+    remote_allowed: job.is_remote,
+    published_at: job.published_at,
+    closing_date: job.closing_date,
+    thumbnail_url: job.thumbnail_url,
+  }))
 
   // Get career page blocks
   const { data: blocks } = await supabase
