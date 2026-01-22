@@ -283,7 +283,9 @@ export function CareerPageBuilder({
         if (blocksError) throw blocksError
       }
 
-      // Update organization config
+      // Update organization config (only career page config, NOT org branding colors)
+      // Career page styling is stored in career_page_config.styles and is independent
+      // from organization branding colors which are managed in /org/branding
       const { error: orgError } = await supabaseUpdate(
         "organizations",
         {
@@ -291,8 +293,6 @@ export function CareerPageBuilder({
             styles: pageStyles,
             settings: pageSettings,
           },
-          primary_color: pageStyles.primaryColor,
-          secondary_color: pageStyles.secondaryColor,
           updated_at: new Date().toISOString(),
         },
         { column: "id", value: organization.id }
