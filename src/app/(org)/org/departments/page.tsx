@@ -88,12 +88,16 @@ export default function DepartmentsPage() {
       })
 
       const orgId = profile?.org_id
-      if (orgId) {
-        setOrganizationId(orgId)
+      if (!orgId) {
+        console.error("User has no organization")
+        setIsLoading(false)
+        return
       }
+      setOrganizationId(orgId)
 
       const { data, error } = await supabaseSelect<Department[]>("departments", {
         select: "*",
+        filter: [{ column: "org_id", operator: "eq", value: orgId }],
         order: { column: "name", ascending: true },
       })
 

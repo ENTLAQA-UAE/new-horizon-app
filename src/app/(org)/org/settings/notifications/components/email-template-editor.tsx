@@ -93,19 +93,57 @@ export function EmailTemplateEditor({
   const variables = event.available_variables || []
 
   function getDefaultBody() {
-    return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <p>Hello,</p>
-  <p>This is a notification from ${organization.name}.</p>
-  <p>Best regards,<br>${organization.name} Team</p>
-</div>`
+    const primaryColor = organization.primary_color || '#667eea'
+    return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+  <tr><td style="background:linear-gradient(135deg,${primaryColor} 0%,#764ba2 100%);padding:40px;text-align:center;">
+    ${organization.logo_url ? `<img src="${organization.logo_url}" alt="${organization.name}" style="max-height:60px;margin-bottom:20px;">` : ''}
+    <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:600;">Notification</h1>
+  </td></tr>
+  <tr><td style="padding:40px;">
+    <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px;">Hello <strong>{receiver_name}</strong>,</p>
+    <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px;">This is a notification from <strong>${organization.name}</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 30px;">[Add your message content here. You can use variables like {candidate_name}, {job_title}, etc.]</p>
+    <p style="color:#374151;font-size:16px;line-height:1.6;margin:30px 0 0;">Best regards,<br><strong>${organization.name} Team</strong></p>
+  </td></tr>
+  <tr><td style="background-color:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
+    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; ${organization.name} &bull; Powered by Jadarat ATS</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`
   }
 
   function getDefaultBodyAr() {
-    return `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; direction: rtl; text-align: right;">
-  <p>مرحباً،</p>
-  <p>هذا إشعار من ${organization.name}.</p>
-  <p>مع أطيب التحيات،<br>فريق ${organization.name}</p>
-</div>`
+    const primaryColor = organization.primary_color || '#667eea'
+    return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 20px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+  <tr><td style="background:linear-gradient(135deg,${primaryColor} 0%,#764ba2 100%);padding:40px;text-align:center;">
+    ${organization.logo_url ? `<img src="${organization.logo_url}" alt="${organization.name}" style="max-height:60px;margin-bottom:20px;">` : ''}
+    <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:600;">إشعار</h1>
+  </td></tr>
+  <tr><td style="padding:40px;text-align:right;">
+    <p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 20px;">مرحباً <strong>{receiver_name}</strong>،</p>
+    <p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 20px;">هذا إشعار من <strong>${organization.name}</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;line-height:1.8;margin:0 0 30px;">[أضف محتوى رسالتك هنا. يمكنك استخدام المتغيرات مثل {candidate_name}، {job_title}، إلخ.]</p>
+    <p style="color:#374151;font-size:16px;line-height:1.8;margin:30px 0 0;">مع أطيب التحيات،<br><strong>فريق ${organization.name}</strong></p>
+  </td></tr>
+  <tr><td style="background-color:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
+    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; ${organization.name} &bull; مدعوم من جدارات</p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`
   }
 
   // Insert variable at cursor position
