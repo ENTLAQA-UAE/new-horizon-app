@@ -387,10 +387,10 @@ export default async function OrgDashboardPage() {
                       </p>
                     </div>
                     <Badge
-                      variant={job.status === "published" ? "default" : "secondary"}
-                      className={job.status === "published" ? "bg-green-500/10 text-green-600 border-green-200" : ""}
+                      variant={job.status === "open" ? "default" : "secondary"}
+                      className={job.status === "open" ? "bg-green-500/10 text-green-600 border-green-200" : ""}
                     >
-                      {job.status || "draft"}
+                      {job.status === "open" ? "published" : job.status || "draft"}
                     </Badge>
                   </Link>
                 ))}
