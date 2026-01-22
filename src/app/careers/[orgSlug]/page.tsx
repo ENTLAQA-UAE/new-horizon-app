@@ -22,7 +22,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
     notFound()
   }
 
-  // Get published jobs for this organization
+  // Get published jobs for this organization with related data
   const { data: jobs } = await supabase
     .from("jobs")
     .select(
@@ -30,18 +30,21 @@ export default async function CareerPage({ params }: CareerPageProps) {
       id,
       title,
       title_ar,
+      slug,
       description,
       description_ar,
-      location,
-      department,
-      employment_type,
+      location_id,
+      department_id,
+      job_type,
       experience_level,
       salary_min,
       salary_max,
       salary_currency,
-      remote_allowed,
+      is_remote,
       published_at,
-      closes_at
+      closing_date,
+      departments:department_id(id, name, name_ar),
+      locations:location_id(id, name, name_ar, city)
     `
     )
     .eq("org_id", organization.id)
