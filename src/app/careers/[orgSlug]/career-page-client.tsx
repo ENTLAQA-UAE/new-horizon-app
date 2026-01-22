@@ -58,7 +58,7 @@ interface Job {
   salary_currency: string | null
   remote_allowed: boolean | null
   published_at: string | null
-  closes_at: string | null
+  closing_date: string | null
 }
 
 interface Organization {
@@ -821,10 +821,10 @@ function BlockRenderer({
                               <ChevronRight className={`h-4 w-4 ${isRtl ? "mr-2 rotate-180" : "ml-2"}`} />
                             </Button>
                           </Link>
-                          {job.closes_at && (
+                          {job.closing_date && (
                             <p className="text-xs text-muted-foreground text-center">
                               {isRtl ? "ينتهي" : "Closes"}{" "}
-                              {new Date(job.closes_at).toLocaleDateString(isRtl ? "ar-SA" : "en-US")}
+                              {new Date(job.closing_date).toLocaleDateString(isRtl ? "ar-SA" : "en-US")}
                             </p>
                           )}
                         </div>
