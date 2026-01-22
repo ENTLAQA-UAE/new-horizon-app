@@ -319,15 +319,36 @@ export default function JobSettingsPage() {
           order: { column: "sort_order", ascending: true },
         }).catch(() => ({ data: null, error: null })),
 
-        // Load team members - profiles table has first_name/last_name, not full_name
-        // role is in user_roles table, so we skip it here
-        supabaseSelect<TeamMember[]>("profiles", {
-          select: "id,first_name,last_name,email,avatar_url",
-          filter: [
-            { column: "org_id", operator: "eq", value: orgId },
-            { column: "is_active", operator: "eq", value: true },
-          ],
-        }).catch((e) => { console.error("Team query error:", e); return { data: null, error: null }; }),
+        // Load team members with recruiter role only
+        // Query user_roles to get recruiters, then join with profiles
+        (async () => {
+          try {
+            // First get user IDs with recruiter role
+            const { data: recruiterRoles } = await supabase
+              .from("user_roles")
+              .select("user_id")
+              .eq("role", "recruiter")
+
+            if (!recruiterRoles || recruiterRoles.length === 0) {
+              return { data: [], error: null }
+            }
+
+            const recruiterUserIds = recruiterRoles.map(r => r.user_id)
+
+            // Then get their profiles filtered by org_id
+            const { data: profiles, error } = await supabase
+              .from("profiles")
+              .select("id,first_name,last_name,email,avatar_url")
+              .eq("org_id", orgId)
+              .eq("is_active", true)
+              .in("id", recruiterUserIds)
+
+            return { data: profiles, error }
+          } catch (e) {
+            console.error("Team query error:", e)
+            return { data: null, error: null }
+          }
+        })(),
 
         // Load pipelines for vacancy stages selection
         supabaseSelect<Pipeline[]>("pipelines", {
@@ -829,9 +850,6 @@ export default function JobSettingsPage() {
                               {stage.stage_type.replace('_', ' ')}
                             </Badge>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            Step {stage.sort_order + 1}
-                          </span>
                         </div>
                       ))}
                     </div>
