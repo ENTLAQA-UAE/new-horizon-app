@@ -1,12 +1,12 @@
 // @ts-nocheck
 // Note: This file has Supabase type issues
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { emails } from "@/lib/email/resend"
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const formData = await request.formData()
 
     const jobId = formData.get("jobId") as string
