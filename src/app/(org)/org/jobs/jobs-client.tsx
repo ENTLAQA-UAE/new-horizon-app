@@ -295,6 +295,8 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
+      // Note: only include columns that exist in the database schema
+      // (location/location_ar text columns don't exist, only location_id FK)
       const { data, error } = await supabaseInsert<Job>("jobs", {
         title: formData.title,
         title_ar: formData.title_ar || null,
@@ -302,12 +304,10 @@ export function JobsClient({
         description_ar: formData.description_ar || null,
         department_id: formData.department_id || null,
         location_id: formData.location_id || null,
-        location: formData.location || null,
-        location_ar: formData.location_ar || null,
         job_type_id: formData.job_type_id || null,
-        job_type: formData.job_type_id ? null : formData.job_type,
+        job_type: formData.job_type || "full_time",
         job_grade_id: formData.job_grade_id || null,
-        experience_level: formData.job_grade_id ? null : formData.experience_level,
+        experience_level: formData.experience_level || "mid",
         salary_min: formData.salary_min || null,
         salary_max: formData.salary_max || null,
         salary_currency: formData.salary_currency,
@@ -370,6 +370,7 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseUpdate which gets token from localStorage (bypasses getSession timeout)
+      // Note: only include columns that exist in the database schema
       const { error } = await supabaseUpdate(
         "jobs",
         {
@@ -379,12 +380,10 @@ export function JobsClient({
           description_ar: formData.description_ar || null,
           department_id: formData.department_id || null,
           location_id: formData.location_id || null,
-          location: formData.location || null,
-          location_ar: formData.location_ar || null,
           job_type_id: formData.job_type_id || null,
-          job_type: formData.job_type_id ? null : formData.job_type,
+          job_type: formData.job_type || "full_time",
           job_grade_id: formData.job_grade_id || null,
-          experience_level: formData.job_grade_id ? null : formData.experience_level,
+          experience_level: formData.experience_level || "mid",
           salary_min: formData.salary_min || null,
           salary_max: formData.salary_max || null,
           salary_currency: formData.salary_currency,
@@ -493,16 +492,18 @@ export function JobsClient({
     setIsLoading(true)
     try {
       // Use supabaseInsert which gets token from localStorage (bypasses getSession timeout)
+      // Note: only include columns that exist in the database schema
       const { data, error } = await supabaseInsert<Job>("jobs", {
         title: `${job.title} (Copy)`,
         title_ar: job.title_ar ? `${job.title_ar} (نسخة)` : null,
         description: job.description,
         description_ar: job.description_ar,
         department_id: job.department_id,
-        location: job.location,
-        location_ar: job.location_ar,
-        job_type: job.job_type,
-        experience_level: job.experience_level,
+        location_id: job.location_id,
+        job_type_id: job.job_type_id,
+        job_type: job.job_type || "full_time",
+        job_grade_id: job.job_grade_id,
+        experience_level: job.experience_level || "mid",
         salary_min: job.salary_min,
         salary_max: job.salary_max,
         salary_currency: job.salary_currency,
