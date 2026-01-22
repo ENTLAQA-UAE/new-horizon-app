@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { supabaseUpdate } from "@/lib/supabase/auth-fetch"
+import { supabaseUpdate, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -106,13 +106,15 @@ export default function BrandingPage() {
     // Then fetch additional fields not in auth context (login_image_url, custom_domain)
     async function loadAdditionalBrandingData() {
       try {
-        // Fetch additional branding fields not in auth context
-        // Use type assertion since these columns exist but types may not be regenerated
-        const { data } = await supabase
-          .from("organizations")
-          .select("login_image_url, custom_domain")
-          .eq("id", organizationId)
-          .single() as { data: { login_image_url?: string; custom_domain?: string } | null }
+        // Fetch additional branding fields not in auth context using auth-fetch helper
+        const { data } = await supabaseSelect<{ login_image_url?: string; custom_domain?: string }>(
+          "organizations",
+          {
+            select: "login_image_url, custom_domain",
+            filter: [{ column: "id", operator: "eq", value: organizationId }],
+            single: true,
+          }
+        )
 
         setSettings({
           company_name: organization.name || "",
@@ -151,7 +153,8 @@ export default function BrandingPage() {
     }
 
     loadAdditionalBrandingData()
-  }, [authLoading, organization, organizationId, supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, organization, organizationId])
 
   // Handle logo file upload
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
