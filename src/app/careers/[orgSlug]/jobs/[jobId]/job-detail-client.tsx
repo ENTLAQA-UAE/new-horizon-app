@@ -461,16 +461,6 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
                     </div>
                   )}
 
-                  {formatSalary() && (
-                    <div className="flex items-center gap-3">
-                      <DollarSign className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Salary Range</p>
-                        <p className="font-medium text-green-600">{formatSalary()}</p>
-                      </div>
-                    </div>
-                  )}
-
                   {job.closing_date && (
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5 text-muted-foreground" />
