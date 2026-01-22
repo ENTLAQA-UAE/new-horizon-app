@@ -44,6 +44,23 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 interface Job {
   id: string
@@ -51,6 +68,7 @@ interface Job {
   title_ar: string | null
   status: string
   thumbnail_url: string | null
+  pipeline_id: string | null
 }
 
 interface FormSection {
@@ -132,6 +150,74 @@ const iconMap: Record<string, any> = {
   "file-text": FileText,
 }
 
+// Sortable section item component for drag and drop
+interface SortableSectionProps {
+  item: JobSection
+  onToggle: (sectionId: string) => void
+}
+
+function SortableSectionItem({ item, onToggle }: SortableSectionProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.section_id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const IconComponent = iconMap[item.section?.icon] || FileText
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center justify-between p-4 rounded-lg border bg-background",
+        !item.is_enabled && "opacity-50",
+        isDragging && "opacity-50 shadow-lg"
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <button
+          className="cursor-grab active:cursor-grabbing touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <IconComponent className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="font-medium">{item.section?.name}</p>
+          {item.section?.name_ar && (
+            <p className="text-sm text-muted-foreground" dir="rtl">
+              {item.section.name_ar}
+            </p>
+          )}
+        </div>
+        {item.section?.is_default && (
+          <Badge variant="secondary" className="ml-2">
+            <Lock className="h-3 w-3 mr-1" />
+            Required
+          </Badge>
+        )}
+      </div>
+      <Switch
+        checked={item.is_enabled}
+        onCheckedChange={() => onToggle(item.section_id)}
+        disabled={item.section?.is_default}
+      />
+    </div>
+  )
+}
+
 export default function JobSettingsPage() {
   const params = useParams()
   const router = useRouter()
@@ -162,6 +248,26 @@ export default function JobSettingsPage() {
 
   const [selectedRecruiter, setSelectedRecruiter] = useState("")
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end for reordering sections
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      setJobSections((items) => {
+        const oldIndex = items.findIndex((item) => item.section_id === active.id)
+        const newIndex = items.findIndex((item) => item.section_id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
+
   useEffect(() => {
     if (profile?.org_id) {
       loadData()
@@ -184,7 +290,7 @@ export default function JobSettingsPage() {
     try {
       // Load job first - this is essential
       const { data: jobResult } = await supabaseSelect<Job[]>("jobs", {
-        select: "id,title,title_ar,status,thumbnail_url",
+        select: "id,title,title_ar,status,thumbnail_url,pipeline_id",
         filter: [{ column: "id", operator: "eq", value: jobId }],
         single: true,
       })
@@ -197,7 +303,7 @@ export default function JobSettingsPage() {
       setJob(jobResult as unknown as Job)
 
       // Load other data in parallel, with error handling for each
-      const [sectionsResult, stagesResult, teamResult] = await Promise.all([
+      const [sectionsResult, stagesResult, teamResult, pipelinesResult] = await Promise.all([
         // Load available sections (may not exist)
         supabaseSelect<FormSection[]>("application_form_sections", {
           filter: [
@@ -207,7 +313,7 @@ export default function JobSettingsPage() {
           order: { column: "sort_order", ascending: true },
         }).catch(() => ({ data: null, error: null })),
 
-        // Load available stages (may not exist)
+        // Load available stages (may not exist) - fallback if no pipelines
         supabaseSelect<HiringStage[]>("hiring_stages", {
           filter: [{ column: "org_id", operator: "eq", value: orgId }],
           order: { column: "sort_order", ascending: true },
@@ -222,10 +328,34 @@ export default function JobSettingsPage() {
             { column: "is_active", operator: "eq", value: true },
           ],
         }).catch((e) => { console.error("Team query error:", e); return { data: null, error: null }; }),
+
+        // Load pipelines for vacancy stages selection
+        supabaseSelect<Pipeline[]>("pipelines", {
+          filter: [{ column: "org_id", operator: "eq", value: orgId }],
+          order: { column: "name", ascending: true },
+        }).catch(() => ({ data: null, error: null })),
       ])
 
       const sections = sectionsResult?.data || []
       const stages = stagesResult?.data || []
+      const pipelinesData = pipelinesResult?.data || []
+      setPipelines(pipelinesData)
+
+      // Use job's existing pipeline_id, or default pipeline, or first available
+      const job = jobResult as unknown as Job
+      const selectedPipeline = job.pipeline_id
+        ? pipelinesData.find(p => p.id === job.pipeline_id)
+        : pipelinesData.find(p => p.is_default) || pipelinesData[0]
+
+      if (selectedPipeline) {
+        setSelectedPipelineId(selectedPipeline.id)
+        // Load stages for the selected pipeline
+        const { data: stagesData } = await supabaseSelect<PipelineStage[]>("pipeline_stages", {
+          filter: [{ column: "pipeline_id", operator: "eq", value: selectedPipeline.id }],
+          order: { column: "sort_order", ascending: true },
+        }).catch(() => ({ data: null, error: null }))
+        setPipelineStages(stagesData || [])
+      }
       // Process team data to compute full_name from first_name + last_name
       const rawTeam = teamResult?.data || []
       const team = rawTeam.map((t: TeamMember) => ({
@@ -324,6 +454,21 @@ export default function JobSettingsPage() {
           : s
       )
     )
+  }
+
+  // Handle pipeline selection change
+  const handlePipelineChange = async (pipelineId: string) => {
+    setSelectedPipelineId(pipelineId)
+    try {
+      const { data: stagesData } = await supabaseSelect<PipelineStage[]>("pipeline_stages", {
+        filter: [{ column: "pipeline_id", operator: "eq", value: pipelineId }],
+        order: { column: "sort_order", ascending: true },
+      })
+      setPipelineStages(stagesData || [])
+    } catch (error) {
+      console.error("Error loading pipeline stages:", error)
+      toast.error("Failed to load pipeline stages")
+    }
   }
 
   // Add recruiter
@@ -456,6 +601,16 @@ export default function JobSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
+      // Save pipeline selection to job
+      if (selectedPipelineId) {
+        const { error: pipelineError } = await supabaseUpdate(
+          "jobs",
+          { pipeline_id: selectedPipelineId },
+          { column: "id", value: jobId }
+        )
+        if (pipelineError) throw new Error(pipelineError.message)
+      }
+
       // Save sections - delete existing first
       const { error: deleteSectionsError } = await supabaseDelete("job_application_sections", { column: "job_id", value: jobId })
       if (deleteSectionsError) throw new Error(deleteSectionsError.message)
@@ -594,48 +749,28 @@ export default function JobSettingsPage() {
                 <CardHeader>
                   <CardTitle>Apply Form</CardTitle>
                   <CardDescription>
-                    Select which sections to include in the application form for this job
+                    Drag to reorder sections. Toggle to enable/disable sections in the application form.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {jobSections.map((item) => {
-                    const IconComponent = iconMap[item.section?.icon] || FileText
-                    return (
-                      <div
-                        key={item.section_id}
-                        className={cn(
-                          "flex items-center justify-between p-4 rounded-lg border",
-                          !item.is_enabled && "opacity-50"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <IconComponent className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{item.section?.name}</p>
-                            {item.section?.name_ar && (
-                              <p className="text-sm text-muted-foreground" dir="rtl">
-                                {item.section.name_ar}
-                              </p>
-                            )}
-                          </div>
-                          {item.section?.is_default && (
-                            <Badge variant="secondary" className="ml-2">
-                              <Lock className="h-3 w-3 mr-1" />
-                              Required
-                            </Badge>
-                          )}
-                        </div>
-                        <Switch
-                          checked={item.is_enabled}
-                          onCheckedChange={() => handleToggleSection(item.section_id)}
-                          disabled={item.section?.is_default}
+                <CardContent className="space-y-2">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={jobSections.map((s) => s.section_id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {jobSections.map((item) => (
+                        <SortableSectionItem
+                          key={item.section_id}
+                          item={item}
+                          onToggle={handleToggleSection}
                         />
-                      </div>
-                    )
-                  })}
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -646,42 +781,102 @@ export default function JobSettingsPage() {
                 <CardHeader>
                   <CardTitle>Vacancy Stages</CardTitle>
                   <CardDescription>
-                    Configure the hiring pipeline stages for this job
+                    Select a hiring pipeline for this job
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {jobStages.map((item) => (
-                    <div
-                      key={item.stage_id}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-lg border",
-                        !item.is_enabled && "opacity-50"
+                <CardContent className="space-y-6">
+                  {/* Pipeline Selection */}
+                  {pipelines.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Hiring Pipeline</Label>
+                      <Select value={selectedPipelineId || ""} onValueChange={handlePipelineChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a pipeline" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pipelines.map((pipeline) => (
+                            <SelectItem key={pipeline.id} value={pipeline.id}>
+                              {pipeline.name}
+                              {pipeline.is_default && " (Default)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {pipelines.find(p => p.id === selectedPipelineId)?.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {pipelines.find(p => p.id === selectedPipelineId)?.description}
+                        </p>
                       )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: item.stage?.color }}
-                        />
-                        <p className="font-medium">{item.stage?.name}</p>
-                        {item.stage?.is_default && (
-                          <Badge variant="secondary">
-                            <Lock className="h-3 w-3 mr-1" />
-                            Default
-                          </Badge>
-                        )}
-                        {item.stage?.is_terminal && (
-                          <Badge variant="outline">Terminal</Badge>
-                        )}
-                      </div>
-                      <Switch
-                        checked={item.is_enabled}
-                        onCheckedChange={() => handleToggleStage(item.stage_id)}
-                        disabled={item.stage?.is_default}
-                      />
                     </div>
-                  ))}
+                  )}
+
+                  {/* Pipeline Stages */}
+                  {pipelineStages.length > 0 ? (
+                    <div className="space-y-2">
+                      <Label>Pipeline Stages</Label>
+                      {pipelineStages.map((stage) => (
+                        <div
+                          key={stage.id}
+                          className="flex items-center justify-between p-4 rounded-lg border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: stage.color }}
+                            />
+                            <p className="font-medium">{stage.name}</p>
+                            <Badge variant="outline" className="capitalize">
+                              {stage.stage_type.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            Step {stage.sort_order + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : pipelines.length === 0 ? (
+                    /* Fallback to hiring_stages if no pipelines */
+                    <div className="space-y-2">
+                      <Label>Hiring Stages</Label>
+                      {jobStages.map((item) => (
+                        <div
+                          key={item.stage_id}
+                          className={cn(
+                            "flex items-center justify-between p-4 rounded-lg border",
+                            !item.is_enabled && "opacity-50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: item.stage?.color }}
+                            />
+                            <p className="font-medium">{item.stage?.name}</p>
+                            {item.stage?.is_default && (
+                              <Badge variant="secondary">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Default
+                              </Badge>
+                            )}
+                            {item.stage?.is_terminal && (
+                              <Badge variant="outline">Terminal</Badge>
+                            )}
+                          </div>
+                          <Switch
+                            checked={item.is_enabled}
+                            onCheckedChange={() => handleToggleStage(item.stage_id)}
+                            disabled={item.stage?.is_default}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Select a pipeline to view its stages
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
