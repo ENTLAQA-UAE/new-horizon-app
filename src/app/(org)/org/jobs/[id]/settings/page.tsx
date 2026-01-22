@@ -829,9 +829,6 @@ export default function JobSettingsPage() {
                               {stage.stage_type.replace('_', ' ')}
                             </Badge>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            Step {stage.sort_order + 1}
-                          </span>
                         </div>
                       ))}
                     </div>
