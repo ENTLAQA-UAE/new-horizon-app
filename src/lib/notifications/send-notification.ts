@@ -13,7 +13,7 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js"
-import { createNotification, createBulkNotifications } from "./notification-service"
+import { createNotification, createBulkNotifications, NotificationType } from "./notification-service"
 import { sendOrgEmail } from "@/lib/email/providers"
 
 // Notification event codes
@@ -396,7 +396,7 @@ function getInAppNotificationContent(
   variables: NotificationVariables,
   options: SendNotificationOptions
 ): {
-  type: string
+  type: NotificationType
   title: string
   message: string
   link?: string
@@ -405,7 +405,7 @@ function getInAppNotificationContent(
   const jobTitle = variables.job_title || "a position"
   const orgName = variables.org_name || "Organization"
 
-  const contentMap: Record<NotificationEventCode, { type: string; title: string; message: string; link?: string }> = {
+  const contentMap: Record<NotificationEventCode, { type: NotificationType; title: string; message: string; link?: string }> = {
     // User Management
     user_invited: {
       type: "system",
