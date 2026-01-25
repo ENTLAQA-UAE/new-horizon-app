@@ -137,21 +137,27 @@ export async function POST(request: NextRequest) {
       .order("sort_order", { ascending: true })
       .limit(1)
 
-    const firstStageId = stages?.[0]?.id || null
+    const firstStageId = stages && stages.length > 0 ? stages[0].id : null
 
-    // Create application
+    // Create application - only include stage_id if we have a valid stage
+    const applicationData: Record<string, any> = {
+      org_id: organizationId,
+      candidate_id: candidateId,
+      job_id: jobId,
+      status: "new",
+      source: "career_page",
+      cover_letter: coverLetter || null,
+      applied_at: new Date().toISOString(),
+    }
+
+    // Only add stage_id if we found a valid hiring stage
+    if (firstStageId) {
+      applicationData.stage_id = firstStageId
+    }
+
     const { data: application, error: appError } = await supabase
       .from("applications")
-      .insert({
-        org_id: organizationId,
-        candidate_id: candidateId,
-        job_id: jobId,
-        stage_id: firstStageId,
-        status: "new",
-        source: "career_page",
-        cover_letter: coverLetter || null,
-        applied_at: new Date().toISOString(),
-      })
+      .insert(applicationData)
       .select("id")
       .single()
 
