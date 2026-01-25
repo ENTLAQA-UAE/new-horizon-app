@@ -55,6 +55,8 @@ import {
   Sparkles,
   Copy,
   ExternalLink,
+  Link2,
+  RefreshCw,
 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -361,6 +363,49 @@ export function InterviewsClient({
     } catch (error) {
       console.error("Error creating meeting:", error)
       return null
+    }
+  }
+
+  // Generate meeting link manually (button click)
+  const handleGenerateMeetingLink = async () => {
+    if (!formData.meeting_provider || formData.meeting_provider === "manual") {
+      toast.error("Please select a meeting provider")
+      return
+    }
+
+    if (!formData.application_id) {
+      toast.error("Please select a candidate application first")
+      return
+    }
+
+    setIsCreatingMeeting(true)
+    try {
+      // Combine date and time
+      const [hours, minutes] = formData.scheduled_time.split(":").map(Number)
+      const scheduledAt = new Date(formData.scheduled_date)
+      scheduledAt.setHours(hours, minutes, 0, 0)
+
+      const app = applications.find((a) => a.id === formData.application_id)
+      const meetingTitle = formData.title || `Interview - ${app?.candidates.first_name} ${app?.candidates.last_name}`
+
+      const meetingResult = await createMeeting(
+        formData.meeting_provider,
+        meetingTitle,
+        scheduledAt,
+        formData.duration_minutes
+      )
+
+      if (meetingResult?.url) {
+        setFormData({ ...formData, meeting_link: meetingResult.url })
+        toast.success(`${meetingProviderInfo[formData.meeting_provider]?.name || formData.meeting_provider} meeting created!`)
+      } else {
+        toast.error(`Failed to create meeting. Please check your ${meetingProviderInfo[formData.meeting_provider]?.name || formData.meeting_provider} integration in Settings → Integrations.`)
+      }
+    } catch (error) {
+      console.error("Error generating meeting link:", error)
+      toast.error("Failed to generate meeting link")
+    } finally {
+      setIsCreatingMeeting(false)
     }
   }
 
@@ -948,47 +993,93 @@ export function InterviewsClient({
 
             {formData.interview_type === "video" && (
               <div className="space-y-4">
-                {/* Meeting Provider Selection */}
+                {/* Meeting Provider Selection with Generate Button */}
                 {hasVideoProviders ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Label>Meeting Provider</Label>
-                    <Select
-                      value={formData.meeting_provider}
-                      onValueChange={(value) => setFormData({ ...formData, meeting_provider: value, meeting_link: "" })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select provider to auto-create meeting" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableProviders.map((provider) => (
-                          <SelectItem key={provider.provider} value={provider.provider}>
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.meeting_provider}
+                        onValueChange={(value) => setFormData({ ...formData, meeting_provider: value, meeting_link: "" })}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select a provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProviders.map((provider) => (
+                            <SelectItem key={provider.provider} value={provider.provider}>
+                              <div className="flex items-center gap-2">
+                                <span>{meetingProviderInfo[provider.provider]?.icon}</span>
+                                <span>{meetingProviderInfo[provider.provider]?.name || provider.provider}</span>
+                                {provider.is_default_meeting_provider && (
+                                  <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="manual">
                             <div className="flex items-center gap-2">
-                              <span>{meetingProviderInfo[provider.provider]?.icon}</span>
-                              <span>{meetingProviderInfo[provider.provider]?.name || provider.provider}</span>
-                              {provider.is_default_meeting_provider && (
-                                <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
-                              )}
+                              <span>🔗</span>
+                              <span>Enter link manually</span>
                             </div>
                           </SelectItem>
-                        ))}
-                        <SelectItem value="manual">
-                          <div className="flex items-center gap-2">
-                            <span>🔗</span>
-                            <span>Enter link manually</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {formData.meeting_provider && formData.meeting_provider !== "manual" && (
-                      <p className="text-xs text-muted-foreground">
-                        Meeting link will be auto-generated when you schedule the interview
-                      </p>
-                    )}
-                  </div>
-                ) : null}
+                        </SelectContent>
+                      </Select>
+                      {formData.meeting_provider && formData.meeting_provider !== "manual" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleGenerateMeetingLink}
+                          disabled={isCreatingMeeting || !formData.application_id}
+                          className="shrink-0"
+                        >
+                          {isCreatingMeeting ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Link2 className="h-4 w-4 mr-2" />
+                          )}
+                          Generate Link
+                        </Button>
+                      )}
+                    </div>
 
-                {/* Manual Meeting Link - show if no providers or manual selected */}
-                {(!hasVideoProviders || formData.meeting_provider === "manual") && (
+                    {/* Meeting Link Display/Input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="meeting_link">Meeting Link</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="meeting_link"
+                          value={formData.meeting_link}
+                          onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
+                          placeholder={formData.meeting_provider === "manual"
+                            ? "https://zoom.us/... or https://meet.google.com/..."
+                            : "Click 'Generate Link' to create a meeting"}
+                          readOnly={formData.meeting_provider !== "manual" && !!formData.meeting_link}
+                          className={formData.meeting_link ? "bg-green-50 dark:bg-green-950/20 border-green-300" : ""}
+                        />
+                        {formData.meeting_link && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              navigator.clipboard.writeText(formData.meeting_link)
+                              toast.success("Meeting link copied!")
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {formData.meeting_link && (
+                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Meeting link generated successfully
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
                   <div className="space-y-2">
                     <Label htmlFor="meeting_link">Meeting Link</Label>
                     <Input
@@ -997,11 +1088,9 @@ export function InterviewsClient({
                       onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
                       placeholder="https://zoom.us/... or https://meet.google.com/..."
                     />
-                    {!hasVideoProviders && (
-                      <p className="text-xs text-muted-foreground">
-                        Configure meeting integrations in Settings → Integrations to auto-generate links
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Configure meeting integrations in Settings → Integrations to auto-generate links
+                    </p>
                   </div>
                 )}
               </div>
