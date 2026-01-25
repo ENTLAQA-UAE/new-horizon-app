@@ -1258,8 +1258,8 @@ export function ApplicationsClient({
                         size="sm"
                         className="h-8 gap-1.5"
                         onClick={() => {
-                          // TODO: Open schedule interview dialog
-                          toast.info("Schedule interview feature coming soon")
+                          // Navigate to interviews page with application pre-selected
+                          router.push(`/org/interviews?schedule=${selectedApplication.id}`)
                         }}
                       >
                         <Calendar className="h-3.5 w-3.5" />
