@@ -507,11 +507,33 @@ export function JobsClient({
         return
       }
 
+      // Find the job to get details for notification
+      const job = jobs.find(j => j.id === jobId)
+
       setJobs(
         jobs.map((j) =>
           j.id === jobId ? { ...j, status: newStatus, ...updateData } : j
         )
       )
+
+      // Send notification when job is published
+      if (newStatus === "open" && job && profile?.org_id) {
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "job_published",
+            orgId: profile.org_id,
+            data: {
+              jobTitle: job.title,
+              jobId: job.id,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send job published notification:", err)
+        })
+      }
+
       toast.success(`Job ${newStatus === "open" ? "published" : newStatus}`)
       router.refresh()
     } catch {

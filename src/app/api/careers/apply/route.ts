@@ -2,7 +2,7 @@
 // Note: This file has Supabase type issues
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
-import { emails } from "@/lib/email/resend"
+import { notify } from "@/lib/notifications/send-notification"
 
 export async function POST(request: NextRequest) {
   try {
@@ -228,11 +228,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send confirmation email (async, don't wait)
+    // Send notifications (async, don't wait)
     const orgName = (job.organizations as { name: string })?.name || "the company"
-    emails.applicationReceived(email, firstName, job.title, orgName).catch((err) => {
-      console.error("Failed to send confirmation email:", err)
+    const candidateName = `${firstName} ${lastName}`
+
+    // Send application confirmation to candidate
+    notify.applicationReceived(supabase, job.org_id, {
+      candidateName,
+      candidateEmail: email,
+      jobTitle: job.title,
+      applicationId: application.id,
+    }).catch((err) => {
+      console.error("Failed to send application confirmation:", err)
     })
+
+    // Notify recruiters about new application
+    // Get org admins and hiring managers for this job
+    supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("org_id", job.org_id)
+      .in("role", ["org_admin", "hiring_manager", "recruiter"])
+      .then(({ data: recruiters }) => {
+        if (recruiters && recruiters.length > 0) {
+          notify.newApplication(supabase, job.org_id, recruiters.map(r => r.user_id), {
+            candidateName,
+            candidateEmail: email,
+            jobTitle: job.title,
+            applicationId: application.id,
+            jobId: job.id,
+          }).catch((err) => {
+            console.error("Failed to notify recruiters:", err)
+          })
+        }
+      }).catch((err) => {
+        console.error("Failed to fetch recruiters for notification:", err)
+      })
 
     return NextResponse.json({
       success: true,

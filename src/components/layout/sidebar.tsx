@@ -78,7 +78,6 @@ const superAdminSections: NavSection[] = [
       { href: "/users", label: "Users", labelAr: "المستخدمون", icon: Users },
       { href: "/tiers", label: "Subscription Tiers", labelAr: "باقات الاشتراك", icon: Layers },
       { href: "/billing", label: "Billing & Payments", labelAr: "الفواتير والمدفوعات", icon: CreditCard },
-      { href: "/email-templates", label: "Email Templates", labelAr: "قوالب البريد", icon: Mail },
       { href: "/audit-logs", label: "Audit Logs", labelAr: "سجل المراجعة", icon: History },
       { href: "/settings", label: "Platform Settings", labelAr: "إعدادات المنصة", icon: Settings },
     ],
