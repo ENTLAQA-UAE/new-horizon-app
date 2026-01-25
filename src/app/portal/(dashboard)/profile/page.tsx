@@ -164,6 +164,40 @@ export default function ProfilePage() {
     setFormData({ ...formData, languages: currentLanguages.filter(l => l !== language) })
   }
 
+  // Download resume with signed URL (for private buckets)
+  const handleDownloadResume = async (resumeUrl: string) => {
+    try {
+      // Extract the file path from the public URL
+      // URL format: https://xxx.supabase.co/storage/v1/object/public/resumes/path/to/file.pdf
+      const pathMatch = resumeUrl.match(/\/resumes\/(.+)$/)
+      if (!pathMatch) {
+        // If it's not a Supabase storage URL, try to open it directly
+        window.open(resumeUrl, "_blank")
+        return
+      }
+
+      const filePath = pathMatch[1]
+
+      // Get signed URL from our API
+      const response = await fetch("/api/storage/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bucket: "resumes", path: filePath }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to get download URL")
+      }
+
+      const { signedUrl } = await response.json()
+      window.open(signedUrl, "_blank")
+    } catch (error) {
+      console.error("Error downloading resume:", error)
+      toast.error("Failed to download resume. Please try again.")
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -462,15 +496,12 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" asChild>
-                <a
-                  href={candidate.resume_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download
-                </a>
+              <Button
+                variant="outline"
+                onClick={() => handleDownloadResume(candidate.resume_url!)}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download
               </Button>
             </div>
           ) : (
