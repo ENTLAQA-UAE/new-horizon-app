@@ -505,10 +505,6 @@ export function InterviewsClient({
       }
 
       // Send notification to candidate and interviewers
-      const [hours, mins] = formData.scheduled_time.split(":").map(Number)
-      const notificationDateTime = new Date(formData.scheduled_date)
-      notificationDateTime.setHours(hours, mins, 0, 0)
-
       fetch("/api/notifications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -518,8 +514,8 @@ export function InterviewsClient({
           data: {
             applicationId: formData.application_id,
             interviewId: data.id,
-            interviewDate: format(notificationDateTime, "EEEE, MMMM d, yyyy"),
-            interviewTime: format(notificationDateTime, "h:mm a"),
+            interviewDate: format(scheduledAt, "EEEE, MMMM d, yyyy"),
+            interviewTime: format(scheduledAt, "h:mm a"),
             interviewType: formData.interview_type,
             meetingLink: meetingLink || null,
             interviewerIds: formData.interviewer_ids,
