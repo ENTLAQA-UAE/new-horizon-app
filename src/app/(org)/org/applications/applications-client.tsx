@@ -72,7 +72,7 @@ interface Candidate {
   last_name: string
   email: string
   phone: string | null
-  current_job_title: string | null
+  current_title: string | null
   resume_url: string | null
   avatar_url: string | null
 }
@@ -163,6 +163,7 @@ export function ApplicationsClient({
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isPipelineJobDialogOpen, setIsPipelineJobDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Selected application
@@ -425,7 +426,7 @@ export function ApplicationsClient({
                 {app.candidates?.first_name} {app.candidates?.last_name}
               </p>
               <p className="text-xs text-muted-foreground">
-                {app.candidates?.current_job_title || "No title"}
+                {app.candidates?.current_title || "No title"}
               </p>
             </div>
           </div>
@@ -521,7 +522,15 @@ export function ApplicationsClient({
           <Button
             variant={viewMode === "pipeline" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode("pipeline")}
+            onClick={() => {
+              if (viewMode === "pipeline") {
+                // Already in pipeline view, show job selector dialog
+                setIsPipelineJobDialogOpen(true)
+              } else {
+                // Switching to pipeline view, show job selector dialog first
+                setIsPipelineJobDialogOpen(true)
+              }
+            }}
           >
             <LayoutGrid className="mr-2 h-4 w-4" />
             Pipeline
@@ -529,7 +538,10 @@ export function ApplicationsClient({
           <Button
             variant={viewMode === "list" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode("list")}
+            onClick={() => {
+              setViewMode("list")
+              setSelectedPipelineJob(null)
+            }}
           >
             <List className="mr-2 h-4 w-4" />
             Table
@@ -623,66 +635,21 @@ export function ApplicationsClient({
         </div>
       )}
 
-      {/* Pipeline View - Job Selector */}
+      {/* Pipeline View - No Job Selected (fallback) */}
       {viewMode === "pipeline" && !selectedPipelineJob && (
         <Card className="p-8">
           <div className="text-center space-y-4">
             <LayoutGrid className="h-12 w-12 mx-auto text-muted-foreground" />
             <div>
-              <h3 className="text-lg font-semibold">Select a Job to View Pipeline</h3>
+              <h3 className="text-lg font-semibold">No Job Selected</h3>
               <p className="text-muted-foreground text-sm mt-1">
-                Each job has its own hiring pipeline. Select a job to manage its applications.
+                Select a job to view its hiring pipeline and manage applications by stage.
               </p>
             </div>
-            {jobsWithApplications.length === 0 ? (
-              <p className="text-muted-foreground">No jobs with applications yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                {jobsWithApplications.map((job) => {
-                  const jobApps = applications.filter(a => a.job_id === job.id)
-                  return (
-                    <Card
-                      key={job.id}
-                      className="cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => setSelectedPipelineJob(job.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-medium">{job.title}</h4>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {jobApps.length} application{jobApps.length !== 1 ? "s" : ""}
-                            </p>
-                          </div>
-                          <Badge variant="outline">{job.status}</Badge>
-                        </div>
-                        {job.pipelines && (
-                          <div className="mt-3 flex items-center gap-1">
-                            {job.pipelines.pipeline_stages?.slice(0, 4).map((stage, idx) => (
-                              <div key={stage.id} className="flex items-center">
-                                <div
-                                  className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: stage.color }}
-                                  title={stage.name}
-                                />
-                                {idx < Math.min(3, (job.pipelines?.pipeline_stages?.length || 0) - 1) && (
-                                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                                )}
-                              </div>
-                            ))}
-                            {(job.pipelines.pipeline_stages?.length || 0) > 4 && (
-                              <span className="text-xs text-muted-foreground ml-1">
-                                +{(job.pipelines.pipeline_stages?.length || 0) - 4} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
+            <Button onClick={() => setIsPipelineJobDialogOpen(true)}>
+              <Briefcase className="mr-2 h-4 w-4" />
+              Select Job
+            </Button>
           </div>
         </Card>
       )}
@@ -692,12 +659,12 @@ export function ApplicationsClient({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => setSelectedPipelineJob(null)}
+              onClick={() => setIsPipelineJobDialogOpen(true)}
             >
-              <X className="h-4 w-4 mr-1" />
-              Clear
+              <Briefcase className="h-4 w-4 mr-1" />
+              Change Job
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <div>
@@ -950,7 +917,7 @@ export function ApplicationsClient({
                     {selectedApplication.candidates?.last_name}
                   </h3>
                   <p className="text-muted-foreground">
-                    {selectedApplication.candidates?.current_job_title || "No title"}
+                    {selectedApplication.candidates?.current_title || "No title"}
                   </p>
                   <Badge
                     style={{
@@ -1075,6 +1042,59 @@ export function ApplicationsClient({
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pipeline Job Selector Dialog */}
+      <Dialog open={isPipelineJobDialogOpen} onOpenChange={setIsPipelineJobDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Job for Pipeline View</DialogTitle>
+            <DialogDescription>
+              Choose a job to view its hiring pipeline and manage applications by stage.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {jobsWithApplications.length === 0 ? (
+              <div className="text-center py-6">
+                <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">No jobs with applications found</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Applications will appear here once candidates apply
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {jobsWithApplications.map((job) => {
+                  const appCount = applications.filter(a => a.job_id === job.id).length
+                  return (
+                    <button
+                      key={job.id}
+                      onClick={() => {
+                        setSelectedPipelineJob(job.id)
+                        setViewMode("pipeline")
+                        setIsPipelineJobDialogOpen(false)
+                      }}
+                      className="w-full p-3 text-left rounded-lg border hover:bg-accent hover:border-primary transition-colors flex items-center justify-between group"
+                    >
+                      <div>
+                        <p className="font-medium group-hover:text-primary">{job.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {job.pipelines?.name || "Default Pipeline"} • {appCount} application{appCount !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <LayoutGrid className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPipelineJobDialogOpen(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

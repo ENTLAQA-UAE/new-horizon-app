@@ -14,7 +14,7 @@ async function getApplications() {
         last_name,
         email,
         phone,
-        current_job_title,
+        current_title,
         resume_url,
         avatar_url
       ),
