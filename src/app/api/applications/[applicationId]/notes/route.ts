@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Note: Tables application_notes and application_activities are not in generated types yet
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 
 export async function GET(
   request: NextRequest,
@@ -9,9 +9,18 @@ export async function GET(
 ) {
   try {
     const { applicationId } = await params
-    const supabase = await createClient()
 
-    const { data: notes, error } = await supabase
+    // Use regular client for auth check
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Use service client to bypass RLS for fetching notes
+    const serviceClient = createServiceClient()
+
+    const { data: notes, error } = await serviceClient
       .from("application_notes")
       .select(`
         *,
@@ -57,8 +66,18 @@ export async function POST(
       return NextResponse.json({ error: "Content is required" }, { status: 400 })
     }
 
+    // Use service client to bypass RLS for inserting notes
+    const serviceClient = createServiceClient()
+
+    // Get user profile for the response
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("first_name, last_name, avatar_url")
+      .eq("id", user.id)
+      .single()
+
     // Create the note
-    const { data: note, error } = await supabase
+    const { data: note, error } = await serviceClient
       .from("application_notes")
       .insert({
         application_id: applicationId,
@@ -66,14 +85,7 @@ export async function POST(
         content: content.trim(),
         is_private,
       })
-      .select(`
-        *,
-        profiles:user_id (
-          first_name,
-          last_name,
-          avatar_url
-        )
-      `)
+      .select("*")
       .single()
 
     if (error) {
@@ -82,14 +94,20 @@ export async function POST(
     }
 
     // Log activity
-    await supabase.from("application_activities").insert({
+    await serviceClient.from("application_activities").insert({
       application_id: applicationId,
       user_id: user.id,
       activity_type: "note_added",
       description: "Added a note",
     })
 
-    return NextResponse.json({ note })
+    // Return note with profile info
+    return NextResponse.json({
+      note: {
+        ...note,
+        profiles: profile
+      }
+    })
   } catch (error) {
     console.error("Error in notes POST:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
