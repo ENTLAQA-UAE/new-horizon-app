@@ -338,9 +338,24 @@ export function InterviewsClient({
           return { url: data.onlineMeeting?.joinUrl || data.webLink, id: data.id }
         }
       } else if (provider === "google") {
-        // Google Meet integration would go here
-        // For now, return null and user can add link manually
-        return null
+        const response = await fetch("/api/google/meetings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: title,
+            start_time: startTime.toISOString(),
+            duration: durationMinutes,
+            timezone: formData.timezone,
+          }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          return { url: data.join_url, id: data.id }
+        } else {
+          // Log error for debugging
+          const errorData = await response.json().catch(() => ({}))
+          console.error("Google Meet creation failed:", errorData)
+        }
       }
       return null
     } catch (error) {
