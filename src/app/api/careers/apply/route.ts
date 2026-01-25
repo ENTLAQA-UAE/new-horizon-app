@@ -66,8 +66,7 @@ export async function POST(request: NextRequest) {
           email: email,
           phone: phone || null,
           linkedin_url: linkedIn || null,
-          source: "website",
-          overall_status: "new",
+          source: "career_page",
         })
         .select("id")
         .single()
@@ -144,11 +143,12 @@ export async function POST(request: NextRequest) {
     const { data: application, error: appError } = await supabase
       .from("applications")
       .insert({
+        org_id: job.org_id,
         candidate_id: candidateId,
         job_id: jobId,
-        stage: firstStageId,
+        stage_id: firstStageId,
         status: "new",
-        source: "website",
+        source: "career_page",
         cover_letter: coverLetter || null,
         applied_at: new Date().toISOString(),
       })
