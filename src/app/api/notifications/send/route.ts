@@ -229,6 +229,37 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "user_invited": {
+        // Get inviter's name
+        const { data: inviter } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "user_invited",
+          orgId,
+          recipients: [{ email: data.recipientEmail, name: data.recipientName }],
+          variables: {
+            receiver_name: data.recipientName,
+            inviter_name: inviter?.full_name || "A team member",
+            org_name: org?.name || "the organization",
+            role: data.role,
+            invitation_url: data.inviteLink,
+          },
+          forceEmail: true, // Always send email for invites
+        })
+        break
+      }
+
       default:
         return NextResponse.json({ error: `Unknown event type: ${eventType}` }, { status: 400 })
     }

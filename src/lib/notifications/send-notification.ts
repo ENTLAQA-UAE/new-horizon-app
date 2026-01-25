@@ -293,6 +293,11 @@ async function sendEmailNotification(
       template = defaultTemplate
     }
 
+    // If no template found, use fallback templates for critical events
+    if (!template) {
+      template = getFallbackEmailTemplate(eventCode, variables)
+    }
+
     if (!template) {
       return { success: false, error: `No email template found for event: ${eventCode}` }
     }
@@ -591,6 +596,278 @@ function replaceVariables(template: string, variables: NotificationVariables): s
   }
 
   return result
+}
+
+/**
+ * Get fallback email template for critical notifications
+ */
+function getFallbackEmailTemplate(
+  eventCode: string,
+  variables: NotificationVariables
+): { subject: string; body_html: string } | null {
+  const orgName = variables.org_name || "Our Organization"
+  const logoUrl = variables.org_logo
+  const primaryColor = variables.primary_color || "#667eea"
+
+  // Common email wrapper
+  const wrapEmail = (content: string, title: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <!-- Header with logo -->
+          <tr>
+            <td style="padding: 32px 40px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+              ${logoUrl ? `<img src="${logoUrl}" alt="${orgName}" style="max-height: 48px; max-width: 200px;">` : `<h2 style="margin: 0; color: ${primaryColor}; font-size: 24px;">${orgName}</h2>`}
+            </td>
+          </tr>
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; text-align: center;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                This email was sent by ${orgName}.<br>
+                If you didn't expect this email, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `
+
+  const templates: Record<string, { subject: string; body_html: string }> = {
+    user_invited: {
+      subject: `You're invited to join ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          You're Invited!
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{receiver_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          <strong>{{inviter_name}}</strong> has invited you to join <strong>${orgName}</strong> as a <strong>{{role}}</strong>.
+        </p>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Click the button below to accept this invitation and set up your account.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{invitation_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Accept Invitation
+              </a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          This invitation will expire in 7 days. If the button doesn't work, copy and paste this link into your browser:<br>
+          <a href="{{invitation_url}}" style="color: ${primaryColor}; word-break: break-all;">{{invitation_url}}</a>
+        </p>
+      `, `You're invited to join ${orgName}`),
+    },
+
+    password_reset: {
+      subject: `Reset your password for ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Reset Your Password
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{receiver_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We received a request to reset your password for your ${orgName} account.
+        </p>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Click the button below to create a new password.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{reset_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Reset Password
+              </a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          If you didn't request this, you can safely ignore this email. The link expires in 1 hour.
+        </p>
+      `, `Reset your password for ${orgName}`),
+    },
+
+    application_received: {
+      subject: `Application received for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Application Received
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Thank you for applying for the <strong>{{job_title}}</strong> position at <strong>${orgName}</strong>.
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We have received your application and our team will review it shortly. If your qualifications match our requirements, we will be in touch regarding next steps.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Thank you for your interest in joining our team!
+        </p>
+      `, `Application received for {{job_title}}`),
+    },
+
+    interview_scheduled: {
+      subject: `Interview scheduled for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Interview Scheduled
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Great news! We would like to invite you to an interview for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #111827; font-weight: 600;">Interview Details:</p>
+          <p style="margin: 0 0 4px; color: #4b5563;">📅 Date: <strong>{{interview_date}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">🕐 Time: <strong>{{interview_time}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">📍 Type: <strong>{{interview_type}}</strong></p>
+          ${variables.meeting_link ? `<p style="margin: 0; color: #4b5563;">🔗 Meeting Link: <a href="{{meeting_link}}" style="color: ${primaryColor};">Join Meeting</a></p>` : ""}
+        </div>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We look forward to speaking with you!
+        </p>
+      `, `Interview scheduled for {{job_title}}`),
+    },
+
+    offer_sent: {
+      subject: `Job offer from ${orgName} for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Congratulations! 🎉
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We are pleased to extend an offer for the <strong>{{job_title}}</strong> position at <strong>${orgName}</strong>.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #111827; font-weight: 600;">Offer Details:</p>
+          <p style="margin: 0 0 4px; color: #4b5563;">💼 Position: <strong>{{job_title}}</strong></p>
+          ${variables.salary ? `<p style="margin: 0 0 4px; color: #4b5563;">💰 Compensation: <strong>{{salary}}</strong></p>` : ""}
+          ${variables.start_date ? `<p style="margin: 0; color: #4b5563;">📅 Start Date: <strong>{{start_date}}</strong></p>` : ""}
+        </div>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Please review the offer details and let us know your decision.
+        </p>
+        ${variables.offer_url ? `
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{offer_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Full Offer
+              </a>
+            </td>
+          </tr>
+        </table>
+        ` : ""}
+      `, `Job offer from ${orgName}`),
+    },
+
+    new_application: {
+      subject: `New application for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          New Application Received
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          A new application has been submitted for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #111827; font-weight: 600;">Candidate:</p>
+          <p style="margin: 0 0 4px; color: #4b5563;">👤 Name: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">📧 Email: <strong>{{candidate_email}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Review Application
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `New application for {{job_title}}`),
+    },
+
+    candidate_rejection: {
+      subject: `Update on your application for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Application Update
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Thank you for your interest in the <strong>{{job_title}}</strong> position at <strong>${orgName}</strong> and for taking the time to apply.
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          After careful consideration, we have decided to move forward with other candidates whose qualifications more closely match our current needs.
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We appreciate your interest in our organization and encourage you to apply for future positions that match your experience.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We wish you the best in your job search.
+        </p>
+      `, `Update on your application at ${orgName}`),
+    },
+
+    interview_cancelled: {
+      subject: `Interview cancelled for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Interview Cancelled
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We regret to inform you that your scheduled interview for the <strong>{{job_title}}</strong> position has been cancelled.
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Our team will be in touch with you shortly regarding next steps or to reschedule.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We apologize for any inconvenience this may cause.
+        </p>
+      `, `Interview cancelled for {{job_title}}`),
+    },
+  }
+
+  return templates[eventCode] || null
 }
 
 /**

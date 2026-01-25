@@ -223,7 +223,30 @@ export function TeamClient({
       setInvites([data, ...invites])
       setIsInviteDialogOpen(false)
       setInviteForm({ email: "", role: "recruiter" })
-      toast.success("Invitation created! Share the invite code or link with your team member.")
+
+      // Send invitation email
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+      const inviteLink = `${baseUrl}/signup?code=${inviteCode}`
+
+      fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "user_invited",
+          orgId: organizationId,
+          data: {
+            recipientEmail: inviteForm.email.toLowerCase(),
+            recipientName: inviteForm.email.split("@")[0],
+            inviteCode: inviteCode,
+            inviteLink: inviteLink,
+            role: roleLabels[inviteForm.role] || inviteForm.role,
+          },
+        }),
+      }).catch((err) => {
+        console.error("Failed to send invitation email:", err)
+      })
+
+      toast.success("Invitation sent! The invite email has been delivered.")
     } catch (error: any) {
       console.error("Error sending invite:", error)
       // Provide user-friendly error messages
