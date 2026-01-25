@@ -28,6 +28,8 @@ import {
   Shield,
   Star,
   ExternalLink,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react"
 
 interface Integration {
@@ -97,11 +99,14 @@ export function IntegrationsSettingsClient({
   integrations,
 }: IntegrationsSettingsClientProps) {
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+  const [providerToDelete, setProviderToDelete] = useState<string | null>(null)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const getIntegration = (provider: string) =>
     integrations.find((i) => i.provider === provider)
@@ -202,6 +207,39 @@ export function IntegrationsSettingsClient({
       window.location.reload()
     } catch (error) {
       toast.error("Failed to set default provider")
+    }
+  }
+
+  const handleDeleteClick = (provider: string) => {
+    setProviderToDelete(provider)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!providerToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch("/api/org/integrations/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, provider: providerToDelete }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to delete integration")
+      }
+
+      toast.success(`${PROVIDER_CONFIG[providerToDelete as keyof typeof PROVIDER_CONFIG]?.name} configuration removed`)
+      setDeleteDialogOpen(false)
+      setProviderToDelete(null)
+      window.location.reload()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete integration")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -328,6 +366,18 @@ export function IntegrationsSettingsClient({
                         <Settings2 className="h-4 w-4 mr-1" />
                         {isConfigured ? "Update" : "Configure"}
                       </Button>
+
+                      {/* Remove button - shown when configured */}
+                      {isConfigured && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteClick(provider)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )
@@ -422,6 +472,59 @@ export function IntegrationsSettingsClient({
             <Button onClick={handleSaveCredentials} disabled={isSaving}>
               {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Save Credentials
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Remove Integration
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove the{" "}
+              <strong>
+                {providerToDelete
+                  ? PROVIDER_CONFIG[providerToDelete as keyof typeof PROVIDER_CONFIG]?.name
+                  : ""}
+              </strong>{" "}
+              integration? This will:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
+              <li>Delete all saved credentials for this provider</li>
+              <li>Disconnect the linked account</li>
+              <li>Remove it as the default meeting provider (if applicable)</li>
+            </ul>
+            <p className="mt-4 text-sm font-medium">
+              You can reconfigure this integration at any time.
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false)
+                setProviderToDelete(null)
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Remove Integration
             </Button>
           </DialogFooter>
         </DialogContent>
