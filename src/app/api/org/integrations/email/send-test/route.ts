@@ -61,12 +61,22 @@ export async function POST(request: NextRequest) {
 
     const provider = config.email_provider || "resend"
 
+    // Sanitize email addresses - remove angle brackets and extract email
+    const sanitizeEmail = (email: string): string => {
+      if (!email) return email
+      const match = email.match(/<([^>]+)>/) || email.match(/([^\s<>]+@[^\s<>]+)/)
+      return match ? match[1].trim() : email.trim()
+    }
+
+    const cleanFromEmail = sanitizeEmail(config.from_email)
+    const cleanReplyTo = config.reply_to_email ? sanitizeEmail(config.reply_to_email) : undefined
+
     // Build provider configuration
     let providerConfig: EmailProviderConfig = {
       provider,
-      fromEmail: config.from_email,
+      fromEmail: cleanFromEmail,
       fromName: config.from_name,
-      replyTo: config.reply_to_email,
+      replyTo: cleanReplyTo,
       trackOpens: false, // Don't track test emails
       trackClicks: false,
     }
@@ -172,7 +182,7 @@ export async function POST(request: NextRequest) {
                   <strong>Provider:</strong> ${provider.charAt(0).toUpperCase() + provider.slice(1)}
                 </li>
                 <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
-                  <strong>From:</strong> ${config.from_name} &lt;${config.from_email}&gt;
+                  <strong>From:</strong> ${config.from_name} &lt;${cleanFromEmail}&gt;
                 </li>
                 <li style="padding: 8px 0;">
                   <strong>Sent at:</strong> ${new Date().toLocaleString()}
@@ -197,7 +207,7 @@ Congratulations! Your email configuration is working correctly.
 
 Configuration Details:
 - Provider: ${provider.charAt(0).toUpperCase() + provider.slice(1)}
-- From: ${config.from_name} <${config.from_email}>
+- From: ${config.from_name} <${cleanFromEmail}>
 - Sent at: ${new Date().toLocaleString()}
 
 This is a test email sent from Jadarat ATS to verify your email settings.

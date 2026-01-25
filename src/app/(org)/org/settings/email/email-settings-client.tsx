@@ -24,6 +24,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Mail,
   Server,
   Shield,
@@ -36,6 +44,7 @@ import {
   Copy,
   RefreshCw,
   Loader2,
+  Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -97,6 +106,8 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
   const [loading, setLoading] = useState(false)
   const [testingConnection, setTestingConnection] = useState(false)
   const [sendingTestEmail, setSendingTestEmail] = useState(false)
+  const [testEmailDialogOpen, setTestEmailDialogOpen] = useState(false)
+  const [testEmailRecipient, setTestEmailRecipient] = useState('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Form state
@@ -225,7 +236,17 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
     }
   }
 
+  const handleOpenTestEmailDialog = () => {
+    setTestEmailRecipient('')
+    setTestEmailDialogOpen(true)
+  }
+
   const handleSendTestEmail = async () => {
+    if (!testEmailRecipient || !testEmailRecipient.includes('@')) {
+      showMessage('error', 'Please enter a valid email address')
+      return
+    }
+
     setSendingTestEmail(true)
     setMessage(null)
 
@@ -233,7 +254,7 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
       const response = await fetch('/api/org/integrations/email/send-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orgId }),
+        body: JSON.stringify({ orgId, recipientEmail: testEmailRecipient }),
       })
 
       const data = await response.json()
@@ -242,7 +263,9 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
         throw new Error(data.error || 'Failed to send test email')
       }
 
-      showMessage('success', data.message || 'Test email sent successfully! Check your inbox.')
+      showMessage('success', data.message || `Test email sent successfully to ${testEmailRecipient}!`)
+      setTestEmailDialogOpen(false)
+      setTestEmailRecipient('')
       router.refresh()
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Failed to send test email')
@@ -637,12 +660,11 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={handleSendTestEmail}
-                  disabled={sendingTestEmail || !initialConfig}
+                  onClick={handleOpenTestEmailDialog}
+                  disabled={!initialConfig}
                   title={!initialConfig ? 'Save settings first' : 'Send a test email to verify configuration'}
                 >
-                  {sendingTestEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <Mail className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 h-4 w-4" />
                   Send Test Email
                 </Button>
               </div>
@@ -825,6 +847,74 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
           <EmailAnalyticsDashboard />
         </TabsContent>
       </Tabs>
+
+      {/* Send Test Email Dialog */}
+      <Dialog open={testEmailDialogOpen} onOpenChange={setTestEmailDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Send Test Email
+            </DialogTitle>
+            <DialogDescription>
+              Enter the email address where you want to receive the test email.
+              This will verify that your email configuration is working correctly.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-email-recipient">Recipient Email</Label>
+              <Input
+                id="test-email-recipient"
+                type="email"
+                placeholder="your-email@example.com"
+                value={testEmailRecipient}
+                onChange={(e) => setTestEmailRecipient(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !sendingTestEmail) {
+                    handleSendTestEmail()
+                  }
+                }}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              <p className="font-medium mb-1">The test email will include:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Confirmation that your configuration works</li>
+                <li>Provider details ({provider.toUpperCase()})</li>
+                <li>Sender information ({fromEmail || 'Not set'})</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setTestEmailDialogOpen(false)}
+              disabled={sendingTestEmail}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendTestEmail}
+              disabled={sendingTestEmail || !testEmailRecipient}
+            >
+              {sendingTestEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Test Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
