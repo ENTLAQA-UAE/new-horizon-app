@@ -72,7 +72,7 @@ interface Candidate {
   last_name: string
   email: string
   phone: string | null
-  current_job_title: string | null
+  current_title: string | null
   resume_url: string | null
   avatar_url: string | null
 }
@@ -425,7 +425,7 @@ export function ApplicationsClient({
                 {app.candidates?.first_name} {app.candidates?.last_name}
               </p>
               <p className="text-xs text-muted-foreground">
-                {app.candidates?.current_job_title || "No title"}
+                {app.candidates?.current_title || "No title"}
               </p>
             </div>
           </div>
@@ -950,7 +950,7 @@ export function ApplicationsClient({
                     {selectedApplication.candidates?.last_name}
                   </h3>
                   <p className="text-muted-foreground">
-                    {selectedApplication.candidates?.current_job_title || "No title"}
+                    {selectedApplication.candidates?.current_title || "No title"}
                   </p>
                   <Badge
                     style={{
