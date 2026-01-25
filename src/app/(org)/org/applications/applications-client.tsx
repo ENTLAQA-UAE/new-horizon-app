@@ -72,6 +72,10 @@ import {
   MapPin,
   ExternalLink,
   Upload,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  ClipboardCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -136,6 +140,7 @@ interface Application {
   candidates: Candidate | null
   jobs: Job | null
   pipeline_stages: PipelineStage | null
+  candidate_app_count?: number
 }
 
 interface ApplicationNote {
@@ -241,6 +246,78 @@ export function ApplicationsClient({
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [newNote, setNewNote] = useState("")
   const [isAddingNote, setIsAddingNote] = useState(false)
+
+  // Expanded rows for multi-application candidates
+  const [expandedCandidates, setExpandedCandidates] = useState<Set<string>>(new Set())
+
+  // Star rating (1-5 stars, stored as 0-100 in manual_score: 1 star = 20, 5 stars = 100)
+  const [isUpdatingRating, setIsUpdatingRating] = useState(false)
+
+  // Scorecard
+  const [selectedInterviewForScorecard, setSelectedInterviewForScorecard] = useState<Interview | null>(null)
+  const [isScorecardDialogOpen, setIsScorecardDialogOpen] = useState(false)
+
+  // Get other applications for a candidate
+  const getOtherApplicationsForCandidate = (candidateId: string, currentAppId: string) => {
+    return applications.filter(app => app.candidate_id === candidateId && app.id !== currentAppId)
+  }
+
+  // Toggle expanded state for a candidate
+  const toggleExpanded = (candidateId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedCandidates(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(candidateId)) {
+        newSet.delete(candidateId)
+      } else {
+        newSet.add(candidateId)
+      }
+      return newSet
+    })
+  }
+
+  // Handle star rating change (1-5 stars = 20-100 score)
+  const handleRatingChange = async (applicationId: string, stars: number) => {
+    const score = stars * 20 // Convert 1-5 stars to 20-100 score
+    setIsUpdatingRating(true)
+
+    try {
+      const { error } = await supabaseUpdate(
+        "applications",
+        {
+          manual_score: score,
+          updated_at: new Date().toISOString(),
+        },
+        { column: "id", value: applicationId }
+      )
+
+      if (error) {
+        toast.error("Failed to update rating")
+        return
+      }
+
+      // Update local state
+      setApplications(
+        applications.map((a) =>
+          a.id === applicationId ? { ...a, manual_score: score } : a
+        )
+      )
+      if (selectedApplication?.id === applicationId) {
+        setSelectedApplication({ ...selectedApplication, manual_score: score })
+      }
+      toast.success("Rating updated")
+    } catch {
+      toast.error("Failed to update rating")
+    } finally {
+      setIsUpdatingRating(false)
+    }
+  }
+
+  // Convert score to stars (20-100 to 1-5)
+  const scoreToStars = (score: number | null) => {
+    if (score === null) return 0
+    return Math.round(score / 20)
+  }
 
   // Get jobs that have applications
   const jobsWithApplications = useMemo(() => {
@@ -933,17 +1010,19 @@ export function ApplicationsClient({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8"></TableHead>
                 <TableHead>Candidate</TableHead>
                 <TableHead>Job</TableHead>
                 <TableHead>Stage</TableHead>
                 <TableHead>Applied</TableHead>
                 <TableHead>Score</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredApplications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">No applications found</p>
                   </TableCell>
@@ -952,65 +1031,160 @@ export function ApplicationsClient({
                 filteredApplications.map((app) => {
                   const stageName = getStageName(app)
                   const stageColor = getStageColor(app)
-                  const stageType = getStageType(app)
-                  const job = jobsWithPipelines.find(j => j.id === app.job_id)
-                  const jobStages = job?.pipelines?.pipeline_stages || []
+                  const isMulti = (app.candidate_app_count || 1) > 1
+                  const isExpanded = expandedCandidates.has(app.candidate_id)
+                  const otherApps = isMulti ? getOtherApplicationsForCandidate(app.candidate_id, app.id) : []
 
                   return (
-                    <TableRow key={app.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openViewDialog(app)}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-sm font-semibold text-primary">
-                              {app.candidates?.first_name?.[0] || "?"}{app.candidates?.last_name?.[0] || "?"}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-medium text-primary hover:underline">
-                              {app.candidates?.first_name} {app.candidates?.last_name}
+                    <>
+                      <TableRow key={app.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openViewDialog(app)}>
+                        {/* Expand button */}
+                        <TableCell className="w-8 px-2">
+                          {isMulti && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => toggleExpanded(app.candidate_id, e)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-primary">
+                                {app.candidates?.first_name?.[0] || "?"}{app.candidates?.last_name?.[0] || "?"}
+                              </span>
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {app.candidates?.email}
+                            <div>
+                              <div className="font-medium text-primary hover:underline">
+                                {app.candidates?.first_name} {app.candidates?.last_name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {app.candidates?.email}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">{app.jobs?.title || "N/A"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          style={{
-                            backgroundColor: `${stageColor}20`,
-                            color: stageColor,
-                            borderColor: stageColor
-                          }}
-                          variant="outline"
-                        >
-                          {stageName}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDate(app.applied_at || app.created_at)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {(app.ai_match_score !== null || app.manual_score !== null) ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full"
-                                style={{ width: `${app.ai_match_score || app.manual_score || 0}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-medium">{app.ai_match_score || app.manual_score}%</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">{app.jobs?.title || "N/A"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            style={{
+                              backgroundColor: `${stageColor}20`,
+                              color: stageColor,
+                              borderColor: stageColor
+                            }}
+                            variant="outline"
+                          >
+                            {stageName}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(app.applied_at || app.created_at)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const currentStars = scoreToStars(app.manual_score)
+                              return (
+                                <Star
+                                  key={star}
+                                  className={cn(
+                                    "h-4 w-4",
+                                    star <= currentStars
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "fill-transparent text-gray-300"
+                                  )}
+                                />
+                              )
+                            })}
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          {isMulti ? (
+                            <Badge className="bg-orange-500 hover:bg-orange-600 text-white">
+                              Multi
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Single
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      {/* Expanded rows showing other applications */}
+                      {isMulti && isExpanded && otherApps.map((otherApp) => {
+                        const otherStageName = getStageName(otherApp)
+                        const otherStageColor = getStageColor(otherApp)
+                        return (
+                          <TableRow
+                            key={otherApp.id}
+                            className="cursor-pointer hover:bg-muted/50 bg-muted/20"
+                            onClick={() => openViewDialog(otherApp)}
+                          >
+                            <TableCell className="w-8 px-2">
+                              <div className="pl-4 text-muted-foreground">↳</div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3 pl-4">
+                                <div className="text-sm text-muted-foreground">
+                                  Same candidate
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">{otherApp.jobs?.title || "N/A"}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                style={{
+                                  backgroundColor: `${otherStageColor}20`,
+                                  color: otherStageColor,
+                                  borderColor: otherStageColor
+                                }}
+                                variant="outline"
+                              >
+                                {otherStageName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {formatDate(otherApp.applied_at || otherApp.created_at)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const currentStars = scoreToStars(otherApp.manual_score)
+                                  return (
+                                    <Star
+                                      key={star}
+                                      className={cn(
+                                        "h-4 w-4",
+                                        star <= currentStars
+                                          ? "fill-yellow-400 text-yellow-400"
+                                          : "fill-transparent text-gray-300"
+                                      )}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            </TableCell>
+                            <TableCell></TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </>
                   )
                 })
               )}
@@ -1096,15 +1270,35 @@ export function ApplicationsClient({
                       </span>
                     </div>
                   </div>
-                  {/* Score indicator */}
-                  {(selectedApplication.ai_match_score !== null || selectedApplication.manual_score !== null) && (
-                    <div className="flex flex-col items-center px-4 py-2 bg-white dark:bg-background rounded-lg border shadow-sm">
-                      <span className="text-2xl font-bold text-[var(--brand-primary,#6366f1)]">
-                        {selectedApplication.ai_match_score || selectedApplication.manual_score}%
-                      </span>
-                      <span className="text-xs text-muted-foreground">Match Score</span>
+                  {/* Star Rating */}
+                  <div className="flex flex-col items-center px-4 py-2 bg-white dark:bg-background rounded-lg border shadow-sm">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => {
+                        const currentStars = scoreToStars(selectedApplication.manual_score)
+                        return (
+                          <button
+                            key={star}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRatingChange(selectedApplication.id, star)
+                            }}
+                            disabled={isUpdatingRating}
+                            className="p-0.5 hover:scale-110 transition-transform disabled:opacity-50"
+                          >
+                            <Star
+                              className={cn(
+                                "h-5 w-5 transition-colors",
+                                star <= currentStars
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "fill-transparent text-gray-300 hover:text-yellow-300"
+                              )}
+                            />
+                          </button>
+                        )
+                      })}
                     </div>
-                  )}
+                    <span className="text-xs text-muted-foreground mt-1">Rating</span>
+                  </div>
                 </div>
               </div>
 
@@ -1403,13 +1597,30 @@ export function ApplicationsClient({
                                     )}
                                   </div>
                                 </div>
-                                <Badge variant={
-                                  interview.status === "completed" ? "default" :
-                                  interview.status === "cancelled" ? "destructive" :
-                                  "secondary"
-                                }>
-                                  {interview.status}
-                                </Badge>
+                                <div className="flex flex-col items-end gap-2">
+                                  <Badge variant={
+                                    interview.status === "completed" ? "default" :
+                                    interview.status === "cancelled" ? "destructive" :
+                                    "secondary"
+                                  }>
+                                    {interview.status}
+                                  </Badge>
+                                  {(interview.status === "completed" || interview.status === "confirmed" || interview.status === "scheduled") && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="gap-1.5"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        // Navigate to scorecards page with interview pre-selected
+                                        router.push(`/org/interviews/scorecards?interview=${interview.id}`)
+                                      }}
+                                    >
+                                      <ClipboardCheck className="h-4 w-4" />
+                                      Fill Scorecard
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}

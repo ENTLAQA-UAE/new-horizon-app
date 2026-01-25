@@ -42,7 +42,21 @@ async function getApplications() {
     return []
   }
 
-  return applications || []
+  // Calculate application counts per candidate
+  const candidateAppCounts: Record<string, number> = {}
+  applications?.forEach(app => {
+    if (app.candidate_id) {
+      candidateAppCounts[app.candidate_id] = (candidateAppCounts[app.candidate_id] || 0) + 1
+    }
+  })
+
+  // Add application count to each application
+  const applicationsWithCount = applications?.map(app => ({
+    ...app,
+    candidate_app_count: candidateAppCounts[app.candidate_id] || 1
+  }))
+
+  return applicationsWithCount || []
 }
 
 async function getJobsWithPipelines() {
