@@ -27,6 +27,7 @@ import {
   Settings2,
   Shield,
   Star,
+  ExternalLink,
 } from "lucide-react"
 
 interface Integration {
@@ -301,6 +302,20 @@ export function IntegrationsSettingsClient({
                           onClick={() => handleSetDefaultProvider(provider)}
                         >
                           Set Default
+                        </Button>
+                      )}
+
+                      {/* Connect Account button - shown when configured but not verified */}
+                      {isConfigured && !isVerified && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            window.location.href = `/api/org/integrations/connect?provider=${provider}&redirect=/org/settings/integrations`
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Connect Account
                         </Button>
                       )}
 
