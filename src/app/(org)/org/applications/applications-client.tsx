@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/table"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import {
   Search,
@@ -63,6 +65,13 @@ import {
   Briefcase,
   GripVertical,
   X,
+  Paperclip,
+  Clock,
+  Plus,
+  Video,
+  MapPin,
+  ExternalLink,
+  Upload,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -129,6 +138,60 @@ interface Application {
   pipeline_stages: PipelineStage | null
 }
 
+interface ApplicationNote {
+  id: string
+  application_id: string
+  user_id: string
+  content: string
+  is_private: boolean
+  created_at: string
+  updated_at: string
+  profiles?: {
+    first_name: string
+    last_name: string
+    avatar_url: string | null
+  }
+}
+
+interface Interview {
+  id: string
+  application_id: string
+  title: string
+  interview_type: string
+  scheduled_at: string
+  duration_minutes: number
+  location: string | null
+  meeting_link: string | null
+  status: string
+  organizer_id: string | null
+}
+
+interface ApplicationActivity {
+  id: string
+  application_id: string
+  user_id: string | null
+  activity_type: string
+  description: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  profiles?: {
+    first_name: string
+    last_name: string
+  }
+}
+
+interface ApplicationAttachment {
+  id: string
+  application_id: string
+  file_name: string
+  file_type: string | null
+  file_url: string
+  file_size: number | null
+  mime_type: string | null
+  description: string | null
+  created_at: string
+}
+
 interface ApplicationsClientProps {
   applications: Application[]
   jobsWithPipelines: JobWithPipeline[]
@@ -169,6 +232,15 @@ export function ApplicationsClient({
   // Selected application
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [notes, setNotes] = useState("")
+
+  // Application details data for dialog
+  const [applicationNotes, setApplicationNotes] = useState<ApplicationNote[]>([])
+  const [applicationInterviews, setApplicationInterviews] = useState<Interview[]>([])
+  const [applicationActivities, setApplicationActivities] = useState<ApplicationActivity[]>([])
+  const [applicationAttachments, setApplicationAttachments] = useState<ApplicationAttachment[]>([])
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
+  const [newNote, setNewNote] = useState("")
+  const [isAddingNote, setIsAddingNote] = useState(false)
 
   // Get jobs that have applications
   const jobsWithApplications = useMemo(() => {
@@ -261,10 +333,77 @@ export function ApplicationsClient({
     hired: applications.filter((a) => getStageType(a) === "hired").length,
   }
 
+  // Fetch application details (notes, interviews, activities, attachments)
+  const fetchApplicationDetails = async (applicationId: string) => {
+    setIsLoadingDetails(true)
+    try {
+      const [notesRes, interviewsRes, activitiesRes, attachmentsRes] = await Promise.all([
+        fetch(`/api/applications/${applicationId}/notes`),
+        fetch(`/api/applications/${applicationId}/interviews`),
+        fetch(`/api/applications/${applicationId}/activities`),
+        fetch(`/api/applications/${applicationId}/attachments`),
+      ])
+
+      if (notesRes.ok) {
+        const notesData = await notesRes.json()
+        setApplicationNotes(notesData.notes || [])
+      }
+      if (interviewsRes.ok) {
+        const interviewsData = await interviewsRes.json()
+        setApplicationInterviews(interviewsData.interviews || [])
+      }
+      if (activitiesRes.ok) {
+        const activitiesData = await activitiesRes.json()
+        setApplicationActivities(activitiesData.activities || [])
+      }
+      if (attachmentsRes.ok) {
+        const attachmentsData = await attachmentsRes.json()
+        setApplicationAttachments(attachmentsData.attachments || [])
+      }
+    } catch (error) {
+      console.error("Error fetching application details:", error)
+    } finally {
+      setIsLoadingDetails(false)
+    }
+  }
+
   // VIEW
   const openViewDialog = (app: Application) => {
     setSelectedApplication(app)
+    setApplicationNotes([])
+    setApplicationInterviews([])
+    setApplicationActivities([])
+    setApplicationAttachments([])
+    setNewNote("")
     setIsViewDialogOpen(true)
+    fetchApplicationDetails(app.id)
+  }
+
+  // Add note to application
+  const handleAddNote = async () => {
+    if (!selectedApplication || !newNote.trim()) return
+
+    setIsAddingNote(true)
+    try {
+      const res = await fetch(`/api/applications/${selectedApplication.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newNote, is_private: false }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setApplicationNotes([data.note, ...applicationNotes])
+        setNewNote("")
+        toast.success("Note added successfully")
+      } else {
+        toast.error("Failed to add note")
+      }
+    } catch {
+      toast.error("Failed to add note")
+    } finally {
+      setIsAddingNote(false)
+    }
   }
 
   // NOTES
@@ -456,7 +595,11 @@ export function ApplicationsClient({
                 Add Notes
               </DropdownMenuItem>
               {app.candidates?.resume_url && (
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    window.open(app.candidates!.resume_url!, "_blank")
+                  }}
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Download Resume
                 </DropdownMenuItem>
@@ -896,93 +1039,366 @@ export function ApplicationsClient({
         </Card>
       )}
 
-      {/* View Dialog */}
+      {/* View Dialog - Enhanced with Tabs */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Application Details</DialogTitle>
           </DialogHeader>
           {selectedApplication && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-xl font-bold text-primary">
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Candidate Header */}
+              <div className="flex items-center gap-4 pb-4 flex-shrink-0">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-lg font-bold text-primary">
                     {selectedApplication.candidates?.first_name?.[0] || "?"}
                     {selectedApplication.candidates?.last_name?.[0] || "?"}
                   </span>
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">
                     {selectedApplication.candidates?.first_name}{" "}
                     {selectedApplication.candidates?.last_name}
                   </h3>
-                  <p className="text-muted-foreground">
-                    {selectedApplication.candidates?.current_title || "No title"}
+                  <p className="text-sm text-muted-foreground">
+                    {selectedApplication.candidates?.current_title || "No title"} • {selectedApplication.jobs?.title}
                   </p>
-                  <Badge
-                    style={{
-                      backgroundColor: `${getStageColor(selectedApplication)}20`,
-                      color: getStageColor(selectedApplication),
-                      borderColor: getStageColor(selectedApplication)
-                    }}
-                    variant="outline"
-                    className="mt-1"
-                  >
-                    {getStageName(selectedApplication)}
-                  </Badge>
                 </div>
+                <Badge
+                  style={{
+                    backgroundColor: `${getStageColor(selectedApplication)}20`,
+                    color: getStageColor(selectedApplication),
+                    borderColor: getStageColor(selectedApplication)
+                  }}
+                  variant="outline"
+                >
+                  {getStageName(selectedApplication)}
+                </Badge>
               </div>
 
-              <Separator />
+              {/* Tabs */}
+              <Tabs defaultValue="details" className="flex-1 flex flex-col overflow-hidden">
+                <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
+                  <TabsTrigger value="details" className="text-xs">
+                    <User className="h-3.5 w-3.5 mr-1" />
+                    Details
+                  </TabsTrigger>
+                  <TabsTrigger value="attachments" className="text-xs">
+                    <Paperclip className="h-3.5 w-3.5 mr-1" />
+                    Attachments
+                  </TabsTrigger>
+                  <TabsTrigger value="notes" className="text-xs">
+                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                    Notes
+                  </TabsTrigger>
+                  <TabsTrigger value="events" className="text-xs">
+                    <Calendar className="h-3.5 w-3.5 mr-1" />
+                    Events
+                  </TabsTrigger>
+                  <TabsTrigger value="timeline" className="text-xs">
+                    <Clock className="h-3.5 w-3.5 mr-1" />
+                    Timeline
+                  </TabsTrigger>
+                </TabsList>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Job:</span>
-                  <span>{selectedApplication.jobs?.title || "N/A"}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Email:</span>
-                  <span>{selectedApplication.candidates?.email}</span>
-                </div>
-                {selectedApplication.candidates?.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Phone:</span>
-                    <span>{selectedApplication.candidates.phone}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Applied:</span>
-                  <span>{formatDate(selectedApplication.applied_at || selectedApplication.created_at)}</span>
-                </div>
-              </div>
+                <ScrollArea className="flex-1 mt-4">
+                  {/* Details Tab */}
+                  <TabsContent value="details" className="mt-0 space-y-4">
+                    <div className="grid gap-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Email:</span>
+                        <a href={`mailto:${selectedApplication.candidates?.email}`} className="text-primary hover:underline">
+                          {selectedApplication.candidates?.email}
+                        </a>
+                      </div>
+                      {selectedApplication.candidates?.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">Phone:</span>
+                          <a href={`tel:${selectedApplication.candidates.phone}`} className="text-primary hover:underline">
+                            {selectedApplication.candidates.phone}
+                          </a>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-sm">
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Job:</span>
+                        <span>{selectedApplication.jobs?.title || "N/A"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">Applied:</span>
+                        <span>{formatDate(selectedApplication.applied_at || selectedApplication.created_at)}</span>
+                      </div>
+                      {(selectedApplication.ai_match_score !== null || selectedApplication.manual_score !== null) && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">Match Score:</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full"
+                                style={{ width: `${selectedApplication.ai_match_score || selectedApplication.manual_score || 0}%` }}
+                              />
+                            </div>
+                            <span className="font-medium">{selectedApplication.ai_match_score || selectedApplication.manual_score}%</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {selectedApplication.candidates?.resume_url && (
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(selectedApplication.candidates!.resume_url!, "_blank")}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Resume
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
 
-              {selectedApplication.notes && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="font-medium mb-2">Notes</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {selectedApplication.notes}
-                    </p>
-                  </div>
-                </>
-              )}
+                  {/* Attachments Tab */}
+                  <TabsContent value="attachments" className="mt-0">
+                    {isLoadingDetails ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : applicationAttachments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Paperclip className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-sm text-muted-foreground">No attachments yet</p>
+                        {selectedApplication.candidates?.resume_url && (
+                          <div className="mt-4">
+                            <p className="text-xs text-muted-foreground mb-2">Resume available from candidate profile</p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(selectedApplication.candidates!.resume_url!, "_blank")}
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Download Resume
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedApplication.candidates?.resume_url && (
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-blue-500" />
+                              <div>
+                                <p className="text-sm font-medium">Resume</p>
+                                <p className="text-xs text-muted-foreground">From candidate profile</p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(selectedApplication.candidates!.resume_url!, "_blank")}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                        {applicationAttachments.map((attachment) => (
+                          <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm font-medium">{attachment.file_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {attachment.file_type || "Document"} • {formatDate(attachment.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(attachment.file_url, "_blank")}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Notes Tab */}
+                  <TabsContent value="notes" className="mt-0 space-y-4">
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Add a note about this candidate..."
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          onClick={handleAddNote}
+                          disabled={isAddingNote || !newNote.trim()}
+                        >
+                          {isAddingNote && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Add Note
+                        </Button>
+                      </div>
+                    </div>
+                    <Separator />
+                    {isLoadingDetails ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : applicationNotes.length === 0 ? (
+                      <div className="text-center py-8">
+                        <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-sm text-muted-foreground">No notes yet</p>
+                        <p className="text-xs text-muted-foreground mt-1">Add a note to track important information</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {applicationNotes.map((note) => (
+                          <div key={note.id} className="p-3 border rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <span className="text-xs font-medium text-primary">
+                                    {note.profiles?.first_name?.[0] || "U"}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium">
+                                  {note.profiles?.first_name} {note.profiles?.last_name}
+                                </span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(note.created_at)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Events Tab */}
+                  <TabsContent value="events" className="mt-0 space-y-4">
+                    {isLoadingDetails ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : applicationInterviews.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-sm text-muted-foreground">No interviews scheduled</p>
+                        <p className="text-xs text-muted-foreground mt-1">Schedule an interview from the candidate pipeline</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {applicationInterviews.map((interview) => (
+                          <div key={interview.id} className="p-3 border rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                {interview.interview_type === "video" ? (
+                                  <Video className="h-4 w-4 text-blue-500" />
+                                ) : interview.interview_type === "in_person" ? (
+                                  <MapPin className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Phone className="h-4 w-4 text-purple-500" />
+                                )}
+                                <span className="font-medium text-sm">{interview.title}</span>
+                              </div>
+                              <Badge variant={
+                                interview.status === "completed" ? "default" :
+                                interview.status === "cancelled" ? "destructive" :
+                                "secondary"
+                              }>
+                                {interview.status}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-3.5 w-3.5" />
+                                <span>
+                                  {new Date(interview.scheduled_at).toLocaleDateString("en-US", {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                                <span className="text-muted-foreground">({interview.duration_minutes} min)</span>
+                              </div>
+                              {interview.location && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  <span>{interview.location}</span>
+                                </div>
+                              )}
+                              {interview.meeting_link && (
+                                <div className="flex items-center gap-2">
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  <a href={interview.meeting_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                    Join Meeting
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Timeline Tab */}
+                  <TabsContent value="timeline" className="mt-0">
+                    {isLoadingDetails ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : applicationActivities.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                        <p className="text-sm text-muted-foreground">No activity recorded</p>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
+                        <div className="space-y-4">
+                          {applicationActivities.map((activity, index) => (
+                            <div key={activity.id} className="relative pl-10">
+                              <div className="absolute left-2.5 w-3 h-3 rounded-full bg-primary border-2 border-background" />
+                              <div className="text-sm">
+                                <p className="font-medium">{activity.description || activity.activity_type}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {activity.profiles?.first_name && `${activity.profiles.first_name} ${activity.profiles.last_name} • `}
+                                  {new Date(activity.created_at).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                </ScrollArea>
+              </Tabs>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0 border-t pt-4">
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            {selectedApplication?.candidates?.resume_url && (
-              <Button>
-                <Download className="mr-2 h-4 w-4" />
-                Download Resume
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
