@@ -263,6 +263,24 @@ export function ScorecardForm({
       }
 
       toast.success("Scorecard submitted successfully")
+
+      // Send notification about scorecard submission
+      fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "scorecard_submitted",
+          orgId: "", // API will get from interview
+          data: {
+            interviewId: interviewId,
+            score: calculateOverallScore(),
+            recommendation: recommendation,
+          },
+        }),
+      }).catch((err) => {
+        console.error("Failed to send scorecard notification:", err)
+      })
+
       onSubmit?.()
     } catch (error: any) {
       toast.error(error.message || "Failed to submit scorecard")

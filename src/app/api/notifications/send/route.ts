@@ -23,21 +23,61 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { eventType, orgId, data } = body
+    const { eventType, data } = body
+    let { orgId } = body
 
-    if (!eventType || !orgId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!eventType) {
+      return NextResponse.json({ error: "Missing eventType" }, { status: 400 })
     }
 
-    // Verify user belongs to organization
+    // Get user's org_id from profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("org_id")
       .eq("id", user.id)
       .single()
 
-    if (!profile || profile.org_id !== orgId) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+    // For events that need org lookup (from candidate portal or scorecard form)
+    const eventsNeedingOrgLookup = ["offer_accepted", "offer_rejected", "scorecard_submitted"]
+
+    if (!orgId && eventsNeedingOrgLookup.includes(eventType)) {
+      // Get org from the related entity
+      if (eventType === "offer_accepted" || eventType === "offer_rejected") {
+        if (data.offerId) {
+          const { data: offer } = await serviceClient
+            .from("offers")
+            .select("applications(jobs(org_id))")
+            .eq("id", data.offerId)
+            .single()
+
+          orgId = (offer?.applications as any)?.jobs?.org_id
+        }
+      } else if (eventType === "scorecard_submitted" && data.interviewId) {
+        const { data: interview } = await serviceClient
+          .from("interviews")
+          .select("applications(jobs(org_id))")
+          .eq("id", data.interviewId)
+          .single()
+
+        orgId = (interview?.applications as any)?.jobs?.org_id
+      }
+    }
+
+    // Fall back to user's org if still no orgId
+    if (!orgId && profile?.org_id) {
+      orgId = profile.org_id
+    }
+
+    if (!orgId) {
+      return NextResponse.json({ error: "Could not determine organization" }, { status: 400 })
+    }
+
+    // For org-specific events, verify user belongs to org (skip for candidate portal events)
+    const candidatePortalEvents = ["offer_accepted", "offer_rejected"]
+    if (!candidatePortalEvents.includes(eventType)) {
+      if (!profile || profile.org_id !== orgId) {
+        return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+      }
     }
 
     let result
@@ -144,6 +184,32 @@ export async function POST(request: NextRequest) {
 
       case "offer_accepted":
       case "offer_rejected": {
+        // Get offer details if not provided
+        let candidateName = data.candidateName
+        let jobTitle = data.jobTitle
+        let applicationId = data.applicationId
+
+        if (data.offerId && (!candidateName || !jobTitle)) {
+          const { data: offerData } = await serviceClient
+            .from("offers")
+            .select(`
+              job_title,
+              application_id,
+              applications(candidates(first_name, last_name))
+            `)
+            .eq("id", data.offerId)
+            .single()
+
+          if (offerData) {
+            jobTitle = jobTitle || offerData.job_title
+            applicationId = applicationId || offerData.application_id
+            const candidate = (offerData.applications as any)?.candidates
+            if (candidate && !candidateName) {
+              candidateName = `${candidate.first_name} ${candidate.last_name}`
+            }
+          }
+        }
+
         // Get org admins to notify
         const { data: admins } = await serviceClient
           .from("user_roles")
@@ -156,10 +222,10 @@ export async function POST(request: NextRequest) {
           orgId,
           recipients: admins?.map(a => ({ userId: a.user_id })) || [],
           variables: {
-            candidate_name: data.candidateName,
-            job_title: data.jobTitle,
+            candidate_name: candidateName || "A candidate",
+            job_title: jobTitle || "the position",
           },
-          applicationId: data.applicationId,
+          applicationId: applicationId,
         })
         break
       }
@@ -206,6 +272,48 @@ export async function POST(request: NextRequest) {
       }
 
       case "scorecard_submitted": {
+        // Get interview and candidate details
+        let candidateName = data.candidateName
+        let jobTitle = data.jobTitle
+        let applicationId = data.applicationId
+        let interviewerName = data.interviewerName
+
+        if (data.interviewId && (!candidateName || !jobTitle)) {
+          const { data: interviewData } = await serviceClient
+            .from("interviews")
+            .select(`
+              applications(
+                id,
+                candidates(first_name, last_name),
+                jobs(title)
+              )
+            `)
+            .eq("id", data.interviewId)
+            .single()
+
+          if (interviewData?.applications) {
+            const app = interviewData.applications as any
+            applicationId = applicationId || app.id
+            if (app.candidates && !candidateName) {
+              candidateName = `${app.candidates.first_name} ${app.candidates.last_name}`
+            }
+            if (app.jobs && !jobTitle) {
+              jobTitle = app.jobs.title
+            }
+          }
+        }
+
+        // Get interviewer name if not provided
+        if (!interviewerName && user) {
+          const { data: interviewer } = await serviceClient
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .single()
+
+          interviewerName = interviewer?.full_name || "An interviewer"
+        }
+
         // Notify hiring team
         const { data: team } = await serviceClient
           .from("user_roles")
@@ -218,13 +326,13 @@ export async function POST(request: NextRequest) {
           orgId,
           recipients: team?.map(t => ({ userId: t.user_id })) || [],
           variables: {
-            candidate_name: data.candidateName,
-            job_title: data.jobTitle,
-            interviewer_name: data.interviewerName,
-            score: data.score,
+            candidate_name: candidateName || "A candidate",
+            job_title: jobTitle || "the position",
+            interviewer_name: interviewerName || "An interviewer",
+            score: String(data.score || "N/A"),
           },
           interviewId: data.interviewId,
-          applicationId: data.applicationId,
+          applicationId: applicationId,
         })
         break
       }
