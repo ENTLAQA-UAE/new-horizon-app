@@ -46,13 +46,18 @@ interface EmailConfig {
   org_id: string
   email_provider: EmailProvider
   api_key_encrypted?: string
+  sendgrid_api_key_encrypted?: string
+  mailgun_api_key_encrypted?: string
   from_email: string
   from_name: string
   reply_to_email?: string
   smtp_host?: string
   smtp_port?: number
   smtp_username?: string
+  smtp_password_encrypted?: string
   smtp_encryption?: string
+  mailgun_domain?: string
+  mailgun_region?: string
   imap_enabled?: boolean
   imap_host?: string
   imap_port?: number
@@ -68,6 +73,7 @@ interface EmailConfig {
   dmarc_verified?: boolean
   is_enabled?: boolean
   is_verified?: boolean
+  is_configured?: boolean
 }
 
 interface DomainRecord {
@@ -90,6 +96,7 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
   const [activeTab, setActiveTab] = useState('provider')
   const [loading, setLoading] = useState(false)
   const [testingConnection, setTestingConnection] = useState(false)
+  const [sendingTestEmail, setSendingTestEmail] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Form state
@@ -215,6 +222,32 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
       showMessage('error', err instanceof Error ? err.message : 'Connection test failed')
     } finally {
       setTestingConnection(false)
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    setSendingTestEmail(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch('/api/org/integrations/email/send-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send test email')
+      }
+
+      showMessage('success', data.message || 'Test email sent successfully! Check your inbox.')
+      router.refresh()
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to send test email')
+    } finally {
+      setSendingTestEmail(false)
     }
   }
 
@@ -593,7 +626,7 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button onClick={handleSaveProvider} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Settings
@@ -601,6 +634,16 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
                 <Button variant="outline" onClick={handleTestConnection} disabled={testingConnection}>
                   {testingConnection && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Test Connection
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleSendTestEmail}
+                  disabled={sendingTestEmail || !initialConfig}
+                  title={!initialConfig ? 'Save settings first' : 'Send a test email to verify configuration'}
+                >
+                  {sendingTestEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Test Email
                 </Button>
               </div>
             </CardContent>
