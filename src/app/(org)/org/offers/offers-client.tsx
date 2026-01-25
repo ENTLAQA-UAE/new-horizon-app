@@ -341,6 +341,9 @@ export function OffersClient({
 
       if (error) throw new Error(error.message)
 
+      // Find the offer to get candidate details
+      const offer = offers.find(o => o.id === offerId)
+
       setOffers(
         offers.map((o) =>
           o.id === offerId
@@ -348,6 +351,30 @@ export function OffersClient({
             : o
         )
       )
+
+      // Send notification to candidate
+      if (offer?.applications?.candidates) {
+        const candidate = offer.applications.candidates
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "offer_sent",
+            orgId: organizationId,
+            data: {
+              candidateName: `${candidate.first_name} ${candidate.last_name}`,
+              candidateEmail: candidate.email,
+              jobTitle: offer.job_title,
+              salary: `${offer.salary_currency} ${offer.salary_amount.toLocaleString()}/${offer.salary_period}`,
+              startDate: format(new Date(offer.start_date), "MMMM d, yyyy"),
+              applicationId: offer.application_id,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send offer notification:", err)
+        })
+      }
+
       toast.success("Offer sent successfully")
       router.refresh()
     } catch {

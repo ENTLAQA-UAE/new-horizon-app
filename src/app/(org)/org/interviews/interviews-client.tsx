@@ -504,6 +504,31 @@ export function InterviewsClient({
         toast.success("Interview scheduled successfully")
       }
 
+      // Send notification to candidate and interviewers
+      const [hours, mins] = formData.scheduled_time.split(":").map(Number)
+      const notificationDateTime = new Date(formData.scheduled_date)
+      notificationDateTime.setHours(hours, mins, 0, 0)
+
+      fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: "interview_scheduled",
+          orgId: organizationId,
+          data: {
+            applicationId: formData.application_id,
+            interviewId: data.id,
+            interviewDate: format(notificationDateTime, "EEEE, MMMM d, yyyy"),
+            interviewTime: format(notificationDateTime, "h:mm a"),
+            interviewType: formData.interview_type,
+            meetingLink: meetingLink || null,
+            interviewerIds: formData.interviewer_ids,
+          },
+        }),
+      }).catch((err) => {
+        console.error("Failed to send interview notification:", err)
+      })
+
       setInterviews([data as unknown as Interview, ...interviews])
       setIsCreateDialogOpen(false)
       resetForm()
@@ -542,6 +567,24 @@ export function InterviewsClient({
           i.id === interviewId ? { ...i, status: newStatus, ...updateData } : i
         )
       )
+
+      // Send notification if interview was cancelled
+      if (newStatus === "cancelled") {
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "interview_cancelled",
+            orgId: organizationId,
+            data: {
+              interviewId,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send cancellation notification:", err)
+        })
+      }
+
       toast.success(`Interview marked as ${newStatus}`)
       router.refresh()
     } catch {
