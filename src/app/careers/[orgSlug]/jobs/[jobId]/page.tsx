@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Note: This file uses field names and tables that don't match the database schema
 import { notFound } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { JobDetailClient } from "./job-detail-client"
 
 interface JobDetailPageProps {
@@ -10,7 +10,7 @@ interface JobDetailPageProps {
 
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { orgSlug, jobId } = await params
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   // Get organization by slug
   const { data: organization } = await supabase
