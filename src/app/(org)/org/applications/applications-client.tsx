@@ -938,7 +938,6 @@ export function ApplicationsClient({
                 <TableHead>Stage</TableHead>
                 <TableHead>Applied</TableHead>
                 <TableHead>Score</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -958,7 +957,7 @@ export function ApplicationsClient({
                   const jobStages = job?.pipelines?.pipeline_stages || []
 
                   return (
-                    <TableRow key={app.id}>
+                    <TableRow key={app.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openViewDialog(app)}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -967,7 +966,7 @@ export function ApplicationsClient({
                             </span>
                           </div>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium text-primary hover:underline">
                               {app.candidates?.first_name} {app.candidates?.last_name}
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -1011,59 +1010,6 @@ export function ApplicationsClient({
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onSelect={(e) => {
-                                e.preventDefault()
-                                openViewDialog(app)
-                              }}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={(e) => {
-                                e.preventDefault()
-                                openNotesDialog(app)
-                              }}
-                            >
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Add Notes
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {jobStages
-                              .filter((s) => s.id !== app.stage_id)
-                              .slice(0, 4)
-                              .map((stage) => (
-                                <DropdownMenuItem
-                                  key={stage.id}
-                                  onSelect={() => handleStageChange(app.id, stage.id)}
-                                >
-                                  <ChevronRight className="mr-2 h-4 w-4" />
-                                  Move to {stage.name}
-                                </DropdownMenuItem>
-                              ))}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onSelect={(e) => {
-                                e.preventDefault()
-                                openDeleteDialog(app)
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
                     </TableRow>
                   )
                 })
@@ -1096,15 +1042,55 @@ export function ApplicationsClient({
                       {selectedApplication.candidates?.current_title || "No title"} • {selectedApplication.jobs?.title}
                     </p>
                     <div className="flex items-center gap-3 mt-2">
-                      <Badge
-                        className="px-3 py-1"
-                        style={{
-                          backgroundColor: getStageColor(selectedApplication),
-                          color: "white",
+                      {/* Stage dropdown */}
+                      <Select
+                        value={selectedApplication.stage_id || ""}
+                        onValueChange={(newStageId) => {
+                          handleStageChange(selectedApplication.id, newStageId)
+                          setSelectedApplication({
+                            ...selectedApplication,
+                            stage_id: newStageId,
+                          })
                         }}
                       >
-                        {getStageName(selectedApplication)}
-                      </Badge>
+                        <SelectTrigger
+                          className="w-auto h-8 px-3 text-xs font-medium border-0"
+                          style={{
+                            backgroundColor: getStageColor(selectedApplication),
+                            color: "white",
+                          }}
+                        >
+                          <SelectValue>{getStageName(selectedApplication)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(() => {
+                            const job = jobsWithPipelines.find(j => j.id === selectedApplication.job_id)
+                            return job?.pipelines?.pipeline_stages?.map((stage) => (
+                              <SelectItem key={stage.id} value={stage.id}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-2 h-2 rounded-full"
+                                    style={{ backgroundColor: stage.color }}
+                                  />
+                                  {stage.name}
+                                </div>
+                              </SelectItem>
+                            ))
+                          })()}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5"
+                        onClick={() => {
+                          // TODO: Open schedule interview dialog
+                          toast.info("Schedule interview feature coming soon")
+                        }}
+                      >
+                        <Calendar className="h-3.5 w-3.5" />
+                        Schedule Interview
+                      </Button>
                       <span className="text-xs text-muted-foreground">
                         Applied {formatDate(selectedApplication.applied_at || selectedApplication.created_at)}
                       </span>
