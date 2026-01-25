@@ -865,6 +865,427 @@ function getFallbackEmailTemplate(
         </p>
       `, `Interview cancelled for {{job_title}}`),
     },
+
+    // User Management
+    user_joined: {
+      subject: `Welcome to ${orgName}!`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Welcome to the Team!
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{receiver_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Your account has been successfully created and you're now part of <strong>${orgName}</strong>.
+        </p>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          You can now access the platform and start collaborating with your team.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Go to Dashboard
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Welcome to ${orgName}!`),
+    },
+
+    role_changed: {
+      subject: `Your role at ${orgName} has been updated`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Role Updated
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{receiver_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Your role at <strong>${orgName}</strong> has been updated to <strong>{{role}}</strong>.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          This change may affect your permissions and access to certain features. If you have any questions, please contact your administrator.
+        </p>
+      `, `Your role has been updated`),
+    },
+
+    // Candidate Stage Notifications
+    candidate_stage_moved: {
+      subject: `Update on your application for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Application Update
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We wanted to let you know that your application for the <strong>{{job_title}}</strong> position at <strong>${orgName}</strong> has progressed to the next stage: <strong>{{stage_name}}</strong>.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Our team will be in touch with you soon regarding next steps. Thank you for your patience!
+        </p>
+      `, `Application update for {{job_title}}`),
+    },
+
+    candidate_disqualified: {
+      subject: `Update on your application for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Application Update
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Thank you for your interest in the <strong>{{job_title}}</strong> position at <strong>${orgName}</strong>.
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          After reviewing your application, we've decided not to move forward at this time. We encourage you to apply for other positions that match your skills and experience.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We wish you the best in your job search.
+        </p>
+      `, `Application update at ${orgName}`),
+    },
+
+    // Interview Notifications
+    interview_reminder: {
+      subject: `Reminder: Interview for {{job_title}} tomorrow`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Interview Reminder
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          This is a friendly reminder about your upcoming interview for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #111827; font-weight: 600;">Interview Details:</p>
+          <p style="margin: 0 0 4px; color: #4b5563;">📅 Date: <strong>{{interview_date}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">🕐 Time: <strong>{{interview_time}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">📍 Type: <strong>{{interview_type}}</strong></p>
+        </div>
+        ${variables.meeting_link ? `
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{meeting_link}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Join Meeting
+              </a>
+            </td>
+          </tr>
+        </table>
+        ` : ""}
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We look forward to speaking with you!
+        </p>
+      `, `Interview reminder for {{job_title}}`),
+    },
+
+    interview_rescheduled: {
+      subject: `Interview rescheduled for {{job_title}} at ${orgName}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Interview Rescheduled
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{candidate_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Your interview for the <strong>{{job_title}}</strong> position has been rescheduled.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #111827; font-weight: 600;">New Interview Details:</p>
+          <p style="margin: 0 0 4px; color: #4b5563;">📅 Date: <strong>{{interview_date}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">🕐 Time: <strong>{{interview_time}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">📍 Type: <strong>{{interview_type}}</strong></p>
+        </div>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We apologize for any inconvenience. We look forward to speaking with you!
+        </p>
+      `, `Interview rescheduled for {{job_title}}`),
+    },
+
+    scorecard_submitted: {
+      subject: `Scorecard submitted for {{candidate_name}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Scorecard Submitted
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          <strong>{{interviewer_name}}</strong> has submitted a scorecard for <strong>{{candidate_name}}</strong>.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #4b5563;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">💼 Position: <strong>{{job_title}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">⭐ Score: <strong>{{score}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Scorecard
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Scorecard submitted for {{candidate_name}}`),
+    },
+
+    scorecard_reminder: {
+      subject: `Reminder: Submit scorecard for {{candidate_name}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Scorecard Reminder
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Hi {{receiver_name}},
+        </p>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Please remember to submit your scorecard for <strong>{{candidate_name}}</strong>'s interview for the <strong>{{job_title}}</strong> position.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Submit Scorecard
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Scorecard reminder for {{candidate_name}}`),
+    },
+
+    // Offer Notifications
+    offer_created: {
+      subject: `New offer created for {{candidate_name}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Offer Created
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          A new offer has been created for <strong>{{candidate_name}}</strong> for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #4b5563;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">💼 Position: <strong>{{job_title}}</strong></p>
+          ${variables.salary ? `<p style="margin: 0; color: #4b5563;">💰 Salary: <strong>{{salary}}</strong></p>` : ""}
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Review Offer
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Offer created for {{candidate_name}}`),
+    },
+
+    offer_accepted: {
+      subject: `Great news! {{candidate_name}} accepted the offer for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Offer Accepted! 🎉
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Great news! <strong>{{candidate_name}}</strong> has accepted the offer for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #dcfce7; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #166534;">✅ Offer Status: <strong>Accepted</strong></p>
+          <p style="margin: 0 0 4px; color: #166534;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0; color: #166534;">💼 Position: <strong>{{job_title}}</strong></p>
+        </div>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Please proceed with the onboarding process.
+        </p>
+      `, `Offer accepted by {{candidate_name}}`),
+    },
+
+    offer_rejected: {
+      subject: `{{candidate_name}} declined the offer for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Offer Declined
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Unfortunately, <strong>{{candidate_name}}</strong> has declined the offer for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #991b1b;">❌ Offer Status: <strong>Declined</strong></p>
+          <p style="margin: 0 0 4px; color: #991b1b;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0; color: #991b1b;">💼 Position: <strong>{{job_title}}</strong></p>
+        </div>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          You may want to consider other candidates for this position.
+        </p>
+      `, `Offer declined by {{candidate_name}}`),
+    },
+
+    offer_expired: {
+      subject: `Offer expired for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Offer Expired
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          The offer for <strong>{{candidate_name}}</strong> for the <strong>{{job_title}}</strong> position has expired.
+        </p>
+        <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #92400e;">⏰ Offer Status: <strong>Expired</strong></p>
+          <p style="margin: 0 0 4px; color: #92400e;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0; color: #92400e;">💼 Position: <strong>{{job_title}}</strong></p>
+        </div>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          You can extend the offer or consider other candidates.
+        </p>
+      `, `Offer expired for {{job_title}}`),
+    },
+
+    // Job Notifications
+    job_published: {
+      subject: `New job published: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          New Job Published
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          A new job has been published and is now accepting applications.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #111827; font-weight: 600;">💼 {{job_title}}</p>
+          ${variables.department ? `<p style="margin: 0 0 4px; color: #4b5563;">🏢 Department: {{department}}</p>` : ""}
+          ${variables.location ? `<p style="margin: 0; color: #4b5563;">📍 Location: {{location}}</p>` : ""}
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Job
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `New job published: {{job_title}}`),
+    },
+
+    job_closed: {
+      subject: `Job closed: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Job Closed
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          The <strong>{{job_title}}</strong> position has been closed and is no longer accepting applications.
+        </p>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Any pending applications will need to be processed or archived.
+        </p>
+      `, `Job closed: {{job_title}}`),
+    },
+
+    job_expiring: {
+      subject: `Job expiring soon: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Job Expiring Soon
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          The <strong>{{job_title}}</strong> position will expire on <strong>{{expiry_date}}</strong>.
+        </p>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          If you'd like to keep this job open, please extend the posting before it expires.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Manage Job
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Job expiring: {{job_title}}`),
+    },
+
+    // Requisition Notifications
+    requisition_created: {
+      subject: `New requisition created: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          New Requisition Created
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          A new requisition has been created for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #4b5563;">💼 Position: <strong>{{job_title}}</strong></p>
+          ${variables.department ? `<p style="margin: 0; color: #4b5563;">🏢 Department: <strong>{{department}}</strong></p>` : ""}
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Review Requisition
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `New requisition: {{job_title}}`),
+    },
+
+    requisition_approved: {
+      subject: `Requisition approved: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Requisition Approved ✅
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Your requisition for the <strong>{{job_title}}</strong> position has been approved.
+        </p>
+        <div style="background-color: #dcfce7; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0; color: #166534;">✅ Status: <strong>Approved</strong></p>
+        </div>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          You can now proceed to publish the job posting.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Create Job Posting
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Requisition approved: {{job_title}}`),
+    },
+
+    requisition_rejected: {
+      subject: `Requisition rejected: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Requisition Not Approved
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Your requisition for the <strong>{{job_title}}</strong> position has not been approved.
+        </p>
+        <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0; color: #991b1b;">❌ Status: <strong>Rejected</strong></p>
+          ${variables.reason ? `<p style="margin: 8px 0 0; color: #991b1b;">Reason: {{reason}}</p>` : ""}
+        </div>
+        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Please contact your manager for more details or to discuss next steps.
+        </p>
+      `, `Requisition rejected: {{job_title}}`),
+    },
   }
 
   return templates[eventCode] || null
