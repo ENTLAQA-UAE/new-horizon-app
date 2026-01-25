@@ -1,98 +1,117 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist (user_integrations)
+/**
+ * Microsoft Teams Meetings API
+ * Uses organization-level credentials from organization_integrations
+ */
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import {
-  createTeamsMeeting,
-  getTeamsMeeting,
-  updateTeamsMeeting,
-  deleteTeamsMeeting,
-  refreshMicrosoftToken,
-  TeamsMeetingInput,
-} from "@/lib/microsoft/graph"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
+import { decryptCredentials } from "@/lib/encryption"
 
-// Helper to get valid Microsoft access token
-async function getValidMicrosoftToken(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string
-) {
-  const { data: integration, error } = await supabase
-    .from("user_integrations")
-    .select("*")
-    .eq("user_id", userId)
+interface TeamsMeetingInput {
+  subject: string
+  startDateTime: string
+  endDateTime: string
+  isOnlineMeeting?: boolean
+  attendees?: { email: string; name?: string }[]
+}
+
+// Helper to get valid Microsoft access token using org credentials
+async function getOrgMicrosoftToken(orgId: string) {
+  const serviceClient = createServiceClient()
+
+  const { data: integration, error } = await serviceClient
+    .from("organization_integrations")
+    .select("credentials_encrypted, provider_metadata, is_enabled, is_verified")
+    .eq("org_id", orgId)
     .eq("provider", "microsoft")
     .single()
 
   if (error || !integration) {
-    return { error: "Microsoft not connected. Please connect your Microsoft account first." }
+    return { error: "Microsoft Teams integration not configured for this organization" }
+  }
+
+  if (!integration.is_enabled) {
+    return { error: "Microsoft Teams integration is disabled" }
+  }
+
+  const metadata = (integration.provider_metadata as Record<string, any>) || {}
+
+  if (!metadata.access_token) {
+    return { error: "Microsoft account not connected. Please complete OAuth setup in Settings → Integrations." }
   }
 
   // Check if token is expired
-  const expiresAt = new Date(integration.expires_at)
-  const now = new Date()
+  const expiryDate = metadata.expiry_date
+  const now = Date.now()
 
-  if (expiresAt <= now) {
+  if (expiryDate && expiryDate <= now && metadata.refresh_token) {
     // Token expired, refresh it
-    try {
-      const newTokens = await refreshMicrosoftToken(integration.refresh_token)
-      const newExpiresAt = new Date(Date.now() + newTokens.expires_in * 1000)
+    let credentials: Record<string, string> | null = null
 
-      await supabase
-        .from("user_integrations")
+    if (integration.credentials_encrypted) {
+      try {
+        credentials = decryptCredentials(integration.credentials_encrypted)
+      } catch (err) {
+        console.error("Error decrypting Microsoft credentials:", err)
+        return { error: "Failed to decrypt Microsoft credentials" }
+      }
+    }
+
+    if (!credentials) {
+      return { error: "Microsoft credentials not configured" }
+    }
+
+    try {
+      const tenantId = credentials.tenant_id || "common"
+
+      const response = await fetch(
+        `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: credentials.client_id,
+            client_secret: credentials.client_secret,
+            refresh_token: metadata.refresh_token,
+            grant_type: "refresh_token",
+            scope: "https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/OnlineMeetings.ReadWrite offline_access",
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        return { error: "Microsoft token expired. Please reconnect Microsoft in Settings → Integrations." }
+      }
+
+      const newTokens = await response.json()
+      const newExpiryDate = Date.now() + newTokens.expires_in * 1000
+
+      // Update stored tokens
+      await serviceClient
+        .from("organization_integrations")
         .update({
-          access_token: newTokens.access_token,
-          refresh_token: newTokens.refresh_token,
-          expires_at: newExpiresAt.toISOString(),
+          provider_metadata: {
+            ...metadata,
+            access_token: newTokens.access_token,
+            refresh_token: newTokens.refresh_token || metadata.refresh_token,
+            expiry_date: newExpiryDate,
+          },
           updated_at: new Date().toISOString(),
         })
-        .eq("id", integration.id)
+        .eq("org_id", orgId)
+        .eq("provider", "microsoft")
 
       return { accessToken: newTokens.access_token }
-    } catch (refreshError) {
-      console.error("Error refreshing Microsoft token:", refreshError)
-      return { error: "Microsoft token expired. Please reconnect your Microsoft account." }
+    } catch (err) {
+      console.error("Error refreshing Microsoft token:", err)
+      return { error: "Microsoft token expired. Please reconnect Microsoft in Settings → Integrations." }
     }
   }
 
-  return { accessToken: integration.access_token }
+  return { accessToken: metadata.access_token }
 }
 
-// GET - Get a specific meeting
-export async function GET(request: NextRequest) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const searchParams = request.nextUrl.searchParams
-  const meetingId = searchParams.get("meetingId")
-
-  if (!meetingId) {
-    return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 })
-  }
-
-  const tokenResult = await getValidMicrosoftToken(supabase, user.id)
-  if ("error" in tokenResult) {
-    return NextResponse.json({ error: tokenResult.error }, { status: 400 })
-  }
-
-  try {
-    const meeting = await getTeamsMeeting(tokenResult.accessToken, meetingId)
-    return NextResponse.json(meeting)
-  } catch (err) {
-    console.error("Error fetching Teams meeting:", err)
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to fetch meeting" },
-      { status: 500 }
-    )
-  }
-}
-
-// POST - Create a new Teams meeting
+// POST - Create a new Teams meeting (via calendar event)
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const {
@@ -103,7 +122,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const tokenResult = await getValidMicrosoftToken(supabase, user.id)
+  // Get user's org_id
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.org_id) {
+    return NextResponse.json({ error: "User not associated with an organization" }, { status: 400 })
+  }
+
+  const tokenResult = await getOrgMicrosoftToken(profile.org_id)
+
   if ("error" in tokenResult) {
     return NextResponse.json({ error: tokenResult.error }, { status: 400 })
   }
@@ -118,12 +149,116 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Start and end times are required" }, { status: 400 })
     }
 
-    const meeting = await createTeamsMeeting(tokenResult.accessToken, body)
-    return NextResponse.json(meeting, { status: 201 })
+    // Create calendar event with online meeting
+    const eventBody = {
+      subject: body.subject,
+      start: {
+        dateTime: body.startDateTime,
+        timeZone: "Asia/Riyadh",
+      },
+      end: {
+        dateTime: body.endDateTime,
+        timeZone: "Asia/Riyadh",
+      },
+      isOnlineMeeting: body.isOnlineMeeting !== false,
+      onlineMeetingProvider: "teamsForBusiness",
+      attendees: body.attendees?.map((a) => ({
+        emailAddress: {
+          address: a.email,
+          name: a.name,
+        },
+        type: "required",
+      })) || [],
+    }
+
+    const response = await fetch("https://graph.microsoft.com/v1.0/me/events", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenResult.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(eventBody),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error("Microsoft Graph API error:", errorData)
+      return NextResponse.json(
+        { error: errorData.error?.message || "Failed to create Teams meeting" },
+        { status: response.status }
+      )
+    }
+
+    const event = await response.json()
+
+    return NextResponse.json({
+      id: event.id,
+      webLink: event.webLink,
+      onlineMeeting: event.onlineMeeting,
+      subject: event.subject,
+    }, { status: 201 })
   } catch (err) {
     console.error("Error creating Teams meeting:", err)
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create meeting" },
+      { status: 500 }
+    )
+  }
+}
+
+// GET - Get a specific meeting
+export async function GET(request: NextRequest) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Get user's org_id
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.org_id) {
+    return NextResponse.json({ error: "User not associated with an organization" }, { status: 400 })
+  }
+
+  const tokenResult = await getOrgMicrosoftToken(profile.org_id)
+
+  if ("error" in tokenResult) {
+    return NextResponse.json({ error: tokenResult.error }, { status: 400 })
+  }
+
+  const searchParams = request.nextUrl.searchParams
+  const meetingId = searchParams.get("meetingId")
+
+  if (!meetingId) {
+    return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 })
+  }
+
+  try {
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/me/events/${meetingId}`,
+      {
+        headers: { Authorization: `Bearer ${tokenResult.accessToken}` },
+      }
+    )
+
+    if (!response.ok) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 })
+    }
+
+    const event = await response.json()
+    return NextResponse.json(event)
+  } catch (err) {
+    console.error("Error fetching Teams meeting:", err)
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to fetch meeting" },
       { status: 500 }
     )
   }
@@ -140,6 +275,23 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Get user's org_id
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.org_id) {
+    return NextResponse.json({ error: "User not associated with an organization" }, { status: 400 })
+  }
+
+  const tokenResult = await getOrgMicrosoftToken(profile.org_id)
+
+  if ("error" in tokenResult) {
+    return NextResponse.json({ error: tokenResult.error }, { status: 400 })
+  }
+
   const searchParams = request.nextUrl.searchParams
   const meetingId = searchParams.get("meetingId")
 
@@ -147,15 +299,36 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 })
   }
 
-  const tokenResult = await getValidMicrosoftToken(supabase, user.id)
-  if ("error" in tokenResult) {
-    return NextResponse.json({ error: tokenResult.error }, { status: 400 })
-  }
-
   try {
     const body: Partial<TeamsMeetingInput> = await request.json()
-    const meeting = await updateTeamsMeeting(tokenResult.accessToken, meetingId, body)
-    return NextResponse.json(meeting)
+
+    const updateBody: Record<string, any> = {}
+    if (body.subject) updateBody.subject = body.subject
+    if (body.startDateTime) {
+      updateBody.start = { dateTime: body.startDateTime, timeZone: "Asia/Riyadh" }
+    }
+    if (body.endDateTime) {
+      updateBody.end = { dateTime: body.endDateTime, timeZone: "Asia/Riyadh" }
+    }
+
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/me/events/${meetingId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${tokenResult.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateBody),
+      }
+    )
+
+    if (!response.ok) {
+      return NextResponse.json({ error: "Failed to update meeting" }, { status: 500 })
+    }
+
+    const event = await response.json()
+    return NextResponse.json(event)
   } catch (err) {
     console.error("Error updating Teams meeting:", err)
     return NextResponse.json(
@@ -176,6 +349,23 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Get user's org_id
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("org_id")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.org_id) {
+    return NextResponse.json({ error: "User not associated with an organization" }, { status: 400 })
+  }
+
+  const tokenResult = await getOrgMicrosoftToken(profile.org_id)
+
+  if ("error" in tokenResult) {
+    return NextResponse.json({ error: tokenResult.error }, { status: 400 })
+  }
+
   const searchParams = request.nextUrl.searchParams
   const meetingId = searchParams.get("meetingId")
 
@@ -183,13 +373,19 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Meeting ID is required" }, { status: 400 })
   }
 
-  const tokenResult = await getValidMicrosoftToken(supabase, user.id)
-  if ("error" in tokenResult) {
-    return NextResponse.json({ error: tokenResult.error }, { status: 400 })
-  }
-
   try {
-    await deleteTeamsMeeting(tokenResult.accessToken, meetingId)
+    const response = await fetch(
+      `https://graph.microsoft.com/v1.0/me/events/${meetingId}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${tokenResult.accessToken}` },
+      }
+    )
+
+    if (!response.ok && response.status !== 204) {
+      return NextResponse.json({ error: "Failed to delete meeting" }, { status: 500 })
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error("Error deleting Teams meeting:", err)
