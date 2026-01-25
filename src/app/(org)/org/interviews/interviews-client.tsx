@@ -57,9 +57,12 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { format, addHours, startOfDay, isSameDay, isAfter, isBefore } from "date-fns"
 import { useAI } from "@/hooks/use-ai"
+import { ScorecardForm } from "@/components/interviews/scorecard-form"
+import { ClipboardList } from "lucide-react"
 
 interface Interview {
   id: string
@@ -120,12 +123,31 @@ interface Application {
   }
 }
 
+interface ScorecardCriteria {
+  id: string
+  name: string
+  name_ar?: string
+  description?: string
+  weight: number
+}
+
+interface ScorecardTemplate {
+  id: string
+  name: string
+  name_ar?: string
+  criteria: ScorecardCriteria[]
+  rating_scale_type: string
+  rating_scale_labels: Record<string, string>
+  require_notes_per_criteria: boolean
+}
+
 interface InterviewsClientProps {
   interviews: Interview[]
   teamMembers: TeamMember[]
   applications: Application[]
   hasCalendarConnected?: boolean
   organizationId: string
+  scorecardTemplates: ScorecardTemplate[]
 }
 
 const interviewTypes = [
@@ -158,6 +180,7 @@ export function InterviewsClient({
   applications,
   hasCalendarConnected = false,
   organizationId,
+  scorecardTemplates,
 }: InterviewsClientProps) {
   const router = useRouter()
   const { generateInterviewQuestions, isLoading: isAILoading } = useAI()
@@ -171,6 +194,7 @@ export function InterviewsClient({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isQuestionsDialogOpen, setIsQuestionsDialogOpen] = useState(false)
+  const [isScorecardDialogOpen, setIsScorecardDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Selected interview
@@ -467,6 +491,20 @@ export function InterviewsClient({
                       >
                         <XCircle className="mr-2 h-4 w-4" />
                         Cancel
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {(interview.status === "completed" || interview.status === "confirmed") && scorecardTemplates.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          setSelectedInterview(interview)
+                          setIsScorecardDialogOpen(true)
+                        }}
+                      >
+                        <ClipboardList className="mr-2 h-4 w-4" />
+                        Fill Scorecard
                       </DropdownMenuItem>
                     </>
                   )}
@@ -929,6 +967,49 @@ export function InterviewsClient({
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Scorecard Dialog */}
+      <Dialog open={isScorecardDialogOpen} onOpenChange={setIsScorecardDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Interview Scorecard
+            </DialogTitle>
+            {selectedInterview && (
+              <DialogDescription>
+                Evaluate {selectedInterview.applications?.candidates?.first_name}{" "}
+                {selectedInterview.applications?.candidates?.last_name} for{" "}
+                {selectedInterview.applications?.jobs?.title}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-4">
+            {selectedInterview && scorecardTemplates.length > 0 ? (
+              <ScorecardForm
+                interviewId={selectedInterview.id}
+                templates={scorecardTemplates}
+                onSubmit={() => {
+                  setIsScorecardDialogOpen(false)
+                  toast.success("Scorecard submitted successfully")
+                  router.refresh()
+                }}
+                onSave={() => {
+                  toast.success("Scorecard saved as draft")
+                }}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">No scorecard templates available</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Create scorecard templates in Settings &gt; Scorecards
+                </p>
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

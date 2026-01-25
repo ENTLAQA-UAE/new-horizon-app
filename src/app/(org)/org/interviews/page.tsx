@@ -70,6 +70,15 @@ export default async function InterviewsPage() {
     .in("status", ["screening", "interview", "assessment"])
     .order("created_at", { ascending: false })
 
+  // Fetch scorecard templates for the organization
+  const { data: scorecardTemplates } = orgId
+    ? await supabase
+        .from("scorecard_templates")
+        .select("*")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+    : { data: [] }
+
   return (
     <InterviewsClient
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,6 +89,8 @@ export default async function InterviewsPage() {
       applications={(applications || []) as any}
       hasCalendarConnected={hasCalendarConnected}
       organizationId={orgId || ""}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      scorecardTemplates={(scorecardTemplates || []) as any}
     />
   )
 }
