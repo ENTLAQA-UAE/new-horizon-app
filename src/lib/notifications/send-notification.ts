@@ -182,9 +182,9 @@ export async function sendNotification(
       return result
     }
 
-    // Determine channels to use
-    const channels: string[] = settings?.channels || event.default_channels || ["email", "system"]
-    const shouldSendEmail = options.forceEmail || channels.includes("email")
+    // Determine channels to use (channel names: 'mail', 'system', 'sms')
+    const channels: string[] = settings?.channels || event.default_channels || ["mail", "system"]
+    const shouldSendEmail = options.forceEmail || channels.includes("mail")
     const shouldSendInApp = options.forceInApp || channels.includes("system")
     const shouldSendSms = channels.includes("sms")
 
