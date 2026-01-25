@@ -7,7 +7,48 @@
  */
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
-import { sendNotification, notify, NotificationEventCode } from "@/lib/notifications/send-notification"
+import { sendNotification, notify, NotificationEventCode, NotificationRecipient } from "@/lib/notifications/send-notification"
+import { SupabaseClient } from "@supabase/supabase-js"
+
+/**
+ * Helper to get internal team recipients with both userId and email
+ * This enables both in-app and email notifications when both channels are enabled
+ */
+async function getTeamRecipients(
+  supabase: SupabaseClient,
+  orgId: string,
+  roles?: string[]
+): Promise<NotificationRecipient[]> {
+  // Get user IDs from user_roles
+  let query = supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("org_id", orgId)
+
+  if (roles && roles.length > 0) {
+    query = query.in("role", roles)
+  }
+
+  const { data: roleData } = await query
+
+  if (!roleData || roleData.length === 0) {
+    return []
+  }
+
+  const userIds = roleData.map(r => r.user_id)
+
+  // Get user profiles with email
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email")
+    .in("id", userIds)
+
+  return (profiles || []).map(p => ({
+    userId: p.id,
+    email: p.email,
+    name: p.full_name || p.email,
+  }))
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -169,15 +210,42 @@ export async function POST(request: NextRequest) {
       }
 
       case "offer_sent": {
-        result = await notify.offerSent(serviceClient, orgId, {
-          candidateName: data.candidateName,
-          candidateEmail: data.candidateEmail,
-          jobTitle: data.jobTitle,
-          salary: data.salary,
-          startDate: data.startDate,
-          offerUrl: data.offerUrl,
+        // Start with candidate recipient
+        const offerRecipients: NotificationRecipient[] = [
+          { email: data.candidateEmail, name: data.candidateName },
+        ]
+
+        // Add team members with both userId and email for dual-channel delivery
+        if (data.teamUserIds && data.teamUserIds.length > 0) {
+          const { data: teamProfiles } = await serviceClient
+            .from("profiles")
+            .select("id, full_name, email")
+            .in("id", data.teamUserIds)
+
+          if (teamProfiles) {
+            teamProfiles.forEach(p => {
+              offerRecipients.push({
+                userId: p.id,
+                email: p.email,
+                name: p.full_name || p.email,
+              })
+            })
+          }
+        }
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "offer_sent",
+          orgId,
+          recipients: offerRecipients,
+          variables: {
+            candidate_name: data.candidateName,
+            receiver_name: data.candidateName,
+            job_title: data.jobTitle,
+            salary: data.salary,
+            start_date: data.startDate,
+            offer_url: data.offerUrl,
+          },
           applicationId: data.applicationId,
-          teamUserIds: data.teamUserIds,
         })
         break
       }
@@ -210,17 +278,13 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Get org admins to notify
-        const { data: admins } = await serviceClient
-          .from("user_roles")
-          .select("user_id")
-          .eq("org_id", orgId)
-          .in("role", ["org_admin", "hiring_manager"])
+        // Get org admins to notify (with both userId and email for dual-channel)
+        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hiring_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: eventType as NotificationEventCode,
           orgId,
-          recipients: admins?.map(a => ({ userId: a.user_id })) || [],
+          recipients: offerRecipients,
           variables: {
             candidate_name: candidateName || "A candidate",
             job_title: jobTitle || "the position",
@@ -242,16 +306,17 @@ export async function POST(request: NextRequest) {
       }
 
       case "job_published": {
-        // Get org team to notify
-        const { data: team } = await serviceClient
-          .from("user_roles")
-          .select("user_id")
-          .eq("org_id", orgId)
+        // Get org team to notify (with both userId and email for dual-channel)
+        const jobRecipients = await getTeamRecipients(serviceClient, orgId)
 
-        result = await notify.jobPublished(serviceClient, orgId, {
-          jobTitle: data.jobTitle,
+        result = await sendNotification(serviceClient, {
+          eventCode: "job_published",
+          orgId,
+          recipients: jobRecipients,
+          variables: {
+            job_title: data.jobTitle,
+          },
           jobId: data.jobId,
-          teamUserIds: team?.map(t => t.user_id) || [],
         })
         break
       }
@@ -314,17 +379,13 @@ export async function POST(request: NextRequest) {
           interviewerName = interviewer?.full_name || "An interviewer"
         }
 
-        // Notify hiring team
-        const { data: team } = await serviceClient
-          .from("user_roles")
-          .select("user_id")
-          .eq("org_id", orgId)
-          .in("role", ["org_admin", "hiring_manager"])
+        // Notify hiring team (with both userId and email for dual-channel)
+        const scorecardRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hiring_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "scorecard_submitted",
           orgId,
-          recipients: team?.map(t => ({ userId: t.user_id })) || [],
+          recipients: scorecardRecipients,
           variables: {
             candidate_name: candidateName || "A candidate",
             job_title: jobTitle || "the position",
