@@ -33,6 +33,7 @@ import {
   Settings,
   FileEdit,
   Users,
+  User,
   Briefcase,
   CalendarDays,
   Gift,
@@ -47,8 +48,11 @@ import {
   DefaultEmailTemplate,
   NotificationCategory,
   NotificationChannel,
+  NotificationAudience,
   categoryLabels,
   channelLabels,
+  audienceLabels,
+  eventAudienceMap,
 } from "@/lib/notifications/types"
 import { EmailTemplateEditor } from "./components/email-template-editor"
 import { ChannelAudienceEditor } from "./components/channel-audience-editor"
@@ -504,6 +508,12 @@ export function NotificationSettingsClient({
   )
 }
 
+// Get audience for an event from the event itself or the mapping
+function getEventAudience(event: NotificationEvent): NotificationAudience {
+  // Use the event's audience field if set, otherwise fall back to the mapping
+  return event.audience || eventAudienceMap[event.code] || 'internal'
+}
+
 // Events Table Component
 function EventsTable({
   events,
@@ -540,6 +550,7 @@ function EventsTable({
         <TableRow>
           <TableHead className="w-[40px]"></TableHead>
           <TableHead>Event Name</TableHead>
+          <TableHead>Audience</TableHead>
           <TableHead>Channels</TableHead>
           <TableHead>Template</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -552,6 +563,11 @@ function EventsTable({
           const isEnabled = setting ? setting.enabled : true
           const isSaving = savingEventId === event.id
           const hasCustomTemplate = !!template
+          const audience = getEventAudience(event)
+          const audienceInfo = audienceLabels[audience]
+          // Show template button if email is in current channels (from settings or default)
+          const currentChannels = setting?.channels || event.default_channels
+          const hasEmailChannel = currentChannels.includes("mail")
 
           return (
             <TableRow key={event.id} className={!isEnabled ? "opacity-50" : ""}>
@@ -571,6 +587,19 @@ function EventsTable({
                   <div className="text-xs text-muted-foreground">{event.description}</div>
                 </div>
               </TableCell>
+              <TableCell>
+                <Badge
+                  variant="outline"
+                  className={`${audienceInfo.color} text-xs`}
+                >
+                  {audience === 'internal' ? (
+                    <Users className="h-3 w-3 mr-1" />
+                  ) : (
+                    <User className="h-3 w-3 mr-1" />
+                  )}
+                  {audienceInfo.en}
+                </Badge>
+              </TableCell>
               <TableCell>{renderChannelBadges(event)}</TableCell>
               <TableCell>
                 {hasCustomTemplate ? (
@@ -584,7 +613,7 @@ function EventsTable({
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  {event.default_channels.includes("mail") && (
+                  {hasEmailChannel && (
                     <Button
                       variant="outline"
                       size="sm"

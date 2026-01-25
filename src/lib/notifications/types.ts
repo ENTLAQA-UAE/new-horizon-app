@@ -4,6 +4,9 @@ export type NotificationChannel = 'mail' | 'system' | 'sms'
 
 export type NotificationCategory = 'user' | 'recruitment' | 'interview' | 'offer' | 'job'
 
+// Audience type: internal = org team members, candidate = external candidates
+export type NotificationAudience = 'internal' | 'candidate'
+
 export interface NotificationVariable {
   key: string
   label: string
@@ -21,6 +24,7 @@ export interface NotificationEvent {
   default_channels: NotificationChannel[]
   available_variables: NotificationVariable[]
   is_system: boolean
+  audience: NotificationAudience  // 'internal' for team, 'candidate' for external
   created_at: string
 }
 
@@ -115,4 +119,42 @@ export const roleLabels: Record<string, { en: string; ar: string }> = {
   recruiter: { en: 'Recruiter', ar: 'مسؤول التوظيف' },
   hiring_manager: { en: 'Hiring Manager', ar: 'مدير التوظيف' },
   interviewer: { en: 'Interviewer', ar: 'المقابل' },
+}
+
+export const audienceLabels: Record<NotificationAudience, { en: string; ar: string; color: string; icon: string }> = {
+  internal: { en: 'Internal', ar: 'داخلي', color: 'bg-indigo-100 text-indigo-700 border-indigo-200', icon: 'users' },
+  candidate: { en: 'Candidate', ar: 'مرشح', color: 'bg-amber-100 text-amber-700 border-amber-200', icon: 'user' },
+}
+
+// Mapping of notification event codes to their target audience
+export const eventAudienceMap: Record<string, NotificationAudience> = {
+  // Internal notifications (for org team members)
+  user_invited: 'internal',
+  user_joined: 'internal',
+  role_changed: 'internal',
+  new_application: 'internal',
+  application_received: 'internal',
+  scorecard_submitted: 'internal',
+  scorecard_reminder: 'internal',
+  offer_created: 'internal',
+  offer_accepted: 'internal',
+  offer_rejected: 'internal',
+  offer_expired: 'internal',
+  job_published: 'internal',
+  job_closed: 'internal',
+  job_expiring: 'internal',
+  requisition_created: 'internal',
+  requisition_approved: 'internal',
+  requisition_rejected: 'internal',
+
+  // Candidate notifications (for external candidates)
+  password_reset: 'candidate',
+  interview_scheduled: 'candidate',
+  interview_reminder: 'candidate',
+  interview_cancelled: 'candidate',
+  interview_rescheduled: 'candidate',
+  candidate_stage_moved: 'candidate',
+  candidate_disqualified: 'candidate',
+  candidate_rejection: 'candidate',
+  offer_sent: 'candidate',
 }

@@ -114,6 +114,7 @@ interface Job {
   department_id: string | null
   location_id: string | null
   pipeline_id: string | null
+  org_id: string
 }
 
 interface JobWithPipeline {
