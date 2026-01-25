@@ -99,6 +99,7 @@ interface Job {
 interface OrgCandidatesClientProps {
   candidates: Candidate[]
   jobs: Job[]
+  organizationId: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -122,7 +123,7 @@ const sourceOptions = [
   { value: "other", label: "Other" },
 ]
 
-export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: OrgCandidatesClientProps) {
+export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organizationId }: OrgCandidatesClientProps) {
   const router = useRouter()
   const { parseResume, isLoading: isAiLoading, error: aiError } = useAI()
   const [candidates, setCandidates] = useState(initialCandidates)
@@ -248,6 +249,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs }: Org
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await supabaseInsert<any>("candidates", {
+        org_id: organizationId,
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
