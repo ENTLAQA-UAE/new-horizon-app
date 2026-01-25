@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { notFound } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import { CareerPageClient } from "./career-page-client"
 
 interface CareerPageProps {
@@ -9,7 +9,7 @@ interface CareerPageProps {
 
 export default async function CareerPage({ params }: CareerPageProps) {
   const { orgSlug } = await params
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   // Get organization by slug with career page config
   const { data: organization } = await supabase
