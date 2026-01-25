@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if job exists and is open
+    // Check if job exists and is open, include pipeline_id
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, title, org_id, organizations(name)")
+      .select("id, title, org_id, pipeline_id, organizations(name)")
       .eq("id", jobId)
       .eq("status", "open")
       .single()
@@ -42,6 +42,21 @@ export async function POST(request: NextRequest) {
         { error: "Job not found or not accepting applications" },
         { status: 404 }
       )
+    }
+
+    // Get the "Applied" stage from the job's pipeline
+    let appliedStageId: string | null = null
+    if (job.pipeline_id) {
+      const { data: appliedStage } = await supabase
+        .from("pipeline_stages")
+        .select("id")
+        .eq("pipeline_id", job.pipeline_id)
+        .eq("stage_type", "applied")
+        .single()
+
+      if (appliedStage) {
+        appliedStageId = appliedStage.id
+      }
     }
 
     // Check if candidate already exists by email
@@ -129,18 +144,25 @@ export async function POST(request: NextRequest) {
         .eq("id", candidateId)
     }
 
-    // Create application without stage_id - will be assigned by admin later
+    // Create application with the Applied stage from job's pipeline
+    const applicationInsert: Record<string, any> = {
+      org_id: organizationId,
+      candidate_id: candidateId,
+      job_id: jobId,
+      status: "new",
+      source: "career_page",
+      cover_letter: coverLetter || null,
+      applied_at: new Date().toISOString(),
+    }
+
+    // Add stage_id if we found the Applied stage
+    if (appliedStageId) {
+      applicationInsert.stage_id = appliedStageId
+    }
+
     const { data: application, error: appError } = await supabase
       .from("applications")
-      .insert({
-        org_id: organizationId,
-        candidate_id: candidateId,
-        job_id: jobId,
-        status: "new",
-        source: "career_page",
-        cover_letter: coverLetter || null,
-        applied_at: new Date().toISOString(),
-      })
+      .insert(applicationInsert)
       .select("id")
       .single()
 
