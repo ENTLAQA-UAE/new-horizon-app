@@ -9,6 +9,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { decryptCredentials } from "@/lib/encryption"
 
+// Helper to get base URL from request headers
+function getBaseUrl(request: NextRequest): string {
+  // Check for forwarded protocol (when behind reverse proxy like Vercel)
+  const forwardedProto = request.headers.get("x-forwarded-proto")
+  const protocol = forwardedProto || (request.nextUrl.protocol.replace(":", ""))
+
+  // Get host from headers
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || request.nextUrl.host
+
+  return `${protocol}://${host}`
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
   const {
@@ -62,7 +74,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to read credentials" }, { status: 500 })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const baseUrl = getBaseUrl(request)
   const callbackUrl = `${baseUrl}/api/org/integrations/callback`
 
   // Generate state with org info

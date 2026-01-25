@@ -9,6 +9,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { decryptCredentials } from "@/lib/encryption"
 
+// Helper to get base URL from request headers
+function getBaseUrl(request: NextRequest): string {
+  // Check for forwarded protocol (when behind reverse proxy like Vercel)
+  const forwardedProto = request.headers.get("x-forwarded-proto")
+  const protocol = forwardedProto || (request.nextUrl.protocol.replace(":", ""))
+
+  // Get host from headers
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || request.nextUrl.host
+
+  return `${protocol}://${host}`
+}
+
 interface StateData {
   orgId: string
   userId: string
@@ -23,7 +35,7 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error")
   const errorDescription = searchParams.get("error_description")
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const baseUrl = getBaseUrl(request)
 
   if (error) {
     console.error("OAuth error:", error, errorDescription)
