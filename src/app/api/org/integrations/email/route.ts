@@ -54,6 +54,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    // Sanitize email addresses - remove angle brackets and extract email
+    const sanitizeEmail = (email: string): string => {
+      if (!email) return email
+      // Remove angle brackets and extract just the email address
+      const match = email.match(/<([^>]+)>/) || email.match(/([^\s<>]+@[^\s<>]+)/)
+      return match ? match[1].trim() : email.trim()
+    }
+
+    const cleanFromEmail = sanitizeEmail(from_email)
+    const cleanReplyToEmail = reply_to_email ? sanitizeEmail(reply_to_email) : null
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(cleanFromEmail)) {
+      return NextResponse.json({
+        error: "Invalid 'From Email' format. Please enter a valid email address like 'email@example.com'"
+      }, { status: 400 })
+    }
+
     // Verify user is admin
     const { authorized, error } = await verifyOrgAdmin(supabase, user.id, orgId)
 
@@ -68,9 +87,9 @@ export async function POST(request: NextRequest) {
     const updateData: Record<string, unknown> = {
       org_id: orgId,
       email_provider: email_provider || 'resend',
-      from_email,
-      from_name,
-      reply_to_email: reply_to_email || null,
+      from_email: cleanFromEmail,
+      from_name: from_name.trim(),
+      reply_to_email: cleanReplyToEmail,
       track_opens: track_opens ?? true,
       track_clicks: track_clicks ?? true,
       updated_at: new Date().toISOString(),
