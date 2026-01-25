@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Check if job exists and is open
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, title, organization_id, organizations(name)")
+      .select("id, title, org_id, organizations(name)")
       .eq("id", jobId)
       .eq("status", "open")
       .single()
