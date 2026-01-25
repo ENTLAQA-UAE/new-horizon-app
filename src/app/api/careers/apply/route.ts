@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     const { data: application, error: appError } = await supabase
       .from("applications")
       .insert({
-        org_id: job.org_id,
+        org_id: organizationId,
         candidate_id: candidateId,
         job_id: jobId,
         stage_id: firstStageId,
@@ -156,9 +156,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (appError || !application) {
-      console.error("Failed to create application:", appError)
+      console.error("Failed to create application:", appError?.message, appError?.details, appError?.hint)
       return NextResponse.json(
-        { error: "Failed to submit application" },
+        { error: appError?.message || "Failed to submit application" },
         { status: 500 }
       )
     }
