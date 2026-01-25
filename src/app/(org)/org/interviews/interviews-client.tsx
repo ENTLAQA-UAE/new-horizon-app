@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabaseInsert, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -141,6 +141,13 @@ interface ScorecardTemplate {
   require_notes_per_criteria: boolean
 }
 
+interface MeetingProvider {
+  provider: string
+  is_enabled: boolean
+  is_verified: boolean
+  is_default_meeting_provider: boolean
+}
+
 interface InterviewsClientProps {
   interviews: Interview[]
   teamMembers: TeamMember[]
@@ -148,14 +155,20 @@ interface InterviewsClientProps {
   hasCalendarConnected?: boolean
   organizationId: string
   scorecardTemplates: ScorecardTemplate[]
+  meetingProviders?: MeetingProvider[]
+  defaultMeetingProvider?: string | null
 }
 
 const interviewTypes = [
   { value: "video", label: "Video Call", icon: Video },
-  { value: "phone", label: "Phone Call", icon: Phone },
-  { value: "in_person", label: "In Person", icon: MapPin },
-  { value: "assessment", label: "Assessment", icon: Briefcase },
+  { value: "in_person", label: "Physical Interview", icon: MapPin },
 ]
+
+const meetingProviderInfo: Record<string, { name: string; icon: string }> = {
+  zoom: { name: "Zoom", icon: "🎦" },
+  microsoft: { name: "Microsoft Teams", icon: "🟦" },
+  google: { name: "Google Meet", icon: "🟢" },
+}
 
 const statusStyles: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -181,8 +194,11 @@ export function InterviewsClient({
   hasCalendarConnected = false,
   organizationId,
   scorecardTemplates,
+  meetingProviders = [],
+  defaultMeetingProvider = null,
 }: InterviewsClientProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { generateInterviewQuestions, isLoading: isAILoading } = useAI()
 
   const [interviews, setInterviews] = useState(initialInterviews)
@@ -192,14 +208,37 @@ export function InterviewsClient({
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
+  // Handle "schedule" query parameter - auto-open dialog with application pre-selected
+  useEffect(() => {
+    const scheduleAppId = searchParams.get("schedule")
+    if (scheduleAppId) {
+      const app = applications.find(a => a.id === scheduleAppId)
+      if (app) {
+        setFormData(prev => ({
+          ...prev,
+          application_id: scheduleAppId,
+          title: `Interview - ${app.candidates.first_name} ${app.candidates.last_name}`,
+        }))
+        setIsCreateDialogOpen(true)
+        // Clear the query param
+        router.replace("/org/interviews", { scroll: false })
+      }
+    }
+  }, [searchParams, applications, router])
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isQuestionsDialogOpen, setIsQuestionsDialogOpen] = useState(false)
   const [isScorecardDialogOpen, setIsScorecardDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isCreatingMeeting, setIsCreatingMeeting] = useState(false)
 
   // Selected interview
   const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null)
   const [generatedQuestions, setGeneratedQuestions] = useState<string[]>([])
+
+  // Available meeting providers
+  const availableProviders = meetingProviders.filter(p => p.is_enabled && p.is_verified)
+  const hasVideoProviders = availableProviders.length > 0
 
   // Form state
   const [formData, setFormData] = useState({
@@ -212,6 +251,7 @@ export function InterviewsClient({
     timezone: "Asia/Riyadh",
     location: "",
     meeting_link: "",
+    meeting_provider: defaultMeetingProvider || "",
     interviewer_ids: [] as string[],
     internal_notes: "",
     syncToCalendar: hasCalendarConnected,
@@ -256,11 +296,57 @@ export function InterviewsClient({
       timezone: "Asia/Riyadh",
       location: "",
       meeting_link: "",
+      meeting_provider: defaultMeetingProvider || "",
       interviewer_ids: [],
       internal_notes: "",
       syncToCalendar: hasCalendarConnected,
       addMeetLink: true,
     })
+  }
+
+  // Create meeting via provider API
+  const createMeeting = async (provider: string, title: string, startTime: Date, durationMinutes: number) => {
+    try {
+      if (provider === "zoom") {
+        const response = await fetch("/api/zoom/meetings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: title,
+            start_time: startTime.toISOString(),
+            duration: durationMinutes,
+            timezone: formData.timezone,
+          }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          return { url: data.join_url, id: data.id }
+        }
+      } else if (provider === "microsoft") {
+        const response = await fetch("/api/microsoft/meetings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject: title,
+            startDateTime: startTime.toISOString(),
+            endDateTime: new Date(startTime.getTime() + durationMinutes * 60000).toISOString(),
+            isOnlineMeeting: true,
+          }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          return { url: data.onlineMeeting?.joinUrl || data.webLink, id: data.id }
+        }
+      } else if (provider === "google") {
+        // Google Meet integration would go here
+        // For now, return null and user can add link manually
+        return null
+      }
+      return null
+    } catch (error) {
+      console.error("Error creating meeting:", error)
+      return null
+    }
   }
 
   // CREATE
@@ -277,6 +363,25 @@ export function InterviewsClient({
       const scheduledAt = new Date(formData.scheduled_date)
       scheduledAt.setHours(hours, minutes, 0, 0)
 
+      // Auto-create meeting link if video call with provider selected
+      let meetingLink = formData.meeting_link
+      if (formData.interview_type === "video" && formData.meeting_provider && !meetingLink) {
+        setIsCreatingMeeting(true)
+        const app = applications.find((a) => a.id === formData.application_id)
+        const meetingTitle = `${formData.title} - ${app?.candidates.first_name} ${app?.candidates.last_name}`
+        const meetingResult = await createMeeting(
+          formData.meeting_provider,
+          meetingTitle,
+          scheduledAt,
+          formData.duration_minutes
+        )
+        setIsCreatingMeeting(false)
+        if (meetingResult?.url) {
+          meetingLink = meetingResult.url
+          toast.success(`Meeting created via ${meetingProviderInfo[formData.meeting_provider]?.name || formData.meeting_provider}`)
+        }
+      }
+
       const { data, error } = await supabaseInsert<Interview>("interviews", {
         org_id: organizationId,
         application_id: formData.application_id,
@@ -286,7 +391,7 @@ export function InterviewsClient({
         duration_minutes: formData.duration_minutes,
         timezone: formData.timezone,
         location: formData.location || null,
-        meeting_link: formData.meeting_link || null,
+        meeting_link: meetingLink || null,
         interviewer_ids: formData.interviewer_ids,
         internal_notes: formData.internal_notes || null,
         status: "scheduled",
@@ -828,32 +933,60 @@ export function InterviewsClient({
 
             {formData.interview_type === "video" && (
               <div className="space-y-4">
-                {!hasCalendarConnected && (
+                {/* Meeting Provider Selection */}
+                {hasVideoProviders ? (
+                  <div className="space-y-2">
+                    <Label>Meeting Provider</Label>
+                    <Select
+                      value={formData.meeting_provider}
+                      onValueChange={(value) => setFormData({ ...formData, meeting_provider: value, meeting_link: "" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select provider to auto-create meeting" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableProviders.map((provider) => (
+                          <SelectItem key={provider.provider} value={provider.provider}>
+                            <div className="flex items-center gap-2">
+                              <span>{meetingProviderInfo[provider.provider]?.icon}</span>
+                              <span>{meetingProviderInfo[provider.provider]?.name || provider.provider}</span>
+                              {provider.is_default_meeting_provider && (
+                                <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="manual">
+                          <div className="flex items-center gap-2">
+                            <span>🔗</span>
+                            <span>Enter link manually</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {formData.meeting_provider && formData.meeting_provider !== "manual" && (
+                      <p className="text-xs text-muted-foreground">
+                        Meeting link will be auto-generated when you schedule the interview
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Manual Meeting Link - show if no providers or manual selected */}
+                {(!hasVideoProviders || formData.meeting_provider === "manual") && (
                   <div className="space-y-2">
                     <Label htmlFor="meeting_link">Meeting Link</Label>
                     <Input
                       id="meeting_link"
                       value={formData.meeting_link}
                       onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
-                      placeholder="https://meet.google.com/..."
+                      placeholder="https://zoom.us/... or https://meet.google.com/..."
                     />
-                  </div>
-                )}
-                {hasCalendarConnected && formData.syncToCalendar && (
-                  <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
-                    <Checkbox
-                      id="addMeetLink"
-                      checked={formData.addMeetLink}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, addMeetLink: checked as boolean })
-                      }
-                    />
-                    <label
-                      htmlFor="addMeetLink"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Auto-generate Google Meet link
-                    </label>
+                    {!hasVideoProviders && (
+                      <p className="text-xs text-muted-foreground">
+                        Configure meeting integrations in Settings → Integrations to auto-generate links
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
