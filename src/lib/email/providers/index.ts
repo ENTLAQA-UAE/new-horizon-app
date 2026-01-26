@@ -101,8 +101,9 @@ async function buildProviderConfig(config: Record<string, unknown>): Promise<Ema
     fromEmail,
     fromName: (config.from_name as string) || undefined,
     replyTo,
-    trackOpens: config.track_opens as boolean ?? true,
-    trackClicks: config.track_clicks as boolean ?? true,
+    // Default to false to avoid broken tracking URLs when NEXT_PUBLIC_APP_URL is not set
+    trackOpens: config.track_opens as boolean ?? false,
+    trackClicks: config.track_clicks as boolean ?? false,
   }
 
   try {
