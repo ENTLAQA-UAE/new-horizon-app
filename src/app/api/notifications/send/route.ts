@@ -525,7 +525,7 @@ export async function POST(request: NextRequest) {
             user_name: targetFullName || "there",
             receiver_name: targetFullName || "there",
             changed_by: getFullName(changer) || "An administrator",
-            old_role: data.previousRole || "Previous Role",
+            previous_role: data.previousRole || "Previous Role",
             new_role: data.newRole,
             role: data.newRole,
             org_name: org?.name || "the organization",
