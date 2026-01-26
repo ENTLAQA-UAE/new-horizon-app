@@ -148,6 +148,27 @@ export function EmailTemplateEditor({
 
   // Insert variable at cursor position
   const insertVariable = (variable: string) => {
+    // Special handling for org_logo - insert as proper img tag in body, not in subject
+    if (variable === "org_logo") {
+      const imgTag = `<img src="{org_logo}" alt="{org_name}" style="max-height:60px;margin-bottom:20px;" onerror="this.style.display='none'">`
+      if (activeTab === "en") {
+        // org_logo should only be inserted in body, not subject
+        const activeElement = document.activeElement
+        if (activeElement?.id === "subject") {
+          // Don't insert logo in subject line
+          return
+        }
+        setBodyHtml(bodyHtml + imgTag)
+      } else {
+        if (document.activeElement?.id === "subject-ar") {
+          // Don't insert logo in subject line
+          return
+        }
+        setBodyHtmlAr(bodyHtmlAr + imgTag)
+      }
+      return
+    }
+
     const tag = `{${variable}}`
     if (activeTab === "en") {
       // For English, insert into subject or body based on focus
@@ -528,10 +549,12 @@ export function EmailTemplateEditor({
           </Badge>
           <Badge
             variant="outline"
-            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1"
             onClick={() => insertVariable("org_logo")}
+            title="Inserts organization logo as an image (body only)"
           >
-            {"{org_logo}"}
+            <Image className="h-3 w-3" />
+            Logo Image
           </Badge>
         </div>
       </div>
