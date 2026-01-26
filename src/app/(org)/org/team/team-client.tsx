@@ -340,6 +340,9 @@ export function TeamClient({
     if (!selectedMember) return
 
     setIsLoading(true)
+    const roleChanged = editForm.role !== selectedMember.role
+    const previousRole = selectedMember.role
+
     try {
       // Update role in user_roles table (delete + insert to handle composite key)
       await supabaseDelete("user_roles", [
@@ -376,6 +379,25 @@ export function TeamClient({
       setIsEditDialogOpen(false)
       setSelectedMember(null)
       toast.success("Team member updated")
+
+      // Send role changed notification if role was actually changed
+      if (roleChanged) {
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "role_changed",
+            orgId: organizationId,
+            data: {
+              userId: selectedMember.id,
+              newRole: roleLabels[editForm.role] || editForm.role,
+              previousRole: roleLabels[previousRole] || previousRole,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send role change notification:", err)
+        })
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to update member")
     } finally {
