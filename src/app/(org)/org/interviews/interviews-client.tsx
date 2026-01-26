@@ -57,6 +57,7 @@ import {
   ExternalLink,
   Link2,
   RefreshCw,
+  ChevronDown,
 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -84,8 +85,8 @@ const timezones = [
   { value: "UTC", label: "UTC (GMT+0)" },
 ]
 
-// Roles that can conduct interviews
-const interviewerRoles = ["interviewer", "hiring_manager", "hr_manager", "org_admin", "recruiter"]
+// Roles that can conduct interviews (org_admin excluded - they manage org settings, not recruitment tasks)
+const interviewerRoles = ["interviewer", "hiring_manager", "hr_manager", "recruiter"]
 
 interface Interview {
   id: string
@@ -1251,7 +1252,7 @@ export function InterviewsClient({
               </Select>
             </div>
 
-            {/* Interviewer Selection */}
+            {/* Interviewer Selection - Multi-select Dropdown */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -1260,51 +1261,93 @@ export function InterviewsClient({
               <p className="text-xs text-muted-foreground mb-2">
                 Select team members to conduct this interview. They will receive notifications and calendar invites.
               </p>
-              <div className="border rounded-lg max-h-[160px] overflow-y-auto">
-                {interviewerMembers.length > 0 ? (
-                  <div className="p-2 space-y-1">
-                    {interviewerMembers.map((member) => (
-                      <div
-                        key={member.id}
-                        className={cn(
-                          "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
-                          formData.interviewer_ids.includes(member.id)
-                            ? "bg-primary/10 border border-primary/30"
-                            : "hover:bg-muted"
-                        )}
-                        onClick={() => toggleInterviewer(member.id)}
-                      >
-                        <Checkbox
-                          checked={formData.interviewer_ids.includes(member.id)}
-                          onCheckedChange={() => toggleInterviewer(member.id)}
-                        />
-                        <Avatar className="h-8 w-8">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                  >
+                    {formData.interviewer_ids.length > 0 ? (
+                      <span className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        {formData.interviewer_ids.length} interviewer{formData.interviewer_ids.length > 1 ? "s" : ""} selected
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Select interviewers...</span>
+                    )}
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <div className="max-h-[250px] overflow-y-auto">
+                    {interviewerMembers.length > 0 ? (
+                      <div className="p-2 space-y-1">
+                        {interviewerMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className={cn(
+                              "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
+                              formData.interviewer_ids.includes(member.id)
+                                ? "bg-primary/10"
+                                : "hover:bg-muted"
+                            )}
+                            onClick={() => toggleInterviewer(member.id)}
+                          >
+                            <Checkbox
+                              checked={formData.interviewer_ids.includes(member.id)}
+                              onCheckedChange={() => toggleInterviewer(member.id)}
+                            />
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={member.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {member.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{member.full_name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                            </div>
+                            <Badge variant="secondary" className="text-xs capitalize shrink-0">
+                              {member.role?.replace("_", " ")}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-muted-foreground text-sm">
+                        No team members with interviewer roles found
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              {/* Show selected interviewers as badges */}
+              {formData.interviewer_ids.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.interviewer_ids.map((id) => {
+                    const member = interviewerMembers.find(m => m.id === id)
+                    if (!member) return null
+                    return (
+                      <Badge key={id} variant="secondary" className="flex items-center gap-1 pr-1">
+                        <Avatar className="h-4 w-4">
                           <AvatarImage src={member.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-[10px]">
                             {member.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || "?"}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{member.full_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{member.email}</p>
-                        </div>
-                        <Badge variant="secondary" className="text-xs capitalize">
-                          {member.role?.replace("_", " ")}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-muted-foreground text-sm">
-                    No team members with interviewer roles found
-                  </div>
-                )}
-              </div>
-              {formData.interviewer_ids.length > 0 && (
-                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" />
-                  {formData.interviewer_ids.length} interviewer(s) selected
-                </p>
+                        <span className="max-w-[120px] truncate">{member.full_name}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleInterviewer(id)}
+                          className="ml-1 hover:bg-muted rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )
+                  })}
+                </div>
               )}
             </div>
 
