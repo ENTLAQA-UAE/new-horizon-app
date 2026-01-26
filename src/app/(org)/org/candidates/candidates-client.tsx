@@ -65,6 +65,7 @@ import {
   X,
   Sparkles,
   Wand2,
+  ExternalLink,
 } from "lucide-react"
 import { useAI } from "@/hooks/use-ai"
 import { cn } from "@/lib/utils"
@@ -204,38 +205,14 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
     setResumeText("")
   }
 
-  // Download resume with signed URL (for private buckets)
-  const handleDownloadResume = async (resumeUrl: string) => {
-    try {
-      // Extract the file path from the public URL
-      // URL format: https://xxx.supabase.co/storage/v1/object/public/resumes/path/to/file.pdf
-      const pathMatch = resumeUrl.match(/\/resumes\/(.+)$/)
-      if (!pathMatch) {
-        // If it's not a Supabase storage URL, try to open it directly
-        window.open(resumeUrl, "_blank")
-        return
-      }
-
-      const filePath = pathMatch[1]
-
-      // Get signed URL from our API
-      const response = await fetch("/api/storage/signed-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bucket: "resumes", path: filePath }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to get download URL")
-      }
-
-      const { signedUrl } = await response.json()
-      window.open(signedUrl, "_blank")
-    } catch (error) {
-      console.error("Error downloading resume:", error)
-      toast.error("Failed to download resume. Please try again.")
+  // Open resume in new tab (like Google Drive - view & download from there)
+  const handleOpenResume = (resumeUrl: string) => {
+    if (!resumeUrl) {
+      toast.error("Resume URL not available")
+      return
     }
+    // Open the file directly in a new tab - user can view and download from there
+    window.open(resumeUrl, "_blank", "noopener,noreferrer")
   }
 
   // CREATE
@@ -1100,10 +1077,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                         </DropdownMenuItem>
                         {candidate.resume_url && (
                           <DropdownMenuItem
-                            onSelect={() => handleDownloadResume(candidate.resume_url!)}
+                            onSelect={() => handleOpenResume(candidate.resume_url!)}
                           >
-                            <Download className="mr-2 h-4 w-4" />
-                            Download Resume
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View Resume
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />

@@ -484,38 +484,14 @@ export function ApplicationsClient({
     }
   }
 
-  // Download resume with signed URL (for private buckets)
-  const handleDownloadResume = async (resumeUrl: string) => {
-    try {
-      // Extract the file path from the public URL
-      // URL format: https://xxx.supabase.co/storage/v1/object/public/resumes/path/to/file.pdf
-      const pathMatch = resumeUrl.match(/\/resumes\/(.+)$/)
-      if (!pathMatch) {
-        // If it's not a Supabase storage URL, try to open it directly
-        window.open(resumeUrl, "_blank")
-        return
-      }
-
-      const filePath = pathMatch[1]
-
-      // Get signed URL from our API
-      const response = await fetch("/api/storage/signed-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bucket: "resumes", path: filePath }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to get download URL")
-      }
-
-      const { signedUrl } = await response.json()
-      window.open(signedUrl, "_blank")
-    } catch (error) {
-      console.error("Error downloading resume:", error)
-      toast.error("Failed to download resume. Please try again.")
+  // Open resume/attachment in new tab (like Google Drive - view & download from there)
+  const handleOpenFile = (fileUrl: string) => {
+    if (!fileUrl) {
+      toast.error("File URL not available")
+      return
     }
+    // Open the file directly in a new tab - user can view and download from there
+    window.open(fileUrl, "_blank", "noopener,noreferrer")
   }
 
   // NOTES
@@ -735,7 +711,7 @@ export function ApplicationsClient({
               {app.candidates?.resume_url && (
                 <DropdownMenuItem
                   onSelect={() => {
-                    handleDownloadResume(app.candidates!.resume_url!)
+                    handleOpenFile(app.candidates!.resume_url!)
                   }}
                 >
                   <Download className="mr-2 h-4 w-4" />
@@ -1454,7 +1430,7 @@ export function ApplicationsClient({
                                 variant="ghost"
                                 size="icon"
                                 className="h-10 w-10 hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                                onClick={() => handleDownloadResume(selectedApplication.candidates!.resume_url!)}
+                                onClick={() => handleOpenFile(selectedApplication.candidates!.resume_url!)}
                               >
                                 <Download className="h-5 w-5 text-blue-600" />
                               </Button>
