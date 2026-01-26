@@ -86,13 +86,20 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const resetUrl = linkData.properties?.action_link
+      let resetUrl = linkData.properties?.action_link
       if (!resetUrl) {
         console.error("No action_link in response:", linkData)
         return NextResponse.json(
           { error: "Failed to generate reset link" },
           { status: 500 }
         )
+      }
+
+      // Ensure the reset URL uses the production domain, not localhost
+      // Supabase's generateLink uses the Site URL from dashboard which may be misconfigured
+      const productionUrl = process.env.NEXT_PUBLIC_APP_URL
+      if (productionUrl && resetUrl.includes("localhost")) {
+        resetUrl = resetUrl.replace(/http:\/\/localhost:\d+/, productionUrl)
       }
 
       const userName = (profile?.first_name && profile?.last_name
@@ -105,8 +112,9 @@ export async function POST(request: NextRequest) {
         orgId: orgId,
         recipients: [{ email: authUser.email!, name: userName }],
         variables: {
-          receiver_name: userName,
+          user_name: userName,  // Template uses {{user_name}}
           reset_url: resetUrl,
+          expiry_time: "1 hour",
         },
         forceEmail: true,
       })

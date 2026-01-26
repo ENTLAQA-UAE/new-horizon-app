@@ -62,6 +62,7 @@ export interface NotificationVariables {
   org_name?: string
   org_logo?: string
   primary_color?: string
+  secondary_color?: string
 
   // User/Receiver
   receiver_name?: string
@@ -151,7 +152,7 @@ export async function sendNotification(
     // 1. Get organization details for branding
     const { data: org } = await supabase
       .from("organizations")
-      .select("name, logo_url, primary_color")
+      .select("name, logo_url, primary_color, secondary_color")
       .eq("id", options.orgId)
       .single()
 
@@ -192,7 +193,8 @@ export async function sendNotification(
     const variables: NotificationVariables = {
       org_name: org?.name || "Organization",
       org_logo: org?.logo_url || "",
-      primary_color: org?.primary_color || "#667eea",
+      primary_color: org?.primary_color || "#6366f1",
+      secondary_color: org?.secondary_color || "#8b5cf6",
       ...options.variables,
     }
 
@@ -632,7 +634,8 @@ function getFallbackEmailTemplate(
 ): { subject: string; body_html: string } | null {
   const orgName = variables.org_name || "Our Organization"
   const logoUrl = variables.org_logo
-  const primaryColor = variables.primary_color || "#667eea"
+  const primaryColor = variables.primary_color || "#6366f1"
+  const secondaryColor = variables.secondary_color || "#8b5cf6"
 
   // Common email wrapper
   const wrapEmail = (content: string, title: string) => `
