@@ -224,12 +224,16 @@ export async function sendOrgEmail(
       .eq('org_id', orgId)
       .single()
 
-    if (config?.track_opens && provider.getTrackingPixel) {
-      html = html + provider.getTrackingPixel(trackingToken)
-    }
+    // Only apply tracking if NEXT_PUBLIC_APP_URL is set (needed for absolute URLs)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (appUrl) {
+      if (config?.track_opens && provider.getTrackingPixel) {
+        html = html + provider.getTrackingPixel(trackingToken)
+      }
 
-    if (config?.track_clicks && provider.wrapLinksForTracking) {
-      html = provider.wrapLinksForTracking(html, trackingToken)
+      if (config?.track_clicks && provider.wrapLinksForTracking) {
+        html = provider.wrapLinksForTracking(html, trackingToken)
+      }
     }
   }
 
