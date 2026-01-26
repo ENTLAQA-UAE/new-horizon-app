@@ -134,6 +134,7 @@ interface OffersClientProps {
   templates: OfferTemplate[]
   applications: Application[]
   organizationId: string
+  defaultCurrency?: string
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
@@ -168,6 +169,20 @@ const currencies = [
   { value: "USD", label: "USD - US Dollar" },
   { value: "EUR", label: "EUR - Euro" },
   { value: "GBP", label: "GBP - British Pound" },
+  { value: "QAR", label: "QAR - Qatari Riyal" },
+  { value: "KWD", label: "KWD - Kuwaiti Dinar" },
+  { value: "BHD", label: "BHD - Bahraini Dinar" },
+  { value: "OMR", label: "OMR - Omani Rial" },
+  { value: "EGP", label: "EGP - Egyptian Pound" },
+  { value: "JOD", label: "JOD - Jordanian Dinar" },
+  { value: "INR", label: "INR - Indian Rupee" },
+  { value: "PKR", label: "PKR - Pakistani Rupee" },
+  { value: "PHP", label: "PHP - Philippine Peso" },
+  { value: "CAD", label: "CAD - Canadian Dollar" },
+  { value: "AUD", label: "AUD - Australian Dollar" },
+  { value: "CHF", label: "CHF - Swiss Franc" },
+  { value: "JPY", label: "JPY - Japanese Yen" },
+  { value: "CNY", label: "CNY - Chinese Yuan" },
 ]
 
 export function OffersClient({
@@ -175,6 +190,7 @@ export function OffersClient({
   templates,
   applications,
   organizationId,
+  defaultCurrency = "SAR",
 }: OffersClientProps) {
   const router = useRouter()
 
@@ -200,12 +216,12 @@ export function OffersClient({
     department: "",
     location: "",
     salary_amount: 0,
-    salary_currency: "SAR",
+    salary_currency: defaultCurrency,
     salary_period: "monthly",
     signing_bonus: 0,
     annual_bonus_percentage: 0,
     start_date: new Date(),
-    offer_expiry_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    offer_expiry_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
     probation_period_months: 3,
     employment_type: "full_time",
     benefits: [] as string[],
@@ -237,7 +253,7 @@ export function OffersClient({
       department: "",
       location: "",
       salary_amount: 0,
-      salary_currency: "SAR",
+      salary_currency: defaultCurrency,
       salary_period: "monthly",
       signing_bonus: 0,
       annual_bonus_percentage: 0,
@@ -797,6 +813,51 @@ export function OffersClient({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
+                      <div className="p-3 border-b">
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFormData({ ...formData, start_date: new Date() })}
+                          >
+                            Today
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const tomorrow = new Date()
+                              tomorrow.setDate(tomorrow.getDate() + 1)
+                              setFormData({ ...formData, start_date: tomorrow })
+                            }}
+                          >
+                            Tomorrow
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const nextWeek = new Date()
+                              nextWeek.setDate(nextWeek.getDate() + 7)
+                              setFormData({ ...formData, start_date: nextWeek })
+                            }}
+                          >
+                            Next Week
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const nextMonth = new Date()
+                              nextMonth.setMonth(nextMonth.getMonth() + 1)
+                              nextMonth.setDate(1)
+                              setFormData({ ...formData, start_date: nextMonth })
+                            }}
+                          >
+                            1st Next Month
+                          </Button>
+                        </div>
+                      </div>
                       <Calendar
                         mode="single"
                         selected={formData.start_date}
@@ -804,6 +865,7 @@ export function OffersClient({
                           date && setFormData({ ...formData, start_date: date })
                         }
                         initialFocus
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       />
                     </PopoverContent>
                   </Popover>
@@ -821,6 +883,54 @@ export function OffersClient({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
+                      <div className="p-3 border-b">
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const in3Days = new Date()
+                              in3Days.setDate(in3Days.getDate() + 3)
+                              setFormData({ ...formData, offer_expiry_date: in3Days })
+                            }}
+                          >
+                            3 Days
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const in7Days = new Date()
+                              in7Days.setDate(in7Days.getDate() + 7)
+                              setFormData({ ...formData, offer_expiry_date: in7Days })
+                            }}
+                          >
+                            1 Week
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const in14Days = new Date()
+                              in14Days.setDate(in14Days.getDate() + 14)
+                              setFormData({ ...formData, offer_expiry_date: in14Days })
+                            }}
+                          >
+                            2 Weeks
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const in30Days = new Date()
+                              in30Days.setDate(in30Days.getDate() + 30)
+                              setFormData({ ...formData, offer_expiry_date: in30Days })
+                            }}
+                          >
+                            30 Days
+                          </Button>
+                        </div>
+                      </div>
                       <Calendar
                         mode="single"
                         selected={formData.offer_expiry_date}
@@ -828,6 +938,7 @@ export function OffersClient({
                           date && setFormData({ ...formData, offer_expiry_date: date })
                         }
                         initialFocus
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       />
                     </PopoverContent>
                   </Popover>
