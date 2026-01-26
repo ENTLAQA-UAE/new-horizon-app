@@ -77,12 +77,59 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     .filter((jsq: any) => jsq.question)
     .map((jsq: any) => jsq.question)
 
+  // Get application form sections for this organization
+  const { data: formSectionsData } = await supabase
+    .from("application_form_sections")
+    .select(`
+      id,
+      name,
+      name_ar,
+      description,
+      icon,
+      is_default,
+      is_enabled,
+      is_repeatable,
+      min_entries,
+      max_entries,
+      sort_order
+    `)
+    .eq("org_id", organization.id)
+    .eq("is_enabled", true)
+    .order("sort_order", { ascending: true })
+
+  // Get fields for all sections
+  const sectionIds = (formSectionsData || []).map((s: any) => s.id)
+  const { data: formFieldsData } = await supabase
+    .from("application_form_fields")
+    .select(`
+      id,
+      section_id,
+      name,
+      name_ar,
+      field_type,
+      placeholder,
+      options,
+      is_required,
+      is_enabled,
+      sort_order
+    `)
+    .in("section_id", sectionIds.length > 0 ? sectionIds : ["no-match"])
+    .eq("is_enabled", true)
+    .order("sort_order", { ascending: true })
+
+  // Combine sections with their fields
+  const applicationFormSections = (formSectionsData || []).map((section: any) => ({
+    ...section,
+    fields: (formFieldsData || []).filter((f: any) => f.section_id === section.id)
+  }))
+
   return (
     <JobDetailClient
       organization={organization}
       job={job}
       branding={branding}
       screeningQuestions={screeningQuestions}
+      applicationFormSections={applicationFormSections}
     />
   )
 }

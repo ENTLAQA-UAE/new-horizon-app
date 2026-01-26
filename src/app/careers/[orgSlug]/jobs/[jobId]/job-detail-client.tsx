@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,10 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
 import {
   MapPin,
   Briefcase,
   Clock,
-  DollarSign,
   Building2,
   Globe,
   ArrowLeft,
@@ -45,8 +44,14 @@ import {
   Loader2,
   Send,
   AlertCircle,
+  Plus,
+  Trash2,
+  User,
+  Award,
+  Languages,
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface Job {
   id: string
@@ -100,11 +105,46 @@ interface ScreeningQuestion {
   max_length: number | null
 }
 
+interface FieldOption {
+  value: string
+  label: string
+  label_ar?: string
+}
+
+interface ApplicationFormField {
+  id: string
+  section_id: string
+  name: string
+  name_ar: string | null
+  field_type: string
+  placeholder: string | null
+  options: FieldOption[] | null
+  is_required: boolean
+  is_enabled: boolean
+  sort_order: number
+}
+
+interface ApplicationFormSection {
+  id: string
+  name: string
+  name_ar: string | null
+  description: string | null
+  icon: string
+  is_default: boolean
+  is_enabled: boolean
+  is_repeatable: boolean
+  min_entries: number
+  max_entries: number
+  sort_order: number
+  fields: ApplicationFormField[]
+}
+
 interface JobDetailClientProps {
   organization: Organization
   job: Job
   branding: Branding | null
   screeningQuestions?: ScreeningQuestion[]
+  applicationFormSections?: ApplicationFormSection[]
 }
 
 const employmentTypeLabels: Record<string, string> = {
@@ -134,31 +174,133 @@ const educationLabels: Record<string, string> = {
   phd: "PhD / Doctorate",
 }
 
-export function JobDetailClient({ organization, job, branding, screeningQuestions = [] }: JobDetailClientProps) {
+const sectionIcons: Record<string, any> = {
+  user: User,
+  globe: Globe,
+  "graduation-cap": GraduationCap,
+  briefcase: Briefcase,
+  "file-text": FileText,
+  languages: Languages,
+  award: Award,
+}
+
+export function JobDetailClient({
+  organization,
+  job,
+  branding,
+  screeningQuestions = [],
+  applicationFormSections = []
+}: JobDetailClientProps) {
   const router = useRouter()
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    linkedIn: "",
-    coverLetter: "",
-  })
+  // Dynamic form data - keyed by section ID
+  // For non-repeatable sections: { [sectionId]: { [fieldName]: value } }
+  // For repeatable sections: { [sectionId]: [{ [fieldName]: value }, ...] }
+  const [formData, setFormData] = useState<Record<string, any>>({})
 
-  // Screening question answers - keyed by question ID
+  // Screening question answers
   const [screeningAnswers, setScreeningAnswers] = useState<Record<string, any>>({})
+
+  // Cover letter (separate from dynamic fields)
+  const [coverLetter, setCoverLetter] = useState("")
+
+  const primaryColor = branding?.primary_color || "#3b82f6"
+
+  // Initialize form data based on sections
+  useEffect(() => {
+    const initialData: Record<string, any> = {}
+
+    applicationFormSections.forEach(section => {
+      if (section.is_repeatable) {
+        // Initialize with minimum required entries (or 1 if min is 0)
+        const initialEntries = Math.max(section.min_entries, 1)
+        initialData[section.id] = Array(initialEntries).fill(null).map(() => {
+          const entry: Record<string, any> = {}
+          section.fields.forEach(field => {
+            entry[field.name] = field.field_type === "checkbox" ? false : ""
+          })
+          return entry
+        })
+      } else {
+        // Non-repeatable section - single entry
+        initialData[section.id] = {}
+        section.fields.forEach(field => {
+          initialData[section.id][field.name] = field.field_type === "checkbox" ? false : ""
+        })
+      }
+    })
+
+    setFormData(initialData)
+  }, [applicationFormSections])
+
+  // Update form field value
+  const updateFieldValue = (sectionId: string, fieldName: string, value: any, entryIndex?: number) => {
+    setFormData(prev => {
+      const section = applicationFormSections.find(s => s.id === sectionId)
+      if (!section) return prev
+
+      if (section.is_repeatable && entryIndex !== undefined) {
+        const entries = [...(prev[sectionId] || [])]
+        if (!entries[entryIndex]) {
+          entries[entryIndex] = {}
+        }
+        entries[entryIndex] = { ...entries[entryIndex], [fieldName]: value }
+        return { ...prev, [sectionId]: entries }
+      } else {
+        return {
+          ...prev,
+          [sectionId]: { ...(prev[sectionId] || {}), [fieldName]: value }
+        }
+      }
+    })
+  }
+
+  // Add entry to repeatable section
+  const addEntry = (sectionId: string) => {
+    const section = applicationFormSections.find(s => s.id === sectionId)
+    if (!section) return
+
+    const currentEntries = formData[sectionId] || []
+    if (currentEntries.length >= section.max_entries) {
+      toast.error(`Maximum ${section.max_entries} entries allowed`)
+      return
+    }
+
+    const newEntry: Record<string, any> = {}
+    section.fields.forEach(field => {
+      newEntry[field.name] = field.field_type === "checkbox" ? false : ""
+    })
+
+    setFormData(prev => ({
+      ...prev,
+      [sectionId]: [...(prev[sectionId] || []), newEntry]
+    }))
+  }
+
+  // Remove entry from repeatable section
+  const removeEntry = (sectionId: string, entryIndex: number) => {
+    const section = applicationFormSections.find(s => s.id === sectionId)
+    if (!section) return
+
+    const currentEntries = formData[sectionId] || []
+    if (currentEntries.length <= section.min_entries) {
+      toast.error(`Minimum ${section.min_entries} entries required`)
+      return
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [sectionId]: prev[sectionId].filter((_: any, i: number) => i !== entryIndex)
+    }))
+  }
 
   // Update screening answer
   const handleScreeningAnswer = (questionId: string, value: any) => {
-    setScreeningAnswers(prev => ({
-      ...prev,
-      [questionId]: value
-    }))
+    setScreeningAnswers(prev => ({ ...prev, [questionId]: value }))
   }
 
   // Handle multiselect toggle
@@ -171,8 +313,6 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
       return { ...prev, [questionId]: newValue }
     })
   }
-
-  const primaryColor = branding?.primary_color || "#3b82f6"
 
   const formatSalary = () => {
     if (!job.salary_min && !job.salary_max) return null
@@ -206,17 +346,63 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
     }
   }
 
+  // Get value from form data for basic info fields
+  const getBasicInfoValue = (fieldName: string): string => {
+    const basicInfoSection = applicationFormSections.find(s => s.name === "Basic Information")
+    if (basicInfoSection && formData[basicInfoSection.id]) {
+      return formData[basicInfoSection.id][fieldName] || ""
+    }
+    return ""
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.firstName || !formData.lastName || !formData.email) {
-      toast.error("Please fill in all required fields")
-      return
+    // Validate required fields in Basic Information
+    const basicInfoSection = applicationFormSections.find(s => s.name === "Basic Information")
+    if (basicInfoSection) {
+      for (const field of basicInfoSection.fields) {
+        if (field.is_required) {
+          const value = formData[basicInfoSection.id]?.[field.name]
+          if (!value || value === "") {
+            toast.error(`Please fill in ${field.name}`)
+            return
+          }
+        }
+      }
     }
 
     if (!resumeFile) {
       toast.error("Please upload your resume")
       return
+    }
+
+    // Validate required fields in other sections
+    for (const section of applicationFormSections) {
+      if (section.is_repeatable) {
+        const entries = formData[section.id] || []
+        for (let i = 0; i < entries.length; i++) {
+          for (const field of section.fields) {
+            if (field.is_required) {
+              const value = entries[i]?.[field.name]
+              if (!value || value === "") {
+                toast.error(`Please fill in ${field.name} in ${section.name} entry ${i + 1}`)
+                return
+              }
+            }
+          }
+        }
+      } else {
+        for (const field of section.fields) {
+          if (field.is_required) {
+            const value = formData[section.id]?.[field.name]
+            if (!value || value === "") {
+              toast.error(`Please fill in ${field.name}`)
+              return
+            }
+          }
+        }
+      }
     }
 
     // Validate required screening questions
@@ -238,13 +424,18 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
       const submitData = new FormData()
       submitData.append("jobId", job.id)
       submitData.append("organizationId", organization.id)
-      submitData.append("firstName", formData.firstName)
-      submitData.append("lastName", formData.lastName)
-      submitData.append("email", formData.email)
-      submitData.append("phone", formData.phone)
-      submitData.append("linkedIn", formData.linkedIn)
-      submitData.append("coverLetter", formData.coverLetter)
+
+      // Extract basic info for backwards compatibility
+      submitData.append("firstName", getBasicInfoValue("First Name"))
+      submitData.append("lastName", getBasicInfoValue("Last Name"))
+      submitData.append("email", getBasicInfoValue("Email"))
+      submitData.append("phone", getBasicInfoValue("Phone Number"))
+      submitData.append("linkedIn", getBasicInfoValue("LinkedIn"))
+      submitData.append("coverLetter", coverLetter)
       submitData.append("resume", resumeFile)
+
+      // Add all form data as JSON
+      submitData.append("applicationFormData", JSON.stringify(formData))
 
       // Add screening question answers
       if (screeningQuestions.length > 0) {
@@ -269,6 +460,262 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Render a single form field
+  const renderField = (field: ApplicationFormField, sectionId: string, entryIndex?: number) => {
+    const section = applicationFormSections.find(s => s.id === sectionId)
+    const value = section?.is_repeatable && entryIndex !== undefined
+      ? formData[sectionId]?.[entryIndex]?.[field.name]
+      : formData[sectionId]?.[field.name]
+
+    const onChange = (newValue: any) => {
+      updateFieldValue(sectionId, field.name, newValue, entryIndex)
+    }
+
+    const fieldKey = `${sectionId}-${entryIndex ?? 0}-${field.id}`
+
+    switch (field.field_type) {
+      case "text":
+      case "email":
+      case "phone":
+      case "url":
+        return (
+          <Input
+            key={fieldKey}
+            type={field.field_type === "email" ? "email" : field.field_type === "url" ? "url" : "text"}
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder || `Enter ${field.name.toLowerCase()}`}
+          />
+        )
+
+      case "number":
+        return (
+          <Input
+            key={fieldKey}
+            type="number"
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder || "Enter a number"}
+          />
+        )
+
+      case "date":
+        return (
+          <Input
+            key={fieldKey}
+            type="date"
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full"
+          />
+        )
+
+      case "textarea":
+        return (
+          <Textarea
+            key={fieldKey}
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder || `Enter ${field.name.toLowerCase()}`}
+            rows={3}
+          />
+        )
+
+      case "select":
+        return (
+          <Select key={fieldKey} value={value || ""} onValueChange={onChange}>
+            <SelectTrigger>
+              <SelectValue placeholder={field.placeholder || `Select ${field.name.toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {(field.options || []).map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )
+
+      case "multiselect":
+        return (
+          <div key={fieldKey} className="space-y-2">
+            {(field.options || []).map((option) => (
+              <div key={option.value} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`${fieldKey}-${option.value}`}
+                  checked={(value || []).includes(option.value)}
+                  onCheckedChange={(checked) => {
+                    const current = value || []
+                    const newValue = checked
+                      ? [...current, option.value]
+                      : current.filter((v: string) => v !== option.value)
+                    onChange(newValue)
+                  }}
+                />
+                <Label htmlFor={`${fieldKey}-${option.value}`} className="font-normal">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )
+
+      case "radio":
+        return (
+          <RadioGroup key={fieldKey} value={value || ""} onValueChange={onChange}>
+            {(field.options || []).map((option) => (
+              <div key={option.value} className="flex items-center space-x-2">
+                <RadioGroupItem value={option.value} id={`${fieldKey}-${option.value}`} />
+                <Label htmlFor={`${fieldKey}-${option.value}`} className="font-normal">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        )
+
+      case "checkbox":
+        return (
+          <div key={fieldKey} className="flex items-center space-x-2">
+            <Checkbox
+              id={fieldKey}
+              checked={value || false}
+              onCheckedChange={onChange}
+            />
+            <Label htmlFor={fieldKey} className="font-normal text-sm">
+              {field.placeholder || field.name}
+            </Label>
+          </div>
+        )
+
+      case "file":
+        return (
+          <Input
+            key={fieldKey}
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              onChange(file?.name || "")
+            }}
+          />
+        )
+
+      default:
+        return (
+          <Input
+            key={fieldKey}
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={field.placeholder || ""}
+          />
+        )
+    }
+  }
+
+  // Render a section (repeatable or not)
+  const renderSection = (section: ApplicationFormSection) => {
+    const IconComponent = sectionIcons[section.icon] || FileText
+    const entries = section.is_repeatable ? (formData[section.id] || []) : null
+
+    return (
+      <div key={section.id} className="space-y-4 pt-4 border-t">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <IconComponent className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-medium">{section.name}</h3>
+            {section.is_repeatable && (
+              <Badge variant="outline" className="text-xs">
+                {entries?.length || 0} / {section.max_entries}
+              </Badge>
+            )}
+          </div>
+          {section.is_repeatable && (entries?.length || 0) < section.max_entries && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => addEntry(section.id)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          )}
+        </div>
+
+        {section.description && (
+          <p className="text-xs text-muted-foreground">{section.description}</p>
+        )}
+
+        {section.is_repeatable ? (
+          // Render repeatable entries
+          <div className="space-y-4">
+            {(entries || []).map((entry: any, entryIndex: number) => (
+              <div
+                key={entryIndex}
+                className="p-4 rounded-lg border bg-muted/30 space-y-3 relative"
+              >
+                {(entries?.length || 0) > section.min_entries && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6"
+                    onClick={() => removeEntry(section.id, entryIndex)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
+
+                <div className="text-xs font-medium text-muted-foreground mb-2">
+                  Entry {entryIndex + 1}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {section.fields.map((field) => {
+                    // Full width for textarea fields
+                    const isFullWidth = field.field_type === "textarea"
+                    return (
+                      <div
+                        key={field.id}
+                        className={cn("space-y-1", isFullWidth && "md:col-span-2")}
+                      >
+                        <Label className="text-sm">
+                          {field.name}
+                          {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                        </Label>
+                        {renderField(field, section.id, entryIndex)}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Render non-repeatable section
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {section.fields.map((field) => {
+              const isFullWidth = field.field_type === "textarea"
+              return (
+                <div
+                  key={field.id}
+                  className={cn("space-y-1", isFullWidth && "md:col-span-2")}
+                >
+                  <Label className="text-sm">
+                    {field.name}
+                    {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                  </Label>
+                  {renderField(field, section.id)}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (isSuccess) {
@@ -516,7 +963,7 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
 
       {/* Application Dialog */}
       <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Apply for {job.title}</DialogTitle>
             <DialogDescription>
@@ -524,235 +971,190 @@ export function JobDetailClient({ organization, job, branding, screeningQuestion
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
+          <ScrollArea className="flex-1 pr-4">
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              {/* Dynamic Form Sections */}
+              {applicationFormSections.map((section) => renderSection(section))}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+966 50 123 4567"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="linkedIn">LinkedIn Profile</Label>
-              <Input
-                id="linkedIn"
-                value={formData.linkedIn}
-                onChange={(e) => setFormData({ ...formData, linkedIn: e.target.value })}
-                placeholder="https://linkedin.com/in/yourprofile"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="resume">Resume *</Label>
-              {resumeFile ? (
-                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setResumeFile(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="relative">
-                  <input
-                    id="resume"
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleResumeChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
-                    <Upload className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Upload Resume (PDF, DOC, DOCX)
-                    </span>
+              {/* Resume Upload */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label htmlFor="resume">Resume *</Label>
+                {resumeFile ? (
+                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setResumeFile(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      id="resume"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleResumeChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Upload Resume (PDF, DOC, DOCX)
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover Letter */}
+              <div className="space-y-2">
+                <Label htmlFor="coverLetter">Cover Letter (Optional)</Label>
+                <Textarea
+                  id="coverLetter"
+                  value={coverLetter}
+                  onChange={(e) => setCoverLetter(e.target.value)}
+                  placeholder="Tell us why you're interested in this role..."
+                  rows={4}
+                />
+              </div>
+
+              {/* Screening Questions */}
+              {screeningQuestions.length > 0 && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Additional Questions</p>
+                  </div>
+                  {screeningQuestions.map((question) => (
+                    <div key={question.id} className="space-y-2">
+                      <Label>
+                        {question.question}
+                        {question.is_required && <span className="text-red-500 ml-1">*</span>}
+                      </Label>
+                      {question.description && (
+                        <p className="text-xs text-muted-foreground">{question.description}</p>
+                      )}
+
+                      {/* Text input */}
+                      {question.question_type === "text" && (
+                        <Input
+                          value={screeningAnswers[question.id] || ""}
+                          onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
+                          placeholder="Your answer..."
+                          maxLength={question.max_length || undefined}
+                        />
+                      )}
+
+                      {/* Textarea */}
+                      {question.question_type === "textarea" && (
+                        <Textarea
+                          value={screeningAnswers[question.id] || ""}
+                          onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
+                          placeholder="Your answer..."
+                          rows={3}
+                          maxLength={question.max_length || undefined}
+                        />
+                      )}
+
+                      {/* Number input */}
+                      {question.question_type === "number" && (
+                        <Input
+                          type="number"
+                          value={screeningAnswers[question.id] || ""}
+                          onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
+                          placeholder="Enter a number..."
+                          min={question.min_value || undefined}
+                          max={question.max_value || undefined}
+                        />
+                      )}
+
+                      {/* Boolean (Yes/No) */}
+                      {question.question_type === "boolean" && (
+                        <div className="flex items-center gap-4">
+                          <RadioGroup
+                            value={screeningAnswers[question.id]?.toString() || ""}
+                            onValueChange={(value) => handleScreeningAnswer(question.id, value === "true")}
+                            className="flex gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="true" id={`${question.id}-yes`} />
+                              <Label htmlFor={`${question.id}-yes`}>Yes</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="false" id={`${question.id}-no`} />
+                              <Label htmlFor={`${question.id}-no`}>No</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+
+                      {/* Single Select */}
+                      {question.question_type === "select" && question.options && (
+                        <Select
+                          value={screeningAnswers[question.id] || ""}
+                          onValueChange={(value) => handleScreeningAnswer(question.id, value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an option..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {question.options.map((option, idx) => (
+                              <SelectItem key={idx} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                      {/* Multi Select */}
+                      {question.question_type === "multiselect" && question.options && (
+                        <div className="space-y-2">
+                          {question.options.map((option, idx) => (
+                            <div key={idx} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${question.id}-${idx}`}
+                                checked={(screeningAnswers[question.id] || []).includes(option)}
+                                onCheckedChange={() => handleMultiselectToggle(question.id, option)}
+                              />
+                              <Label htmlFor={`${question.id}-${idx}`} className="font-normal">
+                                {option}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="coverLetter">Cover Letter (Optional)</Label>
-              <Textarea
-                id="coverLetter"
-                value={formData.coverLetter}
-                onChange={(e) => setFormData({ ...formData, coverLetter: e.target.value })}
-                placeholder="Tell us why you're interested in this role..."
-                rows={4}
-              />
-            </div>
-
-            {/* Screening Questions */}
-            {screeningQuestions.length > 0 && (
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Additional Questions</p>
-                </div>
-                {screeningQuestions.map((question) => (
-                  <div key={question.id} className="space-y-2">
-                    <Label>
-                      {question.question}
-                      {question.is_required && <span className="text-red-500 ml-1">*</span>}
-                    </Label>
-                    {question.description && (
-                      <p className="text-xs text-muted-foreground">{question.description}</p>
-                    )}
-
-                    {/* Text input */}
-                    {question.question_type === "text" && (
-                      <Input
-                        value={screeningAnswers[question.id] || ""}
-                        onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
-                        placeholder="Your answer..."
-                        maxLength={question.max_length || undefined}
-                      />
-                    )}
-
-                    {/* Textarea */}
-                    {question.question_type === "textarea" && (
-                      <Textarea
-                        value={screeningAnswers[question.id] || ""}
-                        onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
-                        placeholder="Your answer..."
-                        rows={3}
-                        maxLength={question.max_length || undefined}
-                      />
-                    )}
-
-                    {/* Number input */}
-                    {question.question_type === "number" && (
-                      <Input
-                        type="number"
-                        value={screeningAnswers[question.id] || ""}
-                        onChange={(e) => handleScreeningAnswer(question.id, e.target.value)}
-                        placeholder="Enter a number..."
-                        min={question.min_value || undefined}
-                        max={question.max_value || undefined}
-                      />
-                    )}
-
-                    {/* Boolean (Yes/No) */}
-                    {question.question_type === "boolean" && (
-                      <div className="flex items-center gap-4">
-                        <RadioGroup
-                          value={screeningAnswers[question.id]?.toString() || ""}
-                          onValueChange={(value) => handleScreeningAnswer(question.id, value === "true")}
-                          className="flex gap-4"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="true" id={`${question.id}-yes`} />
-                            <Label htmlFor={`${question.id}-yes`}>Yes</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="false" id={`${question.id}-no`} />
-                            <Label htmlFor={`${question.id}-no`}>No</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-                    )}
-
-                    {/* Single Select */}
-                    {question.question_type === "select" && question.options && (
-                      <Select
-                        value={screeningAnswers[question.id] || ""}
-                        onValueChange={(value) => handleScreeningAnswer(question.id, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an option..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {question.options.map((option, idx) => (
-                            <SelectItem key={idx} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-
-                    {/* Multi Select */}
-                    {question.question_type === "multiselect" && question.options && (
-                      <div className="space-y-2">
-                        {question.options.map((option, idx) => (
-                          <div key={idx} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${question.id}-${idx}`}
-                              checked={(screeningAnswers[question.id] || []).includes(option)}
-                              onCheckedChange={() => handleMultiselectToggle(question.id, option)}
-                            />
-                            <Label htmlFor={`${question.id}-${idx}`} className="font-normal">
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsApplyDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting} style={{ backgroundColor: primaryColor }}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    Submit Application
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter className="pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsApplyDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting} style={{ backgroundColor: primaryColor }}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Application
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
