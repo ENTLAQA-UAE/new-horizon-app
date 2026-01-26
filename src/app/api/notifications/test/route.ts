@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
           reason: "No email provider configured for organization",
         }
       } else {
-        // Test email notification
+        // Test user_invited email (same as team invitation)
         const emailResult = await sendNotification(serviceClient, {
           eventCode: "user_invited",
           orgId: profile.org_id,
@@ -169,6 +169,7 @@ export async function POST(request: NextRequest) {
           success: emailResult.emailSent,
           errors: emailResult.errors,
           sentTo: recipientEmail || profile.email,
+          fullResult: emailResult, // Include full result for debugging
         }
 
         // Check email log
