@@ -133,7 +133,7 @@ const hrManagerSections: NavSection[] = [
       { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
       { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
-      { href: "/org/interviews/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
+      { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
       { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
       { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
     ],
@@ -144,6 +144,7 @@ const hrManagerSections: NavSection[] = [
     collapsible: true,
     links: [
       { href: "/org/offers/templates", label: "Offer Templates", labelAr: "قوالب العروض", icon: FileSignature },
+      { href: "/org/scorecard-templates", label: "Scorecard Templates", labelAr: "قوالب التقييم", icon: ClipboardList },
       { href: "/org/pipelines", label: "Pipelines", labelAr: "مسارات التوظيف", icon: GitBranch },
       { href: "/org/screening-questions", label: "Screening Questions", labelAr: "أسئلة الفحص", icon: HelpCircle },
       { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
@@ -188,7 +189,7 @@ const hiringManagerSections: NavSection[] = [
       { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
       { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
-      { href: "/org/interviews/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
+      { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
     ],
   },
 ]
@@ -206,7 +207,7 @@ const interviewerSections: NavSection[] = [
     collapsible: true,
     links: [
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
-      { href: "/org/interviews/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
+      { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
     ],
   },
 ]

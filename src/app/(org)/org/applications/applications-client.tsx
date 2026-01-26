@@ -76,6 +76,8 @@ import {
   ChevronUp,
   Star,
   ClipboardCheck,
+  XCircle,
+  ClipboardList,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -198,6 +200,50 @@ interface ApplicationAttachment {
   created_at: string
 }
 
+interface ScorecardTemplate {
+  id: string
+  name: string
+  name_ar?: string
+  description?: string
+  template_type: string
+  criteria: Array<{
+    id: string
+    name: string
+    name_ar?: string
+    description?: string
+    weight: number
+  }>
+  rating_scale_type: string
+  rating_scale_labels: Record<string, string>
+}
+
+interface InterviewScorecard {
+  id: string
+  interview_id: string
+  template_id: string | null
+  interviewer_id: string
+  criteria_scores: Array<{ criteria_id: string; score: number; notes?: string }>
+  overall_score: number | null
+  recommendation: string
+  strengths?: string
+  weaknesses?: string
+  additional_notes?: string
+  status: string
+  submitted_at: string | null
+  created_at: string
+  profiles?: {
+    first_name: string
+    last_name: string
+  }
+  scorecard_templates?: {
+    name: string
+  }
+  interviews?: {
+    title: string
+    scheduled_at: string
+  }
+}
+
 interface ApplicationsClientProps {
   applications: Application[]
   jobsWithPipelines: JobWithPipeline[]
@@ -257,6 +303,19 @@ export function ApplicationsClient({
   // Scorecard
   const [selectedInterviewForScorecard, setSelectedInterviewForScorecard] = useState<Interview | null>(null)
   const [isScorecardDialogOpen, setIsScorecardDialogOpen] = useState(false)
+  const [scorecardTemplates, setScorecardTemplates] = useState<ScorecardTemplate[]>([])
+  const [applicationScorecards, setApplicationScorecards] = useState<InterviewScorecard[]>([])
+  const [isLoadingScorecards, setIsLoadingScorecards] = useState(false)
+
+  // Disqualify dialog
+  const [isDisqualifyDialogOpen, setIsDisqualifyDialogOpen] = useState(false)
+  const [disqualifyReason, setDisqualifyReason] = useState("")
+  const [isDisqualifying, setIsDisqualifying] = useState(false)
+
+  // Scorecard submission dialog
+  const [isScorecardSubmitDialogOpen, setIsScorecardSubmitDialogOpen] = useState(false)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+  const [selectedInterviewId, setSelectedInterviewId] = useState<string>("")
 
   // Get other applications for a candidate
   const getOtherApplicationsForCandidate = (candidateId: string, currentAppId: string) => {
@@ -411,15 +470,18 @@ export function ApplicationsClient({
     hired: applications.filter((a) => getStageType(a) === "hired").length,
   }
 
-  // Fetch application details (notes, interviews, activities, attachments)
+  // Fetch application details (notes, interviews, activities, attachments, scorecards)
   const fetchApplicationDetails = async (applicationId: string) => {
     setIsLoadingDetails(true)
+    setIsLoadingScorecards(true)
     try {
-      const [notesRes, interviewsRes, activitiesRes, attachmentsRes] = await Promise.all([
+      const [notesRes, interviewsRes, activitiesRes, attachmentsRes, scorecardsRes, templatesRes] = await Promise.all([
         fetch(`/api/applications/${applicationId}/notes`),
         fetch(`/api/applications/${applicationId}/interviews`),
         fetch(`/api/applications/${applicationId}/activities`),
         fetch(`/api/applications/${applicationId}/attachments`),
+        fetch(`/api/applications/${applicationId}/scorecards`),
+        fetch(`/api/scorecard-templates`),
       ])
 
       if (notesRes.ok) {
@@ -438,10 +500,19 @@ export function ApplicationsClient({
         const attachmentsData = await attachmentsRes.json()
         setApplicationAttachments(attachmentsData.attachments || [])
       }
+      if (scorecardsRes.ok) {
+        const scorecardsData = await scorecardsRes.json()
+        setApplicationScorecards(scorecardsData.scorecards || [])
+      }
+      if (templatesRes.ok) {
+        const templatesData = await templatesRes.json()
+        setScorecardTemplates(templatesData.templates || [])
+      }
     } catch (error) {
       console.error("Error fetching application details:", error)
     } finally {
       setIsLoadingDetails(false)
+      setIsLoadingScorecards(false)
     }
   }
 
@@ -452,9 +523,101 @@ export function ApplicationsClient({
     setApplicationInterviews([])
     setApplicationActivities([])
     setApplicationAttachments([])
+    setApplicationScorecards([])
+    setScorecardTemplates([])
     setNewNote("")
+    setDisqualifyReason("")
+    setSelectedTemplateId("")
+    setSelectedInterviewId("")
     setIsViewDialogOpen(true)
     fetchApplicationDetails(app.id)
+  }
+
+  // Disqualify candidate
+  const handleDisqualify = async () => {
+    if (!selectedApplication) return
+
+    setIsDisqualifying(true)
+    try {
+      // Find the rejected stage for this job's pipeline
+      const job = jobsWithPipelines.find(j => j.id === selectedApplication.job_id)
+      const rejectedStage = job?.pipelines?.pipeline_stages?.find(s => s.stage_type === "rejected")
+
+      if (!rejectedStage) {
+        toast.error("No rejection stage found in pipeline")
+        return
+      }
+
+      const { error } = await supabaseUpdate(
+        "applications",
+        {
+          stage_id: rejectedStage.id,
+          status: "rejected",
+          notes: disqualifyReason ? `Disqualified: ${disqualifyReason}` : "Disqualified",
+          updated_at: new Date().toISOString(),
+        },
+        { column: "id", value: selectedApplication.id }
+      )
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      // Update local state
+      setApplications(
+        applications.map((a) =>
+          a.id === selectedApplication.id
+            ? { ...a, stage_id: rejectedStage.id, status: "rejected" }
+            : a
+        )
+      )
+      setSelectedApplication({
+        ...selectedApplication,
+        stage_id: rejectedStage.id,
+        status: "rejected",
+      })
+
+      // Send notification
+      if (selectedApplication.candidates && selectedApplication.jobs) {
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "candidate_disqualified",
+            orgId: selectedApplication.jobs.org_id,
+            data: {
+              candidateName: `${selectedApplication.candidates.first_name} ${selectedApplication.candidates.last_name}`,
+              candidateEmail: selectedApplication.candidates.email,
+              jobTitle: selectedApplication.jobs.title,
+              reason: disqualifyReason,
+              applicationId: selectedApplication.id,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send disqualify notification:", err)
+        })
+      }
+
+      setIsDisqualifyDialogOpen(false)
+      setDisqualifyReason("")
+      toast.success("Candidate disqualified")
+      router.refresh()
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsDisqualifying(false)
+    }
+  }
+
+  // Open scorecard submission page
+  const handleOpenScorecardSubmit = () => {
+    if (!selectedInterviewId || !selectedTemplateId) {
+      toast.error("Please select an interview and template")
+      return
+    }
+    // Navigate to scorecard submission page with pre-selected values
+    router.push(`/org/scorecards/submit?interview=${selectedInterviewId}&template=${selectedTemplateId}`)
   }
 
   // Add note to application
@@ -1198,7 +1361,7 @@ export function ApplicationsClient({
 
       {/* View Dialog - Enhanced with Tabs */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-0">
           {selectedApplication && (
             <>
               {/* Header with gradient background */}
@@ -1267,6 +1430,24 @@ export function ApplicationsClient({
                       >
                         <Calendar className="h-3.5 w-3.5" />
                         Schedule Interview
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5"
+                        onClick={() => setIsScorecardSubmitDialogOpen(true)}
+                      >
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        Scorecard
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setIsDisqualifyDialogOpen(true)}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Disqualify
                       </Button>
                       <span className="text-xs text-muted-foreground">
                         Applied {formatDate(selectedApplication.applied_at || selectedApplication.created_at)}
@@ -1343,6 +1524,13 @@ export function ApplicationsClient({
                     >
                       <Clock className="h-4 w-4 mr-2" />
                       Timeline
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="scorecards"
+                      className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
+                    >
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      Scorecards
                     </TabsTrigger>
                   </TabsList>
                 </div>
@@ -1671,6 +1859,122 @@ export function ApplicationsClient({
                         </div>
                       )}
                     </TabsContent>
+
+                    {/* Scorecards Tab */}
+                    <TabsContent value="scorecards" className="mt-0">
+                      {isLoadingScorecards ? (
+                        <div className="flex items-center justify-center py-16">
+                          <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary,#6366f1)]" />
+                        </div>
+                      ) : applicationScorecards.length === 0 ? (
+                        <div className="text-center py-16">
+                          <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                            <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
+                          </div>
+                          <p className="text-muted-foreground font-medium">No scorecards submitted yet</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Scorecards will appear here once interviewers submit their evaluations
+                          </p>
+                          {applicationInterviews.length > 0 && (
+                            <Button
+                              variant="outline"
+                              className="mt-4"
+                              onClick={() => setIsScorecardSubmitDialogOpen(true)}
+                            >
+                              <ClipboardList className="mr-2 h-4 w-4" />
+                              Submit Scorecard
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {applicationScorecards.map((scorecard) => (
+                            <div key={scorecard.id} className="p-4 border rounded-xl hover:shadow-md transition-shadow">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-start gap-4">
+                                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--brand-primary,#6366f1)] to-[var(--brand-secondary,#8b5cf6)] flex items-center justify-center">
+                                    <span className="text-sm font-bold text-white">
+                                      {scorecard.profiles?.first_name?.[0] || "?"}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">
+                                      {scorecard.profiles?.first_name} {scorecard.profiles?.last_name}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {scorecard.scorecard_templates?.name || "General Evaluation"}
+                                    </p>
+                                    {scorecard.interviews && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        Interview: {scorecard.interviews.title}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <Badge
+                                    variant={
+                                      scorecard.recommendation === "strong_yes" || scorecard.recommendation === "yes"
+                                        ? "default"
+                                        : scorecard.recommendation === "strong_no" || scorecard.recommendation === "no"
+                                        ? "destructive"
+                                        : "secondary"
+                                    }
+                                    className={
+                                      scorecard.recommendation === "strong_yes"
+                                        ? "bg-green-600"
+                                        : scorecard.recommendation === "yes"
+                                        ? "bg-green-500"
+                                        : ""
+                                    }
+                                  >
+                                    {scorecard.recommendation === "strong_yes" && "Strong Yes"}
+                                    {scorecard.recommendation === "yes" && "Yes"}
+                                    {scorecard.recommendation === "neutral" && "Neutral"}
+                                    {scorecard.recommendation === "no" && "No"}
+                                    {scorecard.recommendation === "strong_no" && "Strong No"}
+                                  </Badge>
+                                  {scorecard.overall_score !== null && (
+                                    <div className="flex items-center gap-1">
+                                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                      <span className="text-sm font-medium">{scorecard.overall_score.toFixed(1)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {(scorecard.strengths || scorecard.weaknesses) && (
+                                <div className="mt-4 pt-4 border-t grid md:grid-cols-2 gap-4">
+                                  {scorecard.strengths && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">
+                                        Strengths
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">{scorecard.strengths}</p>
+                                    </div>
+                                  )}
+                                  {scorecard.weaknesses && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">
+                                        Areas for Improvement
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">{scorecard.weaknesses}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs text-muted-foreground">
+                                <span>
+                                  Submitted {scorecard.submitted_at ? formatDate(scorecard.submitted_at) : formatDate(scorecard.created_at)}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {scorecard.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
                   </div>
                 </ScrollArea>
               </Tabs>
@@ -1794,6 +2098,133 @@ export function ApplicationsClient({
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPipelineJobDialogOpen(false)}>
               Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Disqualify Dialog */}
+      <Dialog open={isDisqualifyDialogOpen} onOpenChange={setIsDisqualifyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Disqualify Candidate</DialogTitle>
+            <DialogDescription>
+              This will move the candidate to the rejected stage. Optionally provide a reason.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedApplication && (
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="font-medium text-red-800 dark:text-red-200">
+                  {selectedApplication.candidates?.first_name} {selectedApplication.candidates?.last_name}
+                </p>
+                <p className="text-sm text-red-600 dark:text-red-300">
+                  Applied for: {selectedApplication.jobs?.title}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="disqualify-reason">Reason (Optional)</Label>
+                <Textarea
+                  id="disqualify-reason"
+                  value={disqualifyReason}
+                  onChange={(e) => setDisqualifyReason(e.target.value)}
+                  placeholder="Provide a reason for disqualification..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDisqualifyDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisqualify}
+              disabled={isDisqualifying}
+            >
+              {isDisqualifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Disqualify
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Scorecard Submission Dialog */}
+      <Dialog open={isScorecardSubmitDialogOpen} onOpenChange={setIsScorecardSubmitDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Submit Scorecard</DialogTitle>
+            <DialogDescription>
+              Select an interview and template to submit a scorecard for this candidate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Interview</Label>
+              <Select value={selectedInterviewId} onValueChange={setSelectedInterviewId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an interview" />
+                </SelectTrigger>
+                <SelectContent>
+                  {applicationInterviews.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No interviews scheduled yet
+                    </div>
+                  ) : (
+                    applicationInterviews.map((interview) => (
+                      <SelectItem key={interview.id} value={interview.id}>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          <span>{interview.title}</span>
+                          <span className="text-muted-foreground">
+                            ({new Date(interview.scheduled_at).toLocaleDateString()})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Select Template</Label>
+              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a scorecard template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scorecardTemplates.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No templates available
+                    </div>
+                  ) : (
+                    scorecardTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex items-center gap-2">
+                          <ClipboardList className="h-4 w-4" />
+                          <span>{template.name}</span>
+                          <Badge variant="outline" className="ml-1">
+                            {template.template_type}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsScorecardSubmitDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleOpenScorecardSubmit}
+              disabled={!selectedInterviewId || !selectedTemplateId}
+            >
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Continue to Scorecard
             </Button>
           </DialogFooter>
         </DialogContent>
