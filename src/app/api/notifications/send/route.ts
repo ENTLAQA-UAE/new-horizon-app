@@ -11,6 +11,14 @@ import { sendNotification, notify, NotificationEventCode, NotificationRecipient 
 import { SupabaseClient } from "@supabase/supabase-js"
 
 /**
+ * Helper to combine first_name and last_name into a full name
+ */
+function getFullName(profile: { first_name?: string | null; last_name?: string | null } | null | undefined): string {
+  if (!profile) return ""
+  return [profile.first_name, profile.last_name].filter(Boolean).join(" ")
+}
+
+/**
  * Helper to get internal team recipients with both userId and email
  * This enables both in-app and email notifications when both channels are enabled
  */
@@ -40,13 +48,13 @@ async function getTeamRecipients(
   // Get user profiles with email
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name, email")
+    .select("id, first_name, last_name, email")
     .in("id", userIds)
 
   return (profiles || []).map(p => ({
     userId: p.id,
     email: p.email,
-    name: p.full_name || p.email,
+    name: getFullName(p) || p.email,
   }))
 }
 
@@ -159,17 +167,17 @@ export async function POST(request: NextRequest) {
         if (data.interviewerIds?.length > 0) {
           const { data: interviewers } = await serviceClient
             .from("profiles")
-            .select("id, full_name, email")
+            .select("id, first_name, last_name, email")
             .in("id", data.interviewerIds)
 
           if (interviewers && interviewers.length > 0) {
-            interviewerName = interviewers.map(i => i.full_name).join(", ")
+            interviewerName = interviewers.map(i => getFullName(i) || i.email).join(", ")
             // Add interviewers with both userId and email
             interviewers.forEach(i => {
               interviewRecipients.push({
                 userId: i.id,
                 email: i.email,
-                name: i.full_name || i.email,
+                name: getFullName(i) || i.email,
               })
             })
           }
@@ -242,7 +250,7 @@ export async function POST(request: NextRequest) {
         if (data.teamUserIds && data.teamUserIds.length > 0) {
           const { data: teamProfiles } = await serviceClient
             .from("profiles")
-            .select("id, full_name, email")
+            .select("id, first_name, last_name, email")
             .in("id", data.teamUserIds)
 
           if (teamProfiles) {
@@ -250,7 +258,7 @@ export async function POST(request: NextRequest) {
               offerRecipients.push({
                 userId: p.id,
                 email: p.email,
-                name: p.full_name || p.email,
+                name: getFullName(p) || p.email,
               })
             })
           }
@@ -395,11 +403,11 @@ export async function POST(request: NextRequest) {
         if (!interviewerName && user) {
           const { data: interviewer } = await serviceClient
             .from("profiles")
-            .select("full_name")
+            .select("first_name, last_name")
             .eq("id", user.id)
             .single()
 
-          interviewerName = interviewer?.full_name || "An interviewer"
+          interviewerName = getFullName(interviewer) || "An interviewer"
         }
 
         // Notify hiring team (with both userId and email for dual-channel)
@@ -425,7 +433,7 @@ export async function POST(request: NextRequest) {
         // Get inviter's name
         const { data: inviter } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
@@ -442,7 +450,7 @@ export async function POST(request: NextRequest) {
           recipients: [{ email: data.recipientEmail, name: data.recipientName }],
           variables: {
             receiver_name: data.recipientName,
-            inviter_name: inviter?.full_name || "A team member",
+            inviter_name: getFullName(inviter) || "A team member",
             org_name: org?.name || "the organization",
             role: data.role,
             invitation_url: data.inviteLink,
@@ -458,7 +466,7 @@ export async function POST(request: NextRequest) {
         // Get the user whose role is being changed
         const { data: targetUser, error: targetError } = await serviceClient
           .from("profiles")
-          .select("id, full_name, email")
+          .select("id, first_name, last_name, email")
           .eq("id", data.userId)
           .single()
 
@@ -476,7 +484,7 @@ export async function POST(request: NextRequest) {
         // Get the current user (who is making the change)
         const { data: changer } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
@@ -487,6 +495,7 @@ export async function POST(request: NextRequest) {
           .eq("id", orgId)
           .single()
 
+        const targetFullName = getFullName(targetUser)
         console.log("[role_changed] Sending notification - org:", org?.name, "newRole:", data.newRole, "previousRole:", data.previousRole)
 
         result = await sendNotification(serviceClient, {
@@ -495,12 +504,12 @@ export async function POST(request: NextRequest) {
           recipients: [{
             userId: targetUser.id,
             email: targetUser.email,
-            name: targetUser.full_name || targetUser.email,
+            name: targetFullName || targetUser.email,
           }],
           variables: {
-            user_name: targetUser.full_name || "there",
-            receiver_name: targetUser.full_name || "there",
-            changed_by: changer?.full_name || "An administrator",
+            user_name: targetFullName || "there",
+            receiver_name: targetFullName || "there",
+            changed_by: getFullName(changer) || "An administrator",
             old_role: data.previousRole || "Previous Role",
             new_role: data.newRole,
             role: data.newRole,
@@ -541,7 +550,7 @@ export async function POST(request: NextRequest) {
         // Get disqualifier name
         const { data: disqualifier } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
@@ -556,7 +565,7 @@ export async function POST(request: NextRequest) {
             candidate_name: `${candidate?.first_name || ""} ${candidate?.last_name || ""}`.trim() || "A candidate",
             job_title: job?.title || "the position",
             disqualification_reason: data.reason || "Not specified",
-            disqualified_by: disqualifier?.full_name || "A team member",
+            disqualified_by: getFullName(disqualifier) || "A team member",
             org_name: org?.name || "the organization",
             application_url: `/org/applications?id=${data.applicationId}`,
           },
@@ -661,7 +670,7 @@ export async function POST(request: NextRequest) {
         // Get creator name
         const { data: creator } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
@@ -677,7 +686,7 @@ export async function POST(request: NextRequest) {
             job_title: offerApp?.jobs?.title || "the position",
             salary: offer.salary ? `$${offer.salary.toLocaleString()}` : "Not specified",
             start_date: offer.start_date ? new Date(offer.start_date).toLocaleDateString() : "TBD",
-            created_by: creator?.full_name || "A team member",
+            created_by: getFullName(creator) || "A team member",
             org_name: org?.name || "the organization",
             offer_url: `/org/offers?id=${data.offerId}`,
           },
@@ -757,7 +766,7 @@ export async function POST(request: NextRequest) {
         // Get closer name
         const { data: closer } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
@@ -770,7 +779,7 @@ export async function POST(request: NextRequest) {
           recipients: jobClosedRecipients,
           variables: {
             job_title: job.title || "the position",
-            closed_by: closer?.full_name || "A team member",
+            closed_by: getFullName(closer) || "A team member",
             close_reason: data.reason || "Not specified",
             org_name: org?.name || "the organization",
             job_url: `/org/jobs/${data.jobId}`,
@@ -838,7 +847,7 @@ export async function POST(request: NextRequest) {
         // Get creator name
         const { data: creator } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
@@ -853,7 +862,7 @@ export async function POST(request: NextRequest) {
             requisition_title: requisition.title || "New Requisition",
             department: requisition.department || "Not specified",
             positions_count: String(requisition.positions_count || 1),
-            created_by: creator?.full_name || "A team member",
+            created_by: getFullName(creator) || "A team member",
             org_name: org?.name || "the organization",
             requisition_url: `/org/requisitions?id=${data.requisitionId}`,
           },
@@ -883,19 +892,19 @@ export async function POST(request: NextRequest) {
         // Get approver name
         const { data: approver } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
         // Get creator to notify them
         const { data: creator } = await serviceClient
           .from("profiles")
-          .select("id, full_name, email")
+          .select("id, first_name, last_name, email")
           .eq("id", requisition.created_by)
           .single()
 
         const approvedRecipients = creator
-          ? [{ userId: creator.id, email: creator.email, name: creator.full_name || creator.email }]
+          ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
           : await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
 
         result = await sendNotification(serviceClient, {
@@ -905,7 +914,7 @@ export async function POST(request: NextRequest) {
           variables: {
             requisition_title: requisition.title || "Requisition",
             department: requisition.department || "Not specified",
-            approved_by: approver?.full_name || "An approver",
+            approved_by: getFullName(approver) || "An approver",
             org_name: org?.name || "the organization",
             requisition_url: `/org/requisitions?id=${data.requisitionId}`,
           },
@@ -935,19 +944,19 @@ export async function POST(request: NextRequest) {
         // Get rejector name
         const { data: rejector } = await serviceClient
           .from("profiles")
-          .select("full_name")
+          .select("first_name, last_name")
           .eq("id", user.id)
           .single()
 
         // Get creator to notify them
         const { data: creator } = await serviceClient
           .from("profiles")
-          .select("id, full_name, email")
+          .select("id, first_name, last_name, email")
           .eq("id", requisition.created_by)
           .single()
 
         const rejectedRecipients = creator
-          ? [{ userId: creator.id, email: creator.email, name: creator.full_name || creator.email }]
+          ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
           : await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
 
         result = await sendNotification(serviceClient, {
@@ -957,7 +966,7 @@ export async function POST(request: NextRequest) {
           variables: {
             requisition_title: requisition.title || "Requisition",
             department: requisition.department || "Not specified",
-            rejected_by: rejector?.full_name || "An approver",
+            rejected_by: getFullName(rejector) || "An approver",
             rejection_reason: data.reason || "Not specified",
             org_name: org?.name || "the organization",
             requisition_url: `/org/requisitions?id=${data.requisitionId}`,
@@ -1060,7 +1069,7 @@ export async function POST(request: NextRequest) {
         // Get interviewer to remind
         const { data: interviewer } = await serviceClient
           .from("profiles")
-          .select("id, full_name, email")
+          .select("id, first_name, last_name, email")
           .eq("id", data.interviewerId)
           .single()
 
@@ -1068,16 +1077,17 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Interviewer not found" }, { status: 404 })
         }
 
+        const interviewerFullName = getFullName(interviewer)
         result = await sendNotification(serviceClient, {
           eventCode: "scorecard_reminder",
           orgId,
           recipients: [{
             userId: interviewer.id,
             email: interviewer.email,
-            name: interviewer.full_name || interviewer.email,
+            name: interviewerFullName || interviewer.email,
           }],
           variables: {
-            interviewer_name: interviewer.full_name || "Interviewer",
+            interviewer_name: interviewerFullName || "Interviewer",
             candidate_name: `${scorecardCandidate?.first_name || ""} ${scorecardCandidate?.last_name || ""}`.trim() || "A candidate",
             job_title: scorecardApp?.jobs?.title || "the position",
             interview_date: interview.scheduled_at ? new Date(interview.scheduled_at).toLocaleDateString() : "Recent",

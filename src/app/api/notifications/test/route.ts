@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   // Get user profile and org
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, email, org_id, role")
+    .select("id, first_name, last_name, email, org_id, role")
     .eq("id", user.id)
     .single()
 
@@ -95,11 +95,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Test notification sending
+    const profileFullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ")
     const testRecipients = [
       {
         userId: user.id,
         email: recipientEmail || profile.email,
-        name: profile.full_name || "Test User",
+        name: profileFullName || "Test User",
       },
     ]
 
@@ -153,10 +154,10 @@ export async function POST(request: NextRequest) {
           orgId: profile.org_id,
           recipients: [{
             email: recipientEmail || profile.email,
-            name: profile.full_name || "Test User",
+            name: profileFullName || "Test User",
           }],
           variables: {
-            receiver_name: profile.full_name || "Test User",
+            receiver_name: profileFullName || "Test User",
             inviter_name: "Notification System Test",
             org_name: "Your Organization",
             role: "Test Role",

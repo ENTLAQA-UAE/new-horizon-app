@@ -227,7 +227,7 @@ export async function getDashboardStats(
     supabase.from("departments").select("id, name"),
 
     // Get interviewers' profiles
-    supabase.from("profiles").select("id, full_name, email"),
+    supabase.from("profiles").select("id, first_name, last_name, email"),
 
     // Previous period applications (for comparison based on date range)
     supabase
@@ -446,7 +446,7 @@ export async function getDashboardStats(
     }
   })
 
-  const profileMap = new Map(profiles.map(p => [p.id, { name: p.full_name, email: p.email }]))
+  const profileMap = new Map(profiles.map(p => [p.id, { name: [p.first_name, p.last_name].filter(Boolean).join(" "), email: p.email }]))
 
   const teamActivity = Array.from(interviewerStats.entries())
     .map(([userId, stats]) => {
