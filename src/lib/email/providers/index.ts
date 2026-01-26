@@ -73,15 +73,34 @@ export async function getEmailProvider(
 }
 
 /**
+ * Sanitize email address - remove angle brackets and extract clean email
+ */
+function sanitizeEmail(email: string | null | undefined): string {
+  if (!email) return ''
+  const match = email.match(/<([^>]+)>/) || email.match(/([^\s<>]+@[^\s<>]+)/)
+  return match ? match[1].trim() : email.trim()
+}
+
+/**
  * Build provider configuration from database record
  */
 async function buildProviderConfig(config: Record<string, unknown>): Promise<EmailProviderConfig | null> {
   const provider = config.email_provider as EmailProviderType
+
+  // Sanitize email addresses to ensure clean format
+  const fromEmail = sanitizeEmail(config.from_email as string)
+  const replyTo = config.reply_to_email ? sanitizeEmail(config.reply_to_email as string) : undefined
+
+  if (!fromEmail) {
+    console.error('No from_email configured')
+    return null
+  }
+
   const baseConfig: EmailProviderConfig = {
     provider,
-    fromEmail: config.from_email as string,
-    fromName: config.from_name as string,
-    replyTo: config.reply_to_email as string | undefined,
+    fromEmail,
+    fromName: (config.from_name as string) || undefined,
+    replyTo,
     trackOpens: config.track_opens as boolean ?? true,
     trackClicks: config.track_clicks as boolean ?? true,
   }
