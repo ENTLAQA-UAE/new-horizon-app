@@ -553,7 +553,6 @@ export function ApplicationsClient({
         {
           stage_id: rejectedStage.id,
           status: "rejected",
-          notes: disqualifyReason ? `Disqualified: ${disqualifyReason}` : "Disqualified",
           updated_at: new Date().toISOString(),
         },
         { column: "id", value: selectedApplication.id }
@@ -562,6 +561,20 @@ export function ApplicationsClient({
       if (error) {
         toast.error(error.message)
         return
+      }
+
+      // Add a note with the disqualification reason if provided
+      if (disqualifyReason) {
+        fetch(`/api/applications/${selectedApplication.id}/notes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `Disqualified: ${disqualifyReason}`,
+            is_private: false,
+          }),
+        }).catch((err) => {
+          console.error("Failed to add disqualification note:", err)
+        })
       }
 
       // Update local state
@@ -1803,8 +1816,9 @@ export function ApplicationsClient({
                                       className="gap-1.5"
                                       onClick={(e) => {
                                         e.stopPropagation()
-                                        // Navigate to scorecards page with interview pre-selected
-                                        router.push(`/org/interviews/scorecards?interview=${interview.id}`)
+                                        // Pre-select this interview and open scorecard dialog
+                                        setSelectedInterviewId(interview.id)
+                                        setIsScorecardSubmitDialogOpen(true)
                                       }}
                                     >
                                       <ClipboardCheck className="h-4 w-4" />
