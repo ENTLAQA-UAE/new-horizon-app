@@ -14,7 +14,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js"
 import { createNotification, createBulkNotifications, NotificationType } from "./notification-service"
-import { sendOrgEmail } from "@/lib/email/providers"
+import { sendOrgEmail, sendPlatformFallbackEmail } from "@/lib/email/providers"
 
 // Notification event codes
 export type NotificationEventCode =
@@ -150,11 +150,29 @@ export async function sendNotification(
 
   try {
     // 1. Get organization details for branding
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("name, logo_url, primary_color, secondary_color")
-      .eq("id", options.orgId)
-      .single()
+    // Handle "platform" orgId for users without an organization
+    const isPlatformLevel = options.orgId === "platform" || !options.orgId
+
+    let org: { name: string; logo_url: string | null; primary_color: string | null; secondary_color: string | null } | null = null
+
+    if (!isPlatformLevel) {
+      const { data } = await supabase
+        .from("organizations")
+        .select("name, logo_url, primary_color, secondary_color")
+        .eq("id", options.orgId)
+        .single()
+      org = data
+    }
+
+    // Use platform defaults if no org found
+    if (!org) {
+      org = {
+        name: process.env.PLATFORM_NAME || "Jadarat ATS",
+        logo_url: process.env.PLATFORM_LOGO_URL || null,
+        primary_color: process.env.PLATFORM_PRIMARY_COLOR || "#6366f1",
+        secondary_color: process.env.PLATFORM_SECONDARY_COLOR || "#8b5cf6",
+      }
+    }
 
     // 2. Get notification event
     const { data: event } = await supabase
@@ -168,15 +186,19 @@ export async function sendNotification(
       return result
     }
 
-    // 3. Get org notification settings
-    const { data: settings } = await supabase
-      .from("org_notification_settings")
-      .select("enabled, channels")
-      .eq("org_id", options.orgId)
-      .eq("event_id", event.id)
-      .single()
+    // 3. Get org notification settings (skip for platform-level notifications)
+    let settings: { enabled: boolean; channels: string[] } | null = null
+    if (!isPlatformLevel) {
+      const { data } = await supabase
+        .from("org_notification_settings")
+        .select("enabled, channels")
+        .eq("org_id", options.orgId)
+        .eq("event_id", event.id)
+        .single()
+      settings = data
+    }
 
-    // Check if notification is enabled (default to true if no settings)
+    // Check if notification is enabled (default to true if no settings or platform level)
     const isEnabled = settings?.enabled ?? true
     if (!isEnabled && !options.forceEmail && !options.forceInApp) {
       result.success = true // Not an error, just disabled
@@ -184,10 +206,12 @@ export async function sendNotification(
     }
 
     // Determine channels to use (channel names: 'mail', 'system', 'sms')
-    const channels: string[] = settings?.channels || event.default_channels || ["mail", "system"]
+    // For platform-level, default to email only
+    const defaultChannels = isPlatformLevel ? ["mail"] : ["mail", "system"]
+    const channels: string[] = settings?.channels || event.default_channels || defaultChannels
     const shouldSendEmail = options.forceEmail || channels.includes("mail")
-    const shouldSendInApp = options.forceInApp || channels.includes("system")
-    const shouldSendSms = channels.includes("sms")
+    const shouldSendInApp = !isPlatformLevel && (options.forceInApp || channels.includes("system"))
+    const shouldSendSms = !isPlatformLevel && channels.includes("sms")
 
     // 4. Prepare variables with org branding
     const variables: NotificationVariables = {
@@ -202,7 +226,7 @@ export async function sendNotification(
     if (shouldSendEmail) {
       const emailResult = await sendEmailNotification(
         supabase,
-        options.orgId,
+        isPlatformLevel ? "platform" : options.orgId,
         event.id,
         options.eventCode,
         options.recipients.filter((r) => r.email),
@@ -211,7 +235,8 @@ export async function sendNotification(
           candidateId: options.candidateId,
           applicationId: options.applicationId,
           interviewId: options.interviewId,
-        }
+        },
+        true // Always enable platform fallback for critical notifications
       )
       result.emailSent = emailResult.success
       if (!emailResult.success && emailResult.error) {
@@ -234,20 +259,25 @@ export async function sendNotification(
       }
     }
 
-    // 7. Log the notification
-    await logNotification(supabase, {
-      orgId: options.orgId,
-      eventId: event.id,
-      recipientCount: options.recipients.length,
-      channels: {
-        email: result.emailSent,
-        inApp: result.inAppSent,
-        sms: result.smsSent,
-      },
-      candidateId: options.candidateId,
-      applicationId: options.applicationId,
-      interviewId: options.interviewId,
-    })
+    // 7. Log the notification (skip for platform-level to avoid DB constraint issues)
+    if (!isPlatformLevel) {
+      await logNotification(supabase, {
+        orgId: options.orgId,
+        eventId: event.id,
+        recipientCount: options.recipients.length,
+        channels: {
+          email: result.emailSent,
+          inApp: result.inAppSent,
+          sms: result.smsSent,
+        },
+        candidateId: options.candidateId,
+        applicationId: options.applicationId,
+        interviewId: options.interviewId,
+      })
+    } else {
+      // Log platform-level notifications to console for monitoring
+      console.log(`[Platform Notification] ${options.eventCode} sent to ${options.recipients.length} recipient(s), emailSent: ${result.emailSent}`)
+    }
 
     result.success = result.errors.length === 0
     return result
@@ -259,6 +289,10 @@ export async function sendNotification(
 
 /**
  * Send email notification using templates
+ *
+ * Uses org email provider if configured, otherwise falls back to platform-level
+ * Resend API. This ensures emails like password reset always go through our
+ * custom templates with dynamic branding, never through Supabase's default templates.
  */
 async function sendEmailNotification(
   supabase: SupabaseClient,
@@ -267,22 +301,29 @@ async function sendEmailNotification(
   eventCode: string,
   recipients: NotificationRecipient[],
   variables: NotificationVariables,
-  logOptions: { candidateId?: string; applicationId?: string; interviewId?: string }
+  logOptions: { candidateId?: string; applicationId?: string; interviewId?: string },
+  usePlatformFallback: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
   if (recipients.length === 0) {
     return { success: true } // No recipients, not an error
   }
 
+  const isPlatformLevel = orgId === "platform"
+
   try {
     // Get template (org custom or default)
-    const { data: orgTemplate } = await supabase
-      .from("org_email_templates")
-      .select("subject, body_html")
-      .eq("org_id", orgId)
-      .eq("event_id", eventId)
-      .single()
+    let template: { subject: string; body_html: string } | null = null
 
-    let template = orgTemplate
+    if (!isPlatformLevel) {
+      const { data: orgTemplate } = await supabase
+        .from("org_email_templates")
+        .select("subject, body_html")
+        .eq("org_id", orgId)
+        .eq("event_id", eventId)
+        .single()
+
+      template = orgTemplate
+    }
 
     if (!template) {
       // Fall back to default template
@@ -317,15 +358,37 @@ async function sendEmailNotification(
       const personalizedHtml = html.replace(/\{\{receiver_name\}\}/g, recipient.name || "there")
       const personalizedSubject = subject.replace(/\{\{receiver_name\}\}/g, recipient.name || "there")
 
-      const emailResult = await sendOrgEmail(supabase, orgId, {
-        to: recipient.email,
-        subject: personalizedSubject,
-        html: personalizedHtml,
-      }, {
-        candidateId: logOptions.candidateId,
-        applicationId: logOptions.applicationId,
-        interviewId: logOptions.interviewId,
-      })
+      let emailResult: { success: boolean; error?: string }
+
+      if (isPlatformLevel) {
+        // For platform-level notifications, use platform fallback directly
+        emailResult = await sendPlatformFallbackEmail({
+          to: recipient.email,
+          subject: personalizedSubject,
+          html: personalizedHtml,
+        })
+      } else {
+        // Try org email first
+        emailResult = await sendOrgEmail(supabase, orgId, {
+          to: recipient.email,
+          subject: personalizedSubject,
+          html: personalizedHtml,
+        }, {
+          candidateId: logOptions.candidateId,
+          applicationId: logOptions.applicationId,
+          interviewId: logOptions.interviewId,
+        })
+
+        // If org email failed and platform fallback is enabled, try platform email
+        if (!emailResult.success && usePlatformFallback) {
+          console.log(`[Notification] Org email failed for ${recipient.email}, trying platform fallback...`)
+          emailResult = await sendPlatformFallbackEmail({
+            to: recipient.email,
+            subject: personalizedSubject,
+            html: personalizedHtml,
+          })
+        }
+      }
 
       if (!emailResult.success) {
         errors.push(`Failed to send to ${recipient.email}: ${emailResult.error}`)

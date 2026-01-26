@@ -10,6 +10,7 @@ import { ResendProvider } from './resend-provider'
 import { SMTPProvider } from './smtp-provider'
 import { SendGridProvider } from './sendgrid-provider'
 import { MailgunProvider } from './mailgun-provider'
+import { sendEmail as sendPlatformResendEmail } from '@/lib/email/resend'
 import type {
   EmailProvider,
   EmailProviderConfig,
@@ -330,4 +331,62 @@ export function getAvailableProviders(): Array<{
       requiredFields: ['api_key', 'domain'],
     },
   ]
+}
+
+/**
+ * Send email using platform-level Resend API (fallback for orgs without email config)
+ * This uses the RESEND_API_KEY environment variable instead of org-specific credentials.
+ *
+ * Use this when:
+ * - Organization doesn't have email configured
+ * - Need to send critical emails like password reset regardless of org email setup
+ */
+export async function sendPlatformFallbackEmail(
+  options: SendEmailOptions
+): Promise<SendEmailResult> {
+  try {
+    // Check if platform email is configured
+    if (!process.env.RESEND_API_KEY) {
+      return {
+        success: false,
+        error: 'Platform email not configured (RESEND_API_KEY not set)',
+        provider: 'resend',
+      }
+    }
+
+    const toEmail = Array.isArray(options.to)
+      ? typeof options.to[0] === 'string'
+        ? options.to[0]
+        : options.to[0].email
+      : typeof options.to === 'string'
+        ? options.to
+        : options.to.email
+
+    const result = await sendPlatformResendEmail({
+      to: toEmail,
+      subject: options.subject,
+      html: options.html || '',
+      from: options.from
+        ? typeof options.from === 'string'
+          ? options.from
+          : options.from.name
+            ? `${options.from.name} <${options.from.email}>`
+            : options.from.email
+        : undefined,
+      replyTo: options.replyTo,
+    })
+
+    return {
+      success: result.success,
+      messageId: result.id,
+      error: result.error,
+      provider: 'resend',
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Platform email send failed',
+      provider: 'resend',
+    }
+  }
 }

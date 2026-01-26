@@ -2,10 +2,14 @@
 /**
  * Custom Password Reset Endpoint
  *
- * Uses the notification system to send password reset emails with custom templates
- * instead of Supabase's default email.
+ * ALWAYS uses the notification system to send password reset emails with custom templates
+ * that include dynamic organization branding (colors, logo).
  *
- * Falls back to Supabase's built-in email for orgs without email configured.
+ * If the organization has email configured, uses their provider.
+ * Otherwise, falls back to platform-level Resend API (RESEND_API_KEY env var).
+ *
+ * This ensures consistent branding across all password reset emails, avoiding
+ * Supabase's default templates which have hardcoded colors.
  */
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
@@ -52,86 +56,69 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Get org_id for template lookup
+    // Get org_id for template lookup and branding
     const orgId = profile?.org_id || null
 
-    // Check if org has email configured
-    let hasEmailConfig = false
-    if (orgId) {
-      const { data: emailConfig } = await supabase
-        .from("organization_email_config")
-        .select("id")
-        .eq("org_id", orgId)
-        .eq("is_enabled", true)
-        .single()
+    // Always generate the reset link using Supabase Admin API
+    // This gives us the token without sending Supabase's default email
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "recovery",
+      email: authUser.email!,
+      options: {
+        redirectTo: baseUrl,
+      },
+    })
 
-      hasEmailConfig = !!emailConfig
+    if (linkError) {
+      console.error("Failed to generate reset link:", linkError)
+      return NextResponse.json(
+        { error: "Failed to generate reset link" },
+        { status: 500 }
+      )
     }
 
-    if (hasEmailConfig && orgId) {
-      // Use custom notification template with org's email provider
-      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-        type: "recovery",
-        email: authUser.email!,
-        options: {
-          redirectTo: baseUrl,
-        },
-      })
+    let resetUrl = linkData.properties?.action_link
+    if (!resetUrl) {
+      console.error("No action_link in response:", linkData)
+      return NextResponse.json(
+        { error: "Failed to generate reset link" },
+        { status: 500 }
+      )
+    }
 
-      if (linkError) {
-        console.error("Failed to generate reset link:", linkError)
-        return NextResponse.json(
-          { error: "Failed to generate reset link" },
-          { status: 500 }
-        )
-      }
+    // Ensure the reset URL uses the production domain, not localhost
+    // Supabase's generateLink uses the Site URL from dashboard which may be misconfigured
+    const productionUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (productionUrl && resetUrl.includes("localhost")) {
+      resetUrl = resetUrl.replace(/http:\/\/localhost:\d+/, productionUrl)
+    }
 
-      let resetUrl = linkData.properties?.action_link
-      if (!resetUrl) {
-        console.error("No action_link in response:", linkData)
-        return NextResponse.json(
-          { error: "Failed to generate reset link" },
-          { status: 500 }
-        )
-      }
+    const userName = (profile?.first_name && profile?.last_name
+      ? `${profile.first_name} ${profile.last_name}`
+      : null) || authUser.user_metadata?.full_name || email.split("@")[0]
 
-      // Ensure the reset URL uses the production domain, not localhost
-      // Supabase's generateLink uses the Site URL from dashboard which may be misconfigured
-      const productionUrl = process.env.NEXT_PUBLIC_APP_URL
-      if (productionUrl && resetUrl.includes("localhost")) {
-        resetUrl = resetUrl.replace(/http:\/\/localhost:\d+/, productionUrl)
-      }
+    // Always use notification system for password reset emails
+    // This ensures consistent branding with dynamic colors from org settings
+    // The notification system will:
+    // 1. Try org email provider if configured
+    // 2. Fall back to platform-level Resend API if org email not configured
+    const result = await sendNotification(supabase, {
+      eventCode: "password_reset",
+      orgId: orgId || "platform", // Use "platform" for users without org
+      recipients: [{ email: authUser.email!, name: userName }],
+      variables: {
+        user_name: userName,
+        receiver_name: userName,
+        reset_url: resetUrl,
+        expiry_time: "1 hour",
+      },
+      forceEmail: true,
+    })
 
-      const userName = (profile?.first_name && profile?.last_name
-        ? `${profile.first_name} ${profile.last_name}`
-        : null) || authUser.user_metadata?.full_name || email.split("@")[0]
-
-      // Send email using notification system
-      const result = await sendNotification(supabase, {
-        eventCode: "password_reset",
-        orgId: orgId,
-        recipients: [{ email: authUser.email!, name: userName }],
-        variables: {
-          user_name: userName,  // Template uses {{user_name}}
-          reset_url: resetUrl,
-          expiry_time: "1 hour",
-        },
-        forceEmail: true,
-      })
-
-      if (!result.emailSent) {
-        console.error("Failed to send password reset email via notification system:", result.errors)
-        // Fall back to Supabase's built-in email
-        await supabase.auth.resetPasswordForEmail(authUser.email!, {
-          redirectTo: baseUrl,
-        })
-      }
-    } else {
-      // No email configured - use Supabase's built-in password reset email
-      // This uses Supabase's default SMTP settings
-      await supabase.auth.resetPasswordForEmail(authUser.email!, {
-        redirectTo: baseUrl,
-      })
+    if (!result.emailSent) {
+      console.error("Failed to send password reset email:", result.errors)
+      // Log the error but still return success to not reveal user existence
+      // The platform admin should monitor logs for email delivery issues
     }
 
     return NextResponse.json({
