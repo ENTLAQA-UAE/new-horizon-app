@@ -38,7 +38,18 @@ export class ResendProvider implements EmailProvider {
     try {
       const from = options.from
         ? this.formatAddress(options.from)
-        : `${this.config.fromName} <${this.config.fromEmail}>`
+        : this.config.fromName
+          ? `${this.config.fromName} <${this.config.fromEmail}>`
+          : this.config.fromEmail
+
+      // Debug logging
+      console.log('[Resend] Sending email with from:', JSON.stringify({
+        from,
+        fromName: this.config.fromName,
+        fromEmail: this.config.fromEmail,
+        to: options.to,
+        subject: options.subject,
+      }))
 
       const { data, error } = await this.client.emails.send({
         from,
