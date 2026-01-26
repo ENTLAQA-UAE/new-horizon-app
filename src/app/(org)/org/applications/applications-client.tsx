@@ -114,6 +114,7 @@ interface Job {
   department_id: string | null
   location_id: string | null
   pipeline_id: string | null
+  org_id: string
 }
 
 interface JobWithPipeline {
@@ -619,6 +620,32 @@ export function ApplicationsClient({
         setApplications(previousApplications)
         toast.error(error.message)
         return
+      }
+
+      // Get candidate and job info for notification
+      const app = applications.find(a => a.id === applicationId)
+      if (app && app.candidates && app.jobs) {
+        const candidate = app.candidates
+        const job = app.jobs
+
+        // Get org_id from app
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: stage?.stage_type === "rejected" ? "candidate_rejection" : "candidate_stage_moved",
+            orgId: app.jobs?.org_id,
+            data: {
+              candidateName: `${candidate.first_name} ${candidate.last_name}`,
+              candidateEmail: candidate.email,
+              jobTitle: job.title,
+              stageName: stage?.name || "new stage",
+              applicationId: applicationId,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send stage change notification:", err)
+        })
       }
 
       toast.success(`Moved to ${stage?.name || "new stage"}`)

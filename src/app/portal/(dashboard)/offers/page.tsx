@@ -158,6 +158,23 @@ export default function OffersPage() {
           : "You've declined the offer."
       )
 
+      // Send notification to hiring team
+      fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: responseType === "accept" ? "offer_accepted" : "offer_rejected",
+          orgId: "", // API will get from offer
+          data: {
+            offerId: selectedOffer.id,
+            candidateName: "", // API will get from offer
+            jobTitle: selectedOffer.job_title,
+          },
+        }),
+      }).catch((err) => {
+        console.error("Failed to send offer response notification:", err)
+      })
+
       setResponseDialogOpen(false)
       setSelectedOffer(null)
       setResponseType(null)

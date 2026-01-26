@@ -95,13 +95,22 @@ function ForgotPasswordContent() {
     setLoading(true)
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Use custom API endpoint that sends email via notification system
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          redirectUrl: `${window.location.origin}/reset-password`,
+        }),
       })
 
-      if (error) {
-        throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send reset email")
       }
 
       setEmailSent(true)
