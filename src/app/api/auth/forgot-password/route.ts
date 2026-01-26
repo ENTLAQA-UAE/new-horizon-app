@@ -4,6 +4,8 @@
  *
  * Uses the notification system to send password reset emails with custom templates
  * instead of Supabase's default email.
+ *
+ * Falls back to Supabase's built-in email for orgs without email configured.
  */
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
@@ -18,6 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServiceClient()
+    const baseUrl = redirectUrl || `${request.nextUrl.origin}/reset-password`
 
     // Look up the user by email to get their profile info
     const { data: profile } = await supabase
@@ -31,7 +34,6 @@ export async function POST(request: NextRequest) {
 
     if (userError) {
       console.error("Failed to list users:", userError)
-      // Still return success for security
       return NextResponse.json({
         success: true,
         message: "If an account exists with this email, a password reset link has been sent.",
@@ -44,60 +46,83 @@ export async function POST(request: NextRequest) {
 
     if (!authUser) {
       // Don't reveal if user exists or not for security
-      // Return success even if user doesn't exist
       return NextResponse.json({
         success: true,
         message: "If an account exists with this email, a password reset link has been sent.",
       })
     }
 
-    // Generate password reset link using Supabase Admin API
-    const baseUrl = redirectUrl || `${request.nextUrl.origin}/reset-password`
-
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: "recovery",
-      email: authUser.email!,
-      options: {
-        redirectTo: baseUrl,
-      },
-    })
-
-    if (linkError) {
-      console.error("Failed to generate reset link:", linkError)
-      return NextResponse.json(
-        { error: "Failed to generate reset link" },
-        { status: 500 }
-      )
-    }
-
-    // The generated link contains a token that needs to be used
-    const resetUrl = linkData.properties?.action_link
-
-    if (!resetUrl) {
-      console.error("No action_link in response:", linkData)
-      return NextResponse.json(
-        { error: "Failed to generate reset link" },
-        { status: 500 }
-      )
-    }
-
-    // Get user's name for the email
-    const userName = profile?.full_name || authUser.user_metadata?.full_name || email.split("@")[0]
-
-    // Get org_id for template lookup (use profile's org or null for default template)
+    // Get org_id for template lookup
     const orgId = profile?.org_id || null
 
-    // Send password reset email using notification system
-    await sendNotification(supabase, {
-      eventCode: "password_reset",
-      orgId: orgId,
-      recipients: [{ email: authUser.email!, name: userName }],
-      variables: {
-        receiver_name: userName,
-        reset_url: resetUrl,
-      },
-      forceEmail: true, // Always send email for password reset
-    })
+    // Check if org has email configured
+    let hasEmailConfig = false
+    if (orgId) {
+      const { data: emailConfig } = await supabase
+        .from("organization_email_config")
+        .select("id")
+        .eq("org_id", orgId)
+        .eq("is_enabled", true)
+        .single()
+
+      hasEmailConfig = !!emailConfig
+    }
+
+    if (hasEmailConfig && orgId) {
+      // Use custom notification template with org's email provider
+      const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        type: "recovery",
+        email: authUser.email!,
+        options: {
+          redirectTo: baseUrl,
+        },
+      })
+
+      if (linkError) {
+        console.error("Failed to generate reset link:", linkError)
+        return NextResponse.json(
+          { error: "Failed to generate reset link" },
+          { status: 500 }
+        )
+      }
+
+      const resetUrl = linkData.properties?.action_link
+      if (!resetUrl) {
+        console.error("No action_link in response:", linkData)
+        return NextResponse.json(
+          { error: "Failed to generate reset link" },
+          { status: 500 }
+        )
+      }
+
+      const userName = profile?.full_name || authUser.user_metadata?.full_name || email.split("@")[0]
+
+      // Send email using notification system
+      const result = await sendNotification(supabase, {
+        eventCode: "password_reset",
+        orgId: orgId,
+        recipients: [{ email: authUser.email!, name: userName }],
+        variables: {
+          receiver_name: userName,
+          reset_url: resetUrl,
+        },
+        forceEmail: true,
+      })
+
+      if (!result.emailSent) {
+        console.error("Failed to send password reset email via notification system:", result.errors)
+        // Fall back to Supabase's built-in email
+        await supabase.auth.resetPasswordForEmail(authUser.email!, {
+          redirectTo: baseUrl,
+        })
+      }
+    } else {
+      // No email configured - use Supabase's built-in password reset email
+      // This uses Supabase's default SMTP settings
+      await supabase.auth.resetPasswordForEmail(authUser.email!, {
+        redirectTo: baseUrl,
+      })
+    }
 
     return NextResponse.json({
       success: true,

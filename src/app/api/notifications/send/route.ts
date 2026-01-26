@@ -143,31 +143,48 @@ export async function POST(request: NextRequest) {
         const candidate = application.candidates as any
         const job = application.jobs as any
 
-        // Get interviewer names
+        // Build recipients list starting with candidate
+        const interviewRecipients: NotificationRecipient[] = [
+          { email: candidate.email, name: `${candidate.first_name} ${candidate.last_name}` },
+        ]
+
+        // Get interviewer details (with both userId and email for dual-channel)
         let interviewerName = "The hiring team"
         if (data.interviewerIds?.length > 0) {
           const { data: interviewers } = await serviceClient
             .from("profiles")
-            .select("full_name")
+            .select("id, full_name, email")
             .in("id", data.interviewerIds)
 
           if (interviewers && interviewers.length > 0) {
             interviewerName = interviewers.map(i => i.full_name).join(", ")
+            // Add interviewers with both userId and email
+            interviewers.forEach(i => {
+              interviewRecipients.push({
+                userId: i.id,
+                email: i.email,
+                name: i.full_name || i.email,
+              })
+            })
           }
         }
 
-        result = await notify.interviewScheduled(serviceClient, orgId, {
-          candidateName: `${candidate.first_name} ${candidate.last_name}`,
-          candidateEmail: candidate.email,
-          jobTitle: job.title,
-          interviewDate: data.interviewDate,
-          interviewTime: data.interviewTime,
-          interviewType: data.interviewType,
-          interviewerName,
-          meetingLink: data.meetingLink,
+        result = await sendNotification(serviceClient, {
+          eventCode: "interview_scheduled",
+          orgId,
+          recipients: interviewRecipients,
+          variables: {
+            candidate_name: `${candidate.first_name} ${candidate.last_name}`,
+            receiver_name: `${candidate.first_name} ${candidate.last_name}`,
+            job_title: job.title,
+            interview_date: data.interviewDate,
+            interview_time: data.interviewTime,
+            interview_type: data.interviewType,
+            interviewer_name: interviewerName,
+            meeting_link: data.meetingLink,
+          },
           interviewId: data.interviewId,
           applicationId: data.applicationId,
-          interviewerIds: data.interviewerIds,
         })
         break
       }
