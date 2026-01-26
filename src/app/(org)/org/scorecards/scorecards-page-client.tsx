@@ -69,6 +69,13 @@ export interface Scorecard {
     name: string
     name_ar?: string
     template_type: string
+    criteria?: Array<{
+      id: string
+      name: string
+      name_ar?: string
+      description?: string
+      weight: number
+    }>
   }
   interviews?: {
     id: string
@@ -454,57 +461,78 @@ export function ScorecardsPageClient({
                       <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
                         Criteria Scores
                       </h4>
-                      <div className="space-y-2">
-                        {selectedScorecard.criteria_scores.map((criteria, index) => (
-                          <div key={criteria.criteria_id || index} className="flex items-center justify-between p-3 rounded-lg border">
-                            <span className="font-medium">Criteria {index + 1}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={cn(
-                                      "h-4 w-4",
-                                      star <= criteria.score
-                                        ? "fill-yellow-400 text-yellow-400"
-                                        : "fill-transparent text-gray-300"
-                                    )}
-                                  />
-                                ))}
+                      <div className="space-y-3">
+                        {selectedScorecard.criteria_scores.map((criteriaScore, index) => {
+                          // Find the criteria name from the template
+                          const templateCriteria = selectedScorecard.scorecard_templates?.criteria?.find(
+                            c => c.id === criteriaScore.criteria_id
+                          )
+                          const criteriaName = templateCriteria?.name || `Criteria ${index + 1}`
+
+                          return (
+                            <div key={criteriaScore.criteria_id || index} className="p-3 rounded-lg border space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">{criteriaName}</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={cn(
+                                          "h-4 w-4",
+                                          star <= criteriaScore.score
+                                            ? "fill-yellow-400 text-yellow-400"
+                                            : "fill-transparent text-gray-300"
+                                        )}
+                                      />
+                                    ))}
+                                  </div>
+                                  <span className="font-medium">{criteriaScore.score}/5</span>
+                                </div>
                               </div>
-                              <span className="font-medium">{criteria.score}/5</span>
+                              {criteriaScore.notes && (
+                                <p className="text-sm text-muted-foreground pl-2 border-l-2 border-muted">
+                                  {criteriaScore.notes}
+                                </p>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}
 
-                  {/* Strengths & Weaknesses */}
-                  {(selectedScorecard.strengths || selectedScorecard.weaknesses) && (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {selectedScorecard.strengths && (
-                        <div className="p-4 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
-                          <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">
-                            Strengths
-                          </h4>
-                          <p className="text-sm text-green-800 dark:text-green-300 whitespace-pre-wrap">
-                            {selectedScorecard.strengths}
-                          </p>
-                        </div>
-                      )}
-                      {selectedScorecard.weaknesses && (
-                        <div className="p-4 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
-                          <h4 className="font-semibold text-red-700 dark:text-red-400 mb-2">
-                            Areas for Improvement
-                          </h4>
-                          <p className="text-sm text-red-800 dark:text-red-300 whitespace-pre-wrap">
-                            {selectedScorecard.weaknesses}
-                          </p>
-                        </div>
+                  {/* Strengths & Weaknesses - Always show both sections */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+                      <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">
+                        Strengths
+                      </h4>
+                      {selectedScorecard.strengths ? (
+                        <p className="text-sm text-green-800 dark:text-green-300 whitespace-pre-wrap">
+                          {selectedScorecard.strengths}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">
+                          No strengths noted
+                        </p>
                       )}
                     </div>
-                  )}
+                    <div className="p-4 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
+                      <h4 className="font-semibold text-red-700 dark:text-red-400 mb-2">
+                        Areas for Improvement
+                      </h4>
+                      {selectedScorecard.weaknesses ? (
+                        <p className="text-sm text-red-800 dark:text-red-300 whitespace-pre-wrap">
+                          {selectedScorecard.weaknesses}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">
+                          No areas for improvement noted
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Additional Notes */}
                   {selectedScorecard.additional_notes && (

@@ -35,7 +35,8 @@ export default async function ScorecardsPage() {
         id,
         name,
         name_ar,
-        template_type
+        template_type,
+        criteria
       ),
       interviews (
         id,
