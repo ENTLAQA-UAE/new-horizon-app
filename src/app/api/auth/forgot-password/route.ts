@@ -86,11 +86,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Ensure the reset URL uses the production domain, not localhost
+    // CRITICAL: Fix localhost URLs in reset link
     // Supabase's generateLink uses the Site URL from dashboard which may be misconfigured
-    const productionUrl = process.env.NEXT_PUBLIC_APP_URL
-    if (productionUrl && resetUrl.includes("localhost")) {
-      resetUrl = resetUrl.replace(/http:\/\/localhost:\d+/, productionUrl)
+    // We must replace localhost with the actual production URL
+    const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+
+    // Check if URL contains localhost and needs to be replaced
+    if (resetUrl.includes("localhost")) {
+      console.log("[Password Reset] Original URL contains localhost, replacing...")
+      console.log("[Password Reset] Original:", resetUrl.substring(0, 50) + "...")
+
+      // Replace localhost:PORT with production URL
+      resetUrl = resetUrl.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
+
+      console.log("[Password Reset] Fixed:", resetUrl.substring(0, 50) + "...")
+    }
+
+    // Also fix if URL uses 127.0.0.1
+    if (resetUrl.includes("127.0.0.1")) {
+      resetUrl = resetUrl.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
     }
 
     const userName = (profile?.first_name && profile?.last_name
