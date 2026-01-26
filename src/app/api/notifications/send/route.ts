@@ -117,6 +117,12 @@ export async function POST(request: NextRequest) {
     const candidatePortalEvents = ["offer_accepted", "offer_rejected"]
     if (!candidatePortalEvents.includes(eventType)) {
       if (!profile || profile.org_id !== orgId) {
+        console.error(`[notifications/send] Authorization failed for ${eventType}:`, {
+          hasProfile: !!profile,
+          profileOrgId: profile?.org_id,
+          requestedOrgId: orgId,
+          userId: user.id,
+        })
         return NextResponse.json({ error: "Not authorized" }, { status: 403 })
       }
     }
@@ -447,16 +453,25 @@ export async function POST(request: NextRequest) {
       }
 
       case "role_changed": {
+        console.log("[role_changed] Starting notification for userId:", data.userId)
+
         // Get the user whose role is being changed
-        const { data: targetUser } = await serviceClient
+        const { data: targetUser, error: targetError } = await serviceClient
           .from("profiles")
           .select("id, full_name, email")
           .eq("id", data.userId)
           .single()
 
+        if (targetError) {
+          console.error("[role_changed] Error fetching target user:", targetError)
+        }
+
         if (!targetUser) {
+          console.error("[role_changed] User not found:", data.userId)
           return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
+
+        console.log("[role_changed] Target user found:", targetUser.email)
 
         // Get the current user (who is making the change)
         const { data: changer } = await serviceClient
@@ -471,6 +486,8 @@ export async function POST(request: NextRequest) {
           .select("name")
           .eq("id", orgId)
           .single()
+
+        console.log("[role_changed] Sending notification - org:", org?.name, "newRole:", data.newRole, "previousRole:", data.previousRole)
 
         result = await sendNotification(serviceClient, {
           eventCode: "role_changed",
@@ -490,6 +507,8 @@ export async function POST(request: NextRequest) {
             org_name: org?.name || "the organization",
           },
         })
+
+        console.log("[role_changed] Notification result:", result)
         break
       }
 

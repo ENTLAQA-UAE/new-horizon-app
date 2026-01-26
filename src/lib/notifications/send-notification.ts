@@ -598,9 +598,25 @@ function replaceVariables(template: string, variables: NotificationVariables): s
 
   for (const [key, value] of Object.entries(variables)) {
     if (value !== undefined) {
-      // Replace both {{var}} and {var} formats
-      result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value)
-      result = result.replace(new RegExp(`\\{${key}\\}`, "g"), value)
+      // Special handling for org_logo - if it's used as plain text (not inside <img src="">),
+      // wrap it in an <img> tag to display as image instead of raw URL
+      if (key === "org_logo" && value) {
+        // First, replace org_logo when it's properly used inside img src attribute (keep as URL)
+        result = result.replace(
+          /(<img[^>]*\s+src=["'])(\{\{org_logo\}\}|\{org_logo\})(["'][^>]*>)/gi,
+          `$1${value}$3`
+        )
+
+        // Then, replace any remaining org_logo that's NOT inside an img tag with a full <img> tag
+        // This handles cases where someone just typed {org_logo} as text in the template
+        const imgTag = `<img src="${value}" alt="${variables.org_name || 'Logo'}" style="max-height:60px;margin-bottom:20px;" onerror="this.style.display='none'">`
+        result = result.replace(/\{\{org_logo\}\}/g, imgTag)
+        result = result.replace(/\{org_logo\}/g, imgTag)
+      } else {
+        // Replace both {{var}} and {var} formats
+        result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value)
+        result = result.replace(new RegExp(`\\{${key}\\}`, "g"), value)
+      }
     }
   }
 
