@@ -28,6 +28,15 @@ export default async function OffersPage() {
 
   const orgId = profile.org_id
 
+  // Fetch organization settings for default currency
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("currency")
+    .eq("id", orgId)
+    .single()
+
+  const defaultCurrency = organization?.currency || "SAR"
+
   // Fetch offers with related data for this organization
   const { data: offers } = await supabase
     .from("offers")
@@ -61,12 +70,14 @@ export default async function OffersPage() {
     .eq("is_active", true)
     .order("name")
 
-  // Fetch applications that are in offer stage for this organization
+  // Fetch applications eligible for offers (not rejected, not already hired)
+  // Include applications in interview, assessment, and offer stages
   const { data: applications } = await supabase
     .from("applications")
     .select(`
       id,
       job_id,
+      status,
       candidates (
         id,
         first_name,
@@ -75,7 +86,7 @@ export default async function OffersPage() {
       )
     `)
     .eq("org_id", orgId)
-    .eq("status", "offer")
+    .not("status", "in", '("rejected","hired","withdrawn")')
     .order("created_at", { ascending: false })
 
   // Get unique job IDs from applications
@@ -121,6 +132,7 @@ export default async function OffersPage() {
       templates={templates || []}
       applications={enrichedApplications}
       organizationId={orgId}
+      defaultCurrency={defaultCurrency}
     />
   )
 }
