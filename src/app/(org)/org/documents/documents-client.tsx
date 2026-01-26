@@ -31,6 +31,7 @@ import {
   FolderOpen,
   User,
   Briefcase,
+  ExternalLink,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
@@ -123,32 +124,14 @@ export function DocumentsClient({
     return acc
   }, {} as Record<string, { job_title: string; documents: Document[] }>)
 
-  const handleDownload = async (doc: Document) => {
-    try {
-      // Extract path from URL for signed URL generation
-      const pathMatch = doc.file_url.match(/\/resumes\/(.+)$/)
-      if (pathMatch) {
-        // Use signed URL for private bucket
-        const response = await fetch("/api/storage/signed-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bucket: "resumes", path: pathMatch[1] }),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to get download URL")
-        }
-
-        const { signedUrl } = await response.json()
-        window.open(signedUrl, "_blank")
-      } else {
-        // Direct URL for other files
-        window.open(doc.file_url, "_blank")
-      }
-    } catch (error) {
-      console.error("Download error:", error)
-      toast.error("Failed to download file")
+  // Open document in new tab for viewing (like Google Drive)
+  const handleOpenDocument = (doc: Document) => {
+    if (!doc.file_url) {
+      toast.error("File URL not available")
+      return
     }
+    // Open the file directly in a new tab - user can view and download from there
+    window.open(doc.file_url, "_blank", "noopener,noreferrer")
   }
 
   const stats = {
@@ -325,9 +308,10 @@ export function DocumentsClient({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDownload(doc)}
+                          onClick={() => handleOpenDocument(doc)}
+                          title="Open in new tab"
                         >
-                          <Download className="h-4 w-4" />
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
