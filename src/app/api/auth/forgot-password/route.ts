@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Look up the user by email to get their profile info
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, full_name, email, org_id")
+      .select("id, first_name, last_name, email, org_id")
       .eq("email", email.toLowerCase())
       .single()
 
@@ -95,7 +95,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const userName = profile?.full_name || authUser.user_metadata?.full_name || email.split("@")[0]
+      const userName = (profile?.first_name && profile?.last_name
+        ? `${profile.first_name} ${profile.last_name}`
+        : null) || authUser.user_metadata?.full_name || email.split("@")[0]
 
       // Send email using notification system
       const result = await sendNotification(supabase, {

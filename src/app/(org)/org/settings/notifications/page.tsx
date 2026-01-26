@@ -69,9 +69,9 @@ export default async function NotificationSettingsPage() {
   // Get team members for audience selection
   const { data: teamMembers } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role")
+    .select("id, first_name, last_name, email, role")
     .eq("org_id", profile.org_id)
-    .order("full_name")
+    .order("first_name")
 
   return (
     <NotificationSettingsClient

@@ -50,8 +50,8 @@ export default async function InterviewsPage() {
   // Fetch team members for interviewer selection
   const { data: teamMembers } = await supabase
     .from("profiles")
-    .select("id, full_name, email, avatar_url, role")
-    .order("full_name")
+    .select("id, first_name, last_name, email, avatar_url, role")
+    .order("first_name")
 
   // Fetch ALL applications for scheduling interviews (not filtered by status)
   const { data: applications } = await supabase
