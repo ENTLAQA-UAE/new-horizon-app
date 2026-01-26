@@ -47,16 +47,31 @@ export default async function InterviewsPage() {
     `)
     .order("scheduled_at", { ascending: true })
 
-  // Fetch team members for interviewer selection
-  const { data: rawTeamMembers } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, email, avatar_url, role")
-    .order("first_name")
+  // Fetch team members for interviewer selection (only from same org)
+  const { data: rawTeamMembers } = orgId
+    ? await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email, avatar_url")
+        .eq("org_id", orgId)
+        .order("first_name")
+    : { data: [] }
 
-  // Transform team members to include computed full_name
+  // Fetch user roles for team members
+  const { data: userRoles } = orgId
+    ? await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("org_id", orgId)
+    : { data: [] }
+
+  // Create a map of user roles
+  const roleMap = new Map(userRoles?.map(r => [r.user_id, r.role]) || [])
+
+  // Transform team members to include computed full_name and role from user_roles
   const teamMembers = (rawTeamMembers || []).map(m => ({
     ...m,
     full_name: [m.first_name, m.last_name].filter(Boolean).join(" ") || m.email,
+    role: roleMap.get(m.id) || "member",
   }))
 
   // Fetch ALL applications for scheduling interviews (not filtered by status)

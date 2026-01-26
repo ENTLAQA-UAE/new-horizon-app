@@ -673,6 +673,7 @@ export function InterviewsClient({
             meetingLink: meetingLink || null,
             location: formData.location || null, // Physical location for in-person interviews
             interviewerIds: formData.interviewer_ids,
+            externalGuests: formData.external_guests, // Include external guests for email notification
             timezone: formData.timezone,
           },
         }),

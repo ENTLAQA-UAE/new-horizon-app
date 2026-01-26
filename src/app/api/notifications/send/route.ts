@@ -183,6 +183,16 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Add external guests to recipients (email-only, no userId)
+        if (data.externalGuests?.length > 0) {
+          data.externalGuests.forEach((email: string) => {
+            interviewRecipients.push({
+              email: email,
+              name: email, // Use email as name for external guests
+            })
+          })
+        }
+
         // Determine location - use meeting link for video, physical location for in-person
         const interviewLocation = data.meetingLink || data.location || "To be confirmed"
 
