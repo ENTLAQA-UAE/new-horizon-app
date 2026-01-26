@@ -697,10 +697,11 @@ function getFallbackEmailTemplate(
 ): { subject: string; body_html: string } | null {
   const orgName = variables.org_name || "Our Organization"
   const logoUrl = variables.org_logo
-  const primaryColor = variables.primary_color || "#6366f1"
-  const secondaryColor = variables.secondary_color || "#8b5cf6"
+  // Fixed colors - consistent across all organizations
+  const buttonColor = "#6b7280" // Gray-500 for buttons
+  const labelColor = "#1e40af" // Blue-800 for labels
 
-  // Common email wrapper
+  // Common email wrapper with white header
   const wrapEmail = (content: string, title: string) => `
 <!DOCTYPE html>
 <html>
@@ -709,15 +710,15 @@ function getFallbackEmailTemplate(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f5f7;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-          <!-- Header with logo -->
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <!-- Header with white background and logo -->
           <tr>
-            <td style="padding: 32px 40px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-              ${logoUrl ? `<img src="${logoUrl}" alt="${orgName}" style="max-height: 48px; max-width: 200px;">` : `<h2 style="margin: 0; color: ${primaryColor}; font-size: 24px;">${orgName}</h2>`}
+            <td style="padding: 40px; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e5e7eb;">
+              ${logoUrl ? `<img src="${logoUrl}" alt="${orgName}" style="max-height: 60px; max-width: 200px;">` : `<h2 style="margin: 0; color: #111827; font-size: 24px;">${orgName}</h2>`}
             </td>
           </tr>
           <!-- Content -->
@@ -728,10 +729,9 @@ function getFallbackEmailTemplate(
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 12px 12px; text-align: center;">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                This email was sent by ${orgName}.<br>
-                If you didn't expect this email, you can safely ignore it.
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                © ${orgName}
               </p>
             </td>
           </tr>
@@ -761,7 +761,7 @@ function getFallbackEmailTemplate(
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{invitation_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Accept Invitation
               </a>
@@ -770,7 +770,7 @@ function getFallbackEmailTemplate(
         </table>
         <p style="margin: 0; color: #6b7280; font-size: 14px;">
           This invitation will expire in 7 days. If the button doesn't work, copy and paste this link into your browser:<br>
-          <a href="{{invitation_url}}" style="color: ${primaryColor}; word-break: break-all;">{{invitation_url}}</a>
+          <a href="{{invitation_url}}" style="color: ${buttonColor}; word-break: break-all;">{{invitation_url}}</a>
         </p>
       `, `You're invited to join ${orgName}`),
     },
@@ -792,7 +792,7 @@ function getFallbackEmailTemplate(
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{reset_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Reset Password
               </a>
@@ -843,7 +843,7 @@ function getFallbackEmailTemplate(
           <p style="margin: 0 0 4px; color: #4b5563;">📅 Date: <strong>{{interview_date}}</strong></p>
           <p style="margin: 0 0 4px; color: #4b5563;">🕐 Time: <strong>{{interview_time}}</strong></p>
           <p style="margin: 0 0 4px; color: #4b5563;">📍 Type: <strong>{{interview_type}}</strong></p>
-          ${variables.meeting_link ? `<p style="margin: 0; color: #4b5563;">🔗 Meeting Link: <a href="{{meeting_link}}" style="color: ${primaryColor};">Join Meeting</a></p>` : ""}
+          ${variables.meeting_link ? `<p style="margin: 0; color: #4b5563;">🔗 Meeting Link: <a href="{{meeting_link}}" style="color: ${buttonColor};">Join Meeting</a></p>` : ""}
         </div>
         <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
           We look forward to speaking with you!
@@ -875,7 +875,7 @@ function getFallbackEmailTemplate(
         ${variables.offer_url ? `
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{offer_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 View Full Offer
               </a>
@@ -902,7 +902,7 @@ function getFallbackEmailTemplate(
         </div>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Review Application
               </a>
@@ -975,7 +975,7 @@ function getFallbackEmailTemplate(
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Go to Dashboard
               </a>
@@ -1065,7 +1065,7 @@ function getFallbackEmailTemplate(
         ${variables.meeting_link ? `
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto 24px;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{meeting_link}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Join Meeting
               </a>
@@ -1119,7 +1119,7 @@ function getFallbackEmailTemplate(
         </div>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 View Scorecard
               </a>
@@ -1143,7 +1143,7 @@ function getFallbackEmailTemplate(
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Submit Scorecard
               </a>
@@ -1170,7 +1170,7 @@ function getFallbackEmailTemplate(
         </div>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Review Offer
               </a>
@@ -1257,7 +1257,7 @@ function getFallbackEmailTemplate(
         </div>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 View Job
               </a>
@@ -1296,7 +1296,7 @@ function getFallbackEmailTemplate(
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Manage Job
               </a>
@@ -1322,7 +1322,7 @@ function getFallbackEmailTemplate(
         </div>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Review Requisition
               </a>
@@ -1349,7 +1349,7 @@ function getFallbackEmailTemplate(
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
           <tr>
-            <td style="background-color: ${primaryColor}; border-radius: 8px;">
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
               <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Create Job Posting
               </a>
