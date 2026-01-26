@@ -20,16 +20,10 @@ export async function GET(
     // Use service client to bypass RLS for fetching notes
     const serviceClient = createServiceClient()
 
+    // Fetch notes
     const { data: notes, error } = await serviceClient
       .from("application_notes")
-      .select(`
-        *,
-        profiles:user_id (
-          first_name,
-          last_name,
-          avatar_url
-        )
-      `)
+      .select("*")
       .eq("application_id", applicationId)
       .order("created_at", { ascending: false })
 
@@ -38,7 +32,31 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ notes: notes || [] })
+    if (!notes || notes.length === 0) {
+      return NextResponse.json({ notes: [] })
+    }
+
+    // Get unique user IDs from notes
+    const userIds = [...new Set(notes.map(note => note.user_id))]
+
+    // Fetch profiles for all note authors
+    const { data: profiles } = await serviceClient
+      .from("profiles")
+      .select("id, first_name, last_name, avatar_url")
+      .in("id", userIds)
+
+    // Create a map of user_id to profile
+    const profileMap = new Map(
+      (profiles || []).map(p => [p.id, { first_name: p.first_name, last_name: p.last_name, avatar_url: p.avatar_url }])
+    )
+
+    // Attach profiles to notes
+    const notesWithProfiles = notes.map(note => ({
+      ...note,
+      profiles: profileMap.get(note.user_id) || null
+    }))
+
+    return NextResponse.json({ notes: notesWithProfiles })
   } catch (error) {
     console.error("Error in notes GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
