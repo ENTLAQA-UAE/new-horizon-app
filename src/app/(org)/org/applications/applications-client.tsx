@@ -1816,8 +1816,9 @@ export function ApplicationsClient({
                                       className="gap-1.5"
                                       onClick={(e) => {
                                         e.stopPropagation()
-                                        // Navigate to scorecards page with interview pre-selected
-                                        router.push(`/org/interviews/scorecards?interview=${interview.id}`)
+                                        // Pre-select this interview and open scorecard dialog
+                                        setSelectedInterviewId(interview.id)
+                                        setIsScorecardSubmitDialogOpen(true)
                                       }}
                                     >
                                       <ClipboardCheck className="h-4 w-4" />
