@@ -446,6 +446,53 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "role_changed": {
+        // Get the user whose role is being changed
+        const { data: targetUser } = await serviceClient
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", data.userId)
+          .single()
+
+        if (!targetUser) {
+          return NextResponse.json({ error: "User not found" }, { status: 404 })
+        }
+
+        // Get the current user (who is making the change)
+        const { data: changer } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "role_changed",
+          orgId,
+          recipients: [{
+            userId: targetUser.id,
+            email: targetUser.email,
+            name: targetUser.full_name || targetUser.email,
+          }],
+          variables: {
+            user_name: targetUser.full_name || "there",
+            receiver_name: targetUser.full_name || "there",
+            changed_by: changer?.full_name || "An administrator",
+            old_role: data.previousRole || "Previous Role",
+            new_role: data.newRole,
+            role: data.newRole,
+            org_name: org?.name || "the organization",
+          },
+        })
+        break
+      }
+
       default:
         return NextResponse.json({ error: `Unknown event type: ${eventType}` }, { status: 400 })
     }
