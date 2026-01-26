@@ -54,6 +54,7 @@ interface CriteriaScore {
 
 interface ScorecardFormProps {
   interviewId: string
+  applicationId?: string // Optional: for activity logging
   templates: ScorecardTemplate[]
   existingScorecard?: {
     id: string
@@ -80,6 +81,7 @@ const recommendations = [
 
 export function ScorecardForm({
   interviewId,
+  applicationId,
   templates,
   existingScorecard,
   onSubmit,
@@ -280,6 +282,27 @@ export function ScorecardForm({
       }).catch((err) => {
         console.error("Failed to send scorecard notification:", err)
       })
+
+      // Log activity for scorecard submission
+      if (applicationId) {
+        const recLabel = recommendations.find(r => r.value === recommendation)?.label || recommendation
+        fetch(`/api/applications/${applicationId}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activity_type: "scorecard_submitted",
+            description: `Scorecard submitted with overall score ${overallScore.toFixed(1)}/${maxScore} (${recLabel})`,
+            metadata: {
+              interview_id: interviewId,
+              overall_score: overallScore,
+              recommendation: recommendation,
+              template_id: selectedTemplateId,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to log scorecard activity:", err)
+        })
+      }
 
       onSubmit?.()
     } catch (error: any) {

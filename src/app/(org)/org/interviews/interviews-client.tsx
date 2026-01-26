@@ -671,12 +671,30 @@ export function InterviewsClient({
             interviewTime: `${format(scheduledAt, "h:mm a")} (${tzLabel})`,
             interviewType: formData.interview_type,
             meetingLink: meetingLink || null,
+            location: formData.location || null, // Physical location for in-person interviews
             interviewerIds: formData.interviewer_ids,
             timezone: formData.timezone,
           },
         }),
       }).catch((err) => {
         console.error("Failed to send interview notification:", err)
+      })
+
+      // Log activity for interview scheduled
+      fetch(`/api/applications/${formData.application_id}/activities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          activity_type: "interview_scheduled",
+          description: `Interview scheduled: ${formData.title} on ${format(scheduledAt, "MMM d, yyyy 'at' h:mm a")}`,
+          metadata: {
+            interview_id: data.id,
+            interview_type: formData.interview_type,
+            scheduled_at: scheduledAt.toISOString(),
+          },
+        }),
+      }).catch((err) => {
+        console.error("Failed to log interview activity:", err)
       })
 
       setInterviews([data as unknown as Interview, ...interviews])
@@ -732,6 +750,31 @@ export function InterviewsClient({
           }),
         }).catch((err) => {
           console.error("Failed to send cancellation notification:", err)
+        })
+      }
+
+      // Log activity for interview status change
+      const interview = interviews.find(i => i.id === interviewId)
+      if (interview?.applications?.id) {
+        const statusLabels: Record<string, string> = {
+          confirmed: "confirmed",
+          completed: "completed",
+          cancelled: "cancelled",
+          no_show: "marked as no-show",
+        }
+        fetch(`/api/applications/${interview.applications.id}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activity_type: `interview_${newStatus}`,
+            description: `Interview ${statusLabels[newStatus] || newStatus}: ${interview.title}`,
+            metadata: {
+              interview_id: interviewId,
+              new_status: newStatus,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to log interview status activity:", err)
         })
       }
 
@@ -1549,6 +1592,7 @@ export function InterviewsClient({
             {selectedInterview && scorecardTemplates.length > 0 ? (
               <ScorecardForm
                 interviewId={selectedInterview.id}
+                applicationId={selectedInterview.applications?.id}
                 templates={scorecardTemplates}
                 onSubmit={() => {
                   setIsScorecardDialogOpen(false)

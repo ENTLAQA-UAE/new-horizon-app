@@ -183,6 +183,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Determine location - use meeting link for video, physical location for in-person
+        const interviewLocation = data.meetingLink || data.location || "To be confirmed"
+
         result = await sendNotification(serviceClient, {
           eventCode: "interview_scheduled",
           orgId,
@@ -195,7 +198,9 @@ export async function POST(request: NextRequest) {
             interview_time: data.interviewTime,
             interview_type: data.interviewType,
             interviewer_name: interviewerName,
-            meeting_link: data.meetingLink,
+            interviewers: interviewerName, // For email template compatibility
+            meeting_link: data.meetingLink || "",
+            location: interviewLocation, // For email template - shows meeting link or physical location
           },
           interviewId: data.interviewId,
           applicationId: data.applicationId,
