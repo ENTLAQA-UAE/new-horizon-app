@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error")
   const errorDescription = searchParams.get("error_description")
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  // Use request origin to get the correct URL (works in both dev and production)
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
 
   // Parse state to get redirect path
   let redirectTo = "/org/settings"
