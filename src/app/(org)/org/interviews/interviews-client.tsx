@@ -64,7 +64,28 @@ import { cn } from "@/lib/utils"
 import { format, addHours, startOfDay, isSameDay, isAfter, isBefore } from "date-fns"
 import { useAI } from "@/hooks/use-ai"
 import { ScorecardForm } from "@/components/interviews/scorecard-form"
-import { ClipboardList } from "lucide-react"
+import { ClipboardList, X, Mail, Globe } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+// Common timezones for the Middle East and international use
+const timezones = [
+  { value: "Asia/Riyadh", label: "Riyadh (GMT+3)" },
+  { value: "Asia/Dubai", label: "Dubai (GMT+4)" },
+  { value: "Asia/Kuwait", label: "Kuwait (GMT+3)" },
+  { value: "Asia/Bahrain", label: "Bahrain (GMT+3)" },
+  { value: "Asia/Qatar", label: "Qatar (GMT+3)" },
+  { value: "Africa/Cairo", label: "Cairo (GMT+2)" },
+  { value: "Europe/London", label: "London (GMT+0)" },
+  { value: "Europe/Paris", label: "Paris (GMT+1)" },
+  { value: "America/New_York", label: "New York (GMT-5)" },
+  { value: "America/Los_Angeles", label: "Los Angeles (GMT-8)" },
+  { value: "Asia/Singapore", label: "Singapore (GMT+8)" },
+  { value: "Asia/Tokyo", label: "Tokyo (GMT+9)" },
+  { value: "UTC", label: "UTC (GMT+0)" },
+]
+
+// Roles that can conduct interviews
+const interviewerRoles = ["interviewer", "hiring_manager", "hr_manager", "org_admin", "recruiter"]
 
 interface Interview {
   id: string
@@ -242,6 +263,9 @@ export function InterviewsClient({
   const availableProviders = meetingProviders.filter(p => p.is_enabled && p.is_verified)
   const hasVideoProviders = availableProviders.length > 0
 
+  // External guest email input state
+  const [guestEmailInput, setGuestEmailInput] = useState("")
+
   // Form state
   const [formData, setFormData] = useState({
     application_id: "",
@@ -250,15 +274,21 @@ export function InterviewsClient({
     scheduled_date: new Date(),
     scheduled_time: "10:00",
     duration_minutes: 60,
-    timezone: "Asia/Riyadh",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Riyadh",
     location: "",
     meeting_link: "",
     meeting_provider: defaultMeetingProvider || "",
     interviewer_ids: [] as string[],
+    external_guests: [] as string[], // External email addresses
     internal_notes: "",
     syncToCalendar: hasCalendarConnected,
     addMeetLink: true,
   })
+
+  // Filter team members who can be interviewers
+  const interviewerMembers = teamMembers.filter(m =>
+    interviewerRoles.includes(m.role?.toLowerCase() || "")
+  )
 
   const filteredInterviews = interviews.filter((interview) => {
     const candidateName = `${interview.applications?.candidates?.first_name || ""} ${interview.applications?.candidates?.last_name || ""}`.toLowerCase()
@@ -295,19 +325,100 @@ export function InterviewsClient({
       scheduled_date: new Date(),
       scheduled_time: "10:00",
       duration_minutes: 60,
-      timezone: "Asia/Riyadh",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Riyadh",
       location: "",
       meeting_link: "",
       meeting_provider: defaultMeetingProvider || "",
       interviewer_ids: [],
+      external_guests: [],
       internal_notes: "",
       syncToCalendar: hasCalendarConnected,
       addMeetLink: true,
     })
+    setGuestEmailInput("")
+  }
+
+  // Add external guest email
+  const addExternalGuest = () => {
+    const email = guestEmailInput.trim().toLowerCase()
+    if (!email) return
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address")
+      return
+    }
+
+    // Check for duplicates
+    if (formData.external_guests.includes(email)) {
+      toast.error("This email is already added")
+      return
+    }
+
+    setFormData({
+      ...formData,
+      external_guests: [...formData.external_guests, email],
+    })
+    setGuestEmailInput("")
+  }
+
+  // Remove external guest
+  const removeExternalGuest = (email: string) => {
+    setFormData({
+      ...formData,
+      external_guests: formData.external_guests.filter(e => e !== email),
+    })
+  }
+
+  // Toggle interviewer selection
+  const toggleInterviewer = (interviewerId: string) => {
+    if (formData.interviewer_ids.includes(interviewerId)) {
+      setFormData({
+        ...formData,
+        interviewer_ids: formData.interviewer_ids.filter(id => id !== interviewerId),
+      })
+    } else {
+      setFormData({
+        ...formData,
+        interviewer_ids: [...formData.interviewer_ids, interviewerId],
+      })
+    }
+  }
+
+  // Build attendees list for meeting invites
+  const buildAttendeesList = () => {
+    const attendees: { email: string; name?: string }[] = []
+
+    // Add selected interviewers
+    formData.interviewer_ids.forEach(id => {
+      const member = teamMembers.find(m => m.id === id)
+      if (member) {
+        attendees.push({ email: member.email, name: member.full_name })
+      }
+    })
+
+    // Add external guests
+    formData.external_guests.forEach(email => {
+      attendees.push({ email })
+    })
+
+    // Add candidate if we have the application
+    const app = applications.find(a => a.id === formData.application_id)
+    if (app?.candidates?.email) {
+      attendees.push({
+        email: app.candidates.email,
+        name: `${app.candidates.first_name} ${app.candidates.last_name}`,
+      })
+    }
+
+    return attendees
   }
 
   // Create meeting via provider API
   const createMeeting = async (provider: string, title: string, startTime: Date, durationMinutes: number) => {
+    const attendees = buildAttendeesList()
+
     try {
       if (provider === "zoom") {
         const response = await fetch("/api/zoom/meetings", {
@@ -318,6 +429,7 @@ export function InterviewsClient({
             start_time: startTime.toISOString(),
             duration: durationMinutes,
             timezone: formData.timezone,
+            attendees: attendees, // Add attendees for Zoom invites
           }),
         })
         if (response.ok) {
@@ -333,6 +445,7 @@ export function InterviewsClient({
             startDateTime: startTime.toISOString(),
             endDateTime: new Date(startTime.getTime() + durationMinutes * 60000).toISOString(),
             isOnlineMeeting: true,
+            attendees: attendees.map(a => ({ emailAddress: { address: a.email, name: a.name } })),
           }),
         })
         if (response.ok) {
@@ -348,6 +461,7 @@ export function InterviewsClient({
             start_time: startTime.toISOString(),
             duration: durationMinutes,
             timezone: formData.timezone,
+            attendees: attendees, // Google Meet will send calendar invites
           }),
         })
         if (response.ok) {
@@ -469,20 +583,57 @@ export function InterviewsClient({
           const endTime = new Date(scheduledAt)
           endTime.setMinutes(endTime.getMinutes() + formData.duration_minutes)
 
+          // Build attendees list for calendar invite
+          const calendarAttendees: { email: string; name?: string }[] = []
+
+          // Add candidate
+          if (app?.candidates?.email) {
+            calendarAttendees.push({
+              email: app.candidates.email,
+              name: `${app.candidates.first_name} ${app.candidates.last_name}`,
+            })
+          }
+
+          // Add interviewers
+          formData.interviewer_ids.forEach(id => {
+            const member = teamMembers.find(m => m.id === id)
+            if (member) {
+              calendarAttendees.push({ email: member.email, name: member.full_name })
+            }
+          })
+
+          // Add external guests
+          formData.external_guests.forEach(email => {
+            calendarAttendees.push({ email })
+          })
+
+          // Build description with interviewer info
+          let description = `Interview for ${app?.jobs.title} position.\n\n`
+          description += `Candidate: ${app?.candidates.first_name} ${app?.candidates.last_name} (${app?.candidates.email})\n`
+
+          if (formData.interviewer_ids.length > 0) {
+            const interviewerNames = formData.interviewer_ids
+              .map(id => teamMembers.find(m => m.id === id)?.full_name)
+              .filter(Boolean)
+              .join(", ")
+            description += `Interviewers: ${interviewerNames}\n`
+          }
+
+          description += `\nTimezone: ${formData.timezone}`
+
           const calendarResponse = await fetch("/api/google/calendar/events", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               summary: formData.title,
-              description: `Interview for ${app?.jobs.title} position.\n\nCandidate: ${app?.candidates.first_name} ${app?.candidates.last_name} (${app?.candidates.email})`,
+              description,
               location: formData.location || undefined,
               startTime: scheduledAt.toISOString(),
               endTime: endTime.toISOString(),
-              attendees: app
-                ? [{ email: app.candidates.email, name: `${app.candidates.first_name} ${app.candidates.last_name}` }]
-                : [],
+              attendees: calendarAttendees,
               addMeetLink: formData.addMeetLink && formData.interview_type === "video",
               interviewId: data.id,
+              timeZone: formData.timezone,
             }),
           })
 
@@ -505,6 +656,7 @@ export function InterviewsClient({
       }
 
       // Send notification to candidate and interviewers
+      const tzLabel = timezones.find(tz => tz.value === formData.timezone)?.label || formData.timezone
       fetch("/api/notifications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -515,10 +667,11 @@ export function InterviewsClient({
             applicationId: formData.application_id,
             interviewId: data.id,
             interviewDate: format(scheduledAt, "EEEE, MMMM d, yyyy"),
-            interviewTime: format(scheduledAt, "h:mm a"),
+            interviewTime: `${format(scheduledAt, "h:mm a")} (${tzLabel})`,
             interviewType: formData.interview_type,
             meetingLink: meetingLink || null,
             interviewerIds: formData.interviewer_ids,
+            timezone: formData.timezone,
           },
         }),
       }).catch((err) => {
@@ -1028,6 +1181,135 @@ export function InterviewsClient({
                   }
                 />
               </div>
+            </div>
+
+            {/* Timezone Selection */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Timezone
+              </Label>
+              <Select
+                value={formData.timezone}
+                onValueChange={(value) => setFormData({ ...formData, timezone: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timezones.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Interviewer Selection */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Assign Interviewers
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Select team members to conduct this interview. They will receive notifications and calendar invites.
+              </p>
+              <div className="border rounded-lg max-h-[160px] overflow-y-auto">
+                {interviewerMembers.length > 0 ? (
+                  <div className="p-2 space-y-1">
+                    {interviewerMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className={cn(
+                          "flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors",
+                          formData.interviewer_ids.includes(member.id)
+                            ? "bg-primary/10 border border-primary/30"
+                            : "hover:bg-muted"
+                        )}
+                        onClick={() => toggleInterviewer(member.id)}
+                      >
+                        <Checkbox
+                          checked={formData.interviewer_ids.includes(member.id)}
+                          onCheckedChange={() => toggleInterviewer(member.id)}
+                        />
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={member.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {member.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{member.full_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                        </div>
+                        <Badge variant="secondary" className="text-xs capitalize">
+                          {member.role?.replace("_", " ")}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground text-sm">
+                    No team members with interviewer roles found
+                  </div>
+                )}
+              </div>
+              {formData.interviewer_ids.length > 0 && (
+                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  {formData.interviewer_ids.length} interviewer(s) selected
+                </p>
+              )}
+            </div>
+
+            {/* External Guests */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                Invite External Guests (Optional)
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Add email addresses of external participants. They will receive calendar invites from the video provider.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="guest@example.com"
+                  value={guestEmailInput}
+                  onChange={(e) => setGuestEmailInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      addExternalGuest()
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addExternalGuest}
+                  disabled={!guestEmailInput.trim()}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {formData.external_guests.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.external_guests.map((email) => (
+                    <Badge key={email} variant="secondary" className="flex items-center gap-1 pr-1">
+                      <Mail className="h-3 w-3" />
+                      {email}
+                      <button
+                        type="button"
+                        onClick={() => removeExternalGuest(email)}
+                        className="ml-1 hover:bg-muted rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             {formData.interview_type === "video" && (

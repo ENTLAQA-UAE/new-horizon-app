@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
       endTime: new Date(body.endTime),
       attendees: body.attendees,
       conferenceData: body.addMeetLink ?? true,
+      timeZone: body.timeZone,
     }
 
     const calendar = getCalendarClient(

@@ -13,6 +13,7 @@ interface ZoomMeetingInput {
   duration: number
   timezone?: string
   agenda?: string
+  attendees?: { email: string; name?: string }[]
 }
 
 // Helper to get valid Zoom access token using org credentials
@@ -145,6 +146,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Meeting topic is required" }, { status: 400 })
     }
 
+    // Build meeting settings with optional attendees
+    const meetingPayload: Record<string, any> = {
+      topic: body.topic,
+      type: 2, // Scheduled meeting
+      start_time: body.start_time,
+      duration: body.duration,
+      timezone: body.timezone || "Asia/Riyadh",
+      agenda: body.agenda || "",
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: true,
+        mute_upon_entry: false,
+        waiting_room: false,
+        auto_recording: "none",
+        // Send email notifications to attendees
+        meeting_invitees: body.attendees?.map(a => ({ email: a.email })) || [],
+      },
+    }
+
     // Create Zoom meeting
     const response = await fetch("https://api.zoom.us/v2/users/me/meetings", {
       method: "POST",
@@ -152,22 +173,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${tokenResult.accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        topic: body.topic,
-        type: 2, // Scheduled meeting
-        start_time: body.start_time,
-        duration: body.duration,
-        timezone: body.timezone || "Asia/Riyadh",
-        agenda: body.agenda || "",
-        settings: {
-          host_video: true,
-          participant_video: true,
-          join_before_host: true,
-          mute_upon_entry: false,
-          waiting_room: false,
-          auto_recording: "none",
-        },
-      }),
+      body: JSON.stringify(meetingPayload),
     })
 
     if (!response.ok) {

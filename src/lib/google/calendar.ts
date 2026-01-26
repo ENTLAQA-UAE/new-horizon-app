@@ -57,6 +57,7 @@ export interface CalendarEventInput {
   endTime: Date
   attendees?: { email: string; name?: string }[]
   conferenceData?: boolean // If true, adds Google Meet link
+  timeZone?: string // IANA timezone string (e.g., 'Asia/Riyadh')
 }
 
 export interface CalendarEventResult {
@@ -71,17 +72,19 @@ export async function createCalendarEvent(
   calendar: calendar_v3.Calendar,
   event: CalendarEventInput
 ): Promise<CalendarEventResult> {
+  const timeZone = event.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Riyadh"
+
   const eventBody: calendar_v3.Schema$Event = {
     summary: event.summary,
     description: event.description,
     location: event.location,
     start: {
       dateTime: event.startTime.toISOString(),
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timeZone,
     },
     end: {
       dateTime: event.endTime.toISOString(),
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timeZone,
     },
     attendees: event.attendees?.map((a) => ({
       email: a.email,
