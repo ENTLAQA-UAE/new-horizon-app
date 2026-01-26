@@ -38,7 +38,7 @@ export default async function NotificationSettingsPage() {
   // Get organization
   const { data: organization } = await supabase
     .from("organizations")
-    .select("id, name, logo_url, primary_color")
+    .select("id, name, logo_url, primary_color, secondary_color")
     .eq("id", profile.org_id)
     .single()
 
