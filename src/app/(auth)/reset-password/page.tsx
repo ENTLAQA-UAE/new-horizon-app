@@ -54,12 +54,71 @@ function ResetPasswordContent() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [sessionReady, setSessionReady] = useState(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
     setMounted(true)
+
+    // Handle the auth session from URL hash (access_token)
+    const handleAuthSession = async () => {
+      const supabase = createClient()
+
+      // Check if there's a hash fragment with tokens
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        // Parse the hash parameters
+        const hashParams = new URLSearchParams(hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+        const type = hashParams.get('type')
+
+        if (accessToken && type === 'recovery') {
+          try {
+            // Set the session using the tokens from the URL
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            })
+
+            if (error) {
+              console.error('Session error:', error)
+              setSessionError(error.message)
+              return
+            }
+
+            if (data.session) {
+              setSessionReady(true)
+              // Clear the hash from URL for cleaner look
+              window.history.replaceState(null, '', window.location.pathname)
+            }
+          } catch (err: any) {
+            console.error('Failed to establish session:', err)
+            setSessionError(err.message || 'Failed to verify reset link')
+          }
+        } else {
+          setSessionError('Invalid or expired reset link')
+        }
+      } else {
+        // No hash, check if there's already an active session
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          setSessionReady(true)
+        } else {
+          setSessionError('No valid reset session found. Please request a new password reset link.')
+        }
+      }
+    }
+
+    handleAuthSession()
   }, [])
+
+  // Brand colors - defined early for loading/error states
+  const primaryColor = "#6366f1"
+  const secondaryColor = "#8b5cf6"
+  const brandGradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -106,13 +165,59 @@ function ResetPasswordContent() {
     }
   }
 
-  // Brand colors
-  const primaryColor = "#6366f1"
-  const secondaryColor = "#8b5cf6"
-  const brandGradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
-
   if (!mounted) {
     return <ResetPasswordSkeleton />
+  }
+
+  // Show loading while establishing session
+  if (!sessionReady && !sessionError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ background: brandGradient }}
+          >
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: primaryColor }} />
+            <span className="text-sm text-gray-500">Verifying reset link...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error if session could not be established
+  if (sessionError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+        <div className="max-w-md text-center px-6">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+            style={{ background: "#fef2f2" }}
+          >
+            <Lock className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Reset Link Invalid
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {sessionError}
+          </p>
+          <Link href="/forgot-password">
+            <Button
+              className="w-full h-12 text-base font-semibold text-white border-0"
+              style={{ background: brandGradient }}
+            >
+              Request New Reset Link
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
