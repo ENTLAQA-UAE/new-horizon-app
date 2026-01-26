@@ -48,10 +48,16 @@ export default async function InterviewsPage() {
     .order("scheduled_at", { ascending: true })
 
   // Fetch team members for interviewer selection
-  const { data: teamMembers } = await supabase
+  const { data: rawTeamMembers } = await supabase
     .from("profiles")
     .select("id, first_name, last_name, email, avatar_url, role")
     .order("first_name")
+
+  // Transform team members to include computed full_name
+  const teamMembers = (rawTeamMembers || []).map(m => ({
+    ...m,
+    full_name: [m.first_name, m.last_name].filter(Boolean).join(" ") || m.email,
+  }))
 
   // Fetch ALL applications for scheduling interviews (not filtered by status)
   const { data: applications } = await supabase
