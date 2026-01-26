@@ -200,6 +200,25 @@ interface ApplicationAttachment {
   created_at: string
 }
 
+interface ScreeningResponse {
+  id: string
+  question_id: string
+  answer: string | null
+  answer_json: unknown | null
+  is_knockout_triggered: boolean
+  created_at: string
+  question: {
+    id: string
+    question: string
+    question_ar: string | null
+    question_type: string
+    options: Array<{ value: string; label: string; label_ar?: string }> | null
+    is_knockout: boolean
+    knockout_value: string | null
+    is_required: boolean
+  } | null
+}
+
 interface ScorecardTemplate {
   id: string
   name: string
@@ -290,6 +309,7 @@ export function ApplicationsClient({
   const [applicationInterviews, setApplicationInterviews] = useState<Interview[]>([])
   const [applicationActivities, setApplicationActivities] = useState<ApplicationActivity[]>([])
   const [applicationAttachments, setApplicationAttachments] = useState<ApplicationAttachment[]>([])
+  const [screeningResponses, setScreeningResponses] = useState<ScreeningResponse[]>([])
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [newNote, setNewNote] = useState("")
   const [isAddingNote, setIsAddingNote] = useState(false)
@@ -470,18 +490,19 @@ export function ApplicationsClient({
     hired: applications.filter((a) => getStageType(a) === "hired").length,
   }
 
-  // Fetch application details (notes, interviews, activities, attachments, scorecards)
+  // Fetch application details (notes, interviews, activities, attachments, scorecards, screening)
   const fetchApplicationDetails = async (applicationId: string) => {
     setIsLoadingDetails(true)
     setIsLoadingScorecards(true)
     try {
-      const [notesRes, interviewsRes, activitiesRes, attachmentsRes, scorecardsRes, templatesRes] = await Promise.all([
+      const [notesRes, interviewsRes, activitiesRes, attachmentsRes, scorecardsRes, templatesRes, screeningRes] = await Promise.all([
         fetch(`/api/applications/${applicationId}/notes`),
         fetch(`/api/applications/${applicationId}/interviews`),
         fetch(`/api/applications/${applicationId}/activities`),
         fetch(`/api/applications/${applicationId}/attachments`),
         fetch(`/api/applications/${applicationId}/scorecards`),
         fetch(`/api/scorecard-templates`),
+        fetch(`/api/applications/${applicationId}/screening`),
       ])
 
       if (notesRes.ok) {
@@ -508,6 +529,10 @@ export function ApplicationsClient({
         const templatesData = await templatesRes.json()
         setScorecardTemplates(templatesData.templates || [])
       }
+      if (screeningRes.ok) {
+        const screeningData = await screeningRes.json()
+        setScreeningResponses(screeningData.responses || [])
+      }
     } catch (error) {
       console.error("Error fetching application details:", error)
     } finally {
@@ -525,6 +550,7 @@ export function ApplicationsClient({
     setApplicationAttachments([])
     setApplicationScorecards([])
     setScorecardTemplates([])
+    setScreeningResponses([])
     setNewNote("")
     setDisqualifyReason("")
     setSelectedTemplateId("")
@@ -1536,6 +1562,18 @@ export function ApplicationsClient({
                       <ClipboardList className="h-4 w-4 mr-2" />
                       Scorecards
                     </TabsTrigger>
+                    <TabsTrigger
+                      value="screening"
+                      className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
+                    >
+                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                      Screening
+                      {screeningResponses.some(r => r.is_knockout_triggered) && (
+                        <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">
+                          Knockout
+                        </Badge>
+                      )}
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -2034,6 +2072,116 @@ export function ApplicationsClient({
                               </div>
                             </div>
                           ))}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* Screening Tab */}
+                    <TabsContent value="screening" className="mt-0">
+                      {isLoadingDetails ? (
+                        <div className="flex items-center justify-center py-16">
+                          <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary,#6366f1)]" />
+                        </div>
+                      ) : screeningResponses.length === 0 ? (
+                        <div className="text-center py-16">
+                          <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                            <ClipboardCheck className="h-8 w-8 text-muted-foreground/50" />
+                          </div>
+                          <p className="text-muted-foreground font-medium">No screening questions answered</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            This application did not have any screening questions configured
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {/* Summary Card */}
+                          {screeningResponses.some(r => r.is_knockout_triggered) && (
+                            <div className="p-4 border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 rounded-xl">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                                  <XCircle className="h-5 w-5 text-red-600" />
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-red-800 dark:text-red-200">Knockout Triggered</p>
+                                  <p className="text-sm text-red-600 dark:text-red-300">
+                                    This candidate failed {screeningResponses.filter(r => r.is_knockout_triggered).length} disqualifying question(s)
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Questions List */}
+                          <div className="space-y-3">
+                            {screeningResponses.map((response, index) => (
+                              <div
+                                key={response.id}
+                                className={cn(
+                                  "p-4 border rounded-xl",
+                                  response.is_knockout_triggered
+                                    ? "border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800"
+                                    : "hover:shadow-md transition-shadow"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                                        Q{index + 1}
+                                      </span>
+                                      {response.question?.is_required && (
+                                        <Badge variant="outline" className="text-xs">Required</Badge>
+                                      )}
+                                      {response.question?.is_knockout && (
+                                        <Badge variant="destructive" className="text-xs">Knockout</Badge>
+                                      )}
+                                      {response.is_knockout_triggered && (
+                                        <Badge className="text-xs bg-red-600">Failed</Badge>
+                                      )}
+                                    </div>
+                                    <p className="font-medium text-sm mb-2">
+                                      {response.question?.question || "Unknown question"}
+                                    </p>
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-xs font-semibold text-muted-foreground uppercase mt-1">Answer:</span>
+                                      <div className="flex-1">
+                                        {response.question?.question_type === "boolean" ? (
+                                          <Badge
+                                            variant={response.answer === "true" || response.answer === "yes" ? "default" : "secondary"}
+                                            className={cn(
+                                              response.is_knockout_triggered && "bg-red-600"
+                                            )}
+                                          >
+                                            {response.answer === "true" || response.answer === "yes" ? "Yes" : "No"}
+                                          </Badge>
+                                        ) : response.question?.question_type === "select" || response.question?.question_type === "multiselect" ? (
+                                          <div className="flex flex-wrap gap-1">
+                                            {(response.answer_json ? (Array.isArray(response.answer_json) ? response.answer_json : [response.answer_json]) : [response.answer]).map((val: string, i: number) => {
+                                              const option = response.question?.options?.find((o: { value: string }) => o.value === val)
+                                              return (
+                                                <Badge key={i} variant="outline">
+                                                  {option?.label || val}
+                                                </Badge>
+                                              )
+                                            })}
+                                          </div>
+                                        ) : (
+                                          <p className="text-sm text-muted-foreground">
+                                            {response.answer || (response.answer_json ? JSON.stringify(response.answer_json) : "No answer")}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {response.question?.is_knockout && response.question?.knockout_value && (
+                                      <p className="text-xs text-muted-foreground mt-2">
+                                        <span className="font-medium">Knockout value:</span> {response.question.knockout_value === "true" ? "Yes" : response.question.knockout_value === "false" ? "No" : response.question.knockout_value}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </TabsContent>

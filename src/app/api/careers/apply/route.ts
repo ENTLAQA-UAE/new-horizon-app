@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       // Get screening questions to check for knockouts
       const { data: questions } = await supabase
         .from("screening_questions")
-        .select("id, is_knockout, knockout_value")
+        .select("id, question, is_knockout, knockout_value")
         .in("id", Object.keys(screeningAnswers))
 
       let isKnockout = false
@@ -219,11 +219,44 @@ export async function POST(request: NextRequest) {
         // Don't fail the whole application, just log the error
       }
 
-      // If knockout was triggered, update application status
+      // If knockout was triggered, update application status and move to rejected stage
       if (isKnockout) {
+        // Find the rejected stage from the job's pipeline
+        let rejectedStageId: string | null = null
+        if (job.pipeline_id) {
+          const { data: rejectedStage } = await supabase
+            .from("pipeline_stages")
+            .select("id")
+            .eq("pipeline_id", job.pipeline_id)
+            .eq("stage_type", "rejected")
+            .single()
+
+          if (rejectedStage) {
+            rejectedStageId = rejectedStage.id
+          }
+        }
+
+        // Build the knockout question details for the rejection reason
+        const knockoutDetails = responses
+          .filter((r: { is_knockout_triggered: boolean }) => r.is_knockout_triggered)
+          .map((r: { question_id: string }) => {
+            const q = questions?.find((q: { id: string; question: string }) => q.id === r.question_id)
+            return q?.question ? `"${q.question.slice(0, 50)}${q.question.length > 50 ? '...' : ''}"` : 'Unknown question'
+          })
+
+        const updateData: Record<string, unknown> = {
+          status: "rejected",
+          rejection_reason: `Failed screening question(s): ${knockoutDetails.join(', ')}`,
+          rejected_at: new Date().toISOString(),
+        }
+
+        if (rejectedStageId) {
+          updateData.stage_id = rejectedStageId
+        }
+
         await supabase
           .from("applications")
-          .update({ status: "rejected" })
+          .update(updateData)
           .eq("id", application.id)
       }
     }
