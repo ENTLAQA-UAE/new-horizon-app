@@ -307,6 +307,7 @@ async function sendEmailNotification(
     const html = replaceVariables(template.body_html, variables)
 
     // Send to each recipient
+    const errors: string[] = []
     for (const recipient of recipients) {
       if (!recipient.email) continue
 
@@ -314,7 +315,7 @@ async function sendEmailNotification(
       const personalizedHtml = html.replace(/\{\{receiver_name\}\}/g, recipient.name || "there")
       const personalizedSubject = subject.replace(/\{\{receiver_name\}\}/g, recipient.name || "there")
 
-      await sendOrgEmail(supabase, orgId, {
+      const emailResult = await sendOrgEmail(supabase, orgId, {
         to: recipient.email,
         subject: personalizedSubject,
         html: personalizedHtml,
@@ -323,6 +324,14 @@ async function sendEmailNotification(
         applicationId: logOptions.applicationId,
         interviewId: logOptions.interviewId,
       })
+
+      if (!emailResult.success) {
+        errors.push(`Failed to send to ${recipient.email}: ${emailResult.error}`)
+      }
+    }
+
+    if (errors.length > 0) {
+      return { success: false, error: errors.join("; ") }
     }
 
     return { success: true }
