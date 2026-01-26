@@ -44,7 +44,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface Scorecard {
+export interface Scorecard {
   id: string
   interview_id: string
   template_id: string | null

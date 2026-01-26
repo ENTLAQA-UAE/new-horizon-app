@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { ScorecardsPageClient } from "./scorecards-page-client"
+import { ScorecardsPageClient, Scorecard } from "./scorecards-page-client"
 
 export default async function ScorecardsPage() {
   const supabase = await createClient()
@@ -75,11 +75,11 @@ export default async function ScorecardsPage() {
     (profiles || []).map(p => [p.id, { first_name: p.first_name, last_name: p.last_name, avatar_url: p.avatar_url }])
   )
 
-  // Attach profiles to scorecards
+  // Attach profiles to scorecards and cast to proper type
   const scorecardsWithProfiles = (scorecards || []).map(scorecard => ({
     ...scorecard,
     profiles: profileMap.get(scorecard.interviewer_id) || null
-  }))
+  })) as unknown as Scorecard[]
 
   // Fetch jobs for filter
   const { data: jobs } = await supabase
