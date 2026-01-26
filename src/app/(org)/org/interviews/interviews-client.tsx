@@ -445,7 +445,8 @@ export function InterviewsClient({
             startDateTime: startTime.toISOString(),
             endDateTime: new Date(startTime.getTime() + durationMinutes * 60000).toISOString(),
             isOnlineMeeting: true,
-            attendees: attendees.map(a => ({ emailAddress: { address: a.email, name: a.name } })),
+            attendees: attendees, // API handles formatting
+            timezone: formData.timezone,
           }),
         })
         if (response.ok) {
