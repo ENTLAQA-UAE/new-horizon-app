@@ -1,8 +1,9 @@
 // @ts-nocheck
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect, supabaseRpc, getCurrentUserId } from "@/lib/supabase/auth-fetch"
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,6 +50,10 @@ import {
   Languages,
   Award,
   X,
+  ChevronDown,
+  ChevronUp,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -120,6 +125,8 @@ export default function ApplicationFormPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [sections, setSections] = useState<FormSection[]>([])
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [isReordering, setIsReordering] = useState(false)
 
   // Dialog states
   const [isSectionDialogOpen, setIsSectionDialogOpen] = useState(false)
@@ -566,6 +573,99 @@ export default function ApplicationFormPage() {
     }
   }
 
+  // Toggle section expand/collapse
+  const toggleExpand = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId)
+      } else {
+        newSet.add(sectionId)
+      }
+      return newSet
+    })
+  }
+
+  // Expand all sections
+  const expandAll = () => {
+    setExpandedSections(new Set(sections.map(s => s.id)))
+  }
+
+  // Collapse all sections
+  const collapseAll = () => {
+    setExpandedSections(new Set())
+  }
+
+  // Handle section drag and drop reorder
+  const handleSectionDragEnd = useCallback(async (result: DropResult) => {
+    if (!result.destination) return
+    if (result.source.index === result.destination.index) return
+
+    const reorderedSections = Array.from(sections)
+    const [movedSection] = reorderedSections.splice(result.source.index, 1)
+    reorderedSections.splice(result.destination.index, 0, movedSection)
+
+    // Update local state immediately for smooth UX
+    setSections(reorderedSections)
+    setIsReordering(true)
+
+    try {
+      // Update sort_order for all affected sections
+      const updates = reorderedSections.map((section, index) => ({
+        id: section.id,
+        sort_order: index + 1,
+      }))
+
+      // Update each section's sort_order in parallel
+      await Promise.all(
+        updates.map(({ id, sort_order }) =>
+          supabaseUpdate(
+            "application_form_sections",
+            { sort_order, updated_at: new Date().toISOString() },
+            { column: "id", value: id }
+          )
+        )
+      )
+
+      toast.success("Section order updated")
+    } catch (error) {
+      console.error("Failed to update section order:", error)
+      toast.error("Failed to update section order")
+      loadData() // Reload to reset to server state
+    } finally {
+      setIsReordering(false)
+    }
+  }, [sections])
+
+  // Move section up/down with buttons
+  const moveSectionUp = async (index: number) => {
+    if (index === 0) return
+    const result: DropResult = {
+      draggableId: sections[index].id,
+      type: "section",
+      source: { index, droppableId: "sections" },
+      destination: { index: index - 1, droppableId: "sections" },
+      reason: "DROP",
+      mode: "FLUID",
+      combine: null,
+    }
+    await handleSectionDragEnd(result)
+  }
+
+  const moveSectionDown = async (index: number) => {
+    if (index === sections.length - 1) return
+    const result: DropResult = {
+      draggableId: sections[index].id,
+      type: "section",
+      source: { index, droppableId: "sections" },
+      destination: { index: index + 1, droppableId: "sections" },
+      reason: "DROP",
+      mode: "FLUID",
+      combine: null,
+    }
+    await handleSectionDragEnd(result)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -584,161 +684,273 @@ export default function ApplicationFormPage() {
             Configure the application form sections and fields for job applicants
           </p>
         </div>
-        <Button onClick={() => openSectionDialog()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Section
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={expandAll}
+              className="text-xs h-7 px-2"
+            >
+              <ChevronDown className="h-3 w-3 mr-1" />
+              Expand All
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={collapseAll}
+              className="text-xs h-7 px-2"
+            >
+              <ChevronUp className="h-3 w-3 mr-1" />
+              Collapse All
+            </Button>
+          </div>
+          <Button onClick={() => openSectionDialog()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Section
+          </Button>
+        </div>
       </div>
 
-      {/* Sections */}
-      <div className="space-y-4">
-        {sections.map((section) => {
-          const IconComponent = iconMap[section.icon] || FileText
+      {/* Reordering indicator */}
+      {isReordering && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Updating section order...
+        </div>
+      )}
 
-          return (
-            <Card key={section.id} className={cn(!section.is_enabled && "opacity-60")}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <IconComponent className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {section.name}
-                        {section.is_default && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Lock className="h-3 w-3 mr-1" />
-                            Required
-                          </Badge>
+      {/* Sections with Drag and Drop */}
+      <DragDropContext onDragEnd={handleSectionDragEnd}>
+        <Droppable droppableId="sections" type="section">
+          {(provided, snapshot) => (
+            <div
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className={cn(
+                "space-y-4 transition-colors",
+                snapshot.isDraggingOver && "bg-muted/30 rounded-lg p-2"
+              )}
+            >
+              {sections.map((section, index) => {
+                const IconComponent = iconMap[section.icon] || FileText
+                const isExpanded = expandedSections.has(section.id)
+
+                return (
+                  <Draggable key={section.id} draggableId={section.id} index={index}>
+                    {(provided, snapshot) => (
+                      <Card
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={cn(
+                          !section.is_enabled && "opacity-60",
+                          snapshot.isDragging && "shadow-lg ring-2 ring-primary/20"
                         )}
-                        {section.is_repeatable && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                            <Repeat className="h-3 w-3 mr-1" />
-                            Repeatable ({section.min_entries}-{section.max_entries})
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      {section.name_ar && (
-                        <p className="text-sm text-muted-foreground" dir="rtl">
-                          {section.name_ar}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={section.is_enabled}
-                      onCheckedChange={() => handleToggleSection(section)}
-                      disabled={section.is_default}
-                    />
-                    {!section.is_default && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openSectionDialog(section)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog("section", section)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Fields list */}
-                <div className="space-y-2">
-                  {section.fields.map((field) => (
-                    <div
-                      key={field.id}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border bg-muted/30",
-                        !field.is_enabled && "opacity-50"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {field.name}
-                            {field.is_required && <span className="text-red-500 ml-1">*</span>}
-                          </p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {fieldTypes.find(t => t.value === field.field_type)?.label || field.field_type}
-                            {field.options && field.options.length > 0 && (
-                              <span className="ml-1 text-blue-600">({field.options.length} options)</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => handleToggleRequired(field)}
-                          disabled={field.is_default && field.is_required}
-                        >
-                          {field.is_required ? "Required" : "Optional"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleToggleField(field)}
-                        >
-                          {field.is_enabled ? (
-                            <Eye className="h-4 w-4" />
-                          ) : (
-                            <EyeOff className="h-4 w-4" />
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {/* Drag Handle */}
+                              <div
+                                {...provided.dragHandleProps}
+                                className="flex flex-col items-center gap-0.5 p-1 rounded hover:bg-muted cursor-grab active:cursor-grabbing"
+                                title="Drag to reorder"
+                              >
+                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              {/* Section Icon */}
+                              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <IconComponent className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                  {section.name}
+                                  {section.is_default && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      <Lock className="h-3 w-3 mr-1" />
+                                      Required
+                                    </Badge>
+                                  )}
+                                  {section.is_repeatable && (
+                                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                      <Repeat className="h-3 w-3 mr-1" />
+                                      Repeatable ({section.min_entries}-{section.max_entries})
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    {section.fields.length} field{section.fields.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                </CardTitle>
+                                {section.name_ar && (
+                                  <p className="text-sm text-muted-foreground" dir="rtl">
+                                    {section.name_ar}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {/* Reorder buttons */}
+                              <div className="flex flex-col gap-0.5 mr-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5"
+                                  onClick={() => moveSectionUp(index)}
+                                  disabled={index === 0 || isReordering}
+                                  title="Move up"
+                                >
+                                  <ArrowUp className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5"
+                                  onClick={() => moveSectionDown(index)}
+                                  disabled={index === sections.length - 1 || isReordering}
+                                  title="Move down"
+                                >
+                                  <ArrowDown className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              {/* Expand/Collapse */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleExpand(section.id)}
+                                title={isExpanded ? "Collapse" : "Expand"}
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Switch
+                                checked={section.is_enabled}
+                                onCheckedChange={() => handleToggleSection(section)}
+                                disabled={section.is_default}
+                              />
+                              {!section.is_default && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openSectionDialog(section)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openDeleteDialog("section", section)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        {/* Collapsible Content */}
+                        <div
+                          className={cn(
+                            "overflow-hidden transition-all duration-300",
+                            isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
                           )}
-                        </Button>
-                        {!field.is_default && (
-                          <>
+                        >
+                          <CardContent>
+                            {/* Fields list */}
+                            <div className="space-y-2">
+                              {section.fields.map((field) => (
+                                <div
+                                  key={field.id}
+                                  className={cn(
+                                    "flex items-center justify-between p-3 rounded-lg border bg-muted/30",
+                                    !field.is_enabled && "opacity-50"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                                    <div>
+                                      <p className="font-medium text-sm">
+                                        {field.name}
+                                        {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground capitalize">
+                                        {fieldTypes.find(t => t.value === field.field_type)?.label || field.field_type}
+                                        {field.options && field.options.length > 0 && (
+                                          <span className="ml-1 text-blue-600">({field.options.length} options)</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() => handleToggleRequired(field)}
+                                      disabled={field.is_default && field.is_required}
+                                    >
+                                      {field.is_required ? "Required" : "Optional"}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleToggleField(field)}
+                                    >
+                                      {field.is_enabled ? (
+                                        <Eye className="h-4 w-4" />
+                                      ) : (
+                                        <EyeOff className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                    {!field.is_default && (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => openFieldDialog(section.id, field)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => openDeleteDialog("field", field)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openFieldDialog(section.id, field)}
+                              variant="outline"
+                              size="sm"
+                              className="mt-3"
+                              onClick={() => openFieldDialog(section.id)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Field
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => openDeleteDialog("field", field)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => openFieldDialog(section.id)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Field
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                          </CardContent>
+                        </div>
+                      </Card>
+                    )}
+                  </Draggable>
+                )
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       {/* Section Dialog */}
       <Dialog open={isSectionDialogOpen} onOpenChange={setIsSectionDialogOpen}>
