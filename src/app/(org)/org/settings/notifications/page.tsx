@@ -67,11 +67,17 @@ export default async function NotificationSettingsPage() {
     .select("*")
 
   // Get team members for audience selection
-  const { data: teamMembers } = await supabase
+  const { data: rawTeamMembers } = await supabase
     .from("profiles")
     .select("id, first_name, last_name, email, role")
     .eq("org_id", profile.org_id)
     .order("first_name")
+
+  // Transform team members to include computed full_name
+  const teamMembers = (rawTeamMembers || []).map(m => ({
+    ...m,
+    full_name: [m.first_name, m.last_name].filter(Boolean).join(" ") || null,
+  }))
 
   return (
     <NotificationSettingsClient
@@ -80,7 +86,7 @@ export default async function NotificationSettingsPage() {
       settings={settings || []}
       templates={templates || []}
       defaultTemplates={defaultTemplates || []}
-      teamMembers={teamMembers || []}
+      teamMembers={teamMembers}
     />
   )
 }
