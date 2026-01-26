@@ -45,6 +45,10 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Repeat,
+  Languages,
+  Award,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -56,6 +60,9 @@ interface FormSection {
   icon: string
   is_default: boolean
   is_enabled: boolean
+  is_repeatable: boolean
+  min_entries: number
+  max_entries: number
   sort_order: number
   fields: FormField[]
 }
@@ -71,20 +78,32 @@ interface FormField {
   is_required: boolean
   is_enabled: boolean
   sort_order: number
+  options: FieldOption[] | null
+}
+
+interface FieldOption {
+  value: string
+  label: string
+  label_ar?: string
 }
 
 const fieldTypes = [
-  { value: "text", label: "Text" },
-  { value: "email", label: "Email" },
-  { value: "phone", label: "Phone" },
-  { value: "date", label: "Date" },
-  { value: "number", label: "Number" },
-  { value: "url", label: "URL" },
-  { value: "select", label: "Dropdown" },
-  { value: "textarea", label: "Long Text" },
-  { value: "file", label: "File Upload" },
-  { value: "checkbox", label: "Checkbox" },
+  { value: "text", label: "Text", hasOptions: false },
+  { value: "email", label: "Email", hasOptions: false },
+  { value: "phone", label: "Phone", hasOptions: false },
+  { value: "date", label: "Date", hasOptions: false },
+  { value: "number", label: "Number", hasOptions: false },
+  { value: "url", label: "URL", hasOptions: false },
+  { value: "select", label: "Dropdown", hasOptions: true },
+  { value: "multiselect", label: "Multi-Select", hasOptions: true },
+  { value: "radio", label: "Radio Buttons", hasOptions: true },
+  { value: "textarea", label: "Long Text", hasOptions: false },
+  { value: "file", label: "File Upload", hasOptions: false },
+  { value: "checkbox", label: "Checkbox", hasOptions: false },
 ]
+
+// Field types that require options
+const fieldTypesWithOptions = ["select", "multiselect", "radio"]
 
 const iconMap: Record<string, any> = {
   user: User,
@@ -92,6 +111,8 @@ const iconMap: Record<string, any> = {
   "graduation-cap": GraduationCap,
   briefcase: Briefcase,
   "file-text": FileText,
+  languages: Languages,
+  award: Award,
 }
 
 export default function ApplicationFormPage() {
@@ -115,6 +136,9 @@ export default function ApplicationFormPage() {
     name_ar: "",
     description: "",
     icon: "file-text",
+    is_repeatable: false,
+    min_entries: 1,
+    max_entries: 10,
   })
 
   const [fieldForm, setFieldForm] = useState({
@@ -123,7 +147,11 @@ export default function ApplicationFormPage() {
     field_type: "text",
     placeholder: "",
     is_required: false,
+    options: [] as FieldOption[],
   })
+
+  // New option being added
+  const [newOption, setNewOption] = useState({ label: "", label_ar: "" })
 
   useEffect(() => {
     loadData()
@@ -264,10 +292,13 @@ export default function ApplicationFormPage() {
         name_ar: section.name_ar || "",
         description: section.description || "",
         icon: section.icon,
+        is_repeatable: section.is_repeatable || false,
+        min_entries: section.min_entries || 1,
+        max_entries: section.max_entries || 10,
       })
     } else {
       setEditingSection(null)
-      setSectionForm({ name: "", name_ar: "", description: "", icon: "file-text" })
+      setSectionForm({ name: "", name_ar: "", description: "", icon: "file-text", is_repeatable: false, min_entries: 1, max_entries: 10 })
     }
     setIsSectionDialogOpen(true)
   }
@@ -292,6 +323,9 @@ export default function ApplicationFormPage() {
             name_ar: sectionForm.name_ar || null,
             description: sectionForm.description || null,
             icon: sectionForm.icon,
+            is_repeatable: sectionForm.is_repeatable,
+            min_entries: sectionForm.min_entries,
+            max_entries: sectionForm.max_entries,
             updated_at: new Date().toISOString(),
           },
           { column: "id", value: editingSection.id }
@@ -309,6 +343,9 @@ export default function ApplicationFormPage() {
           icon: sectionForm.icon,
           is_default: false,
           is_enabled: true,
+          is_repeatable: sectionForm.is_repeatable,
+          min_entries: sectionForm.min_entries,
+          max_entries: sectionForm.max_entries,
           sort_order: maxOrder + 1,
         })
 
@@ -361,12 +398,34 @@ export default function ApplicationFormPage() {
         field_type: field.field_type,
         placeholder: field.placeholder || "",
         is_required: field.is_required,
+        options: field.options || [],
       })
     } else {
       setEditingField(null)
-      setFieldForm({ name: "", name_ar: "", field_type: "text", placeholder: "", is_required: false })
+      setFieldForm({ name: "", name_ar: "", field_type: "text", placeholder: "", is_required: false, options: [] })
     }
+    setNewOption({ label: "", label_ar: "" })
     setIsFieldDialogOpen(true)
+  }
+
+  // Add option to field
+  const handleAddOption = () => {
+    if (!newOption.label.trim()) {
+      toast.error("Please enter an option label")
+      return
+    }
+    const option: FieldOption = {
+      value: newOption.label.toLowerCase().replace(/\s+/g, "_"),
+      label: newOption.label,
+      label_ar: newOption.label_ar || undefined,
+    }
+    setFieldForm({ ...fieldForm, options: [...fieldForm.options, option] })
+    setNewOption({ label: "", label_ar: "" })
+  }
+
+  // Remove option from field
+  const handleRemoveOption = (index: number) => {
+    setFieldForm({ ...fieldForm, options: fieldForm.options.filter((_, i) => i !== index) })
   }
 
   const handleSaveField = async () => {
@@ -383,9 +442,16 @@ export default function ApplicationFormPage() {
       return
     }
 
+    // Validate options for field types that need them
+    if (fieldTypesWithOptions.includes(fieldForm.field_type) && fieldForm.options.length === 0) {
+      toast.error("Please add at least one option for this field type")
+      return
+    }
+
     setIsSaving(true)
     try {
       const section = sections.find((s) => s.id === selectedSectionId)
+      const optionsToSave = fieldTypesWithOptions.includes(fieldForm.field_type) ? fieldForm.options : null
 
       if (editingField) {
         const { error } = await supabaseUpdate(
@@ -396,6 +462,7 @@ export default function ApplicationFormPage() {
             field_type: fieldForm.field_type,
             placeholder: fieldForm.placeholder || null,
             is_required: fieldForm.is_required,
+            options: optionsToSave,
             updated_at: new Date().toISOString(),
           },
           { column: "id", value: editingField.id }
@@ -415,6 +482,7 @@ export default function ApplicationFormPage() {
           is_default: false,
           is_required: fieldForm.is_required,
           is_enabled: true,
+          options: optionsToSave,
           sort_order: maxOrder + 1,
         })
 
@@ -544,6 +612,12 @@ export default function ApplicationFormPage() {
                             Required
                           </Badge>
                         )}
+                        {section.is_repeatable && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            <Repeat className="h-3 w-3 mr-1" />
+                            Repeatable ({section.min_entries}-{section.max_entries})
+                          </Badge>
+                        )}
                       </CardTitle>
                       {section.name_ar && (
                         <p className="text-sm text-muted-foreground" dir="rtl">
@@ -598,7 +672,10 @@ export default function ApplicationFormPage() {
                             {field.is_required && <span className="text-red-500 ml-1">*</span>}
                           </p>
                           <p className="text-xs text-muted-foreground capitalize">
-                            {field.field_type}
+                            {fieldTypes.find(t => t.value === field.field_type)?.label || field.field_type}
+                            {field.options && field.options.length > 0 && (
+                              <span className="ml-1 text-blue-600">({field.options.length} options)</span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -701,6 +778,50 @@ export default function ApplicationFormPage() {
                 placeholder="Brief description of this section"
               />
             </div>
+
+            {/* Repeatable Settings */}
+            <div className="p-4 rounded-lg border bg-muted/30 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="section-repeatable" className="text-base">Repeatable Section</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Allow candidates to add multiple entries (e.g., multiple work experiences)
+                  </p>
+                </div>
+                <Switch
+                  id="section-repeatable"
+                  checked={sectionForm.is_repeatable}
+                  onCheckedChange={(checked) => setSectionForm({ ...sectionForm, is_repeatable: checked })}
+                />
+              </div>
+
+              {sectionForm.is_repeatable && (
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="min-entries">Minimum Entries</Label>
+                    <Input
+                      id="min-entries"
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={sectionForm.min_entries}
+                      onChange={(e) => setSectionForm({ ...sectionForm, min_entries: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max-entries">Maximum Entries</Label>
+                    <Input
+                      id="max-entries"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={sectionForm.max_entries}
+                      onChange={(e) => setSectionForm({ ...sectionForm, max_entries: parseInt(e.target.value) || 10 })}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSectionDialogOpen(false)}>
@@ -747,7 +868,7 @@ export default function ApplicationFormPage() {
               <Label htmlFor="field-type">Field Type</Label>
               <Select
                 value={fieldForm.field_type}
-                onValueChange={(value) => setFieldForm({ ...fieldForm, field_type: value })}
+                onValueChange={(value) => setFieldForm({ ...fieldForm, field_type: value, options: fieldTypesWithOptions.includes(value) ? fieldForm.options : [] })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -761,6 +882,64 @@ export default function ApplicationFormPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Options Editor for select, multiselect, radio */}
+            {fieldTypesWithOptions.includes(fieldForm.field_type) && (
+              <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                <Label>Options</Label>
+                <p className="text-xs text-muted-foreground">
+                  Add the options that will appear in this field
+                </p>
+
+                {/* Existing options */}
+                {fieldForm.options.length > 0 && (
+                  <div className="space-y-2">
+                    {fieldForm.options.map((option, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 rounded bg-background border">
+                        <span className="flex-1 text-sm">{option.label}</span>
+                        {option.label_ar && (
+                          <span className="text-xs text-muted-foreground" dir="rtl">{option.label_ar}</span>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleRemoveOption(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add new option */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Option label (English)"
+                      value={newOption.label}
+                      onChange={(e) => setNewOption({ ...newOption, label: e.target.value })}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddOption())}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Arabic (optional)"
+                      value={newOption.label_ar}
+                      onChange={(e) => setNewOption({ ...newOption, label_ar: e.target.value })}
+                      dir="rtl"
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddOption())}
+                    />
+                  </div>
+                  <Button type="button" variant="outline" size="icon" onClick={handleAddOption}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="field-placeholder">Placeholder</Label>
               <Input
