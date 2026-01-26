@@ -70,6 +70,8 @@ export async function updateSession(request: NextRequest) {
     '/portal/auth',
     '/api/invites',
     '/api/careers',
+    '/api/auth/forgot-password', // Password reset API endpoint
+    '/api/auth/reset-password',  // Password reset confirmation endpoint
     '/onboarding', // Allow onboarding for authenticated users without org
   ]
 
