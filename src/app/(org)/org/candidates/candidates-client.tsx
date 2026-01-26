@@ -475,6 +475,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       // Create the application
       const { error } = await supabaseInsert("applications", {
+        org_id: organizationId,
         candidate_id: selectedCandidate.id,
         job_id: selectedJobId,
         stage_id: firstStageId,
