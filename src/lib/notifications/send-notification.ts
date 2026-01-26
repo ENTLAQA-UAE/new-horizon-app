@@ -1307,16 +1307,44 @@ async function logNotification(
   }
 ): Promise<void> {
   try {
-    await supabase.from("notification_log").insert({
-      org_id: data.orgId,
-      event_id: data.eventId,
-      recipient_count: data.recipientCount,
-      channels: data.channels,
-      candidate_id: data.candidateId,
-      application_id: data.applicationId,
-      interview_id: data.interviewId,
-      created_at: new Date().toISOString(),
-    })
+    // Log one entry per channel that was used
+    const entries = []
+
+    if (data.channels.email) {
+      entries.push({
+        org_id: data.orgId,
+        event_id: data.eventId,
+        channel: "mail",
+        status: "sent",
+        metadata: {
+          recipient_count: data.recipientCount,
+          candidate_id: data.candidateId,
+          application_id: data.applicationId,
+          interview_id: data.interviewId,
+        },
+        sent_at: new Date().toISOString(),
+      })
+    }
+
+    if (data.channels.inApp) {
+      entries.push({
+        org_id: data.orgId,
+        event_id: data.eventId,
+        channel: "system",
+        status: "sent",
+        metadata: {
+          recipient_count: data.recipientCount,
+          candidate_id: data.candidateId,
+          application_id: data.applicationId,
+          interview_id: data.interviewId,
+        },
+        sent_at: new Date().toISOString(),
+      })
+    }
+
+    if (entries.length > 0) {
+      await supabase.from("notification_log").insert(entries)
+    }
   } catch (err) {
     console.error("Error logging notification:", err)
   }
