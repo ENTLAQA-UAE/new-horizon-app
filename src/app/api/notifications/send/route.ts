@@ -493,6 +493,584 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "candidate_disqualified": {
+        // Get candidate and job info
+        const { data: application } = await serviceClient
+          .from("applications")
+          .select(`
+            id,
+            candidates(id, first_name, last_name, email),
+            jobs(id, title, org_id)
+          `)
+          .eq("id", data.applicationId)
+          .single()
+
+        if (!application) {
+          return NextResponse.json({ error: "Application not found" }, { status: 404 })
+        }
+
+        const candidate = application.candidates as any
+        const job = application.jobs as any
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get disqualifier name
+        const { data: disqualifier } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Notify hiring team
+        const disqualifyRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager", "recruiter"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "candidate_disqualified",
+          orgId,
+          recipients: disqualifyRecipients,
+          variables: {
+            candidate_name: `${candidate?.first_name || ""} ${candidate?.last_name || ""}`.trim() || "A candidate",
+            job_title: job?.title || "the position",
+            disqualification_reason: data.reason || "Not specified",
+            disqualified_by: disqualifier?.full_name || "A team member",
+            org_name: org?.name || "the organization",
+            application_url: `/org/applications?id=${data.applicationId}`,
+          },
+          applicationId: data.applicationId,
+        })
+        break
+      }
+
+      case "interview_rescheduled": {
+        // Get interview details
+        const { data: interview } = await serviceClient
+          .from("interviews")
+          .select(`
+            id,
+            scheduled_at,
+            interview_type,
+            location,
+            meeting_link,
+            applications(
+              id,
+              candidates(id, first_name, last_name, email),
+              jobs(id, title)
+            )
+          `)
+          .eq("id", data.interviewId)
+          .single()
+
+        if (!interview) {
+          return NextResponse.json({ error: "Interview not found" }, { status: 404 })
+        }
+
+        const app = interview.applications as any
+        const candidateData = app?.candidates as any
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Format date/time
+        const scheduledDate = interview.scheduled_at ? new Date(interview.scheduled_at) : null
+        const interviewDate = scheduledDate?.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) || "TBD"
+        const interviewTime = scheduledDate?.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) || "TBD"
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "interview_rescheduled",
+          orgId,
+          recipients: [{
+            email: candidateData?.email,
+            name: `${candidateData?.first_name || ""} ${candidateData?.last_name || ""}`.trim(),
+          }],
+          variables: {
+            candidate_name: `${candidateData?.first_name || ""} ${candidateData?.last_name || ""}`.trim() || "Candidate",
+            job_title: app?.jobs?.title || "the position",
+            interview_date: interviewDate,
+            interview_time: interviewTime,
+            interview_type: interview.interview_type || "Interview",
+            location: interview.location || interview.meeting_link || "To be confirmed",
+            meeting_link: interview.meeting_link || "",
+            previous_date: data.previousDate || "the previous date",
+            org_name: org?.name || "the organization",
+          },
+          interviewId: data.interviewId,
+          applicationId: app?.id,
+        })
+        break
+      }
+
+      case "offer_created": {
+        // Get offer details
+        const { data: offer } = await serviceClient
+          .from("offers")
+          .select(`
+            id,
+            salary,
+            start_date,
+            applications(
+              id,
+              candidates(id, first_name, last_name),
+              jobs(id, title)
+            )
+          `)
+          .eq("id", data.offerId)
+          .single()
+
+        if (!offer) {
+          return NextResponse.json({ error: "Offer not found" }, { status: 404 })
+        }
+
+        const offerApp = offer.applications as any
+        const offerCandidate = offerApp?.candidates as any
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get creator name
+        const { data: creator } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Notify hiring team
+        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "offer_created",
+          orgId,
+          recipients: offerRecipients,
+          variables: {
+            candidate_name: `${offerCandidate?.first_name || ""} ${offerCandidate?.last_name || ""}`.trim() || "A candidate",
+            job_title: offerApp?.jobs?.title || "the position",
+            salary: offer.salary ? `$${offer.salary.toLocaleString()}` : "Not specified",
+            start_date: offer.start_date ? new Date(offer.start_date).toLocaleDateString() : "TBD",
+            created_by: creator?.full_name || "A team member",
+            org_name: org?.name || "the organization",
+            offer_url: `/org/offers?id=${data.offerId}`,
+          },
+          applicationId: offerApp?.id,
+        })
+        break
+      }
+
+      case "offer_expired": {
+        // Get offer details
+        const { data: offer } = await serviceClient
+          .from("offers")
+          .select(`
+            id,
+            expires_at,
+            applications(
+              id,
+              candidates(id, first_name, last_name),
+              jobs(id, title)
+            )
+          `)
+          .eq("id", data.offerId)
+          .single()
+
+        if (!offer) {
+          return NextResponse.json({ error: "Offer not found" }, { status: 404 })
+        }
+
+        const expiredApp = offer.applications as any
+        const expiredCandidate = expiredApp?.candidates as any
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Notify hiring team
+        const expiredRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "offer_expired",
+          orgId,
+          recipients: expiredRecipients,
+          variables: {
+            candidate_name: `${expiredCandidate?.first_name || ""} ${expiredCandidate?.last_name || ""}`.trim() || "A candidate",
+            job_title: expiredApp?.jobs?.title || "the position",
+            expiry_date: offer.expires_at ? new Date(offer.expires_at).toLocaleDateString() : "N/A",
+            org_name: org?.name || "the organization",
+            offer_url: `/org/offers?id=${data.offerId}`,
+          },
+          applicationId: expiredApp?.id,
+        })
+        break
+      }
+
+      case "job_closed": {
+        // Get job details
+        const { data: job } = await serviceClient
+          .from("jobs")
+          .select("id, title, status")
+          .eq("id", data.jobId)
+          .single()
+
+        if (!job) {
+          return NextResponse.json({ error: "Job not found" }, { status: 404 })
+        }
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get closer name
+        const { data: closer } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Notify hiring team
+        const jobClosedRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager", "recruiter"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "job_closed",
+          orgId,
+          recipients: jobClosedRecipients,
+          variables: {
+            job_title: job.title || "the position",
+            closed_by: closer?.full_name || "A team member",
+            close_reason: data.reason || "Not specified",
+            org_name: org?.name || "the organization",
+            job_url: `/org/jobs/${data.jobId}`,
+          },
+        })
+        break
+      }
+
+      case "job_expiring": {
+        // Get job details
+        const { data: job } = await serviceClient
+          .from("jobs")
+          .select("id, title, expires_at")
+          .eq("id", data.jobId)
+          .single()
+
+        if (!job) {
+          return NextResponse.json({ error: "Job not found" }, { status: 404 })
+        }
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Notify hiring team
+        const jobExpiringRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager", "recruiter"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "job_expiring",
+          orgId,
+          recipients: jobExpiringRecipients,
+          variables: {
+            job_title: job.title || "the position",
+            expiry_date: job.expires_at ? new Date(job.expires_at).toLocaleDateString() : "Soon",
+            days_remaining: data.daysRemaining || "a few",
+            org_name: org?.name || "the organization",
+            job_url: `/org/jobs/${data.jobId}`,
+          },
+        })
+        break
+      }
+
+      case "requisition_created": {
+        // Get requisition details
+        const { data: requisition } = await serviceClient
+          .from("requisitions")
+          .select("id, title, department, positions_count")
+          .eq("id", data.requisitionId)
+          .single()
+
+        if (!requisition) {
+          return NextResponse.json({ error: "Requisition not found" }, { status: 404 })
+        }
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get creator name
+        const { data: creator } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Notify approvers (org admins and HR managers)
+        const requisitionRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "requisition_created",
+          orgId,
+          recipients: requisitionRecipients,
+          variables: {
+            requisition_title: requisition.title || "New Requisition",
+            department: requisition.department || "Not specified",
+            positions_count: String(requisition.positions_count || 1),
+            created_by: creator?.full_name || "A team member",
+            org_name: org?.name || "the organization",
+            requisition_url: `/org/requisitions?id=${data.requisitionId}`,
+          },
+        })
+        break
+      }
+
+      case "requisition_approved": {
+        // Get requisition details
+        const { data: requisition } = await serviceClient
+          .from("requisitions")
+          .select("id, title, department, created_by")
+          .eq("id", data.requisitionId)
+          .single()
+
+        if (!requisition) {
+          return NextResponse.json({ error: "Requisition not found" }, { status: 404 })
+        }
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get approver name
+        const { data: approver } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Get creator to notify them
+        const { data: creator } = await serviceClient
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", requisition.created_by)
+          .single()
+
+        const approvedRecipients = creator
+          ? [{ userId: creator.id, email: creator.email, name: creator.full_name || creator.email }]
+          : await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "requisition_approved",
+          orgId,
+          recipients: approvedRecipients,
+          variables: {
+            requisition_title: requisition.title || "Requisition",
+            department: requisition.department || "Not specified",
+            approved_by: approver?.full_name || "An approver",
+            org_name: org?.name || "the organization",
+            requisition_url: `/org/requisitions?id=${data.requisitionId}`,
+          },
+        })
+        break
+      }
+
+      case "requisition_rejected": {
+        // Get requisition details
+        const { data: requisition } = await serviceClient
+          .from("requisitions")
+          .select("id, title, department, created_by")
+          .eq("id", data.requisitionId)
+          .single()
+
+        if (!requisition) {
+          return NextResponse.json({ error: "Requisition not found" }, { status: 404 })
+        }
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get rejector name
+        const { data: rejector } = await serviceClient
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single()
+
+        // Get creator to notify them
+        const { data: creator } = await serviceClient
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", requisition.created_by)
+          .single()
+
+        const rejectedRecipients = creator
+          ? [{ userId: creator.id, email: creator.email, name: creator.full_name || creator.email }]
+          : await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "requisition_rejected",
+          orgId,
+          recipients: rejectedRecipients,
+          variables: {
+            requisition_title: requisition.title || "Requisition",
+            department: requisition.department || "Not specified",
+            rejected_by: rejector?.full_name || "An approver",
+            rejection_reason: data.reason || "Not specified",
+            org_name: org?.name || "the organization",
+            requisition_url: `/org/requisitions?id=${data.requisitionId}`,
+          },
+        })
+        break
+      }
+
+      case "interview_reminder": {
+        // Get interview details
+        const { data: interview } = await serviceClient
+          .from("interviews")
+          .select(`
+            id,
+            scheduled_at,
+            interview_type,
+            location,
+            meeting_link,
+            applications(
+              id,
+              candidates(id, first_name, last_name, email),
+              jobs(id, title)
+            )
+          `)
+          .eq("id", data.interviewId)
+          .single()
+
+        if (!interview) {
+          return NextResponse.json({ error: "Interview not found" }, { status: 404 })
+        }
+
+        const reminderApp = interview.applications as any
+        const reminderCandidate = reminderApp?.candidates as any
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Format date/time
+        const reminderDate = interview.scheduled_at ? new Date(interview.scheduled_at) : null
+        const reminderDateStr = reminderDate?.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) || "TBD"
+        const reminderTimeStr = reminderDate?.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) || "TBD"
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "interview_reminder",
+          orgId,
+          recipients: [{
+            email: reminderCandidate?.email,
+            name: `${reminderCandidate?.first_name || ""} ${reminderCandidate?.last_name || ""}`.trim(),
+          }],
+          variables: {
+            candidate_name: `${reminderCandidate?.first_name || ""} ${reminderCandidate?.last_name || ""}`.trim() || "Candidate",
+            job_title: reminderApp?.jobs?.title || "the position",
+            interview_date: reminderDateStr,
+            interview_time: reminderTimeStr,
+            interview_type: interview.interview_type || "Interview",
+            location: interview.location || interview.meeting_link || "To be confirmed",
+            meeting_link: interview.meeting_link || "",
+            org_name: org?.name || "the organization",
+          },
+          interviewId: data.interviewId,
+          applicationId: reminderApp?.id,
+        })
+        break
+      }
+
+      case "scorecard_reminder": {
+        // Get interview details for pending scorecard
+        const { data: interview } = await serviceClient
+          .from("interviews")
+          .select(`
+            id,
+            scheduled_at,
+            applications(
+              id,
+              candidates(id, first_name, last_name),
+              jobs(id, title)
+            )
+          `)
+          .eq("id", data.interviewId)
+          .single()
+
+        if (!interview) {
+          return NextResponse.json({ error: "Interview not found" }, { status: 404 })
+        }
+
+        const scorecardApp = interview.applications as any
+        const scorecardCandidate = scorecardApp?.candidates as any
+
+        // Get org name
+        const { data: org } = await serviceClient
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single()
+
+        // Get interviewer to remind
+        const { data: interviewer } = await serviceClient
+          .from("profiles")
+          .select("id, full_name, email")
+          .eq("id", data.interviewerId)
+          .single()
+
+        if (!interviewer) {
+          return NextResponse.json({ error: "Interviewer not found" }, { status: 404 })
+        }
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "scorecard_reminder",
+          orgId,
+          recipients: [{
+            userId: interviewer.id,
+            email: interviewer.email,
+            name: interviewer.full_name || interviewer.email,
+          }],
+          variables: {
+            interviewer_name: interviewer.full_name || "Interviewer",
+            candidate_name: `${scorecardCandidate?.first_name || ""} ${scorecardCandidate?.last_name || ""}`.trim() || "A candidate",
+            job_title: scorecardApp?.jobs?.title || "the position",
+            interview_date: interview.scheduled_at ? new Date(interview.scheduled_at).toLocaleDateString() : "Recent",
+            org_name: org?.name || "the organization",
+            scorecard_url: `/org/interviews?id=${data.interviewId}`,
+          },
+          interviewId: data.interviewId,
+          applicationId: scorecardApp?.id,
+        })
+        break
+      }
+
       default:
         return NextResponse.json({ error: `Unknown event type: ${eventType}` }, { status: 400 })
     }
