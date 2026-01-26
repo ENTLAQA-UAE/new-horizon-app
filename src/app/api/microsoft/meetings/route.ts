@@ -13,6 +13,7 @@ interface TeamsMeetingInput {
   endDateTime: string
   isOnlineMeeting?: boolean
   attendees?: { email: string; name?: string }[]
+  timezone?: string // IANA timezone string
 }
 
 // Helper to get valid Microsoft access token using org credentials
@@ -150,15 +151,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create calendar event with online meeting
+    const timeZone = body.timezone || "Asia/Riyadh"
     const eventBody = {
       subject: body.subject,
       start: {
         dateTime: body.startDateTime,
-        timeZone: "Asia/Riyadh",
+        timeZone,
       },
       end: {
         dateTime: body.endDateTime,
-        timeZone: "Asia/Riyadh",
+        timeZone,
       },
       isOnlineMeeting: body.isOnlineMeeting !== false,
       onlineMeetingProvider: "teamsForBusiness",
