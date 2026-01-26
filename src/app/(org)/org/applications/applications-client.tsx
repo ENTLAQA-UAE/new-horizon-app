@@ -1374,7 +1374,7 @@ export function ApplicationsClient({
 
       {/* View Dialog - Enhanced with Tabs */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] h-[90vh] overflow-hidden flex flex-col p-0">
           {selectedApplication && (
             <>
               {/* Header with gradient background */}
@@ -1443,15 +1443,6 @@ export function ApplicationsClient({
                       >
                         <Calendar className="h-3.5 w-3.5" />
                         Schedule Interview
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 gap-1.5"
-                        onClick={() => setIsScorecardSubmitDialogOpen(true)}
-                      >
-                        <ClipboardList className="h-3.5 w-3.5" />
-                        Scorecard
                       </Button>
                       <Button
                         variant="outline"
@@ -1839,36 +1830,93 @@ export function ApplicationsClient({
                         <div className="flex items-center justify-center py-16">
                           <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary,#6366f1)]" />
                         </div>
-                      ) : applicationActivities.length === 0 ? (
-                        <div className="text-center py-16">
-                          <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                            <Clock className="h-8 w-8 text-muted-foreground/50" />
-                          </div>
-                          <p className="text-muted-foreground font-medium">No activity recorded</p>
-                          <p className="text-sm text-muted-foreground mt-1">Activity will appear here as actions are taken</p>
-                        </div>
                       ) : (
                         <div className="relative pl-8">
                           <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gradient-to-b from-[var(--brand-primary,#6366f1)] to-[var(--brand-secondary,#8b5cf6)]" />
                           <div className="space-y-6">
-                            {applicationActivities.map((activity) => (
-                              <div key={activity.id} className="relative">
-                                <div className="absolute -left-5 w-4 h-4 rounded-full bg-[var(--brand-primary,#6366f1)] border-4 border-background" />
-                                <div className="pl-4">
-                                  <p className="font-medium">{activity.description || activity.activity_type}</p>
-                                  <p className="text-sm text-muted-foreground mt-0.5">
-                                    {activity.profiles?.first_name && `${activity.profiles.first_name} ${activity.profiles.last_name} • `}
-                                    {new Date(activity.created_at).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                      year: "numeric",
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                    })}
-                                  </p>
+                            {/* Combine all timeline events */}
+                            {(() => {
+                              const timelineEvents: Array<{
+                                id: string
+                                type: string
+                                description: string
+                                date: string
+                                user?: string
+                                icon: "application" | "interview" | "scorecard" | "activity"
+                              }> = []
+
+                              // Add application submitted event
+                              timelineEvents.push({
+                                id: "app-created",
+                                type: "application_submitted",
+                                description: `${selectedApplication.candidates?.first_name} ${selectedApplication.candidates?.last_name} applied for ${selectedApplication.jobs?.title}`,
+                                date: selectedApplication.applied_at || selectedApplication.created_at || "",
+                                icon: "application",
+                              })
+
+                              // Add interviews
+                              applicationInterviews.forEach((interview) => {
+                                timelineEvents.push({
+                                  id: `interview-${interview.id}`,
+                                  type: "interview_scheduled",
+                                  description: `Interview scheduled: ${interview.title}`,
+                                  date: interview.scheduled_at,
+                                  icon: "interview",
+                                })
+                              })
+
+                              // Add scorecards
+                              applicationScorecards.forEach((scorecard) => {
+                                timelineEvents.push({
+                                  id: `scorecard-${scorecard.id}`,
+                                  type: "scorecard_submitted",
+                                  description: `Scorecard submitted: ${scorecard.recommendation?.replace("_", " ")} (${scorecard.overall_score?.toFixed(1) || "N/A"})`,
+                                  date: scorecard.submitted_at || scorecard.created_at,
+                                  user: scorecard.profiles ? `${scorecard.profiles.first_name} ${scorecard.profiles.last_name}` : undefined,
+                                  icon: "scorecard",
+                                })
+                              })
+
+                              // Add other activities
+                              applicationActivities.forEach((activity) => {
+                                timelineEvents.push({
+                                  id: activity.id,
+                                  type: activity.activity_type,
+                                  description: activity.description || activity.activity_type.replace(/_/g, " "),
+                                  date: activity.created_at,
+                                  user: activity.profiles ? `${activity.profiles.first_name} ${activity.profiles.last_name}` : undefined,
+                                  icon: "activity",
+                                })
+                              })
+
+                              // Sort by date descending (newest first)
+                              timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+                              return timelineEvents.map((event) => (
+                                <div key={event.id} className="relative">
+                                  <div className={cn(
+                                    "absolute -left-5 w-4 h-4 rounded-full border-4 border-background",
+                                    event.icon === "application" && "bg-green-500",
+                                    event.icon === "interview" && "bg-blue-500",
+                                    event.icon === "scorecard" && "bg-purple-500",
+                                    event.icon === "activity" && "bg-[var(--brand-primary,#6366f1)]"
+                                  )} />
+                                  <div className="pl-4">
+                                    <p className="font-medium">{event.description}</p>
+                                    <p className="text-sm text-muted-foreground mt-0.5">
+                                      {event.user && `${event.user} • `}
+                                      {new Date(event.date).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                        hour: "numeric",
+                                        minute: "2-digit",
+                                      })}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))
+                            })()}
                           </div>
                         </div>
                       )}
