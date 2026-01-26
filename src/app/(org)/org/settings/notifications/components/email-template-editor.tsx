@@ -44,6 +44,7 @@ interface Organization {
   name: string
   logo_url: string | null
   primary_color: string | null
+  secondary_color: string | null
 }
 
 interface EmailTemplateEditorProps {
@@ -92,8 +93,9 @@ export function EmailTemplateEditor({
 
   const variables = event.available_variables || []
 
+  // Use {{primary_color}} and {{secondary_color}} variables for dynamic branding
+  // These get replaced at send time with the organization's actual brand colors
   function getDefaultBody() {
-    const primaryColor = organization.primary_color || '#667eea'
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -101,18 +103,18 @@ export function EmailTemplateEditor({
 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 20px;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-  <tr><td style="background:linear-gradient(135deg,${primaryColor} 0%,#764ba2 100%);padding:40px;text-align:center;">
-    ${organization.logo_url ? `<img src="${organization.logo_url}" alt="${organization.name}" style="max-height:60px;margin-bottom:20px;">` : ''}
+  <tr><td style="background:linear-gradient(135deg,{{primary_color}} 0%,{{secondary_color}} 100%);padding:40px;text-align:center;">
+    <img src="{{org_logo}}" alt="{{org_name}}" style="max-height:60px;margin-bottom:20px;" onerror="this.style.display='none'">
     <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:600;">Notification</h1>
   </td></tr>
   <tr><td style="padding:40px;">
-    <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px;">Hello <strong>{receiver_name}</strong>,</p>
-    <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px;">This is a notification from <strong>${organization.name}</strong>.</p>
-    <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 30px;">[Add your message content here. You can use variables like {candidate_name}, {job_title}, etc.]</p>
-    <p style="color:#374151;font-size:16px;line-height:1.6;margin:30px 0 0;">Best regards,<br><strong>${organization.name} Team</strong></p>
+    <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px;">Hello <strong>{{receiver_name}}</strong>,</p>
+    <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px;">This is a notification from <strong>{{org_name}}</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0 0 30px;">[Add your message content here. You can use variables like {{candidate_name}}, {{job_title}}, etc.]</p>
+    <p style="color:#374151;font-size:16px;line-height:1.6;margin:30px 0 0;">Best regards,<br><strong>{{org_name}} Team</strong></p>
   </td></tr>
   <tr><td style="background-color:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; ${organization.name} &bull; Powered by Jadarat ATS</p>
+    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; {{org_name}} &bull; Powered by Jadarat ATS</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -120,7 +122,6 @@ export function EmailTemplateEditor({
   }
 
   function getDefaultBodyAr() {
-    const primaryColor = organization.primary_color || '#667eea'
     return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -128,18 +129,18 @@ export function EmailTemplateEditor({
 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 20px;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-  <tr><td style="background:linear-gradient(135deg,${primaryColor} 0%,#764ba2 100%);padding:40px;text-align:center;">
-    ${organization.logo_url ? `<img src="${organization.logo_url}" alt="${organization.name}" style="max-height:60px;margin-bottom:20px;">` : ''}
+  <tr><td style="background:linear-gradient(135deg,{{primary_color}} 0%,{{secondary_color}} 100%);padding:40px;text-align:center;">
+    <img src="{{org_logo}}" alt="{{org_name}}" style="max-height:60px;margin-bottom:20px;" onerror="this.style.display='none'">
     <h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:600;">إشعار</h1>
   </td></tr>
   <tr><td style="padding:40px;text-align:right;">
-    <p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 20px;">مرحباً <strong>{receiver_name}</strong>،</p>
-    <p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 20px;">هذا إشعار من <strong>${organization.name}</strong>.</p>
-    <p style="color:#6b7280;font-size:14px;line-height:1.8;margin:0 0 30px;">[أضف محتوى رسالتك هنا. يمكنك استخدام المتغيرات مثل {candidate_name}، {job_title}، إلخ.]</p>
-    <p style="color:#374151;font-size:16px;line-height:1.8;margin:30px 0 0;">مع أطيب التحيات،<br><strong>فريق ${organization.name}</strong></p>
+    <p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 20px;">مرحباً <strong>{{receiver_name}}</strong>،</p>
+    <p style="color:#374151;font-size:16px;line-height:1.8;margin:0 0 20px;">هذا إشعار من <strong>{{org_name}}</strong>.</p>
+    <p style="color:#6b7280;font-size:14px;line-height:1.8;margin:0 0 30px;">[أضف محتوى رسالتك هنا. يمكنك استخدام المتغيرات مثل {{candidate_name}}، {{job_title}}، إلخ.]</p>
+    <p style="color:#374151;font-size:16px;line-height:1.8;margin:30px 0 0;">مع أطيب التحيات،<br><strong>فريق {{org_name}}</strong></p>
   </td></tr>
   <tr><td style="background-color:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; ${organization.name} &bull; مدعوم من جدارات</p>
+    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; {{org_name}} &bull; مدعوم من جدارات</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -150,7 +151,7 @@ export function EmailTemplateEditor({
   const insertVariable = (variable: string) => {
     // Special handling for org_logo - insert as proper img tag in body, not in subject
     if (variable === "org_logo") {
-      const imgTag = `<img src="{org_logo}" alt="{org_name}" style="max-height:60px;margin-bottom:20px;" onerror="this.style.display='none'">`
+      const imgTag = `<img src="{{org_logo}}" alt="{{org_name}}" style="max-height:60px;margin-bottom:20px;" onerror="this.style.display='none'">`
       if (activeTab === "en") {
         // org_logo should only be inserted in body, not subject
         const activeElement = document.activeElement
@@ -169,7 +170,8 @@ export function EmailTemplateEditor({
       return
     }
 
-    const tag = `{${variable}}`
+    // Use double curly braces format {{variable}}
+    const tag = `{{${variable}}}`
     if (activeTab === "en") {
       // For English, insert into subject or body based on focus
       const activeElement = document.activeElement
@@ -212,15 +214,29 @@ export function EmailTemplateEditor({
   const getPreviewHtml = (html: string) => {
     let preview = html
     variables.forEach((v: NotificationVariable) => {
+      // Replace both {{var}} and {var} formats
+      preview = preview.replace(
+        new RegExp(`\\{\\{${v.key}\\}\\}`, "g"),
+        `<span style="background: #fef3c7; padding: 2px 4px; border-radius: 2px;">[${v.label}]</span>`
+      )
       preview = preview.replace(
         new RegExp(`\\{${v.key}\\}`, "g"),
         `<span style="background: #fef3c7; padding: 2px 4px; border-radius: 2px;">[${v.label}]</span>`
       )
     })
-    // Replace org variables
+    // Replace org branding variables with actual values for preview
+    const primaryColor = organization.primary_color || '#6366f1'
+    const secondaryColor = organization.secondary_color || '#8b5cf6'
+
+    preview = preview.replace(/\{\{primary_color\}\}/g, primaryColor)
+    preview = preview.replace(/\{primary_color\}/g, primaryColor)
+    preview = preview.replace(/\{\{secondary_color\}\}/g, secondaryColor)
+    preview = preview.replace(/\{secondary_color\}/g, secondaryColor)
+    preview = preview.replace(/\{\{org_name\}\}/g, organization.name)
     preview = preview.replace(/\{org_name\}/g, organization.name)
     if (organization.logo_url) {
-      preview = preview.replace(/\{org_logo\}/g, `<img src="${organization.logo_url}" alt="Logo" style="max-height: 60px;">`)
+      preview = preview.replace(/\{\{org_logo\}\}/g, organization.logo_url)
+      preview = preview.replace(/\{org_logo\}/g, organization.logo_url)
     }
     return preview
   }
@@ -537,7 +553,7 @@ export function EmailTemplateEditor({
               className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
               onClick={() => insertVariable(v.key)}
             >
-              {`{${v.key}}`}
+              {`{{${v.key}}}`}
             </Badge>
           ))}
           <Badge
@@ -545,7 +561,7 @@ export function EmailTemplateEditor({
             className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
             onClick={() => insertVariable("org_name")}
           >
-            {"{org_name}"}
+            {"{{org_name}}"}
           </Badge>
           <Badge
             variant="outline"
@@ -555,6 +571,26 @@ export function EmailTemplateEditor({
           >
             <Image className="h-3 w-3" />
             Logo Image
+          </Badge>
+        </div>
+        <Separator className="my-2" />
+        <Label className="text-xs text-muted-foreground">Branding Colors (for advanced styling)</Label>
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            variant="outline"
+            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+            onClick={() => insertVariable("primary_color")}
+            title="Organization's primary brand color"
+          >
+            {"{{primary_color}}"}
+          </Badge>
+          <Badge
+            variant="outline"
+            className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+            onClick={() => insertVariable("secondary_color")}
+            title="Organization's secondary brand color"
+          >
+            {"{{secondary_color}}"}
           </Badge>
         </div>
       </div>
