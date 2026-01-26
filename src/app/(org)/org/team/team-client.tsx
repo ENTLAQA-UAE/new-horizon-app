@@ -382,21 +382,33 @@ export function TeamClient({
 
       // Send role changed notification if role was actually changed
       if (roleChanged) {
-        fetch("/api/notifications/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            eventType: "role_changed",
-            orgId: organizationId,
-            data: {
-              userId: selectedMember.id,
-              newRole: roleLabels[editForm.role] || editForm.role,
-              previousRole: roleLabels[previousRole] || previousRole,
-            },
-          }),
-        }).catch((err) => {
+        try {
+          const notifResponse = await fetch("/api/notifications/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventType: "role_changed",
+              orgId: organizationId,
+              data: {
+                userId: selectedMember.id,
+                newRole: roleLabels[editForm.role] || editForm.role,
+                previousRole: roleLabels[previousRole] || previousRole,
+              },
+            }),
+          })
+
+          if (!notifResponse.ok) {
+            const errorData = await notifResponse.json().catch(() => ({}))
+            console.error("Role change notification failed:", notifResponse.status, errorData)
+          } else {
+            const result = await notifResponse.json()
+            if (!result.success && result.errors?.length > 0) {
+              console.error("Role change notification errors:", result.errors)
+            }
+          }
+        } catch (err) {
           console.error("Failed to send role change notification:", err)
-        })
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to update member")
