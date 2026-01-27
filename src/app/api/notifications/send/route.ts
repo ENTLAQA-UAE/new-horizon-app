@@ -219,11 +219,12 @@ export async function POST(request: NextRequest) {
       }
 
       case "interview_cancelled": {
-        // Get candidate info
+        // Get candidate and interviewer info
         const { data: interview } = await serviceClient
           .from("interviews")
           .select(`
             id,
+            interviewer_ids,
             applications(
               id,
               candidates(id, first_name, last_name, email),
@@ -241,10 +242,34 @@ export async function POST(request: NextRequest) {
         const candidate = app.candidates
         const job = app.jobs
 
+        // Start with candidate recipient (email-only for email channel)
+        const cancelRecipients: NotificationRecipient[] = [
+          { email: candidate.email, name: `${candidate.first_name} ${candidate.last_name}` },
+        ]
+
+        // Add interviewers so they get in-app notifications (they have userId)
+        const interviewerIds = (interview.interviewer_ids as string[]) || []
+        if (interviewerIds.length > 0) {
+          const { data: interviewers } = await serviceClient
+            .from("profiles")
+            .select("id, first_name, last_name, email")
+            .in("id", interviewerIds)
+
+          if (interviewers) {
+            interviewers.forEach(i => {
+              cancelRecipients.push({
+                userId: i.id,
+                email: i.email,
+                name: getFullName(i) || i.email,
+              })
+            })
+          }
+        }
+
         result = await sendNotification(serviceClient, {
           eventCode: "interview_cancelled",
           orgId,
-          recipients: [{ email: candidate.email, name: `${candidate.first_name} ${candidate.last_name}` }],
+          recipients: cancelRecipients,
           variables: {
             candidate_name: `${candidate.first_name} ${candidate.last_name}`,
             job_title: job.title,
@@ -444,10 +469,20 @@ export async function POST(request: NextRequest) {
       }
 
       case "candidate_stage_moved": {
+        // Candidate recipient (email-only, for email channel)
+        const stageRecipients: NotificationRecipient[] = [
+          { email: data.candidateEmail, name: data.candidateName },
+        ]
+
+        // Add hiring team so they get in-app notifications
+        const stageTeamRecipients = await getTeamRecipients(
+          serviceClient, orgId, ["org_admin", "hiring_manager", "recruiter"]
+        )
+
         result = await sendNotification(serviceClient, {
           eventCode: "candidate_stage_moved",
           orgId,
-          recipients: [{ email: data.candidateEmail, name: data.candidateName }],
+          recipients: [...stageRecipients, ...stageTeamRecipients],
           variables: {
             candidate_name: data.candidateName,
             job_title: data.jobTitle,
@@ -1196,7 +1231,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      success: true,
+      success: result?.success ?? false,
       result
     })
   } catch (err) {

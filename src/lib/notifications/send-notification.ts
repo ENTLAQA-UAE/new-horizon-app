@@ -184,19 +184,29 @@ export async function sendNotification(
       .eq("code", options.eventCode)
       .single()
 
-    if (!event) {
-      result.errors.push(`Notification event not found: ${options.eventCode}`)
-      return result
+    // Fallback: if event not in DB, use defaults so notifications still work
+    // This handles the case where notification_events seed data hasn't been applied
+    const resolvedEvent = event ?? {
+      id: null as string | null,
+      code: options.eventCode,
+      name: options.eventCode,
+      default_channels: ["mail", "system"] as string[],
     }
 
-    // 3. Get org notification settings (skip for platform-level notifications)
+    if (!event) {
+      console.warn(
+        `[Notification] Event "${options.eventCode}" not found in notification_events table. Using fallback defaults.`
+      )
+    }
+
+    // 3. Get org notification settings (skip if no real event ID or platform-level)
     let settings: { enabled: boolean; channels: string[] } | null = null
-    if (!isPlatformLevel) {
+    if (!isPlatformLevel && resolvedEvent.id) {
       const { data } = await supabase
         .from("org_notification_settings")
         .select("enabled, channels")
         .eq("org_id", options.orgId)
-        .eq("event_id", event.id)
+        .eq("event_id", resolvedEvent.id)
         .single()
       settings = data
     }
@@ -211,7 +221,7 @@ export async function sendNotification(
     // Determine channels to use (channel names: 'mail', 'system', 'sms')
     // For platform-level, default to email only
     const defaultChannels = isPlatformLevel ? ["mail"] : ["mail", "system"]
-    const channels: string[] = settings?.channels || event.default_channels || defaultChannels
+    const channels: string[] = settings?.channels || resolvedEvent.default_channels || defaultChannels
     const shouldSendEmail = options.forceEmail || channels.includes("mail")
     const shouldSendInApp = !isPlatformLevel && (options.forceInApp || channels.includes("system"))
     const shouldSendSms = !isPlatformLevel && channels.includes("sms")
@@ -230,7 +240,7 @@ export async function sendNotification(
       const emailResult = await sendEmailNotification(
         supabase,
         isPlatformLevel ? "platform" : options.orgId,
-        event.id,
+        resolvedEvent.id || "",
         options.eventCode,
         options.recipients.filter((r) => r.email),
         variables,
@@ -264,11 +274,11 @@ export async function sendNotification(
       }
     }
 
-    // 7. Log the notification (skip for platform-level to avoid DB constraint issues)
-    if (!isPlatformLevel) {
+    // 7. Log the notification (skip for platform-level and skip DB log when using fallback event without real ID)
+    if (!isPlatformLevel && resolvedEvent.id) {
       await logNotification(supabase, {
         orgId: options.orgId,
-        eventId: event.id,
+        eventId: resolvedEvent.id,
         recipientCount: options.recipients.length,
         channels: {
           email: result.emailSent,
@@ -279,6 +289,9 @@ export async function sendNotification(
         applicationId: options.applicationId,
         interviewId: options.interviewId,
       })
+    } else if (!isPlatformLevel && !resolvedEvent.id) {
+      // Fallback event: log to console since we can't log to DB without a real event_id (FK constraint)
+      console.log(`[Notification Fallback] ${options.eventCode} sent to ${options.recipients.length} recipient(s), emailSent: ${result.emailSent}, inAppSent: ${result.inAppSent}`)
     } else {
       // Log platform-level notifications to console for monitoring
       console.log(`[Platform Notification] ${options.eventCode} sent to ${options.recipients.length} recipient(s), emailSent: ${result.emailSent}`)
@@ -538,9 +551,9 @@ function getInAppNotificationContent(
     },
     candidate_stage_moved: {
       type: "application_status_changed",
-      title: "Application Update",
-      message: `Your application for ${jobTitle} has moved to ${variables.stage_name || "a new stage"}`,
-      link: variables.portal_url,
+      title: "Stage Update",
+      message: `${candidateName} moved to ${variables.stage_name || "a new stage"} for ${jobTitle}`,
+      link: options.applicationId ? `/org/applications?id=${options.applicationId}` : "/org/applications",
     },
     candidate_disqualified: {
       type: "application_status_changed",
@@ -571,7 +584,8 @@ function getInAppNotificationContent(
     interview_cancelled: {
       type: "interview_scheduled",
       title: "Interview Cancelled",
-      message: `Interview for ${jobTitle} has been cancelled`,
+      message: `Interview for ${jobTitle} with ${candidateName} has been cancelled`,
+      link: options.interviewId ? `/org/interviews?id=${options.interviewId}` : "/org/interviews",
     },
     interview_rescheduled: {
       type: "interview_scheduled",
