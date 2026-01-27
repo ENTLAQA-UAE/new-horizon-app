@@ -64,7 +64,7 @@
   "roles": {
     "superAdmin": "Super Admin",
     "orgAdmin": "Organization Admin",
-    "hiringManager": "Hiring Manager",
+    "hiringManager": "Department Manager",
     "recruiter": "Recruiter",
     "interviewer": "Interviewer",
     "viewer": "Viewer"

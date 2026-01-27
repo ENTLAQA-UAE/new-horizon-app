@@ -135,7 +135,7 @@ function getRoleDisplayName(roleCode: string | null): string {
     case "recruiter":
       return "Recruiter"
     case "hiring_manager":
-      return "Hiring Manager"
+      return "Department Manager"
     case "candidate":
       return "Candidate"
     default:

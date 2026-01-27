@@ -64,7 +64,7 @@
   "roles": {
     "superAdmin": "مدير عام",
     "orgAdmin": "مدير المنظمة",
-    "hiringManager": "مدير التوظيف",
+    "hiringManager": "مدير القسم",
     "recruiter": "موظف توظيف",
     "interviewer": "محاور",
     "viewer": "مشاهد"

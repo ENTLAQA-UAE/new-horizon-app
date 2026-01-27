@@ -25,7 +25,7 @@
     "openings": "عدد الشواغر",
     "status": "الحالة",
     "visibility": "الرؤية",
-    "hiringManager": "مدير التوظيف"
+    "hiringManager": "مدير القسم"
   },
   "types": {
     "fullTime": "دوام كامل",
@@ -139,7 +139,7 @@
     "department": "القسم",
     "location": "الموقع",
     "type": "النوع",
-    "hiringManager": "مدير التوظيف",
+    "hiringManager": "مدير القسم",
     "datePosted": "تاريخ النشر"
   }
 }
