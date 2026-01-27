@@ -378,6 +378,7 @@ export function OffersClient({
             eventType: "offer_sent",
             orgId: organizationId,
             data: {
+              offerId: offer.id,
               candidateName: `${candidate.first_name} ${candidate.last_name}`,
               candidateEmail: candidate.email,
               jobTitle: offer.job_title,

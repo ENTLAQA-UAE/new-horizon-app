@@ -7,7 +7,7 @@
  */
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
-import { sendNotification, notify, NotificationEventCode, NotificationRecipient } from "@/lib/notifications/send-notification"
+import { sendNotification, notify, NotificationEventCode, NotificationRecipient, processOfferTemplate } from "@/lib/notifications/send-notification"
 import { SupabaseClient } from "@supabase/supabase-js"
 
 /**
@@ -279,6 +279,80 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Fetch offer template if offerId is provided
+        let emailHtmlOverride: string | undefined
+        let emailSubjectOverride: string | undefined
+
+        if (data.offerId) {
+          const { data: offerRecord } = await serviceClient
+            .from("offers")
+            .select("*, applications(candidates(first_name, last_name))")
+            .eq("id", data.offerId)
+            .single()
+
+          if (offerRecord?.template_id) {
+            const { data: offerTemplate } = await serviceClient
+              .from("offer_templates")
+              .select("subject, body_html")
+              .eq("id", offerRecord.template_id)
+              .single()
+
+            if (offerTemplate?.body_html) {
+              // Get org info for branding
+              const { data: orgInfo } = await serviceClient
+                .from("organizations")
+                .select("name, logo_url")
+                .eq("id", orgId)
+                .single()
+
+              const candidateFullName = data.candidateName ||
+                `${offerRecord.applications?.candidates?.first_name || ""} ${offerRecord.applications?.candidates?.last_name || ""}`.trim()
+
+              // Format benefits as readable string
+              const benefitsList = Array.isArray(offerRecord.benefits)
+                ? offerRecord.benefits.join(", ")
+                : (offerRecord.benefits || "")
+
+              // Process the offer template with actual offer data
+              emailHtmlOverride = processOfferTemplate(
+                offerTemplate.body_html,
+                {
+                  candidate_name: candidateFullName,
+                  position_title: offerRecord.job_title || data.jobTitle || "",
+                  department: offerRecord.department || "",
+                  salary_amount: offerRecord.salary_amount?.toLocaleString() || "",
+                  salary_currency: offerRecord.salary_currency || "",
+                  start_date: data.startDate || (offerRecord.start_date
+                    ? new Date(offerRecord.start_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                    : ""),
+                  company_name: orgInfo?.name || "",
+                  reporting_to: "",
+                  probation_period: offerRecord.probation_period_months?.toString() || "",
+                  benefits: benefitsList,
+                },
+                {
+                  org_name: orgInfo?.name || "Organization",
+                  logo_url: orgInfo?.logo_url,
+                }
+              )
+
+              // Use offer template subject if available
+              if (offerTemplate.subject) {
+                emailSubjectOverride = offerTemplate.subject
+                  .replace(/\{\{position_title\}\}/g, offerRecord.job_title || data.jobTitle || "")
+                  .replace(/\{\{candidate_name\}\}/g, candidateFullName)
+                  .replace(/\{\{company_name\}\}/g, orgInfo?.name || "")
+              }
+
+              // Store the processed HTML on the offer record for audit trail
+              await serviceClient
+                .from("offers")
+                .update({ offer_letter_html: emailHtmlOverride })
+                .eq("id", data.offerId)
+            }
+          }
+        }
+
         result = await sendNotification(serviceClient, {
           eventCode: "offer_sent",
           orgId,
@@ -292,6 +366,8 @@ export async function POST(request: NextRequest) {
             offer_url: data.offerUrl,
           },
           applicationId: data.applicationId,
+          emailHtmlOverride,
+          emailSubjectOverride,
         })
         break
       }
