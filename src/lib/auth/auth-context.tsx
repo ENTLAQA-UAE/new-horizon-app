@@ -43,6 +43,7 @@ export interface AuthState {
   organization: UserOrganization | null
   roles: UserRole[]
   primaryRole: UserRole | null
+  departments: string[]
 
   // Computed properties
   isOrgAdmin: boolean
@@ -82,6 +83,7 @@ const defaultAuthState: AuthState = {
   organization: null,
   roles: [],
   primaryRole: null,
+  departments: [],
   isOrgAdmin: false,
   isSuperAdmin: false,
   needsOnboarding: false,
@@ -148,6 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     organization: null,
     roles: [],
     primaryRole: null,
+    departments: [],
     isOrgAdmin: false,
     isSuperAdmin: false,
     needsOnboarding: false,
@@ -351,6 +354,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       let profileError: AuthError | null = null
       let roles: UserRole[] = []
       let organization: UserOrganization | null = null
+      let departments: string[] = []
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -441,6 +445,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
 
+        const fetchDepartments = async (userId: string, orgId: string): Promise<string[]> => {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+            const response = await fetch(
+              `${supabaseUrl}/rest/v1/user_role_departments?select=department_id&user_id=eq.${userId}&org_id=eq.${orgId}`,
+              { headers: authHeaders, signal: controller.signal }
+            )
+
+            clearTimeout(timeoutId)
+
+            if (response.ok) {
+              const data = await response.json()
+              if (data && data.length > 0) {
+                return data.map((d: { department_id: string }) => d.department_id)
+              }
+            }
+            return []
+          } catch {
+            return []
+          }
+        }
+
         // Execute profile and roles fetch in parallel
         const [profileResult, rolesResult] = await Promise.all([
           fetchProfile(),
@@ -456,10 +484,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           rolesCount: roles.length
         })
 
-        // Fetch org only if we have profile with org_id (this is fast, ~100ms)
+        // Fetch org and departments if we have profile with org_id
         if (profile?.org_id) {
           console.log("AuthProvider: Fetching organization:", profile.org_id)
-          organization = await fetchOrg(profile.org_id)
+          const [orgResult, deptResult] = await Promise.all([
+            fetchOrg(profile.org_id),
+            roles.includes("hiring_manager" as UserRole)
+              ? fetchDepartments(user.id, profile.org_id)
+              : Promise.resolve([]),
+          ])
+          organization = orgResult
+          departments = deptResult
           if (organization) {
             console.log("AuthProvider: Organization loaded:", organization.name)
           }
@@ -524,6 +559,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           organization,
           roles,
           primaryRole,
+          departments,
           isOrgAdmin,
           isSuperAdmin,
           needsOnboarding,
@@ -644,6 +680,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               organization: null,
               roles: [],
               primaryRole: null,
+              departments: [],
               isOrgAdmin: false,
               isSuperAdmin: false,
               needsOnboarding: false,

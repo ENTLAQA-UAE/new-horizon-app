@@ -11,6 +11,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Role check
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const scRole = userRole?.role
+    const scAllowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager", "interviewer"]
+    if (!scRole || !scAllowedRoles.includes(scRole)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       interview_id,
@@ -73,6 +86,19 @@ export async function PUT(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Role check
+    const { data: putUserRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const putRole = putUserRole?.role
+    const putAllowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager", "interviewer"]
+    if (!putRole || !putAllowedRoles.includes(putRole)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
     const body = await request.json()

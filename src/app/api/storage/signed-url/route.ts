@@ -11,6 +11,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Verify user belongs to an organization
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single()
+
+    if (!profile?.org_id) {
+      return NextResponse.json({ error: "Not a member of any organization" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { bucket, path } = body
 

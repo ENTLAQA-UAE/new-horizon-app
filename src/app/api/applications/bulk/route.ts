@@ -35,6 +35,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not a member of any organization" }, { status: 403 })
     }
 
+    // Role check - only hr_manager and recruiter can perform bulk actions
+    const allowedRoles = ["super_admin", "hr_manager", "recruiter"]
+    if (!authInfo.role || !allowedRoles.includes(authInfo.role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     const organizationId = authInfo.orgId
     let successCount = 0
     let failCount = 0

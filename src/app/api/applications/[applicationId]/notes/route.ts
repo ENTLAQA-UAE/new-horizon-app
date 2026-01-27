@@ -17,6 +17,19 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Role check
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const role = userRole?.role
+    const allowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
+    if (!role || !allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     // Use service client to bypass RLS for fetching notes
     const serviceClient = createServiceClient()
 
@@ -76,6 +89,19 @@ export async function POST(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Role check
+    const { data: noteUserRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const noteRole = noteUserRole?.role
+    const noteAllowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
+    if (!noteRole || !noteAllowedRoles.includes(noteRole)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
     const { content, is_private = false } = body

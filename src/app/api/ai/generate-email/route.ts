@@ -19,6 +19,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Role check
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const role = userRole?.role
+    const allowedRoles = ["super_admin", "hr_manager", "recruiter"]
+    if (!role || !allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { action } = body
 

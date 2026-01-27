@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -193,6 +194,7 @@ export function OffersClient({
   defaultCurrency = "SAR",
 }: OffersClientProps) {
   const router = useRouter()
+  const { primaryRole } = useAuth()
 
   const [offers, setOffers] = useState(initialOffers)
   const [searchQuery, setSearchQuery] = useState("")
@@ -310,7 +312,7 @@ export function OffersClient({
         probation_period_months: formData.probation_period_months,
         employment_type: formData.employment_type,
         benefits: formData.benefits,
-        status: "draft",
+        status: primaryRole === "recruiter" ? "pending_approval" : "draft",
       })
 
       if (error) {
@@ -319,6 +321,26 @@ export function OffersClient({
       }
 
       if (data) {
+        // For recruiter: create approval record targeting hr_managers
+        if (primaryRole === "recruiter") {
+          const { data: hrManagers } = await supabaseSelect<{ user_id: string }>(
+            "user_roles",
+            {
+              select: "user_id",
+              filter: [{ column: "role", operator: "eq", value: "hr_manager" }],
+            }
+          )
+          const hrManagerList = Array.isArray(hrManagers) ? hrManagers : hrManagers ? [hrManagers] : []
+          for (const hm of hrManagerList) {
+            await supabaseInsert("offer_approvals", {
+              offer_id: data.id,
+              approver_id: hm.user_id,
+              approval_order: 1,
+              status: "pending",
+            })
+          }
+        }
+
         // Find the application to attach nested data for display
         const app = applications.find((a) => a.id === formData.application_id)
         const offerWithRelations: Offer = {
@@ -333,7 +355,7 @@ export function OffersClient({
       }
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success("Offer created successfully")
+      toast.success(primaryRole === "recruiter" ? "Offer created and submitted for approval" : "Offer created successfully")
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -396,6 +418,86 @@ export function OffersClient({
       router.refresh()
     } catch {
       toast.error("Failed to send offer")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // APPROVE OFFER (hr_manager flow)
+  const handleApproveOffer = async (offerId: string) => {
+    setIsLoading(true)
+    try {
+      const { error } = await supabaseUpdate("offers", {
+        status: "approved",
+      }, { column: "id", value: offerId })
+
+      if (error) throw new Error(error.message)
+
+      // Update approval records
+      const { data: approvalRecords } = await supabaseSelect<{ id: string }>(
+        "offer_approvals",
+        {
+          select: "id",
+          filter: [{ column: "offer_id", operator: "eq", value: offerId }],
+        }
+      )
+      if (approvalRecords) {
+        const recordList = Array.isArray(approvalRecords) ? approvalRecords : [approvalRecords]
+        for (const record of recordList) {
+          await supabaseUpdate("offer_approvals", {
+            status: "approved",
+            responded_at: new Date().toISOString(),
+          }, { column: "id", value: record.id })
+        }
+      }
+
+      setOffers(offers.map((o) =>
+        o.id === offerId ? { ...o, status: "approved" } : o
+      ))
+      toast.success("Offer approved. You can now send it to the candidate.")
+      router.refresh()
+    } catch {
+      toast.error("Failed to approve offer")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // REJECT OFFER (hr_manager flow)
+  const handleRejectOffer = async (offerId: string) => {
+    setIsLoading(true)
+    try {
+      const { error } = await supabaseUpdate("offers", {
+        status: "draft",
+      }, { column: "id", value: offerId })
+
+      if (error) throw new Error(error.message)
+
+      // Update approval records
+      const { data: approvalRecords } = await supabaseSelect<{ id: string }>(
+        "offer_approvals",
+        {
+          select: "id",
+          filter: [{ column: "offer_id", operator: "eq", value: offerId }],
+        }
+      )
+      if (approvalRecords) {
+        const recordList = Array.isArray(approvalRecords) ? approvalRecords : [approvalRecords]
+        for (const record of recordList) {
+          await supabaseUpdate("offer_approvals", {
+            status: "rejected",
+            responded_at: new Date().toISOString(),
+          }, { column: "id", value: record.id })
+        }
+      }
+
+      setOffers(offers.map((o) =>
+        o.id === offerId ? { ...o, status: "draft" } : o
+      ))
+      toast.success("Offer rejected and returned to draft")
+      router.refresh()
+    } catch {
+      toast.error("Failed to reject offer")
     } finally {
       setIsLoading(false)
     }
@@ -476,12 +578,28 @@ export function OffersClient({
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </DropdownMenuItem>
-                  {offer.status === "draft" && (
+                  {/* hr_manager can send draft or approved offers directly */}
+                  {(offer.status === "draft" || offer.status === "approved") && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
+                    <DropdownMenuItem onSelect={() => handleSendOffer(offer.id)}>
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Offer
+                    </DropdownMenuItem>
+                  )}
+                  {/* hr_manager can approve/reject pending offers */}
+                  {offer.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
                     <>
-                      <DropdownMenuItem onSelect={() => handleSendOffer(offer.id)}>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send Offer
+                      <DropdownMenuItem onSelect={() => handleApproveOffer(offer.id)} className="text-green-600">
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Approve
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleRejectOffer(offer.id)} className="text-red-600">
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Reject
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {(offer.status === "draft" || offer.status === "pending_approval") && (
+                    <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onSelect={() => {
@@ -1061,7 +1179,8 @@ export function OffersClient({
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            {selectedOffer?.status === "draft" && (
+            {/* hr_manager can send draft/approved offers */}
+            {(selectedOffer?.status === "draft" || selectedOffer?.status === "approved") && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
               <Button onClick={() => {
                 handleSendOffer(selectedOffer.id)
                 setIsViewDialogOpen(false)
@@ -1069,6 +1188,25 @@ export function OffersClient({
                 <Send className="mr-2 h-4 w-4" />
                 Send Offer
               </Button>
+            )}
+            {/* hr_manager can approve pending offers */}
+            {selectedOffer?.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
+              <>
+                <Button onClick={() => {
+                  handleApproveOffer(selectedOffer.id)
+                  setIsViewDialogOpen(false)
+                }} className="bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Approve
+                </Button>
+                <Button variant="destructive" onClick={() => {
+                  handleRejectOffer(selectedOffer.id)
+                  setIsViewDialogOpen(false)
+                }}>
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Reject
+                </Button>
+              </>
             )}
           </DialogFooter>
         </DialogContent>

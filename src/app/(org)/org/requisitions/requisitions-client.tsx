@@ -5,6 +5,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -151,6 +152,7 @@ export function RequisitionsClient({
   currentUserId,
 }: RequisitionsClientProps) {
   const router = useRouter()
+  const { primaryRole } = useAuth()
 
   // Use org's configured job types or fallback to defaults
   const jobTypes = orgJobTypes.length > 0
@@ -255,7 +257,7 @@ export function RequisitionsClient({
         salary_range_min: formData.salary_range_min ? parseFloat(formData.salary_range_min) : null,
         salary_range_max: formData.salary_range_max ? parseFloat(formData.salary_range_max) : null,
         salary_currency: formData.salary_currency,
-        status: formData.approvers.length > 0 ? "pending" : "draft",
+        status: (primaryRole === "hr_manager" || primaryRole === "super_admin") ? "approved" : "pending",
         requested_by: currentUserId,
       }
 
@@ -301,25 +303,33 @@ export function RequisitionsClient({
 
         if (selectError) throw new Error(selectError.message)
 
-        // Create approvals if approvers selected
-        if (formData.approvers.length > 0 && data) {
-          const newApprovals: RequisitionApproval[] = []
-          for (let index = 0; index < formData.approvers.length; index++) {
-            const approverId = formData.approvers[index]
-            const approvalData = {
-              requisition_id: data.id,
-              approver_id: approverId,
-              approval_order: index + 1,
-              status: "pending",
+        // Auto-assign hr_managers as approvers (unless self-approving as hr_manager)
+        if (data && primaryRole !== "hr_manager" && primaryRole !== "super_admin") {
+          const { data: hrManagers } = await supabaseSelect<{ user_id: string }>(
+            "user_roles",
+            {
+              select: "user_id",
+              filter: [{ column: "role", operator: "eq", value: "hr_manager" }],
             }
-            const { data: approvalResult, error: approvalError } = await supabaseInsert<RequisitionApproval>(
-              'requisition_approvals',
-              approvalData
-            )
-            if (approvalError) console.error("Error creating approval:", approvalError)
-            if (approvalResult) newApprovals.push(approvalResult)
+          )
+          if (hrManagers && Array.isArray(hrManagers)) {
+            const newApprovals: RequisitionApproval[] = []
+            for (let index = 0; index < hrManagers.length; index++) {
+              const approvalData = {
+                requisition_id: data.id,
+                approver_id: hrManagers[index].user_id,
+                approval_order: index + 1,
+                status: "pending",
+              }
+              const { data: approvalResult, error: approvalError } = await supabaseInsert<RequisitionApproval>(
+                'requisition_approvals',
+                approvalData
+              )
+              if (approvalError) console.error("Error creating approval:", approvalError)
+              if (approvalResult) newApprovals.push(approvalResult)
+            }
+            if (newApprovals.length > 0) setApprovals([...approvals, ...newApprovals])
           }
-          if (newApprovals.length > 0) setApprovals([...approvals, ...newApprovals])
         }
 
         if (data) setRequisitions([data, ...requisitions])
@@ -339,6 +349,11 @@ export function RequisitionsClient({
 
   const handleApprovalResponse = async (approved: boolean) => {
     if (!selectedRequisition) return
+
+    if (primaryRole !== "hr_manager" && primaryRole !== "super_admin") {
+      toast.error("Only HR managers can approve or reject requisitions")
+      return
+    }
 
     const myApproval = approvals.find(
       (a) => a.requisition_id === selectedRequisition.id && a.approver_id === currentUserId
@@ -839,28 +854,13 @@ export function RequisitionsClient({
               />
             </div>
 
-            {/* Approvers */}
+            {/* Approval Info */}
             {!editingRequisition && (
-              <div className="space-y-2">
-                <Label>Approvers</Label>
-                <Select
-                  value={formData.approvers[0] || "none"}
-                  onValueChange={(value) => setFormData({ ...formData, approvers: value === "none" ? [] : [value] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select approver (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No approver</SelectItem>
-                    {teamMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  If no approver is selected, the requisition will be saved as a draft
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  {primaryRole === "hr_manager" || primaryRole === "super_admin"
+                    ? "As an HR Manager, this requisition will be auto-approved upon creation."
+                    : "This requisition will be automatically submitted to HR managers for approval."}
                 </p>
               </div>
             )}
@@ -877,7 +877,7 @@ export function RequisitionsClient({
             </Button>
             <Button onClick={handleSave} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingRequisition ? "Update" : formData.approvers.length > 0 ? "Submit for Approval" : "Save Draft"}
+              {editingRequisition ? "Update" : (primaryRole === "hr_manager" || primaryRole === "super_admin") ? "Create & Approve" : "Submit for Approval"}
             </Button>
           </DialogFooter>
         </DialogContent>
