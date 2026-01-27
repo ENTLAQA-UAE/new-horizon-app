@@ -7,8 +7,6 @@ import {
   supabaseInsert,
   supabaseUpdate,
   supabaseDelete,
-  supabaseSelect,
-  getAccessToken,
 } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -61,6 +59,7 @@ interface OfferTemplate {
 
 interface OfferTemplatesClientProps {
   templates: OfferTemplate[]
+  orgId: string
 }
 
 const defaultVariables = [
@@ -97,7 +96,7 @@ Please confirm your acceptance by signing below.
 Best regards,
 {{company_name}} HR Team`
 
-export function OfferTemplatesClient({ templates: initialTemplates }: OfferTemplatesClientProps) {
+export function OfferTemplatesClient({ templates: initialTemplates, orgId }: OfferTemplatesClientProps) {
   const router = useRouter()
   const [templates, setTemplates] = useState(initialTemplates)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -186,32 +185,11 @@ export function OfferTemplatesClient({ templates: initialTemplates }: OfferTempl
         ))
         toast.success("Template updated successfully")
       } else {
-        // Create new template - get org_id from first template (passed via props)
-        const orgId = templates.length > 0 ? templates[0].org_id : null
-
-        if (!orgId) {
-          // Fetch org_id from profiles using auth-fetch
-          const { data: profileData, error: profileError } = await supabaseSelect<{ org_id: string }[]>(
-            "profiles",
-            {
-              select: "org_id",
-              limit: 1,
-            }
-          )
-
-          if (profileError || !profileData?.[0]?.org_id) {
-            throw new Error("Organization not found. Please refresh and try again.")
-          }
-
-          var finalOrgId = profileData[0].org_id
-        } else {
-          var finalOrgId = orgId
-        }
-
+        // Create new template
         const { data, error } = await supabaseInsert<OfferTemplate>(
           "offer_templates",
           {
-            org_id: finalOrgId,
+            org_id: orgId,
             name: formData.name,
             name_ar: formData.name_ar || null,
             description: formData.description || null,
