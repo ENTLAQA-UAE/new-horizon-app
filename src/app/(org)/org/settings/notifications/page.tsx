@@ -30,8 +30,8 @@ export default async function NotificationSettingsPage() {
     .eq("org_id", profile.org_id)
     .single()
 
-  // Only org_admin and super_admin can access
-  if (!userRole?.role || !["org_admin", "super_admin"].includes(userRole.role)) {
+  // Only hr_manager and super_admin can access notification settings
+  if (!userRole?.role || !["hr_manager", "super_admin"].includes(userRole.role)) {
     redirect("/org")
   }
 

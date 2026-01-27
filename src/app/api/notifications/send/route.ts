@@ -425,8 +425,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Get org admins to notify (with both userId and email for dual-channel)
-        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hiring_manager"])
+        // Get HR team to notify (with both userId and email for dual-channel)
+        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: eventType as NotificationEventCode,
@@ -476,7 +476,7 @@ export async function POST(request: NextRequest) {
 
         // Add hiring team so they get in-app notifications
         const stageTeamRecipients = await getTeamRecipients(
-          serviceClient, orgId, ["org_admin", "hiring_manager", "recruiter"]
+          serviceClient, orgId, ["hr_manager", "hiring_manager", "recruiter"]
         )
 
         result = await sendNotification(serviceClient, {
@@ -537,7 +537,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Notify hiring team (with both userId and email for dual-channel)
-        const scorecardRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hiring_manager"])
+        const scorecardRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "scorecard_submitted",
@@ -681,7 +681,7 @@ export async function POST(request: NextRequest) {
           .single()
 
         // Notify hiring team
-        const disqualifyRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager", "recruiter"])
+        const disqualifyRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "candidate_disqualified",
@@ -800,8 +800,8 @@ export async function POST(request: NextRequest) {
           .eq("id", user.id)
           .single()
 
-        // Notify hiring team
-        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+        // Notify HR manager (offer created)
+        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "offer_created",
@@ -851,8 +851,8 @@ export async function POST(request: NextRequest) {
           .eq("id", orgId)
           .single()
 
-        // Notify hiring team
-        const expiredRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+        // Notify HR manager (offer expired)
+        const expiredRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "offer_expired",
@@ -896,8 +896,8 @@ export async function POST(request: NextRequest) {
           .eq("id", user.id)
           .single()
 
-        // Notify hiring team
-        const jobClosedRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager", "recruiter"])
+        // Notify ATS team (job closed)
+        const jobClosedRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "job_closed",
@@ -933,8 +933,8 @@ export async function POST(request: NextRequest) {
           .eq("id", orgId)
           .single()
 
-        // Notify hiring team
-        const jobExpiringRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager", "recruiter"])
+        // Notify ATS team (job expiring)
+        const jobExpiringRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "job_expiring",
@@ -977,8 +977,8 @@ export async function POST(request: NextRequest) {
           .eq("id", user.id)
           .single()
 
-        // Notify approvers (org admins and HR managers)
-        const requisitionRecipients = await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+        // Notify HR managers (sole approvers for requisitions)
+        const requisitionRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "requisition_created",
@@ -1031,7 +1031,7 @@ export async function POST(request: NextRequest) {
 
         const approvedRecipients = creator
           ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
-          : await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+          : await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "requisition_approved",
@@ -1083,7 +1083,7 @@ export async function POST(request: NextRequest) {
 
         const rejectedRecipients = creator
           ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
-          : await getTeamRecipients(serviceClient, orgId, ["org_admin", "hr_manager"])
+          : await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
         result = await sendNotification(serviceClient, {
           eventCode: "requisition_rejected",
