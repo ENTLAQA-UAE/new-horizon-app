@@ -52,9 +52,9 @@ export default async function RequisitionsPage() {
     .eq("is_active", true)
     .order("name")
 
-  // Get locations (from 'locations' table used by vacancy settings)
+  // Get locations from job_locations table (matches job_requisitions foreign key)
   const { data: locations } = await supabase
-    .from("locations")
+    .from("job_locations")
     .select("id, name, city")
     .eq("org_id", orgId)
     .eq("is_active", true)
