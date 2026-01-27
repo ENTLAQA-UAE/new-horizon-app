@@ -118,6 +118,9 @@ export interface SendNotificationOptions {
   // Override default channels
   forceEmail?: boolean
   forceInApp?: boolean
+  // Override email template with custom HTML (e.g., processed offer template)
+  emailHtmlOverride?: string
+  emailSubjectOverride?: string
   // For logging
   candidateId?: string
   applicationId?: string
@@ -236,7 +239,9 @@ export async function sendNotification(
           applicationId: options.applicationId,
           interviewId: options.interviewId,
         },
-        true // Always enable platform fallback for critical notifications
+        true, // Always enable platform fallback for critical notifications
+        options.emailHtmlOverride,
+        options.emailSubjectOverride
       )
       result.emailSent = emailResult.success
       if (!emailResult.success && emailResult.error) {
@@ -302,7 +307,9 @@ async function sendEmailNotification(
   recipients: NotificationRecipient[],
   variables: NotificationVariables,
   logOptions: { candidateId?: string; applicationId?: string; interviewId?: string },
-  usePlatformFallback: boolean = true
+  usePlatformFallback: boolean = true,
+  emailHtmlOverride?: string,
+  emailSubjectOverride?: string
 ): Promise<{ success: boolean; error?: string }> {
   if (recipients.length === 0) {
     return { success: true } // No recipients, not an error
@@ -314,31 +321,39 @@ async function sendEmailNotification(
     // Get template (org custom or default)
     let template: { subject: string; body_html: string } | null = null
 
-    if (!isPlatformLevel) {
-      const { data: orgTemplate } = await supabase
-        .from("org_email_templates")
-        .select("subject, body_html")
-        .eq("org_id", orgId)
-        .eq("event_id", eventId)
-        .single()
+    // If a pre-built HTML override is provided (e.g., processed offer template), use it directly
+    if (emailHtmlOverride) {
+      template = {
+        subject: emailSubjectOverride || `Notification from ${variables.org_name || 'Organization'}`,
+        body_html: emailHtmlOverride,
+      }
+    } else {
+      if (!isPlatformLevel) {
+        const { data: orgTemplate } = await supabase
+          .from("org_email_templates")
+          .select("subject, body_html")
+          .eq("org_id", orgId)
+          .eq("event_id", eventId)
+          .single()
 
-      template = orgTemplate
-    }
+        template = orgTemplate
+      }
 
-    if (!template) {
-      // Fall back to default template
-      const { data: defaultTemplate } = await supabase
-        .from("default_email_templates")
-        .select("subject, body_html")
-        .eq("event_id", eventId)
-        .single()
+      if (!template) {
+        // Fall back to default template
+        const { data: defaultTemplate } = await supabase
+          .from("default_email_templates")
+          .select("subject, body_html")
+          .eq("event_id", eventId)
+          .single()
 
-      template = defaultTemplate
-    }
+        template = defaultTemplate
+      }
 
-    // If no template found, use fallback templates for critical events
-    if (!template) {
-      template = getFallbackEmailTemplate(eventCode, variables)
+      // If no template found, use fallback templates for critical events
+      if (!template) {
+        template = getFallbackEmailTemplate(eventCode, variables)
+      }
     }
 
     if (!template) {
@@ -1439,6 +1454,99 @@ async function logNotification(
   } catch (err) {
     console.error("Error logging notification:", err)
   }
+}
+
+/**
+ * Process an offer template's body_html by replacing its merge fields
+ * with actual offer data, then wrap it in the standard email layout.
+ */
+export function processOfferTemplate(
+  templateHtml: string,
+  offerData: {
+    candidate_name: string
+    position_title: string
+    department?: string
+    salary_amount: string
+    salary_currency: string
+    start_date: string
+    company_name: string
+    reporting_to?: string
+    probation_period?: string
+    benefits?: string
+  },
+  orgBranding: {
+    org_name: string
+    logo_url?: string | null
+  }
+): string {
+  // Map offer template merge fields to values
+  const mergeFieldMap: Record<string, string> = {
+    "{{candidate_name}}": offerData.candidate_name,
+    "{{position_title}}": offerData.position_title,
+    "{{department}}": offerData.department || "",
+    "{{salary_amount}}": offerData.salary_amount,
+    "{{salary_currency}}": offerData.salary_currency,
+    "{{start_date}}": offerData.start_date,
+    "{{company_name}}": offerData.company_name,
+    "{{reporting_to}}": offerData.reporting_to || "",
+    "{{probation_period}}": offerData.probation_period || "",
+    "{{benefits}}": offerData.benefits || "",
+  }
+
+  let processedHtml = templateHtml
+  for (const [field, value] of Object.entries(mergeFieldMap)) {
+    const escaped = field.replace(/[{}]/g, "\\$&")
+    processedHtml = processedHtml.replace(new RegExp(escaped, "g"), value)
+  }
+
+  // Convert plain text line breaks to HTML if the template isn't HTML
+  if (!processedHtml.includes("<") || !processedHtml.includes(">")) {
+    processedHtml = processedHtml
+      .split("\n")
+      .map(
+        (line) =>
+          `<p style="margin: 0 0 8px; color: #4b5563; font-size: 16px; line-height: 1.6;">${line || "&nbsp;"}</p>`
+      )
+      .join("\n")
+  }
+
+  // Wrap in email layout
+  const orgName = orgBranding.org_name
+  const logoUrl = orgBranding.logo_url
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Offer from ${orgName}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+          <tr>
+            <td style="padding: 40px; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; border-radius: 16px 16px 0 0;">
+              ${logoUrl ? `<img src="${logoUrl}" alt="${orgName}" style="max-height: 60px; max-width: 200px;">` : `<h2 style="margin: 0; color: #111827; font-size: 24px;">${orgName}</h2>`}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              ${processedHtml}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 13px;">&copy; ${orgName}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
 }
 
 // Export convenient helpers for common notifications
