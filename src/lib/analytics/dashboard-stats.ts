@@ -638,12 +638,11 @@ export async function getDashboardStats(
 function formatSourceName(source: string): string {
   const names: Record<string, string> = {
     direct: "Direct Application",
+    career_page: "Career Page",
     linkedin: "LinkedIn",
     indeed: "Indeed",
     referral: "Employee Referral",
     agency: "Recruitment Agency",
-    career_fair: "Career Fair",
-    website: "Company Website",
     other: "Other",
   }
   return names[source] || source

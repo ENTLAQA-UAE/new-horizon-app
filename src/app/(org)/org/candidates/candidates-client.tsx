@@ -115,12 +115,11 @@ const statusStyles: Record<string, string> = {
 
 const sourceOptions = [
   { value: "direct", label: "Direct Application" },
+  { value: "career_page", label: "Career Page" },
   { value: "linkedin", label: "LinkedIn" },
   { value: "indeed", label: "Indeed" },
   { value: "referral", label: "Employee Referral" },
   { value: "agency", label: "Recruitment Agency" },
-  { value: "career_fair", label: "Career Fair" },
-  { value: "website", label: "Company Website" },
   { value: "other", label: "Other" },
 ]
 
