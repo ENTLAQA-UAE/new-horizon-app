@@ -331,7 +331,7 @@ export const recruiterNavigation: NavigationSection[] = [
   },
 ]
 
-// Hiring Manager Navigation
+// Department Manager Navigation
 export const hiringManagerNavigation: NavigationSection[] = [
   {
     id: "overview",

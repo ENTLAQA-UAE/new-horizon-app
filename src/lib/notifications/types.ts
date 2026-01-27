@@ -117,7 +117,7 @@ export const roleLabels: Record<string, { en: string; ar: string }> = {
   org_admin: { en: 'Org Admin', ar: 'مدير المؤسسة' },
   hr_manager: { en: 'HR Manager', ar: 'مدير الموارد البشرية' },
   recruiter: { en: 'Recruiter', ar: 'مسؤول التوظيف' },
-  hiring_manager: { en: 'Hiring Manager', ar: 'مدير التوظيف' },
+  hiring_manager: { en: 'Department Manager', ar: 'مدير القسم' },
   interviewer: { en: 'Interviewer', ar: 'المقابل' },
 }
 

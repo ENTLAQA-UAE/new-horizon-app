@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "User has no organization" }, { status: 400 })
   }
 
-  // Only allow org admins to test
-  if (!["super_admin", "org_admin"].includes(profile.role)) {
-    return NextResponse.json({ error: "Only admins can test notifications" }, { status: 403 })
+  // Only allow HR managers and super admins to test notifications
+  if (!["super_admin", "hr_manager"].includes(profile.role)) {
+    return NextResponse.json({ error: "Only HR managers can test notifications" }, { status: 403 })
   }
 
   try {
@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
       testType: "email | in_app | both (default: both)",
       recipientEmail: "optional - defaults to your email",
     },
-    requiredRole: "org_admin or super_admin",
+    requiredRole: "hr_manager or super_admin",
     example: {
       testType: "both",
     },

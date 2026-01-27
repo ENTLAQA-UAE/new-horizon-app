@@ -104,7 +104,7 @@ const roleLabels: Record<string, string> = {
   org_admin: "Admin",
   hr_manager: "HR Manager",
   recruiter: "Recruiter",
-  hiring_manager: "Hiring Manager",
+  hiring_manager: "Department Manager",
   interviewer: "Interviewer",
 }
 

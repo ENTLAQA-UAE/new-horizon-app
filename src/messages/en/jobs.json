@@ -45,7 +45,7 @@
     "applicationDeadline": "Application Deadline",
     "startDate": "Expected Start Date",
     "positions": "Number of Positions",
-    "hiringManager": "Hiring Manager",
+    "hiringManager": "Department Manager",
     "recruiter": "Recruiter",
     "pipeline": "Hiring Pipeline",
     "tags": "Tags",
@@ -89,7 +89,7 @@
     "location": "Location",
     "employmentType": "Employment Type",
     "datePosted": "Date Posted",
-    "hiringManager": "Hiring Manager"
+    "hiringManager": "Department Manager"
   },
   "stats": {
     "totalApplications": "Total Applications",

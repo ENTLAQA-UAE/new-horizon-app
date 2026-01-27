@@ -83,7 +83,7 @@ const roleLabels: Record<string, string> = {
   org_admin: "Org Admin",
   hr_manager: "HR Manager",
   recruiter: "Recruiter",
-  hiring_manager: "Hiring Manager",
+  hiring_manager: "Department Manager",
   interviewer: "Interviewer",
 }
 
@@ -365,7 +365,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                 <SelectItem value="org_admin">Org Admin</SelectItem>
                 <SelectItem value="hr_manager">HR Manager</SelectItem>
                 <SelectItem value="recruiter">Recruiter</SelectItem>
-                <SelectItem value="hiring_manager">Hiring Manager</SelectItem>
+                <SelectItem value="hiring_manager">Department Manager</SelectItem>
                 <SelectItem value="interviewer">Interviewer</SelectItem>
               </SelectContent>
             </Select>

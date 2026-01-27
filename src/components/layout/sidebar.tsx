@@ -111,7 +111,6 @@ const orgAdminSections: NavSection[] = [
       { href: "/org/settings", label: "General", labelAr: "عام", icon: Settings },
       { href: "/org/settings/integrations", label: "Video Integration", labelAr: "تكامل الفيديو", icon: Plug },
       { href: "/org/settings/email", label: "Email Integration", labelAr: "تكامل البريد", icon: Mail },
-      { href: "/org/settings/notifications", label: "Notifications", labelAr: "الإشعارات", icon: Bell },
     ],
   },
 ]
@@ -136,6 +135,7 @@ const hrManagerSections: NavSection[] = [
       { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
       { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
       { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
+      { href: "/org/documents", label: "Documents", labelAr: "المستندات", icon: Files },
     ],
   },
   {
@@ -148,7 +148,7 @@ const hrManagerSections: NavSection[] = [
       { href: "/org/pipelines", label: "Pipelines", labelAr: "مسارات التوظيف", icon: GitBranch },
       { href: "/org/screening-questions", label: "Screening Questions", labelAr: "أسئلة الفحص", icon: HelpCircle },
       { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
-      { href: "/org/documents", label: "Documents", labelAr: "المستندات", icon: Files },
+      { href: "/org/settings/notifications", label: "Notification Settings", labelAr: "إعدادات الإشعارات", icon: Bell },
     ],
   },
 ]
@@ -172,9 +172,17 @@ const recruiterSections: NavSection[] = [
       { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
     ],
   },
+  {
+    title: "Tools",
+    titleAr: "الأدوات",
+    collapsible: true,
+    links: [
+      { href: "/org/documents", label: "Documents", labelAr: "المستندات", icon: Files },
+    ],
+  },
 ]
 
-// Hiring Manager - Department-level hiring (approvals, reviews)
+// Department Manager - Department-level hiring (approvals, reviews)
 const hiringManagerSections: NavSection[] = [
   {
     links: [
@@ -182,12 +190,13 @@ const hiringManagerSections: NavSection[] = [
     ],
   },
   {
-    title: "My Team Hiring",
-    titleAr: "توظيف فريقي",
+    title: "My Department Hiring",
+    titleAr: "توظيف قسمي",
     collapsible: true,
     links: [
       { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
       { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
+      { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
       { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
     ],
