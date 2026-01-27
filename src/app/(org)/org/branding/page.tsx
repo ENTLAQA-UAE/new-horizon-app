@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseUpdate, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { supabaseUpdate, supabaseSelect, getAccessToken } from "@/lib/supabase/auth-fetch"
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -51,8 +50,10 @@ const defaultColors = [
   "#EC4899", // Pink
 ]
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 export default function BrandingPage() {
-  const supabase = createClient()
   const { profile, organization, isLoading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -173,19 +174,33 @@ export default function BrandingPage() {
 
     setIsUploadingLogo(true)
     try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) { toast.error("Session expired. Please refresh."); return }
+
       const fileExt = file.name.split('.').pop()
       const fileName = `${organizationId}/logo.${fileExt}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('organization-assets')
-        .upload(fileName, file, { upsert: true })
+      const uploadFormData = new FormData()
+      uploadFormData.append('', file)
+      const uploadResponse = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY || '',
+            'x-upsert': 'true',
+          },
+          body: uploadFormData,
+        }
+      )
 
-      if (uploadError) throw uploadError
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
+      }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('organization-assets')
-        .getPublicUrl(fileName)
-
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
       setSettings({ ...settings, logo_url: publicUrl })
       toast.success("Logo uploaded successfully")
     } catch (error) {
@@ -213,19 +228,33 @@ export default function BrandingPage() {
 
     setIsUploadingFavicon(true)
     try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) { toast.error("Session expired. Please refresh."); return }
+
       const fileExt = file.name.split('.').pop()
       const fileName = `${organizationId}/favicon.${fileExt}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('organization-assets')
-        .upload(fileName, file, { upsert: true })
+      const uploadFormData = new FormData()
+      uploadFormData.append('', file)
+      const uploadResponse = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY || '',
+            'x-upsert': 'true',
+          },
+          body: uploadFormData,
+        }
+      )
 
-      if (uploadError) throw uploadError
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
+      }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('organization-assets')
-        .getPublicUrl(fileName)
-
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
       setSettings({ ...settings, favicon_url: publicUrl })
       toast.success("Favicon uploaded successfully")
     } catch (error) {
@@ -257,29 +286,40 @@ export default function BrandingPage() {
 
     setIsUploadingLoginImage(true)
     try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) { toast.error("Session expired. Please refresh."); return }
+
       const fileExt = file.name.split('.').pop()
       const fileName = `${organizationId}/login-image.${fileExt}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('organization-assets')
-        .upload(fileName, file, { upsert: true })
+      const uploadFormData = new FormData()
+      uploadFormData.append('', file)
+      const uploadResponse = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': SUPABASE_ANON_KEY || '',
+            'x-upsert': 'true',
+          },
+          body: uploadFormData,
+        }
+      )
 
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError)
-        if (uploadError.message?.includes('row-level security') || uploadError.message?.includes('policy')) {
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        if (errText.includes('row-level security') || errText.includes('policy')) {
           toast.error("Permission denied. Please contact support to enable file uploads.")
-        } else if (uploadError.message?.includes('bucket')) {
+        } else if (errText.includes('bucket')) {
           toast.error("Storage not configured. Please contact support.")
         } else {
-          toast.error(`Upload failed: ${uploadError.message || 'Unknown error'}`)
+          toast.error(`Upload failed: ${errText || uploadResponse.status}`)
         }
         return
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('organization-assets')
-        .getPublicUrl(fileName)
-
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
       setSettings({ ...settings, login_image_url: publicUrl })
       setLoginImageError(false) // Reset error state on successful upload
       toast.success("Login image uploaded successfully")

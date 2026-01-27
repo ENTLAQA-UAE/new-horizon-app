@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect, getCurrentUserId } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -76,14 +75,13 @@ export default function DepartmentsPage() {
   // Fetch organization and departments
   useEffect(() => {
     async function fetchData() {
-      // Get current user's organization
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      // Get current user's organization using auth-fetch (avoids getSession hang)
+      const userId = await getCurrentUserId()
+      if (!userId) return
 
       const { data: profile } = await supabaseSelect<{ org_id: string }>("profiles", {
         select: "org_id",
-        filter: [{ column: "id", operator: "eq", value: user.id }],
+        filter: [{ column: "id", operator: "eq", value: userId }],
         single: true,
       })
 
