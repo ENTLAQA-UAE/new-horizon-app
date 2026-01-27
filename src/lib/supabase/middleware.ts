@@ -1,6 +1,91 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// =====================================================
+// ROUTE-ROLE MAP
+// Defines which roles can access which page routes.
+// Ordered most-specific first — first match wins.
+// super_admin bypasses all checks.
+// This is a UX-level guard; API-level auth is separate.
+// =====================================================
+const routeRoleMap: { path: string; roles: string[] }[] = [
+  // Org settings (specific sub-routes first)
+  { path: '/org/settings/notifications', roles: ['hr_manager'] },
+  { path: '/org/settings/integrations', roles: ['org_admin'] },
+  { path: '/org/settings/email', roles: ['org_admin'] },
+  { path: '/org/settings', roles: ['org_admin'] },
+
+  // Org admin only
+  { path: '/org/team', roles: ['org_admin'] },
+  { path: '/org/departments', roles: ['org_admin'] },
+  { path: '/org/branding', roles: ['org_admin'] },
+  { path: '/org/career-page', roles: ['org_admin'] },
+
+  // HR manager only (configuration)
+  { path: '/org/pipelines', roles: ['hr_manager'] },
+  { path: '/org/offers/templates', roles: ['hr_manager'] },
+  { path: '/org/scorecard-templates', roles: ['hr_manager'] },
+  { path: '/org/screening-questions', roles: ['hr_manager'] },
+  { path: '/org/vacancy-settings', roles: ['hr_manager'] },
+
+  // Analytics (shared: org_admin + hr_manager)
+  { path: '/org/analytics', roles: ['org_admin', 'hr_manager'] },
+
+  // ATS core routes
+  { path: '/org/jobs', roles: ['hr_manager', 'recruiter', 'hiring_manager'] },
+  { path: '/org/candidates', roles: ['hr_manager', 'recruiter', 'hiring_manager'] },
+  { path: '/org/applications', roles: ['hr_manager', 'recruiter', 'hiring_manager'] },
+  { path: '/org/requisitions', roles: ['hr_manager', 'recruiter', 'hiring_manager'] },
+  { path: '/org/offers', roles: ['hr_manager', 'recruiter'] },
+
+  // Interviews (widest ATS access)
+  { path: '/org/interviews', roles: ['hr_manager', 'recruiter', 'hiring_manager', 'interviewer'] },
+  { path: '/org/scorecards', roles: ['hr_manager', 'recruiter', 'hiring_manager', 'interviewer'] },
+
+  // Documents
+  { path: '/org/documents', roles: ['hr_manager', 'recruiter'] },
+
+  // Org dashboard (all org roles — catch-all for /org)
+  { path: '/org', roles: ['org_admin', 'hr_manager', 'recruiter', 'hiring_manager', 'interviewer'] },
+
+  // Platform routes (super_admin only)
+  { path: '/admin', roles: ['super_admin'] },
+  { path: '/organizations', roles: ['super_admin'] },
+  { path: '/users', roles: ['super_admin'] },
+  { path: '/tiers', roles: ['super_admin'] },
+  { path: '/billing', roles: ['super_admin'] },
+  { path: '/audit-logs', roles: ['super_admin'] },
+  { path: '/settings', roles: ['super_admin'] },
+]
+
+/**
+ * Check if a route is allowed for a given role.
+ * Routes not in the map are allowed by default.
+ */
+function isRouteAllowedForRole(pathname: string, role: string): boolean {
+  if (role === 'super_admin') return true
+
+  for (const route of routeRoleMap) {
+    if (pathname === route.path || pathname.startsWith(route.path + '/')) {
+      return route.roles.includes(role)
+    }
+  }
+
+  // Route not in map — allow through (e.g. onboarding, unknown pages)
+  return true
+}
+
+/**
+ * Get the appropriate home page for a role (used for redirect on denied access)
+ */
+function getHomeForRole(role: string): string {
+  switch (role) {
+    case 'super_admin': return '/admin'
+    case 'candidate': return '/portal'
+    default: return '/org'
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -106,6 +191,65 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  // =====================================================
+  // ROLE-BASED ROUTE PROTECTION
+  // After auth, enforce role-based access on page routes.
+  // API routes handle their own auth separately.
+  // =====================================================
+  const pathname = request.nextUrl.pathname
+
+  if (user && !pathname.startsWith('/api/') && !isPublicRoute) {
+    // Read role from HTTP-only cookie (zero-latency on subsequent requests)
+    // Cookie format: "userId:role" — validates user matches to prevent stale cookies after logout
+    let userRole: string | null = null
+    const roleCookie = request.cookies.get('x-user-role')?.value || null
+    if (roleCookie && roleCookie.includes(':')) {
+      const [cookieUserId, cookieRole] = roleCookie.split(':')
+      if (cookieUserId === user.id) {
+        userRole = cookieRole
+      }
+      // If userId doesn't match, cookie is stale — will be refreshed below
+    }
+
+    // If no valid role cookie, query DB once and set cookie for future requests
+    if (!userRole) {
+      try {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single()
+
+        userRole = roleData?.role || null
+
+        if (userRole) {
+          supabaseResponse.cookies.set('x-user-role', `${user.id}:${userRole}`, {
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 4, // 4 hours
+          })
+        }
+      } catch {
+        // DB query failed — skip role enforcement, page-level checks will handle
+      }
+    }
+
+    // Enforce route-role map
+    if (userRole && !isRouteAllowedForRole(pathname, userRole)) {
+      const url = request.nextUrl.clone()
+      url.pathname = getHomeForRole(userRole)
+
+      // Preserve Supabase auth cookies on redirect
+      const redirectResponse = NextResponse.redirect(url)
+      for (const cookie of supabaseResponse.cookies.getAll()) {
+        redirectResponse.cookies.set(cookie.name, cookie.value)
+      }
+      return redirectResponse
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're

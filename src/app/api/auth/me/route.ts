@@ -50,7 +50,7 @@ export async function GET() {
       primaryRole = "interviewer"
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
@@ -63,6 +63,18 @@ export async function GET() {
       },
       error: null,
     })
+
+    // Refresh role cookie so middleware has the latest role
+    // Format: "userId:role" to prevent stale cookies after logout
+    response.cookies.set('x-user-role', `${user.id}:${primaryRole}`, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 4, // 4 hours
+    })
+
+    return response
   } catch (error) {
     console.error("Auth API error:", error)
     return NextResponse.json(
