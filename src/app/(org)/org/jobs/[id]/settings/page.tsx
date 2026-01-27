@@ -50,8 +50,12 @@ import {
   Hash,
   CheckSquare,
   FileUp,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import Link from "next/link"
 import {
   DndContext,
@@ -78,6 +82,8 @@ interface Job {
   status: string
   thumbnail_url: string | null
   pipeline_id: string | null
+  description: string | null
+  description_ar: string | null
 }
 
 interface FormSection {
@@ -183,13 +189,15 @@ const iconMap: Record<string, any> = {
   "file-text": FileText,
 }
 
-// Sortable section item component for drag and drop
+// Sortable section item component for drag and drop with collapse/expand
 interface SortableSectionProps {
   item: JobSection
   onToggle: (sectionId: string) => void
+  isExpanded: boolean
+  onExpandToggle: (sectionId: string) => void
 }
 
-function SortableSectionItem({ item, onToggle }: SortableSectionProps) {
+function SortableSectionItem({ item, onToggle, isExpanded, onExpandToggle }: SortableSectionProps) {
   const {
     attributes,
     listeners,
@@ -211,42 +219,92 @@ function SortableSectionItem({ item, onToggle }: SortableSectionProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center justify-between p-4 rounded-lg border bg-background",
+        "rounded-lg border bg-background overflow-hidden",
         !item.is_enabled && "opacity-50",
         isDragging && "opacity-50 shadow-lg"
       )}
     >
-      <div className="flex items-center gap-3">
-        <button
-          className="cursor-grab active:cursor-grabbing touch-none"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-          <IconComponent className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <p className="font-medium">{item.section?.name}</p>
-          {item.section?.name_ar && (
-            <p className="text-sm text-muted-foreground" dir="rtl">
-              {item.section.name_ar}
-            </p>
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <button
+            className="cursor-grab active:cursor-grabbing touch-none"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={() => onExpandToggle(item.section_id)}
+            className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+          >
+            <IconComponent className="h-5 w-5 text-primary" />
+          </button>
+          <button
+            onClick={() => onExpandToggle(item.section_id)}
+            className="text-left"
+          >
+            <p className="font-medium">{item.section?.name}</p>
+            {item.section?.name_ar && (
+              <p className="text-sm text-muted-foreground" dir="rtl">
+                {item.section.name_ar}
+              </p>
+            )}
+          </button>
+          {item.section?.is_default && (
+            <Badge variant="secondary" className="ml-2">
+              <Lock className="h-3 w-3 mr-1" />
+              Required
+            </Badge>
           )}
         </div>
-        {item.section?.is_default && (
-          <Badge variant="secondary" className="ml-2">
-            <Lock className="h-3 w-3 mr-1" />
-            Required
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onExpandToggle(item.section_id)}
+            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          <Switch
+            checked={item.is_enabled}
+            onCheckedChange={() => onToggle(item.section_id)}
+            disabled={item.section?.is_default}
+          />
+        </div>
       </div>
-      <Switch
-        checked={item.is_enabled}
-        onCheckedChange={() => onToggle(item.section_id)}
-        disabled={item.section?.is_default}
-      />
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-0 border-t bg-muted/30">
+          <div className="pt-3 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Section Details</p>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="text-muted-foreground">Name:</span>{" "}
+                <span className="font-medium">{item.section?.name}</span>
+              </div>
+              {item.section?.name_ar && (
+                <div dir="rtl">
+                  <span className="text-muted-foreground">الاسم:</span>{" "}
+                  <span className="font-medium">{item.section.name_ar}</span>
+                </div>
+              )}
+              <div>
+                <span className="text-muted-foreground">Status:</span>{" "}
+                <Badge variant={item.is_enabled ? "default" : "secondary"} className="text-xs ml-1">
+                  {item.is_enabled ? "Enabled" : "Disabled"}
+                </Badge>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Type:</span>{" "}
+                <span className="font-medium">{item.section?.is_default ? "Required (System)" : "Optional"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -285,6 +343,13 @@ export default function JobSettingsPage() {
   const [availableQuestions, setAvailableQuestions] = useState<ScreeningQuestion[]>([])
   const [jobScreeningQuestions, setJobScreeningQuestions] = useState<JobScreeningQuestion[]>([])
 
+  // Collapse/expand state for sections
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+
+  // Job description (rich text)
+  const [jobDescription, setJobDescription] = useState<string>("")
+  const [jobDescriptionAr, setJobDescriptionAr] = useState<string>("")
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -302,6 +367,28 @@ export default function JobSettingsPage() {
         const newIndex = items.findIndex((item) => item.section_id === over.id)
         return arrayMove(items, oldIndex, newIndex)
       })
+    }
+  }
+
+  // Toggle expand/collapse for a section
+  const handleExpandToggle = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev)
+      if (next.has(sectionId)) {
+        next.delete(sectionId)
+      } else {
+        next.add(sectionId)
+      }
+      return next
+    })
+  }
+
+  // Expand/collapse all sections
+  const handleToggleAllSections = () => {
+    if (expandedSections.size === jobSections.length) {
+      setExpandedSections(new Set())
+    } else {
+      setExpandedSections(new Set(jobSections.map(s => s.section_id)))
     }
   }
 
@@ -327,7 +414,7 @@ export default function JobSettingsPage() {
     try {
       // Load job first - this is essential
       const { data: jobResult } = await supabaseSelect<Job[]>("jobs", {
-        select: "id,title,title_ar,status,thumbnail_url,pipeline_id",
+        select: "id,title,title_ar,status,thumbnail_url,pipeline_id,description,description_ar",
         filter: [{ column: "id", operator: "eq", value: jobId }],
         single: true,
       })
@@ -338,6 +425,8 @@ export default function JobSettingsPage() {
         return
       }
       setJob(jobResult as unknown as Job)
+      setJobDescription((jobResult as unknown as Job).description || "")
+      setJobDescriptionAr((jobResult as unknown as Job).description_ar || "")
 
       // Load other data in parallel, with error handling for each
       const [sectionsResult, stagesResult, teamResult, userRolesResult, pipelinesResult] = await Promise.all([
@@ -695,14 +784,22 @@ export default function JobSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      // Save pipeline selection to job
+      // Save job description and pipeline selection
+      const jobUpdatePayload: Record<string, unknown> = {}
       if (selectedPipelineId) {
-        const { error: pipelineError } = await supabaseUpdate(
+        jobUpdatePayload.pipeline_id = selectedPipelineId
+      }
+      // Always save description (even if empty)
+      jobUpdatePayload.description = jobDescription || null
+      jobUpdatePayload.description_ar = jobDescriptionAr || null
+
+      if (Object.keys(jobUpdatePayload).length > 0) {
+        const { error: jobUpdateError } = await supabaseUpdate(
           "jobs",
-          { pipeline_id: selectedPipelineId },
+          jobUpdatePayload,
           { column: "id", value: jobId }
         )
-        if (pipelineError) throw new Error(pipelineError.message)
+        if (jobUpdateError) throw new Error(jobUpdateError.message)
       }
 
       // Save sections - delete existing first
@@ -746,22 +843,34 @@ export default function JobSettingsPage() {
       }
 
       // Save screening questions - delete existing first
-      const { error: deleteQuestionsError } = await supabaseDelete("job_screening_questions", { column: "job_id", value: jobId })
-      if (deleteQuestionsError) throw new Error(deleteQuestionsError.message)
+      // This is non-blocking: if the table doesn't exist yet, we skip silently
+      try {
+        const { error: deleteQuestionsError } = await supabaseDelete("job_screening_questions", { column: "job_id", value: jobId })
+        if (deleteQuestionsError) {
+          // If the table doesn't exist (PGRST204), skip screening questions save
+          if (deleteQuestionsError.code === "PGRST204" || deleteQuestionsError.message?.includes("schema cache")) {
+            console.warn("[job-settings] job_screening_questions table not found, skipping screening questions save")
+          } else {
+            throw new Error(deleteQuestionsError.message)
+          }
+        } else {
+          const questionsToInsert = jobScreeningQuestions.map((q, i) => ({
+            job_id: jobId,
+            question_id: q.question_id,
+            is_enabled: q.is_enabled,
+            sort_order: i,
+          }))
 
-      const questionsToInsert = jobScreeningQuestions.map((q, i) => ({
-        job_id: jobId,
-        question_id: q.question_id,
-        is_enabled: q.is_enabled,
-        sort_order: i,
-      }))
-
-      if (questionsToInsert.length > 0) {
-        const questionInsertResults = await Promise.all(
-          questionsToInsert.map(question => supabaseInsert("job_screening_questions", question))
-        )
-        const questionError = questionInsertResults.find(r => r.error)
-        if (questionError?.error) throw new Error(questionError.error.message)
+          if (questionsToInsert.length > 0) {
+            const questionInsertResults = await Promise.all(
+              questionsToInsert.map(question => supabaseInsert("job_screening_questions", question))
+            )
+            const questionError = questionInsertResults.find(r => r.error)
+            if (questionError?.error) throw new Error(questionError.error.message)
+          }
+        }
+      } catch (screeningError) {
+        console.warn("[job-settings] Screening questions save failed (non-blocking):", screeningError)
       }
 
       toast.success("Settings saved successfully")
@@ -852,6 +961,13 @@ export default function JobSettingsPage() {
               Thumbnail Image
             </TabsTrigger>
             <TabsTrigger
+              value="job-description"
+              className="w-full justify-start data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Job Description
+            </TabsTrigger>
+            <TabsTrigger
               value="screening-questions"
               className="w-full justify-start data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
@@ -867,10 +983,25 @@ export default function JobSettingsPage() {
             <TabsContent value="apply-form" className="mt-0">
               <Card>
                 <CardHeader>
-                  <CardTitle>Apply Form</CardTitle>
-                  <CardDescription>
-                    Drag to reorder sections. Toggle to enable/disable sections in the application form.
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Apply Form</CardTitle>
+                      <CardDescription>
+                        Drag to reorder sections. Toggle to enable/disable sections in the application form.
+                      </CardDescription>
+                    </div>
+                    {jobSections.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToggleAllSections}
+                        className="shrink-0"
+                      >
+                        <ChevronsUpDown className="mr-2 h-4 w-4" />
+                        {expandedSections.size === jobSections.length ? "Collapse All" : "Expand All"}
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <DndContext
@@ -887,6 +1018,8 @@ export default function JobSettingsPage() {
                           key={item.section_id}
                           item={item}
                           onToggle={handleToggleSection}
+                          isExpanded={expandedSections.has(item.section_id)}
+                          onExpandToggle={handleExpandToggle}
                         />
                       ))}
                     </SortableContext>
@@ -1143,6 +1276,38 @@ export default function JobSettingsPage() {
                       </p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Job Description Tab */}
+            <TabsContent value="job-description" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Job Description</CardTitle>
+                  <CardDescription>
+                    Format your job description with headers, bold text, bullet points, numbered lists, and more.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Description (English)</Label>
+                    <RichTextEditor
+                      content={jobDescription}
+                      onChange={setJobDescription}
+                      placeholder="Write the job description here... Use the toolbar for formatting."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Description (Arabic)</Label>
+                    <div dir="rtl">
+                      <RichTextEditor
+                        content={jobDescriptionAr}
+                        onChange={setJobDescriptionAr}
+                        placeholder="اكتب وصف الوظيفة هنا..."
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

@@ -140,6 +140,8 @@ export const eventAudienceMap: Record<string, NotificationAudience> = {
   offer_accepted: 'internal',
   offer_rejected: 'internal',
   offer_expired: 'internal',
+  job_pending_approval: 'internal',
+  job_approved: 'internal',
   job_published: 'internal',
   job_closed: 'internal',
   job_expiring: 'internal',
