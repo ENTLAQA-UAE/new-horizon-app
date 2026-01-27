@@ -34,5 +34,5 @@ export default async function OfferTemplatesPage() {
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
 
-  return <OfferTemplatesClient templates={templates || []} />
+  return <OfferTemplatesClient templates={templates || []} orgId={orgId} />
 }

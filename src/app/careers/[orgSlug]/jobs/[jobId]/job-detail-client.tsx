@@ -790,6 +790,45 @@ export function JobDetailClient({
                   {section.fields.map((field) => {
                     // Full width for textarea fields
                     const isFullWidth = field.field_type === "textarea"
+
+                    // Check if "Currently Working Here" checkbox is checked for this entry
+                    const currentlyWorkingField = section.fields.find(
+                      f => f.field_type === "checkbox" && f.name.toLowerCase().includes("currently")
+                    )
+                    const isCurrentlyWorking = currentlyWorkingField
+                      ? formData[section.id]?.[entryIndex]?.[currentlyWorkingField.name]
+                      : false
+
+                    // For date fields in repeatable sections: render as "From Date" + "To Date"
+                    if (field.field_type === "date" && section.is_repeatable) {
+                      const toDateKey = `${field.name}_to`
+                      const toDateValue = formData[section.id]?.[entryIndex]?.[toDateKey] || ""
+                      return (
+                        <div key={field.id} className="md:col-span-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-sm">
+                                From Date
+                                {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                              </Label>
+                              {renderField(field, section.id, entryIndex)}
+                            </div>
+                            {!isCurrentlyWorking && (
+                              <div className="space-y-1">
+                                <Label className="text-sm">To Date</Label>
+                                <Input
+                                  type="date"
+                                  value={toDateValue}
+                                  onChange={(e) => updateFieldValue(section.id, toDateKey, e.target.value, entryIndex)}
+                                  className="w-full"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }
+
                     return (
                       <div
                         key={field.id}

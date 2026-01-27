@@ -54,6 +54,23 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { cn } from "@/lib/utils"
 
 interface Pipeline {
@@ -133,6 +150,109 @@ interface StageFormData {
   sla_critical_days: number
 }
 
+interface SortableStageItemProps {
+  stage: PipelineStage
+  stageTypeConfig: { value: string; label: string; color: string }
+  onEdit: (stage: PipelineStage) => void
+  onDelete: (stageId: string) => void
+}
+
+function SortableStageItem({ stage, stageTypeConfig, onEdit, onDelete }: SortableStageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: stage.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-4 p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow",
+        stage.is_system && "bg-muted/50",
+        isDragging && "opacity-50 shadow-lg z-10"
+      )}
+    >
+      {!stage.is_system ? (
+        <button
+          className="cursor-grab active:cursor-grabbing touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      ) : (
+        <div className="w-4" />
+      )}
+      <div
+        className="w-4 h-4 rounded-full flex-shrink-0"
+        style={{ backgroundColor: stage.color }}
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{stage.name}</span>
+          <Badge variant="outline" className="text-xs">
+            {stageTypeConfig.label}
+          </Badge>
+          {stage.is_system && (
+            <Badge variant="default" className="text-xs bg-slate-600">
+              System
+            </Badge>
+          )}
+          {stage.requires_approval && (
+            <Badge variant="secondary" className="text-xs">
+              <UserCheck className="h-3 w-3 mr-1" />
+              Approval
+            </Badge>
+          )}
+          {stage.auto_email_template_id && (
+            <Badge variant="secondary" className="text-xs">
+              <Mail className="h-3 w-3 mr-1" />
+              Auto-email
+            </Badge>
+          )}
+        </div>
+        {stage.name_ar && (
+          <span className="text-sm text-muted-foreground" dir="rtl">
+            {stage.name_ar}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {!stage.is_system && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => onEdit(stage)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive"
+              onClick={() => onDelete(stage.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function PipelinesClient({
   pipelines: initialPipelines,
   stages: initialStages,
@@ -192,6 +312,51 @@ export function PipelinesClient({
     total: pipelines.length,
     active: pipelines.filter((p) => p.is_active).length,
     hasDefault: pipelines.some((p) => p.is_default),
+  }
+
+  // Drag and drop sensors for stage reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end for reordering stages
+  const handleStageDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id || !selectedPipeline) return
+
+    const stages = getPipelineStages(selectedPipeline.id)
+    const oldIndex = stages.findIndex((s) => s.id === active.id)
+    const newIndex = stages.findIndex((s) => s.id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(stages, oldIndex, newIndex)
+
+    // Update local state immediately for responsiveness
+    const updatedStages = reordered.map((stage, index) => ({
+      ...stage,
+      sort_order: index,
+    }))
+
+    setAllStages((prev) => {
+      const otherStages = prev.filter((s) => s.pipeline_id !== selectedPipeline.id)
+      return [...otherStages, ...updatedStages]
+    })
+
+    // Persist each changed sort_order to database
+    for (const stage of updatedStages) {
+      const original = stages.find((s) => s.id === stage.id)
+      if (original && original.sort_order !== stage.sort_order) {
+        supabaseUpdate(
+          "pipeline_stages",
+          { sort_order: stage.sort_order },
+          { column: "id", value: stage.id }
+        ).catch((err) => console.error("Failed to update stage order:", err))
+      }
+    }
   }
 
   const resetPipelineForm = () => {
@@ -737,79 +902,26 @@ export function PipelinesClient({
                   </Button>
                 </div>
               ) : (
-                getPipelineStages(selectedPipeline.id).map((stage, index) => (
-                  <div
-                    key={stage.id}
-                    className={cn(
-                      "flex items-center gap-4 p-4 border rounded-lg bg-card hover:shadow-sm transition-shadow",
-                      stage.is_system && "bg-muted/50"
-                    )}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleStageDragEnd}
+                >
+                  <SortableContext
+                    items={getPipelineStages(selectedPipeline.id).map((s) => s.id)}
+                    strategy={verticalListSortingStrategy}
                   >
-                    {!stage.is_system && (
-                      <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
-                    )}
-                    {stage.is_system && <div className="w-4" />}
-                    <div
-                      className="w-4 h-4 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: stage.color }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{stage.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {getStageTypeConfig(stage.stage_type).label}
-                        </Badge>
-                        {stage.is_system && (
-                          <Badge variant="default" className="text-xs bg-slate-600">
-                            System
-                          </Badge>
-                        )}
-                        {stage.requires_approval && (
-                          <Badge variant="secondary" className="text-xs">
-                            <UserCheck className="h-3 w-3 mr-1" />
-                            Approval
-                          </Badge>
-                        )}
-                        {stage.auto_email_template_id && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Mail className="h-3 w-3 mr-1" />
-                            Auto-email
-                          </Badge>
-                        )}
-                      </div>
-                      {stage.name_ar && (
-                        <span className="text-sm text-muted-foreground" dir="rtl">
-                          {stage.name_ar}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!stage.is_system && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEditStageDialog(stage)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive"
-                            onClick={() => handleDeleteStage(stage.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    {index < getPipelineStages(selectedPipeline.id).length - 1 && (
-                      <ArrowRight className="h-4 w-4 text-muted-foreground absolute right-[-20px]" />
-                    )}
-                  </div>
-                ))
+                    {getPipelineStages(selectedPipeline.id).map((stage) => (
+                      <SortableStageItem
+                        key={stage.id}
+                        stage={stage}
+                        stageTypeConfig={getStageTypeConfig(stage.stage_type)}
+                        onEdit={openEditStageDialog}
+                        onDelete={handleDeleteStage}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
               )}
             </div>
           </CardContent>

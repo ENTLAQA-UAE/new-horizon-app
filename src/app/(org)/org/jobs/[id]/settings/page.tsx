@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect, getAccessToken } from "@/lib/supabase/auth-fetch"
 import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -734,15 +734,40 @@ export default function JobSettingsPage() {
       const fileExt = file.name.split('.').pop()
       const fileName = `${orgId}/jobs/${jobId}/thumbnail.${fileExt}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('organization-assets')
-        .upload(fileName, file, { upsert: true })
+      // Use direct fetch with auth-fetch token to avoid getSession() hanging
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        toast.error("Session expired. Please refresh the page.")
+        return
+      }
 
-      if (uploadError) throw uploadError
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('organization-assets')
-        .getPublicUrl(fileName)
+      const uploadFormData = new FormData()
+      uploadFormData.append('', file)
+
+      const uploadResponse = await fetch(
+        `${supabaseUrl}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': supabaseAnonKey || '',
+            'x-upsert': 'true',
+          },
+          body: uploadFormData,
+        }
+      )
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text()
+        console.error("Storage upload failed:", errorText)
+        throw new Error(`Upload failed: ${uploadResponse.status}`)
+      }
+
+      // Construct public URL
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/organization-assets/${fileName}`
 
       // Update job with thumbnail URL
       const { error: updateError } = await supabaseUpdate(
@@ -757,7 +782,7 @@ export default function JobSettingsPage() {
       toast.success("Thumbnail uploaded successfully")
     } catch (error) {
       console.error("Error uploading thumbnail:", error)
-      toast.error("Failed to upload thumbnail")
+      toast.error("Failed to upload thumbnail. Please check storage bucket permissions.")
     } finally {
       setIsUploadingThumbnail(false)
     }
@@ -965,7 +990,7 @@ export default function JobSettingsPage() {
               className="w-full justify-start data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <FileText className="mr-2 h-4 w-4" />
-              Job Description
+              Job Details
             </TabsTrigger>
             <TabsTrigger
               value="screening-questions"
@@ -1280,11 +1305,11 @@ export default function JobSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* Job Description Tab */}
+            {/* Job Details Tab */}
             <TabsContent value="job-description" className="mt-0">
               <Card>
                 <CardHeader>
-                  <CardTitle>Job Description</CardTitle>
+                  <CardTitle>Job Details</CardTitle>
                   <CardDescription>
                     Format your job description with headers, bold text, bullet points, numbered lists, and more.
                   </CardDescription>
