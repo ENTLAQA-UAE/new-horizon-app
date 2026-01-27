@@ -25,12 +25,13 @@ function getFullName(profile: { first_name?: string | null; last_name?: string |
 async function getTeamRecipients(
   supabase: SupabaseClient,
   orgId: string,
-  roles?: string[]
+  roles?: string[],
+  departmentId?: string | null
 ): Promise<NotificationRecipient[]> {
   // Get user IDs from user_roles
   let query = supabase
     .from("user_roles")
-    .select("user_id")
+    .select("user_id, role")
     .eq("org_id", orgId)
 
   if (roles && roles.length > 0) {
@@ -43,7 +44,48 @@ async function getTeamRecipients(
     return []
   }
 
-  const userIds = roleData.map(r => r.user_id)
+  let userIds = roleData.map(r => r.user_id)
+
+  // Department scoping: if departmentId is provided, filter hiring_managers
+  // to only those assigned to the specific department.
+  // hr_manager and recruiter always receive all notifications (org-wide).
+  if (departmentId && roles?.includes("hiring_manager")) {
+    const hiringManagerIds = roleData
+      .filter(r => r.role === "hiring_manager")
+      .map(r => r.user_id)
+
+    if (hiringManagerIds.length > 0) {
+      // Get hiring_managers assigned to this department
+      const { data: deptAssignments } = await supabase
+        .from("user_role_departments")
+        .select("user_id")
+        .eq("department_id", departmentId)
+        .in("user_id", hiringManagerIds)
+
+      const deptManagerIds = new Set((deptAssignments || []).map(d => d.user_id))
+
+      // Filter: keep non-hiring-manager users + hiring_managers in the department
+      // If a hiring_manager has NO department assignments, include them (backward compat)
+      const { data: allDeptAssignments } = await supabase
+        .from("user_role_departments")
+        .select("user_id")
+        .in("user_id", hiringManagerIds)
+
+      const managersWithDepts = new Set((allDeptAssignments || []).map(d => d.user_id))
+
+      userIds = roleData
+        .filter(r => {
+          if (r.role !== "hiring_manager") return true
+          // If manager has no dept assignments, include (backward compat)
+          if (!managersWithDepts.has(r.user_id)) return true
+          // If manager is assigned to this department, include
+          return deptManagerIds.has(r.user_id)
+        })
+        .map(r => r.user_id)
+    }
+  }
+
+  if (userIds.length === 0) return []
 
   // Get user profiles with email
   const { data: profiles } = await supabase
@@ -58,6 +100,30 @@ async function getTeamRecipients(
   }))
 }
 
+/**
+ * Helper to get the department_id for a job (used for department-scoped notifications)
+ */
+async function getJobDepartmentId(supabase: SupabaseClient, jobId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("jobs")
+    .select("department_id")
+    .eq("id", jobId)
+    .single()
+  return data?.department_id || null
+}
+
+/**
+ * Helper to get department_id from an application's associated job
+ */
+async function getApplicationDepartmentId(supabase: SupabaseClient, applicationId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("applications")
+    .select("jobs(department_id)")
+    .eq("id", applicationId)
+    .single()
+  return (data?.jobs as any)?.department_id || null
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const serviceClient = createServiceClient()
@@ -68,6 +134,19 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Role check - only ATS roles can send notifications
+  const { data: senderRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  const sRole = senderRole?.role
+  const sAllowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
+  if (!sRole || !sAllowedRoles.includes(sRole)) {
+    return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
   }
 
   try {
@@ -426,7 +505,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Get HR team to notify (with both userId and email for dual-channel)
-        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
+        const offerDeptId = applicationId ? await getApplicationDepartmentId(serviceClient, applicationId) : null
+        const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], offerDeptId)
 
         result = await sendNotification(serviceClient, {
           eventCode: eventType as NotificationEventCode,
@@ -454,7 +534,8 @@ export async function POST(request: NextRequest) {
 
       case "job_published": {
         // Get org team to notify (with both userId and email for dual-channel)
-        const jobRecipients = await getTeamRecipients(serviceClient, orgId)
+        const jobDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
+        const jobRecipients = await getTeamRecipients(serviceClient, orgId, undefined, jobDeptId)
 
         result = await sendNotification(serviceClient, {
           eventCode: "job_published",
@@ -475,8 +556,9 @@ export async function POST(request: NextRequest) {
         ]
 
         // Add hiring team so they get in-app notifications
+        const stageDeptId = data.applicationId ? await getApplicationDepartmentId(serviceClient, data.applicationId) : null
         const stageTeamRecipients = await getTeamRecipients(
-          serviceClient, orgId, ["hr_manager", "hiring_manager", "recruiter"]
+          serviceClient, orgId, ["hr_manager", "hiring_manager", "recruiter"], stageDeptId
         )
 
         result = await sendNotification(serviceClient, {
@@ -537,7 +619,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Notify hiring team (with both userId and email for dual-channel)
-        const scorecardRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
+        const scorecardDeptId = applicationId ? await getApplicationDepartmentId(serviceClient, applicationId) : null
+        const scorecardRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], scorecardDeptId)
 
         result = await sendNotification(serviceClient, {
           eventCode: "scorecard_submitted",
@@ -897,7 +980,8 @@ export async function POST(request: NextRequest) {
           .single()
 
         // Notify ATS team (job closed)
-        const jobClosedRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
+        const jobClosedDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
+        const jobClosedRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], jobClosedDeptId)
 
         result = await sendNotification(serviceClient, {
           eventCode: "job_closed",
@@ -934,7 +1018,8 @@ export async function POST(request: NextRequest) {
           .single()
 
         // Notify ATS team (job expiring)
-        const jobExpiringRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"])
+        const jobExpiringDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
+        const jobExpiringRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], jobExpiringDeptId)
 
         result = await sendNotification(serviceClient, {
           eventCode: "job_expiring",

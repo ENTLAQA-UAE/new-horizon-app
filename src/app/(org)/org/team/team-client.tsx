@@ -3,7 +3,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -145,6 +145,7 @@ export function TeamClient({
   const [editForm, setEditForm] = useState({
     role: "",
     department: "none",
+    assignedDepartments: [] as string[],
   })
 
   // Filter members
@@ -327,11 +328,29 @@ export function TeamClient({
   }
 
   // Edit member role
-  const openEditDialog = (member: TeamMember) => {
+  const openEditDialog = async (member: TeamMember) => {
     setSelectedMember(member)
+    // Fetch department assignments for this member
+    let assignedDepts: string[] = []
+    if (member.role === "hiring_manager") {
+      const { data } = await supabaseSelect<{ department_id: string }>(
+        "user_role_departments",
+        {
+          select: "department_id",
+          filter: [
+            { column: "user_id", operator: "eq", value: member.id },
+            { column: "org_id", operator: "eq", value: organizationId },
+          ],
+        }
+      )
+      if (data && Array.isArray(data)) {
+        assignedDepts = data.map((d) => d.department_id)
+      }
+    }
     setEditForm({
       role: member.role,
       department: member.department || "none",
+      assignedDepartments: assignedDepts,
     })
     setIsEditDialogOpen(true)
   }
@@ -367,6 +386,29 @@ export function TeamClient({
         )
 
         if (profileError) throw profileError
+      }
+
+      // Update department assignments for hiring_manager
+      if (editForm.role === "hiring_manager") {
+        // Delete existing department assignments
+        await supabaseDelete("user_role_departments", [
+          { column: "user_id", value: selectedMember.id },
+          { column: "org_id", value: organizationId },
+        ])
+        // Insert new department assignments
+        for (const deptId of editForm.assignedDepartments) {
+          await supabaseInsert("user_role_departments", {
+            user_id: selectedMember.id,
+            org_id: organizationId,
+            department_id: deptId,
+          })
+        }
+      } else if (roleChanged && previousRole === "hiring_manager") {
+        // Role changed FROM hiring_manager — remove department assignments
+        await supabaseDelete("user_role_departments", [
+          { column: "user_id", value: selectedMember.id },
+          { column: "org_id", value: organizationId },
+        ])
       }
 
       setMembers(
@@ -876,6 +918,40 @@ export function TeamClient({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+            {editForm.role === "hiring_manager" && departments.length > 0 && (
+              <div className="space-y-2">
+                <Label>Assigned Departments (Data Access)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Select which departments this Department Manager can view hiring data for.
+                  If none selected, they can see all departments.
+                </p>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                  {departments.map((dept) => (
+                    <label key={dept.id} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-muted">
+                      <input
+                        type="checkbox"
+                        checked={editForm.assignedDepartments.includes(dept.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditForm({
+                              ...editForm,
+                              assignedDepartments: [...editForm.assignedDepartments, dept.id],
+                            })
+                          } else {
+                            setEditForm({
+                              ...editForm,
+                              assignedDepartments: editForm.assignedDepartments.filter((d) => d !== dept.id),
+                            })
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      {dept.name}
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
           </div>

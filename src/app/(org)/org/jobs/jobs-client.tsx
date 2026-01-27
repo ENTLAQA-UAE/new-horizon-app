@@ -5,7 +5,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -141,10 +141,20 @@ interface JobsClientProps {
 
 const statusStyles: Record<string, string> = {
   draft: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+  pending_approval: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   open: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   paused: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
   closed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   filled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+}
+
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  pending_approval: "Pending Approval",
+  open: "Published",
+  paused: "Paused",
+  closed: "Closed",
+  filled: "Filled",
 }
 
 // Helper to calculate days until deadline
@@ -222,7 +232,7 @@ export function JobsClient({
 }: JobsClientProps) {
   const router = useRouter()
   const supabase = createClient()
-  const { profile } = useAuth()
+  const { profile, primaryRole } = useAuth()
   const [jobs, setJobs] = useState(initialJobs)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -281,6 +291,7 @@ export function JobsClient({
     total: jobs.length,
     open: jobs.filter((j) => j.status === "open").length,
     draft: jobs.filter((j) => j.status === "draft").length,
+    pendingApproval: jobs.filter((j) => j.status === "pending_approval").length,
     closed: jobs.filter((j) => j.status === "closed").length,
   }
 
@@ -535,6 +546,164 @@ export function JobsClient({
       }
 
       toast.success(`Job ${newStatus === "open" ? "published" : newStatus}`)
+      router.refresh()
+    } catch {
+      toast.error("An unexpected error occurred")
+    }
+  }
+
+  // SUBMIT FOR APPROVAL (recruiter flow)
+  const handleSubmitForApproval = async (jobId: string) => {
+    try {
+      // Update job status to pending_approval
+      const { error } = await supabaseUpdate("jobs", {
+        status: "pending_approval",
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: jobId })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      // Fetch hr_managers in the org and create approval records
+      if (profile?.org_id) {
+        const { data: hrManagers } = await supabaseSelect<{ user_id: string }>(
+          "user_roles",
+          {
+            select: "user_id",
+            filter: [{ column: "role", operator: "eq", value: "hr_manager" }],
+          }
+        )
+
+        if (hrManagers && hrManagers.length > 0) {
+          for (const hm of hrManagers) {
+            await supabaseInsert("job_approvals", {
+              job_id: jobId,
+              approver_id: hm.user_id,
+              status: "pending",
+            })
+          }
+        }
+
+        // Send notification to hr_managers
+        const job = jobs.find(j => j.id === jobId)
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "job_pending_approval",
+            orgId: profile.org_id,
+            data: {
+              jobTitle: job?.title,
+              jobId: jobId,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to send approval notification:", err)
+        })
+      }
+
+      setJobs(jobs.map((j) =>
+        j.id === jobId ? { ...j, status: "pending_approval" } : j
+      ))
+      toast.success("Job submitted for approval")
+      router.refresh()
+    } catch {
+      toast.error("An unexpected error occurred")
+    }
+  }
+
+  // APPROVE JOB (hr_manager flow)
+  const handleApproveJob = async (jobId: string) => {
+    try {
+      const { error } = await supabaseUpdate("jobs", {
+        status: "open",
+        published_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: jobId })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      // Update approval record
+      const { data: approvalRecords } = await supabaseSelect<{ id: string }>(
+        "job_approvals",
+        {
+          select: "id",
+          filter: [{ column: "job_id", operator: "eq", value: jobId }],
+        }
+      )
+      if (approvalRecords) {
+        for (const record of approvalRecords) {
+          await supabaseUpdate("job_approvals", {
+            status: "approved",
+            responded_at: new Date().toISOString(),
+          }, { column: "id", value: record.id })
+        }
+      }
+
+      const job = jobs.find(j => j.id === jobId)
+      setJobs(jobs.map((j) =>
+        j.id === jobId ? { ...j, status: "open", published_at: new Date().toISOString() } : j
+      ))
+
+      // Send job published notification
+      if (profile?.org_id && job) {
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "job_published",
+            orgId: profile.org_id,
+            data: { jobTitle: job.title, jobId: job.id },
+          }),
+        }).catch(console.error)
+      }
+
+      toast.success("Job approved and published")
+      router.refresh()
+    } catch {
+      toast.error("An unexpected error occurred")
+    }
+  }
+
+  // REJECT JOB (hr_manager flow)
+  const handleRejectJob = async (jobId: string) => {
+    try {
+      const { error } = await supabaseUpdate("jobs", {
+        status: "draft",
+        updated_at: new Date().toISOString(),
+      }, { column: "id", value: jobId })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      // Update approval records
+      const { data: approvalRecords } = await supabaseSelect<{ id: string }>(
+        "job_approvals",
+        {
+          select: "id",
+          filter: [{ column: "job_id", operator: "eq", value: jobId }],
+        }
+      )
+      if (approvalRecords) {
+        for (const record of approvalRecords) {
+          await supabaseUpdate("job_approvals", {
+            status: "rejected",
+            responded_at: new Date().toISOString(),
+          }, { column: "id", value: record.id })
+        }
+      }
+
+      setJobs(jobs.map((j) =>
+        j.id === jobId ? { ...j, status: "draft" } : j
+      ))
+      toast.success("Job rejected and returned to draft")
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -963,6 +1132,7 @@ export function JobsClient({
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="pending_approval">Pending Approval</SelectItem>
             <SelectItem value="open">Published</SelectItem>
             <SelectItem value="paused">Paused</SelectItem>
             <SelectItem value="closed">Closed</SelectItem>
@@ -1059,7 +1229,7 @@ export function JobsClient({
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <Badge className={cn("capitalize w-fit", statusStyles[job.status || "draft"])}>
-                        {job.status || "draft"}
+                        {statusLabels[job.status || "draft"] || job.status}
                       </Badge>
                       {job.status === "open" && job.closing_date && (() => {
                         const daysLeft = getDaysUntilDeadline(job.closing_date)
@@ -1139,7 +1309,8 @@ export function JobsClient({
                           </>
                         )}
                         <DropdownMenuSeparator />
-                        {job.status === "draft" && (
+                        {/* Role-based publish/approval actions */}
+                        {job.status === "draft" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
                           <DropdownMenuItem
                             onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
@@ -1147,6 +1318,33 @@ export function JobsClient({
                             <Globe className="mr-2 h-4 w-4" />
                             Publish
                           </DropdownMenuItem>
+                        )}
+                        {job.status === "draft" && primaryRole === "recruiter" && (
+                          <DropdownMenuItem
+                            onSelect={() => handleSubmitForApproval(job.id)}
+                            className="text-amber-600"
+                          >
+                            <Clock className="mr-2 h-4 w-4" />
+                            Submit for Approval
+                          </DropdownMenuItem>
+                        )}
+                        {job.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
+                          <>
+                            <DropdownMenuItem
+                              onSelect={() => handleApproveJob(job.id)}
+                              className="text-green-600"
+                            >
+                              <Globe className="mr-2 h-4 w-4" />
+                              Approve & Publish
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => handleRejectJob(job.id)}
+                              className="text-red-600"
+                            >
+                              <EyeOff className="mr-2 h-4 w-4" />
+                              Reject
+                            </DropdownMenuItem>
+                          </>
                         )}
                         {job.status === "open" && (
                           <DropdownMenuItem
@@ -1255,7 +1453,7 @@ export function JobsClient({
                   </p>
                 )}
                 <Badge className={cn("capitalize mt-2", statusStyles[selectedJob.status || "draft"])}>
-                  {selectedJob.status || "draft"}
+                  {statusLabels[selectedJob.status || "draft"] || selectedJob.status}
                 </Badge>
               </div>
 

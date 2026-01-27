@@ -11,6 +11,25 @@ export async function GET(
     const { applicationId } = await params
     const supabase = await createClient()
 
+    // Auth check
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Role check
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const role = userRole?.role
+    const allowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
+    if (!role || !allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     const { data: activities, error } = await supabase
       .from("application_activities")
       .select(`
@@ -45,9 +64,22 @@ export async function POST(
     const body = await request.json()
 
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const { data: { user: postUser } } = await supabase.auth.getUser()
+    if (!postUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Role check
+    const { data: postUserRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", postUser.id)
+      .single()
+
+    const postRole = postUserRole?.role
+    const postAllowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
+    if (!postRole || !postAllowedRoles.includes(postRole)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
     const { activity_type, description, metadata = {} } = body
@@ -64,7 +96,7 @@ export async function POST(
       .from("application_activities")
       .insert({
         application_id: applicationId,
-        user_id: user.id,
+        user_id: postUser.id,
         activity_type,
         description: description || activity_type.replace(/_/g, " "),
         metadata,

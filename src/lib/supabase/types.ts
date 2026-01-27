@@ -1678,6 +1678,60 @@ export type Database = {
         }
         Relationships: []
       }
+      user_role_departments: {
+        Row: {
+          id: string
+          user_id: string
+          org_id: string
+          department_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          org_id: string
+          department_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          org_id?: string
+          department_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      job_approvals: {
+        Row: {
+          id: string
+          job_id: string
+          approver_id: string
+          status: string
+          responded_at: string | null
+          comments: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          job_id: string
+          approver_id: string
+          status?: string
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          job_id?: string
+          approver_id?: string
+          status?: string
+          responded_at?: string | null
+          comments?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

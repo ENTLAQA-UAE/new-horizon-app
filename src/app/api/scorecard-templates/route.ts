@@ -11,6 +11,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Role check - only hr_manager can manage scorecard templates
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const role = userRole?.role
+    const allowedRoles = ["super_admin", "hr_manager"]
+    if (!role || !allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     // Use service client to bypass RLS
     const serviceClient = createServiceClient()
 
