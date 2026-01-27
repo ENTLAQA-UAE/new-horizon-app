@@ -35,6 +35,7 @@ import {
   Building2,
   Globe,
   ArrowLeft,
+  ArrowRight,
   Calendar,
   GraduationCap,
   CheckCircle,
@@ -49,6 +50,7 @@ import {
   User,
   Award,
   Languages,
+  Check,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -197,6 +199,9 @@ export function JobDetailClient({
   const [isSuccess, setIsSuccess] = useState(false)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
 
+  // Multi-step wizard state
+  const [currentStep, setCurrentStep] = useState(0)
+
   // Dynamic form data - keyed by section ID
   // For non-repeatable sections: { [sectionId]: { [fieldName]: value } }
   // For repeatable sections: { [sectionId]: [{ [fieldName]: value }, ...] }
@@ -209,6 +214,115 @@ export function JobDetailClient({
   const [coverLetter, setCoverLetter] = useState("")
 
   const primaryColor = branding?.primary_color || "#3b82f6"
+
+  // Build wizard steps: each section + resume/cover letter + screening questions (if any) + review
+  const wizardSteps = [
+    ...applicationFormSections.map((section) => ({
+      id: `section-${section.id}`,
+      label: section.name,
+      type: "section" as const,
+      sectionId: section.id,
+    })),
+    {
+      id: "resume-cover",
+      label: "Resume & Cover Letter",
+      type: "resume" as const,
+      sectionId: null,
+    },
+    ...(screeningQuestions.length > 0
+      ? [{
+          id: "screening",
+          label: "Additional Questions",
+          type: "screening" as const,
+          sectionId: null,
+        }]
+      : []),
+    {
+      id: "review",
+      label: "Review & Submit",
+      type: "review" as const,
+      sectionId: null,
+    },
+  ]
+
+  const totalSteps = wizardSteps.length
+  const isFirstStep = currentStep === 0
+  const isLastStep = currentStep === totalSteps - 1
+  const currentWizardStep = wizardSteps[currentStep]
+
+  // Validate the current step before going next
+  const validateCurrentStep = (): boolean => {
+    const step = wizardSteps[currentStep]
+
+    if (step.type === "section" && step.sectionId) {
+      const section = applicationFormSections.find((s) => s.id === step.sectionId)
+      if (!section) return true
+
+      if (section.is_repeatable) {
+        const entries = formData[section.id] || []
+        for (let i = 0; i < entries.length; i++) {
+          for (const field of section.fields) {
+            if (field.is_required) {
+              const value = entries[i]?.[field.name]
+              if (!value || value === "") {
+                toast.error(`Please fill in ${field.name} in entry ${i + 1}`)
+                return false
+              }
+            }
+          }
+        }
+      } else {
+        for (const field of section.fields) {
+          if (field.is_required) {
+            const value = formData[section.id]?.[field.name]
+            if (!value || value === "") {
+              toast.error(`Please fill in ${field.name}`)
+              return false
+            }
+          }
+        }
+      }
+    }
+
+    if (step.type === "resume") {
+      if (!resumeFile) {
+        toast.error("Please upload your resume")
+        return false
+      }
+    }
+
+    if (step.type === "screening") {
+      for (const question of screeningQuestions) {
+        if (question.is_required) {
+          const answer = screeningAnswers[question.id]
+          if (answer === undefined || answer === null || answer === "" ||
+              (Array.isArray(answer) && answer.length === 0)) {
+            toast.error(`Please answer: ${question.question}`)
+            return false
+          }
+        }
+      }
+    }
+
+    return true
+  }
+
+  const handleNext = () => {
+    if (validateCurrentStep()) {
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1))
+    }
+  }
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0))
+  }
+
+  const handleStepClick = (stepIndex: number) => {
+    // Only allow clicking on previous steps or current step
+    if (stepIndex <= currentStep) {
+      setCurrentStep(stepIndex)
+    }
+  }
 
   // Initialize form data based on sections
   useEffect(() => {
@@ -835,7 +949,7 @@ export function JobDetailClient({
                 <section>
                   <h2 className="text-xl font-semibold mb-4">About the Role</h2>
                   <div
-                    className="prose prose-sm max-w-none"
+                    className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-600 prose-strong:text-gray-900 prose-hr:border-gray-200"
                     dangerouslySetInnerHTML={{ __html: job.description }}
                   />
                 </section>
@@ -961,79 +1075,131 @@ export function JobDetailClient({
         </div>
       </main>
 
-      {/* Application Dialog */}
-      <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Apply for {job.title}</DialogTitle>
-            <DialogDescription>
-              Fill out the form below to submit your application to {organization.name}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Application Wizard Dialog */}
+      <Dialog open={isApplyDialogOpen} onOpenChange={(open) => {
+        setIsApplyDialogOpen(open)
+        if (!open) setCurrentStep(0)
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          {/* Wizard Header */}
+          <div className="px-6 pt-6 pb-4 border-b">
+            <DialogHeader>
+              <DialogTitle>Apply for {job.title}</DialogTitle>
+              <DialogDescription>
+                Step {currentStep + 1} of {totalSteps} &mdash; {currentWizardStep?.label}
+              </DialogDescription>
+            </DialogHeader>
 
-          <ScrollArea className="flex-1 pr-4">
-            <form onSubmit={handleSubmit} className="space-y-4 py-4">
-              {/* Dynamic Form Sections */}
-              {applicationFormSections.map((section) => renderSection(section))}
+            {/* Step Progress Indicator */}
+            <div className="flex items-center gap-1 mt-4 overflow-x-auto pb-1">
+              {wizardSteps.map((step, index) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => handleStepClick(index)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap",
+                    index === currentStep
+                      ? "text-white"
+                      : index < currentStep
+                      ? "bg-green-100 text-green-700 hover:bg-green-200"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                  style={index === currentStep ? { backgroundColor: primaryColor } : undefined}
+                  disabled={index > currentStep}
+                >
+                  {index < currentStep ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    <span className="w-4 h-4 rounded-full border flex items-center justify-center text-[10px]" style={index === currentStep ? { borderColor: 'rgba(255,255,255,0.5)' } : undefined}>
+                      {index + 1}
+                    </span>
+                  )}
+                  <span className="hidden sm:inline">{step.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
-              {/* Resume Upload */}
-              <div className="space-y-2 pt-4 border-t">
-                <Label htmlFor="resume">Resume *</Label>
-                {resumeFile ? (
-                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setResumeFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+          {/* Step Content */}
+          <ScrollArea className="flex-1 px-6">
+            <form onSubmit={handleSubmit} className="py-6 min-h-[300px]">
+
+              {/* Section Steps */}
+              {currentWizardStep?.type === "section" && currentWizardStep.sectionId && (() => {
+                const section = applicationFormSections.find(
+                  (s) => s.id === currentWizardStep.sectionId
+                )
+                return section ? renderSection(section) : null
+              })()}
+
+              {/* Resume & Cover Letter Step */}
+              {currentWizardStep?.type === "resume" && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold text-lg">Resume & Cover Letter</h3>
                   </div>
-                ) : (
-                  <div className="relative">
-                    <input
-                      id="resume"
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleResumeChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+
+                  <div className="space-y-2">
+                    <Label htmlFor="resume" className="text-sm font-medium">Resume *</Label>
+                    {resumeFile ? (
+                      <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg border">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <span className="flex-1 text-sm truncate">{resumeFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setResumeFile(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          id="resume"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleResumeChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
+                          <Upload className="h-8 w-8 text-muted-foreground" />
+                          <div className="text-center">
+                            <p className="text-sm font-medium">Click to upload your resume</p>
+                            <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX - Max 10MB</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="coverLetter" className="text-sm font-medium">Cover Letter (Optional)</Label>
+                    <Textarea
+                      id="coverLetter"
+                      value={coverLetter}
+                      onChange={(e) => setCoverLetter(e.target.value)}
+                      placeholder="Tell us why you're interested in this role..."
+                      rows={6}
                     />
-                    <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
-                      <Upload className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        Upload Resume (PDF, DOC, DOCX)
-                      </span>
-                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Cover Letter */}
-              <div className="space-y-2">
-                <Label htmlFor="coverLetter">Cover Letter (Optional)</Label>
-                <Textarea
-                  id="coverLetter"
-                  value={coverLetter}
-                  onChange={(e) => setCoverLetter(e.target.value)}
-                  placeholder="Tell us why you're interested in this role..."
-                  rows={4}
-                />
-              </div>
-
-              {/* Screening Questions */}
-              {screeningQuestions.length > 0 && (
-                <div className="space-y-4 pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Additional Questions</p>
+              {/* Screening Questions Step */}
+              {currentWizardStep?.type === "screening" && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold text-lg">Additional Questions</h3>
                   </div>
                   {screeningQuestions.map((question) => (
-                    <div key={question.id} className="space-y-2">
-                      <Label>
+                    <div key={question.id} className="space-y-2 p-4 rounded-lg border bg-muted/20">
+                      <Label className="text-sm font-medium">
                         {question.question}
                         {question.is_required && <span className="text-red-500 ml-1">*</span>}
                       </Label>
@@ -1041,7 +1207,6 @@ export function JobDetailClient({
                         <p className="text-xs text-muted-foreground">{question.description}</p>
                       )}
 
-                      {/* Text input */}
                       {question.question_type === "text" && (
                         <Input
                           value={screeningAnswers[question.id] || ""}
@@ -1051,7 +1216,6 @@ export function JobDetailClient({
                         />
                       )}
 
-                      {/* Textarea */}
                       {question.question_type === "textarea" && (
                         <Textarea
                           value={screeningAnswers[question.id] || ""}
@@ -1062,7 +1226,6 @@ export function JobDetailClient({
                         />
                       )}
 
-                      {/* Number input */}
                       {question.question_type === "number" && (
                         <Input
                           type="number"
@@ -1074,27 +1237,23 @@ export function JobDetailClient({
                         />
                       )}
 
-                      {/* Boolean (Yes/No) */}
                       {question.question_type === "boolean" && (
-                        <div className="flex items-center gap-4">
-                          <RadioGroup
-                            value={screeningAnswers[question.id]?.toString() || ""}
-                            onValueChange={(value) => handleScreeningAnswer(question.id, value === "true")}
-                            className="flex gap-4"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="true" id={`${question.id}-yes`} />
-                              <Label htmlFor={`${question.id}-yes`}>Yes</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="false" id={`${question.id}-no`} />
-                              <Label htmlFor={`${question.id}-no`}>No</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
+                        <RadioGroup
+                          value={screeningAnswers[question.id]?.toString() || ""}
+                          onValueChange={(value) => handleScreeningAnswer(question.id, value === "true")}
+                          className="flex gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="true" id={`${question.id}-yes`} />
+                            <Label htmlFor={`${question.id}-yes`}>Yes</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="false" id={`${question.id}-no`} />
+                            <Label htmlFor={`${question.id}-no`}>No</Label>
+                          </div>
+                        </RadioGroup>
                       )}
 
-                      {/* Single Select */}
                       {question.question_type === "select" && question.options && (
                         <Select
                           value={screeningAnswers[question.id] || ""}
@@ -1113,7 +1272,6 @@ export function JobDetailClient({
                         </Select>
                       )}
 
-                      {/* Multi Select */}
                       {question.question_type === "multiselect" && question.options && (
                         <div className="space-y-2">
                           {question.options.map((option, idx) => (
@@ -1135,11 +1293,165 @@ export function JobDetailClient({
                 </div>
               )}
 
-              <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsApplyDialogOpen(false)}>
-                  Cancel
+              {/* Review & Submit Step */}
+              {currentWizardStep?.type === "review" && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold text-lg">Review Your Application</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Please review your information before submitting.
+                  </p>
+
+                  {/* Summary of each section */}
+                  {applicationFormSections.map((section) => {
+                    const IconComponent = sectionIcons[section.icon] || FileText
+                    return (
+                      <div key={section.id} className="p-4 rounded-lg border space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="h-4 w-4 text-muted-foreground" />
+                            <h4 className="font-medium text-sm">{section.name}</h4>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              const idx = wizardSteps.findIndex(s => s.sectionId === section.id)
+                              if (idx >= 0) setCurrentStep(idx)
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                          {section.is_repeatable ? (
+                            (formData[section.id] || []).map((entry: any, i: number) => (
+                              <div key={i} className="col-span-2 text-muted-foreground">
+                                Entry {i + 1}: {section.fields.map(f => entry?.[f.name]).filter(Boolean).join(", ") || "—"}
+                              </div>
+                            ))
+                          ) : (
+                            section.fields.map((field) => {
+                              const val = formData[section.id]?.[field.name]
+                              return val ? (
+                                <div key={field.id}>
+                                  <span className="text-muted-foreground">{field.name}:</span>{" "}
+                                  <span className="font-medium">{String(val)}</span>
+                                </div>
+                              ) : null
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* Resume summary */}
+                  <div className="p-4 rounded-lg border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        <h4 className="font-medium text-sm">Resume & Cover Letter</h4>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => {
+                          const idx = wizardSteps.findIndex(s => s.type === "resume")
+                          if (idx >= 0) setCurrentStep(idx)
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Resume:</span>{" "}
+                      <span className="font-medium">{resumeFile?.name || "Not uploaded"}</span>
+                    </div>
+                    {coverLetter && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Cover Letter:</span>{" "}
+                        <span className="font-medium">{coverLetter.substring(0, 100)}{coverLetter.length > 100 ? "..." : ""}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Screening questions summary */}
+                  {screeningQuestions.length > 0 && (
+                    <div className="p-4 rounded-lg border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                          <h4 className="font-medium text-sm">Additional Questions</h4>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => {
+                            const idx = wizardSteps.findIndex(s => s.type === "screening")
+                            if (idx >= 0) setCurrentStep(idx)
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                      {screeningQuestions.map((q) => {
+                        const answer = screeningAnswers[q.id]
+                        return (
+                          <div key={q.id} className="text-sm">
+                            <span className="text-muted-foreground">{q.question}:</span>{" "}
+                            <span className="font-medium">
+                              {Array.isArray(answer) ? answer.join(", ") : answer !== undefined ? String(answer) : "—"}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </form>
+          </ScrollArea>
+
+          {/* Navigation Footer */}
+          <div className="px-6 py-4 border-t flex items-center justify-between bg-muted/30">
+            <div>
+              {!isFirstStep && (
+                <Button type="button" variant="outline" onClick={handleBack}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
                 </Button>
-                <Button type="submit" disabled={isSubmitting} style={{ backgroundColor: primaryColor }}>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" onClick={() => setIsApplyDialogOpen(false)}>
+                Cancel
+              </Button>
+              {isLastStep ? (
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  style={{ backgroundColor: primaryColor }}
+                  className="text-white"
+                  onClick={(e) => {
+                    // Trigger form submit
+                    const form = (e.target as HTMLElement).closest("div")?.parentElement?.querySelector("form")
+                    if (form) {
+                      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+                    } else {
+                      // Fallback: call handleSubmit directly
+                      handleSubmit(e as any)
+                    }
+                  }}
+                >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1152,9 +1464,19 @@ export function JobDetailClient({
                     </>
                   )}
                 </Button>
-              </DialogFooter>
-            </form>
-          </ScrollArea>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  style={{ backgroundColor: primaryColor }}
+                  className="text-white"
+                >
+                  Next
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

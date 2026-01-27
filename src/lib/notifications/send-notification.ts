@@ -43,6 +43,8 @@ export type NotificationEventCode =
   | "offer_rejected"
   | "offer_expired"
   // Jobs
+  | "job_pending_approval"
+  | "job_approved"
   | "job_published"
   | "job_closed"
   | "job_expiring"
@@ -639,6 +641,18 @@ function getInAppNotificationContent(
     },
 
     // Jobs
+    job_pending_approval: {
+      type: "system",
+      title: "Job Pending Approval",
+      message: `${jobTitle} has been submitted for your approval`,
+      link: options.jobId ? `/org/jobs?id=${options.jobId}` : "/org/jobs",
+    },
+    job_approved: {
+      type: "system",
+      title: "Job Approved",
+      message: `${jobTitle} has been approved and is now published`,
+      link: options.jobId ? `/org/jobs?id=${options.jobId}` : "/org/jobs",
+    },
     job_published: {
       type: "job_published",
       title: "Job Published",
@@ -1270,6 +1284,60 @@ function getFallbackEmailTemplate(
     },
 
     // Job Notifications
+    job_pending_approval: {
+      subject: `Job pending approval: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Job Pending Approval
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          A new job has been submitted for your approval.
+        </p>
+        <div style="background-color: #fef3c7; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #111827; font-weight: 600;">💼 {{job_title}}</p>
+          ${variables.department ? `<p style="margin: 0 0 4px; color: #4b5563;">🏢 Department: {{department}}</p>` : ""}
+          <p style="margin: 0; color: #4b5563;">👤 Submitted by: <strong>{{submitted_by}}</strong></p>
+        </div>
+        <p style="margin: 0 0 24px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Please review the job details and approve or reject it.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Review Job
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Job pending approval: {{job_title}}`),
+    },
+
+    job_approved: {
+      subject: `Job approved: {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Job Approved
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Your job submission has been approved and is now published.
+        </p>
+        <div style="background-color: #dcfce7; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #166534; font-weight: 600;">✅ {{job_title}}</p>
+          <p style="margin: 0; color: #166534;">Approved by: <strong>{{approved_by}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Job
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Job approved: {{job_title}}`),
+    },
+
     job_published: {
       subject: `New job published: {{job_title}}`,
       body_html: wrapEmail(`

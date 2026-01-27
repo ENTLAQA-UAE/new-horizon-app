@@ -650,8 +650,20 @@ export function JobsClient({
         j.id === jobId ? { ...j, status: "open", published_at: new Date().toISOString() } : j
       ))
 
-      // Send job published notification
+      // Send notifications: job_approved (to recruiter) and job_published (to team)
       if (profile?.org_id && job) {
+        // Notify recruiter that their job was approved
+        fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventType: "job_approved",
+            orgId: profile.org_id,
+            data: { jobTitle: job.title, jobId: job.id },
+          }),
+        }).catch(console.error)
+
+        // Notify team that job is published
         fetch("/api/notifications/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

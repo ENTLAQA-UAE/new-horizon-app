@@ -532,10 +532,133 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "job_pending_approval": {
+        // Notify HR managers that a job needs approval
+        const pendingRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
+
+        // Get submitter name
+        const { data: submitter } = await serviceClient
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single()
+
+        // Get job details for department
+        let pendingDepartment = ""
+        if (data.jobId) {
+          const { data: jobData } = await serviceClient
+            .from("jobs")
+            .select("department_id, departments(name)")
+            .eq("id", data.jobId)
+            .single()
+          pendingDepartment = (jobData?.departments as any)?.name || ""
+        }
+
+        // Build the base URL for the action link
+        const pendingBaseUrl = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/api\/.*/, "") || ""
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "job_pending_approval",
+          orgId,
+          recipients: pendingRecipients,
+          variables: {
+            job_title: data.jobTitle,
+            submitted_by: getFullName(submitter) || "A recruiter",
+            department: pendingDepartment,
+            action_url: pendingBaseUrl ? `${pendingBaseUrl}/org/jobs?id=${data.jobId}` : `/org/jobs?id=${data.jobId}`,
+          },
+          jobId: data.jobId,
+        })
+        break
+      }
+
+      case "job_approved": {
+        // Notify the recruiter who submitted the job that it has been approved
+        // Find the job's creator or the user who submitted for approval
+        let approvedRecipients: NotificationRecipient[] = []
+
+        if (data.submitterId) {
+          const { data: submitterProfile } = await serviceClient
+            .from("profiles")
+            .select("id, first_name, last_name, email")
+            .eq("id", data.submitterId)
+            .single()
+
+          if (submitterProfile) {
+            approvedRecipients = [{
+              userId: submitterProfile.id,
+              email: submitterProfile.email,
+              name: getFullName(submitterProfile) || submitterProfile.email,
+            }]
+          }
+        }
+
+        // Fallback: notify all recruiters
+        if (approvedRecipients.length === 0) {
+          approvedRecipients = await getTeamRecipients(serviceClient, orgId, ["recruiter"])
+        }
+
+        // Get approver name
+        const { data: approver } = await serviceClient
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single()
+
+        const approvedBaseUrl = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/api\/.*/, "") || ""
+
+        result = await sendNotification(serviceClient, {
+          eventCode: "job_approved",
+          orgId,
+          recipients: approvedRecipients,
+          variables: {
+            job_title: data.jobTitle,
+            approved_by: getFullName(approver) || "An HR Manager",
+            action_url: approvedBaseUrl ? `${approvedBaseUrl}/org/jobs?id=${data.jobId}` : `/org/jobs?id=${data.jobId}`,
+          },
+          jobId: data.jobId,
+        })
+        break
+      }
+
       case "job_published": {
-        // Get org team to notify (with both userId and email for dual-channel)
+        // Get ATS team to notify - per RBAC Blueprint v2, org_admin excluded from ATS notifications
         const jobDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
-        const jobRecipients = await getTeamRecipients(serviceClient, orgId, undefined, jobDeptId)
+        const jobRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], jobDeptId)
+
+        // Get job details for department, location, and career page URL
+        let jobDepartment = ""
+        let jobLocation = ""
+        let jobSlug = ""
+        let orgSlug = ""
+
+        if (data.jobId) {
+          const { data: jobDetails } = await serviceClient
+            .from("jobs")
+            .select("slug, departments(name), job_locations(city, country)")
+            .eq("id", data.jobId)
+            .single()
+
+          jobDepartment = (jobDetails?.departments as any)?.name || ""
+          const locations = jobDetails?.job_locations as any[]
+          if (locations && locations.length > 0) {
+            jobLocation = [locations[0].city, locations[0].country].filter(Boolean).join(", ")
+          }
+          jobSlug = jobDetails?.slug || ""
+        }
+
+        // Get org slug for career page URL
+        const { data: orgData } = await serviceClient
+          .from("organizations")
+          .select("slug")
+          .eq("id", orgId)
+          .single()
+        orgSlug = orgData?.slug || ""
+
+        const publishedBaseUrl = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/api\/.*/, "") || ""
+        const jobViewUrl = orgSlug && data.jobId
+          ? `${publishedBaseUrl}/careers/${orgSlug}/jobs/${data.jobId}`
+          : `${publishedBaseUrl}/org/jobs?id=${data.jobId}`
 
         result = await sendNotification(serviceClient, {
           eventCode: "job_published",
@@ -543,6 +666,9 @@ export async function POST(request: NextRequest) {
           recipients: jobRecipients,
           variables: {
             job_title: data.jobTitle,
+            department: jobDepartment,
+            location: jobLocation,
+            action_url: jobViewUrl,
           },
           jobId: data.jobId,
         })
