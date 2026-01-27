@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Dialog,
   DialogContent,
@@ -1122,7 +1121,7 @@ export function JobDetailClient({
           </div>
 
           {/* Step Content */}
-          <ScrollArea className="flex-1 px-6">
+          <div className="flex-1 overflow-y-auto px-6">
             <form onSubmit={handleSubmit} className="py-6 min-h-[300px]">
 
               {/* Section Steps */}
@@ -1419,7 +1418,7 @@ export function JobDetailClient({
                 </div>
               )}
             </form>
-          </ScrollArea>
+          </div>
 
           {/* Navigation Footer */}
           <div className="px-6 py-4 border-t flex items-center justify-between bg-muted/30">
