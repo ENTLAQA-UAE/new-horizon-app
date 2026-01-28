@@ -497,10 +497,7 @@ export function CareerPageBuilder({
                           </span>
                           <Switch
                             checked={block.enabled}
-                            onCheckedChange={(e) => {
-                              e.stopPropagation()
-                              toggleBlock(block.id)
-                            }}
+                            onCheckedChange={() => toggleBlock(block.id)}
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
