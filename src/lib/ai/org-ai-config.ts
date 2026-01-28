@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that require type regeneration
 /**
  * Organization-Level AI Configuration Service
  *

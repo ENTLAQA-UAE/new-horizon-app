@@ -1732,6 +1732,261 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_ai_config: {
+        Row: {
+          id: string
+          org_id: string
+          provider: string
+          is_enabled: boolean | null
+          is_configured: boolean | null
+          is_verified: boolean | null
+          credentials_encrypted: string | null
+          settings: Json | null
+          is_default_provider: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+          last_used_at: string | null
+          provider_metadata: Json | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          provider: string
+          is_enabled?: boolean | null
+          is_configured?: boolean | null
+          is_verified?: boolean | null
+          credentials_encrypted?: string | null
+          settings?: Json | null
+          is_default_provider?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          last_used_at?: string | null
+          provider_metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          provider?: string
+          is_enabled?: boolean | null
+          is_configured?: boolean | null
+          is_verified?: boolean | null
+          credentials_encrypted?: string | null
+          settings?: Json | null
+          is_default_provider?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          last_used_at?: string | null
+          provider_metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_ai_config_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      organization_ai_logs: {
+        Row: {
+          id: string
+          org_id: string
+          provider: string
+          model: string
+          feature: string
+          input_tokens: number | null
+          output_tokens: number | null
+          total_tokens: number | null
+          latency_ms: number | null
+          job_id: string | null
+          application_id: string | null
+          candidate_id: string | null
+          status: string
+          error_message: string | null
+          error_code: string | null
+          triggered_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          provider: string
+          model: string
+          feature: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          total_tokens?: number | null
+          latency_ms?: number | null
+          job_id?: string | null
+          application_id?: string | null
+          candidate_id?: string | null
+          status?: string
+          error_message?: string | null
+          error_code?: string | null
+          triggered_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          provider?: string
+          model?: string
+          feature?: string
+          input_tokens?: number | null
+          output_tokens?: number | null
+          total_tokens?: number | null
+          latency_ms?: number | null
+          job_id?: string | null
+          application_id?: string | null
+          candidate_id?: string | null
+          status?: string
+          error_message?: string | null
+          error_code?: string | null
+          triggered_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_ai_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      candidate_ai_screening: {
+        Row: {
+          id: string
+          org_id: string
+          application_id: string
+          job_id: string
+          candidate_id: string
+          overall_score: number | null
+          skills_match_score: number | null
+          experience_score: number | null
+          education_score: number | null
+          rank_position: number | null
+          total_applicants: number | null
+          screening_feedback: string | null
+          skill_gaps: Json | null
+          strengths: Json | null
+          concerns: Json | null
+          recommendation: string | null
+          recommendation_reason: string | null
+          scorecard_included: boolean | null
+          scorecard_ids: Json | null
+          post_interview_score: number | null
+          post_interview_rank: number | null
+          ai_provider: string
+          ai_model: string
+          screening_version: number | null
+          created_at: string
+          updated_at: string
+          screened_by: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          application_id: string
+          job_id: string
+          candidate_id: string
+          overall_score?: number | null
+          skills_match_score?: number | null
+          experience_score?: number | null
+          education_score?: number | null
+          rank_position?: number | null
+          total_applicants?: number | null
+          screening_feedback?: string | null
+          skill_gaps?: Json | null
+          strengths?: Json | null
+          concerns?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          scorecard_included?: boolean | null
+          scorecard_ids?: Json | null
+          post_interview_score?: number | null
+          post_interview_rank?: number | null
+          ai_provider: string
+          ai_model: string
+          screening_version?: number | null
+          created_at?: string
+          updated_at?: string
+          screened_by?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          application_id?: string
+          job_id?: string
+          candidate_id?: string
+          overall_score?: number | null
+          skills_match_score?: number | null
+          experience_score?: number | null
+          education_score?: number | null
+          rank_position?: number | null
+          total_applicants?: number | null
+          screening_feedback?: string | null
+          skill_gaps?: Json | null
+          strengths?: Json | null
+          concerns?: Json | null
+          recommendation?: string | null
+          recommendation_reason?: string | null
+          scorecard_included?: boolean | null
+          scorecard_ids?: Json | null
+          post_interview_score?: number | null
+          post_interview_rank?: number | null
+          ai_provider?: string
+          ai_model?: string
+          screening_version?: number | null
+          created_at?: string
+          updated_at?: string
+          screened_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_ai_screening_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_ai_screening_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_ai_screening_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_ai_screening_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
