@@ -44,16 +44,29 @@ Implement per-organization AI configuration allowing each org admin to configure
   - `POST /api/org/ai/test` - Test/verify credentials
   - `DELETE /api/org/ai/delete` - Remove provider config
 
-## Phase 2: AI Configuration UI (Org Settings)
+## Phase 2: AI Configuration UI (Org Settings) ✅ COMPLETED
 
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 2.1 | Create AI Configuration settings page | New page under org settings | ⬜ |
-| 2.2 | Add provider selection cards | Claude, OpenAI, Gemini, Perplexity with logos | ⬜ |
-| 2.3 | Add setup guidelines per provider | Step-by-step instructions to get API keys | ⬜ |
-| 2.4 | Add credential input dialogs | Secure input with validation | ⬜ |
-| 2.5 | Add test connection functionality | Verify credentials work | ⬜ |
-| 2.6 | Add enable/disable toggles | Activate AI features after configuration | ⬜ |
+| 2.1 | Create AI Configuration settings page | New page under org settings | ✅ |
+| 2.2 | Add provider selection cards | Claude, OpenAI, Gemini, Perplexity with logos | ✅ |
+| 2.3 | Add setup guidelines per provider | Step-by-step instructions to get API keys | ✅ |
+| 2.4 | Add credential input dialogs | Secure input with validation | ✅ |
+| 2.5 | Add test connection functionality | Verify credentials work | ✅ |
+| 2.6 | Add enable/disable toggles | Activate AI features after configuration | ✅ |
+
+### Phase 2 Deliverables:
+- **Page**: `src/app/(org)/org/settings/ai/page.tsx`
+- **Client Component**: `src/app/(org)/org/settings/ai/ai-settings-client.tsx`
+- **Navigation**: Added "AI Configuration" link to sidebar settings section
+- **Features**:
+  - Provider cards with status badges (Active, Verified, Default, etc.)
+  - Setup instructions accordion for each provider
+  - Credential input dialogs with show/hide password toggle
+  - Test connection with real-time feedback
+  - Model selection and settings configuration (temperature, max_tokens, custom instructions)
+  - Enable/disable toggles and set default provider
+  - Delete configuration with confirmation dialog
 
 ## Phase 3: Job Description Generation
 
