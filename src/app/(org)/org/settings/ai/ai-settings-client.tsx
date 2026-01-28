@@ -51,6 +51,9 @@ import {
   Copy,
 } from "lucide-react"
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonValue = string | number | boolean | null | { [key: string]: any } | any[]
+
 interface AIConfig {
   id: string
   provider: string
@@ -58,8 +61,8 @@ interface AIConfig {
   is_configured: boolean
   is_verified: boolean
   is_default_provider: boolean
-  settings: Record<string, unknown> | null
-  provider_metadata: Record<string, unknown> | null
+  settings: JsonValue | null
+  provider_metadata: JsonValue | null
   verified_at: string | null
   last_used_at: string | null
 }
