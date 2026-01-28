@@ -229,11 +229,15 @@ export function AISettingsClient({
   const handleSettingsClick = (provider: AIProvider) => {
     const config = getConfig(provider)
     setSelectedProvider(provider)
+    // Cast settings to object for property access
+    const settingsObj = (config?.settings && typeof config.settings === 'object' && !Array.isArray(config.settings))
+      ? config.settings as Record<string, unknown>
+      : {}
     setSettings({
-      model: (config?.settings?.model as string) || AI_PROVIDER_CONFIG[provider].defaultModel,
-      temperature: (config?.settings?.temperature as number) || 0.7,
-      max_tokens: (config?.settings?.max_tokens as number) || 4096,
-      custom_instructions: (config?.settings?.custom_instructions as string) || "",
+      model: (settingsObj.model as string) || AI_PROVIDER_CONFIG[provider].defaultModel,
+      temperature: (settingsObj.temperature as number) || 0.7,
+      max_tokens: (settingsObj.max_tokens as number) || 4096,
+      custom_instructions: (settingsObj.custom_instructions as string) || "",
     })
     setSettingsDialogOpen(true)
   }
@@ -557,9 +561,9 @@ export function AISettingsClient({
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{config.description}</p>
-                    {aiConfig?.settings?.model && (
+                    {aiConfig?.settings && typeof aiConfig.settings === 'object' && !Array.isArray(aiConfig.settings) && (aiConfig.settings as Record<string, unknown>).model && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Model: {String(aiConfig.settings.model)}
+                        Model: {String((aiConfig.settings as Record<string, unknown>).model)}
                       </p>
                     )}
                   </div>
