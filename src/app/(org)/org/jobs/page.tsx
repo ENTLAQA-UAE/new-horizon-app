@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that may not exist in the database schema yet (job_types, job_grades, hiring_stages)
 import { createClient } from "@/lib/supabase/server"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { JobsClient } from "./jobs-client"

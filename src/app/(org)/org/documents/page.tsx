@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: application_attachments table may not be in generated types
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { DocumentsClient } from "./documents-client"

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: Supabase type relationship issues with departments/locations
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"

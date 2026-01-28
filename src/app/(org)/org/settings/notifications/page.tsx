@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { NotificationSettingsClient } from "./notifications-client"

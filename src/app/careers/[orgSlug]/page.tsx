@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { notFound } from "next/navigation"
 import { createServiceClient } from "@/lib/supabase/service"
 import { CareerPageClient } from "./career-page-client"

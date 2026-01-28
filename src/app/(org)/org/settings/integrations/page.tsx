@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema yet (organization_integrations)
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { IntegrationsSettingsClient } from "./integrations-settings-client"

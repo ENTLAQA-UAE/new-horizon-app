@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: organization_integrations table not in generated types
 import { createClient } from "@/lib/supabase/server"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { InterviewsClient } from "./interviews-client"
