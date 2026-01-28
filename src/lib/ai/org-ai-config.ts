@@ -310,28 +310,47 @@ export async function getDefaultAICredentials(
 
 /**
  * Save AI credentials for a provider (encrypted)
+ * @param verified - If true, also mark as verified (when credentials were tested before saving)
+ * @param verifiedModel - The model that was used for verification
  */
 export async function saveOrgAICredentials(
   supabase: SupabaseClient,
   orgId: string,
   provider: AIProvider,
   credentials: Record<string, string>,
-  userId: string
+  userId: string,
+  verified: boolean = false,
+  verifiedModel?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const encryptedCredentials = encryptCredentials(credentials)
 
+    // Build the upsert data
+    const upsertData: Record<string, unknown> = {
+      org_id: orgId,
+      provider,
+      credentials_encrypted: encryptedCredentials,
+      is_configured: true,
+      updated_at: new Date().toISOString(),
+      updated_by: userId,
+    }
+
+    // If verified flag is passed (credentials were tested), mark as verified
+    if (verified) {
+      upsertData.is_verified = true
+      upsertData.verified_at = new Date().toISOString()
+      upsertData.verified_by = userId
+      if (verifiedModel) {
+        upsertData.provider_metadata = { tested_model: verifiedModel, verified_at: new Date().toISOString() }
+      }
+    } else {
+      // Reset verification when credentials change without testing
+      upsertData.is_verified = false
+    }
+
     const { error } = await supabase
       .from("organization_ai_config")
-      .upsert({
-        org_id: orgId,
-        provider,
-        credentials_encrypted: encryptedCredentials,
-        is_configured: true,
-        is_verified: false, // Reset verification when credentials change
-        updated_at: new Date().toISOString(),
-        updated_by: userId,
-      }, {
+      .upsert(upsertData, {
         onConflict: "org_id,provider",
       })
 

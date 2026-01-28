@@ -183,8 +183,9 @@ type AIProvider = keyof typeof AI_PROVIDER_CONFIG
 export function AISettingsClient({
   orgId,
   orgName,
-  aiConfigs,
+  aiConfigs: initialConfigs,
 }: AISettingsClientProps) {
+  const [configs, setConfigs] = useState<AIConfig[]>(initialConfigs)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -195,11 +196,24 @@ export function AISettingsClient({
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
+
+  // Fetch configs from API
+  const fetchConfigs = async () => {
+    try {
+      const response = await fetch(`/api/org/ai/config?orgId=${orgId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setConfigs(data.configs || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch AI configs:", error)
+    }
+  }
   const [isDeleting, setIsDeleting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; model?: string; error?: string } | null>(null)
 
   const getConfig = (provider: AIProvider) =>
-    aiConfigs.find((c) => c.provider === provider)
+    configs.find((c) => c.provider === provider)
 
   const handleConfigureClick = (provider: AIProvider) => {
     setSelectedProvider(provider)
@@ -242,6 +256,9 @@ export function AISettingsClient({
           orgId,
           provider: selectedProvider,
           credentials,
+          // Pass verification status if test was successful
+          verified: testResult?.success === true,
+          verifiedModel: testResult?.model,
         }),
       })
 
@@ -251,8 +268,17 @@ export function AISettingsClient({
         throw new Error(result.error || "Failed to save credentials")
       }
 
-      toast.success("Credentials saved successfully. Please test to verify.")
-      // Don't close dialog - let user test first
+      // Refresh configs to show updated status
+      await fetchConfigs()
+
+      if (testResult?.success) {
+        toast.success("Credentials saved and verified successfully!")
+        setConfigDialogOpen(false)
+        setTestResult(null)
+        setCredentials({})
+      } else {
+        toast.success("Credentials saved. Please test to verify.")
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save credentials")
     } finally {
@@ -409,7 +435,7 @@ export function AISettingsClient({
     ? AI_PROVIDER_CONFIG[selectedProvider]
     : null
 
-  const hasAnyAIEnabled = aiConfigs.some((c) => c.is_enabled && c.is_verified)
+  const hasAnyAIEnabled = configs.some((c) => c.is_enabled && c.is_verified)
 
   return (
     <div className="space-y-6">
