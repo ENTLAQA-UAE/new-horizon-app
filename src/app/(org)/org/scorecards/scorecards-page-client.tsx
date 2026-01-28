@@ -463,10 +463,15 @@ export function ScorecardsPageClient({
                       </h4>
                       <div className="space-y-3">
                         {selectedScorecard.criteria_scores.map((criteriaScore, index) => {
-                          // Find the criteria name from the template
-                          const templateCriteria = selectedScorecard.scorecard_templates?.criteria?.find(
+                          // Try to find the criteria name from the template
+                          // Method 1: Match by criteria_id
+                          let templateCriteria = selectedScorecard.scorecard_templates?.criteria?.find(
                             c => c.id === criteriaScore.criteria_id
                           )
+                          // Method 2: If no match by ID, try matching by index position
+                          if (!templateCriteria && selectedScorecard.scorecard_templates?.criteria) {
+                            templateCriteria = selectedScorecard.scorecard_templates.criteria[index]
+                          }
                           const criteriaName = templateCriteria?.name || `Criteria ${index + 1}`
 
                           return (

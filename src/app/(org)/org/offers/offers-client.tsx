@@ -412,6 +412,24 @@ export function OffersClient({
         }).catch((err) => {
           console.error("Failed to send offer notification:", err)
         })
+
+        // Log activity for offer sent
+        fetch(`/api/applications/${offer.application_id}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activity_type: "offer_sent",
+            description: `Offer sent: ${offer.salary_currency} ${offer.salary_amount.toLocaleString()}/${offer.salary_period}`,
+            metadata: {
+              offer_id: offer.id,
+              job_title: offer.job_title,
+              salary: `${offer.salary_currency} ${offer.salary_amount.toLocaleString()}/${offer.salary_period}`,
+              start_date: offer.start_date,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to log offer sent activity:", err)
+        })
       }
 
       toast.success("Offer sent successfully")

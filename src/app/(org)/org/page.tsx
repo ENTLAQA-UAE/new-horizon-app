@@ -148,16 +148,6 @@ export default async function OrgDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Good morning! 👋</h1>
-          <p className="text-muted-foreground mt-1">
-            Here&apos;s what&apos;s happening with your recruitment today.
-          </p>
-        </div>
-      </div>
-
       {/* Bento Grid */}
       <div className="grid grid-cols-12 gap-4 lg:gap-6">
         {/* Featured Stat - Large Card */}

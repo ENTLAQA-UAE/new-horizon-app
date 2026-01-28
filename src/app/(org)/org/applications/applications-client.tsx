@@ -636,6 +636,22 @@ export function ApplicationsClient({
         }).catch((err) => {
           console.error("Failed to send disqualify notification:", err)
         })
+
+        // Log activity for disqualification
+        fetch(`/api/applications/${selectedApplication.id}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activity_type: "disqualified",
+            description: disqualifyReason ? `Disqualified: ${disqualifyReason}` : "Candidate disqualified",
+            metadata: {
+              reason: disqualifyReason || null,
+              job_title: selectedApplication.jobs.title,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to log disqualify activity:", err)
+        })
       }
 
       setIsDisqualifyDialogOpen(false)
@@ -823,6 +839,23 @@ export function ApplicationsClient({
           }),
         }).catch((err) => {
           console.error("Failed to send stage change notification:", err)
+        })
+
+        // Log activity for stage change
+        fetch(`/api/applications/${applicationId}/activities`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activity_type: "stage_changed",
+            description: `Moved to ${stage?.name || "new stage"}`,
+            metadata: {
+              new_stage_id: newStageId,
+              new_stage_name: stage?.name,
+              job_title: job.title,
+            },
+          }),
+        }).catch((err) => {
+          console.error("Failed to log stage change activity:", err)
         })
       }
 
