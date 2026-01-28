@@ -474,7 +474,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       }
 
       // Create the application
-      const { error } = await supabaseInsert("applications", {
+      const { data: newApplication, error } = await supabaseInsert<{ id: string }>("applications", {
         org_id: organizationId,
         candidate_id: selectedCandidate.id,
         job_id: selectedJobId,
@@ -487,6 +487,21 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       if (error) {
         toast.error(error.message)
         return
+      }
+
+      // If candidate has a resume, create an attachment entry for the application
+      if (selectedCandidate.resume_url && newApplication?.id) {
+        // Extract filename from URL
+        const urlParts = selectedCandidate.resume_url.split('/')
+        const fileName = urlParts[urlParts.length - 1] || 'resume'
+
+        await supabaseInsert("application_attachments", {
+          application_id: newApplication.id,
+          file_name: decodeURIComponent(fileName.split('?')[0]), // Remove query params and decode
+          file_url: selectedCandidate.resume_url,
+          file_type: "resume",
+          description: "Candidate resume (copied from talent pool)",
+        })
       }
 
       setIsApplyDialogOpen(false)

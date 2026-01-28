@@ -185,6 +185,116 @@ const sectionIcons: Record<string, any> = {
   award: Award,
 }
 
+// Helper function to format job description content
+// Handles both HTML content and plain text/markdown
+function formatJobDescription(content: string | null): string {
+  if (!content) return ""
+
+  // Check if content already has HTML tags
+  const hasHtmlTags = /<[a-z][\s\S]*>/i.test(content)
+  if (hasHtmlTags) {
+    return content // Already HTML, return as-is
+  }
+
+  // Convert markdown/plain text to HTML
+  const lines = content.split('\n')
+  const result: string[] = []
+  let inList = false
+
+  // Common section headers (English and Arabic)
+  const headerPatterns = [
+    /^(Requirements|المتطلبات):?$/i,
+    /^(Responsibilities|المسؤوليات):?$/i,
+    /^(Benefits|المزايا|المميزات):?$/i,
+    /^(Skills|المهارات):?$/i,
+    /^(Qualifications|المؤهلات):?$/i,
+    /^(About the Role|عن الوظيفة):?$/i,
+    /^(What You'll Do|ما ستفعله):?$/i,
+    /^(What We Offer|ما نقدمه):?$/i,
+  ]
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line) {
+      if (inList) {
+        result.push('</ul>')
+        inList = false
+      }
+      continue
+    }
+
+    // Check for markdown bold headers like **Requirements:**
+    const boldHeaderMatch = line.match(/^\*\*(.+?):\*\*$/)
+    if (boldHeaderMatch) {
+      if (inList) {
+        result.push('</ul>')
+        inList = false
+      }
+      result.push(`<h3>${boldHeaderMatch[1]}</h3>`)
+      continue
+    }
+
+    // Check if this is a section header
+    const isHeader = headerPatterns.some(pattern => pattern.test(line))
+    if (isHeader) {
+      if (inList) {
+        result.push('</ul>')
+        inList = false
+      }
+      const headerText = line.replace(/:$/, '')
+      result.push(`<h3>${headerText}</h3>`)
+      continue
+    }
+
+    // Check for bullet points (•, -, *, or lines starting after a header)
+    const bulletMatch = line.match(/^[•\-\*]\s*(.+)$/)
+    if (bulletMatch) {
+      if (!inList) {
+        result.push('<ul>')
+        inList = true
+      }
+      result.push(`<li>${bulletMatch[1]}</li>`)
+      continue
+    }
+
+    // Check for numbered items
+    const numberedMatch = line.match(/^\d+[\.\)]\s*(.+)$/)
+    if (numberedMatch) {
+      if (!inList) {
+        result.push('<ul>')
+        inList = true
+      }
+      result.push(`<li>${numberedMatch[1]}</li>`)
+      continue
+    }
+
+    // If we're right after a header, treat as list item
+    if (result.length > 0 && result[result.length - 1].startsWith('<h3>')) {
+      if (!inList) {
+        result.push('<ul>')
+        inList = true
+      }
+      result.push(`<li>${line}</li>`)
+      continue
+    }
+
+    // If already in a list and this line isn't a header, treat as list item
+    if (inList) {
+      result.push(`<li>${line}</li>`)
+      continue
+    }
+
+    // Regular paragraph
+    result.push(`<p>${line}</p>`)
+  }
+
+  if (inList) {
+    result.push('</ul>')
+  }
+
+  return result.join('\n')
+}
+
 export function JobDetailClient({
   organization,
   job,
@@ -988,7 +1098,7 @@ export function JobDetailClient({
                   <h2 className="text-xl font-semibold mb-4">About the Role</h2>
                   <div
                     className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-600 prose-strong:text-gray-900 prose-hr:border-gray-200"
-                    dangerouslySetInnerHTML={{ __html: job.description }}
+                    dangerouslySetInnerHTML={{ __html: formatJobDescription(job.description) }}
                   />
                 </section>
               )}
@@ -998,8 +1108,8 @@ export function JobDetailClient({
                 <section>
                   <h2 className="text-xl font-semibold mb-4">Requirements</h2>
                   <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: job.requirements }}
+                    className="prose prose-sm max-w-none prose-ul:list-disc prose-li:text-gray-600"
+                    dangerouslySetInnerHTML={{ __html: formatJobDescription(job.requirements) }}
                   />
                 </section>
               )}
@@ -1009,8 +1119,8 @@ export function JobDetailClient({
                 <section>
                   <h2 className="text-xl font-semibold mb-4">Benefits</h2>
                   <div
-                    className="prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: job.benefits }}
+                    className="prose prose-sm max-w-none prose-ul:list-disc prose-li:text-gray-600"
+                    dangerouslySetInnerHTML={{ __html: formatJobDescription(job.benefits) }}
                   />
                 </section>
               )}
