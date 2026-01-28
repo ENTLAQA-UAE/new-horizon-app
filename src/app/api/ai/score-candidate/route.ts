@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     const role = userRole?.role
-    const allowedRoles = ["super_admin", "hr_manager", "recruiter"]
+    const allowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
     if (!role || !allowedRoles.includes(role)) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }

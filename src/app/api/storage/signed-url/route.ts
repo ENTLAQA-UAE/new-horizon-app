@@ -22,6 +22,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not a member of any organization" }, { status: 403 })
     }
 
+    // Role check - only ATS roles can access signed URLs
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single()
+
+    const role = userRole?.role
+    const allowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager", "interviewer"]
+    if (!role || !allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { bucket, path } = body
 

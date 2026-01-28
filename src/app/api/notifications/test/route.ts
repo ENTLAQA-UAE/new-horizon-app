@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   // Get user profile and org
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, email, org_id, role")
+    .select("id, first_name, last_name, email, org_id")
     .eq("id", user.id)
     .single()
 
@@ -35,8 +35,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "User has no organization" }, { status: 400 })
   }
 
-  // Only allow HR managers and super admins to test notifications
-  if (!["super_admin", "hr_manager"].includes(profile.role)) {
+  // Role check from user_roles table (RBAC source of truth)
+  const { data: userRole } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .single()
+
+  const role = userRole?.role
+  if (!role || !["super_admin", "hr_manager"].includes(role)) {
     return NextResponse.json({ error: "Only HR managers can test notifications" }, { status: 403 })
   }
 
