@@ -68,16 +68,29 @@ Implement per-organization AI configuration allowing each org admin to configure
   - Enable/disable toggles and set default provider
   - Delete configuration with confirmation dialog
 
-## Phase 3: Job Description Generation
+## Phase 3: Job Description Generation ✅ COMPLETED
 
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 3.1 | Add "Generate with AI" button | Show in job form when in draft mode | ⬜ |
-| 3.2 | Create AI JD generation endpoint | `/api/org/ai/generate-job-description` | ⬜ |
-| 3.3 | Build unified AI client | Route to correct provider based on org config | ⬜ |
-| 3.4 | Create JD generation prompts | Optimized prompts for each provider | ⬜ |
-| 3.5 | Build generation result UI | Display generated JD, Requirements, Skills | ⬜ |
-| 3.6 | Add regenerate & edit functionality | Allow users to regenerate or manually edit | ⬜ |
+| 3.1 | Add "Generate with AI" button | Show in job form when in draft mode | ✅ |
+| 3.2 | Create AI JD generation endpoint | `/api/org/ai/generate-job-description` | ✅ |
+| 3.3 | Build unified AI client | Route to correct provider based on org config | ✅ |
+| 3.4 | Create JD generation prompts | Optimized prompts for each provider | ✅ |
+| 3.5 | Build generation result UI | Display generated JD, Requirements, Skills | ✅ |
+| 3.6 | Add regenerate & edit functionality | Allow users to regenerate or manually edit | ✅ |
+
+### Phase 3 Deliverables:
+- **Unified AI Client**: `src/lib/ai/unified-client.ts`
+  - Routes to correct provider (Anthropic, OpenAI, Gemini, Perplexity)
+  - Handles token tracking and usage logging
+  - Parses JSON responses from all providers
+- **API Endpoint**: `src/app/api/org/ai/generate-job-description/route.ts`
+  - Generates bilingual job descriptions (English/Arabic)
+  - Includes requirements, responsibilities, benefits, skills
+- **UI Components** (in `jobs-client.tsx`):
+  - "Generate with AI" button in job create/edit form
+  - Preview dialog showing generated content
+  - Regenerate and Apply to Form buttons
 
 ## Phase 4: CV Screening & Ranking
 
