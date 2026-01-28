@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Email Provider Test Endpoint
  *

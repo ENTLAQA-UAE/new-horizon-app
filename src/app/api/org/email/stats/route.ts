@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist (email_logs)
 /**
  * Email Analytics/Stats API
  *
