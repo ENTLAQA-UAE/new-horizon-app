@@ -2631,6 +2631,153 @@ export type Database = {
           }
         ]
       }
+      application_notes: {
+        Row: {
+          id: string
+          application_id: string
+          user_id: string
+          content: string
+          is_private: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          application_id: string
+          user_id: string
+          content: string
+          is_private?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          application_id?: string
+          user_id?: string
+          content?: string
+          is_private?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_notes_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      application_activities: {
+        Row: {
+          id: string
+          application_id: string
+          user_id: string | null
+          activity_type: string
+          description: string | null
+          metadata: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          application_id: string
+          user_id?: string | null
+          activity_type: string
+          description?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          application_id?: string
+          user_id?: string | null
+          activity_type?: string
+          description?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_activities_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      application_attachments: {
+        Row: {
+          id: string
+          application_id: string
+          uploaded_by: string | null
+          file_name: string
+          file_type: string | null
+          file_url: string
+          file_size: number | null
+          mime_type: string | null
+          description: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          application_id: string
+          uploaded_by?: string | null
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          file_size?: number | null
+          mime_type?: string | null
+          description?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          application_id?: string
+          uploaded_by?: string | null
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          file_size?: number | null
+          mime_type?: string | null
+          description?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_attachments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       organization_ai_config: {
         Row: {
           id: string

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: Json type incompatibility with options field
 "use client"
 
 import { useState } from "react"

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: Table application_activities is not in generated types yet
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 

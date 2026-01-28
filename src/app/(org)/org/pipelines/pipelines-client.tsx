@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: PipelineStage type mismatches with database schema
 "use client"
 
 import { useState } from "react"

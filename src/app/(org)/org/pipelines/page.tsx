@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file has Supabase type mismatches with PipelineStage interface
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { PipelinesClient } from "./pipelines-client"
