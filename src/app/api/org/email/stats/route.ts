@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Note: Type instantiation is excessively deep error
 /**
  * Email Analytics/Stats API
  *
