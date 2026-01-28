@@ -440,21 +440,45 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         return
       }
 
-      // Get the first stage (usually "new" or "applied")
-      const { data: stages } = await supabaseSelect<{ id: string }[]>("pipeline_stages", {
-        select: "id",
-        order: { column: "sort_order", ascending: true },
-        limit: 1,
+      // Get the job's pipeline_id first
+      const { data: jobData } = await supabaseSelect<{ pipeline_id: string | null }>("jobs", {
+        select: "pipeline_id",
+        filter: [{ column: "id", operator: "eq", value: selectedJobId }],
+        single: true,
       })
 
-      const firstStageId = Array.isArray(stages) && stages.length > 0 ? stages[0].id : null
+      let appliedStageId: string | null = null
+
+      // Get the "applied" stage from the job's specific pipeline
+      if (jobData?.pipeline_id) {
+        const { data: appliedStage } = await supabaseSelect<{ id: string }>("pipeline_stages", {
+          select: "id",
+          filter: [
+            { column: "pipeline_id", operator: "eq", value: jobData.pipeline_id },
+            { column: "stage_type", operator: "eq", value: "applied" },
+          ],
+          single: true,
+        })
+        appliedStageId = appliedStage?.id || null
+
+        // Fallback: if no "applied" type stage, get first stage by sort_order
+        if (!appliedStageId) {
+          const { data: firstStage } = await supabaseSelect<{ id: string }>("pipeline_stages", {
+            select: "id",
+            filter: [{ column: "pipeline_id", operator: "eq", value: jobData.pipeline_id }],
+            order: { column: "sort_order", ascending: true },
+            limit: 1,
+          })
+          appliedStageId = firstStage?.id || null
+        }
+      }
 
       // Create the application
       const { error } = await supabaseInsert("applications", {
         org_id: organizationId,
         candidate_id: selectedCandidate.id,
         job_id: selectedJobId,
-        stage_id: firstStageId,
+        stage_id: appliedStageId,
         status: "new",
         source: (selectedCandidate.source || "direct") as "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other",
         applied_at: new Date().toISOString(),
@@ -1092,39 +1116,6 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                         >
                           <Briefcase className="mr-2 h-4 w-4" />
                           Apply to Job
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "screening")}
-                        >
-                          <Star className="mr-2 h-4 w-4" />
-                          Move to Screening
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "interviewing")}
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          Move to Interview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "offered")}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          Send Offer
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "hired")}
-                          className="text-green-600"
-                        >
-                          <Briefcase className="mr-2 h-4 w-4" />
-                          Mark as Hired
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onSelect={() => handleStatusChange(candidate.id, "rejected")}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Reject
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
