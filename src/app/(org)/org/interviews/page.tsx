@@ -1,34 +1,25 @@
 // @ts-nocheck
 // Note: organization_integrations table not in generated types
 import { createClient } from "@/lib/supabase/server"
+import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { InterviewsClient } from "./interviews-client"
 
 export default async function InterviewsPage() {
+  const access = await getDepartmentAccess()
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
-  // Get user's org_id
-  let orgId: string | null = null
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("org_id")
-      .eq("id", user.id)
-      .single()
-    orgId = profile?.org_id || null
-  }
+  const orgId = access?.orgId || null
+  const user = access ? { id: access.userId } : null
 
   // Calendar integration not yet available - table doesn't exist in schema
   const hasCalendarConnected = false
 
-  // Fetch interviews with related data
-  const { data: interviews } = await supabase
+  // Fetch interviews with related data, including department filtering
+  let interviewsQuery = supabase
     .from("interviews")
     .select(`
       *,
-      applications (
+      applications!inner (
         id,
         candidates (
           id,
@@ -38,14 +29,24 @@ export default async function InterviewsPage() {
           phone,
           current_title
         ),
-        jobs (
+        jobs!inner (
           id,
           title,
-          title_ar
+          title_ar,
+          department_id
         )
       )
     `)
     .order("scheduled_at", { ascending: true })
+
+  if (access?.departmentIds) {
+    interviewsQuery = interviewsQuery.in(
+      "applications.jobs.department_id",
+      access.departmentIds.length > 0 ? access.departmentIds : ["__none__"]
+    )
+  }
+
+  const { data: interviews } = await interviewsQuery
 
   // Fetch team members for interviewer selection (only from same org)
   const { data: rawTeamMembers } = orgId
@@ -74,8 +75,8 @@ export default async function InterviewsPage() {
     role: roleMap.get(m.id) || "member",
   }))
 
-  // Fetch ALL applications for scheduling interviews (not filtered by status)
-  const { data: applications } = await supabase
+  // Fetch applications for scheduling interviews with department filtering
+  let appsQuery = supabase
     .from("applications")
     .select(`
       id,
@@ -85,12 +86,22 @@ export default async function InterviewsPage() {
         last_name,
         email
       ),
-      jobs (
+      jobs!inner (
         id,
-        title
+        title,
+        department_id
       )
     `)
     .order("created_at", { ascending: false })
+
+  if (access?.departmentIds) {
+    appsQuery = appsQuery.in(
+      "jobs.department_id",
+      access.departmentIds.length > 0 ? access.departmentIds : ["__none__"]
+    )
+  }
+
+  const { data: applications } = await appsQuery
 
   // Get org meeting integrations to know which providers are available
   const { data: meetingIntegrations } = orgId

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { getDepartmentAccess, type DepartmentAccess } from "@/lib/auth/get-department-access"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
@@ -14,29 +15,71 @@ import {
   ChevronRight,
 } from "lucide-react"
 
-async function getOrgStats() {
+async function getOrgStats(access: DepartmentAccess) {
   const supabase = await createClient()
+  const { orgId, departmentIds } = access
 
-  // Get active jobs count (only open jobs, not drafts)
-  const { count: jobsCount } = await supabase
+  // Build job query with department filtering
+  let jobsQuery = supabase
     .from("jobs")
     .select("*", { count: "exact", head: true })
+    .eq("org_id", orgId)
     .eq("status", "open")
 
-  // Get candidates count
-  const { count: candidatesCount } = await supabase
-    .from("candidates")
-    .select("*", { count: "exact", head: true })
+  if (departmentIds) {
+    jobsQuery = jobsQuery.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
 
-  // Get applications count
-  const { count: applicationsCount } = await supabase
+  const { count: jobsCount } = await jobsQuery
+
+  // Get candidates count - for hiring_manager, only candidates who applied to their department's jobs
+  let candidatesCount = 0
+  if (departmentIds) {
+    // Get job IDs for this department first
+    let deptJobsQuery = supabase.from("jobs").select("id").eq("org_id", orgId)
+    deptJobsQuery = deptJobsQuery.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+    const { data: deptJobs } = await deptJobsQuery
+    const jobIds = deptJobs?.map((j) => j.id) || []
+
+    if (jobIds.length > 0) {
+      const { count } = await supabase
+        .from("applications")
+        .select("candidate_id", { count: "exact", head: true })
+        .eq("org_id", orgId)
+        .in("job_id", jobIds)
+      candidatesCount = count || 0
+    }
+  } else {
+    const { count } = await supabase
+      .from("candidates")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", orgId)
+    candidatesCount = count || 0
+  }
+
+  // Get applications count with department filtering
+  let applicationsQuery = supabase
     .from("applications")
-    .select("*", { count: "exact", head: true })
+    .select("*, jobs!inner(department_id)", { count: "exact", head: true })
+    .eq("org_id", orgId)
+
+  if (departmentIds) {
+    applicationsQuery = applicationsQuery.in("jobs.department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { count: applicationsCount } = await applicationsQuery
 
   // Get applications grouped by status for pipeline
-  const { data: applications } = await supabase
+  let appStatusQuery = supabase
     .from("applications")
-    .select("status")
+    .select("status, jobs!inner(department_id)")
+    .eq("org_id", orgId)
+
+  if (departmentIds) {
+    appStatusQuery = appStatusQuery.in("jobs.department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: applications } = await appStatusQuery
 
   // Count applications by status
   const stageCounts: Record<string, number> = {}
@@ -47,24 +90,37 @@ async function getOrgStats() {
     })
   }
 
-  // Get recent jobs
-  const { data: recentJobs } = await supabase
+  // Get recent jobs with department filtering
+  let recentJobsQuery = supabase
     .from("jobs")
     .select("id, title, status, created_at, department")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false })
     .limit(5)
 
-  // Get upcoming interviews
-  const { data: interviews } = await supabase
+  if (departmentIds) {
+    recentJobsQuery = recentJobsQuery.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: recentJobs } = await recentJobsQuery
+
+  // Get upcoming interviews with department filtering
+  let interviewsQuery = supabase
     .from("interviews")
-    .select("id, scheduled_at, candidate:candidates(first_name, last_name), job:jobs(title)")
+    .select("id, scheduled_at, candidate:candidates(first_name, last_name), job:jobs!inner(title, department_id)")
     .gte("scheduled_at", new Date().toISOString())
     .order("scheduled_at", { ascending: true })
     .limit(3)
 
+  if (departmentIds) {
+    interviewsQuery = interviewsQuery.in("jobs.department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: interviews } = await interviewsQuery
+
   return {
     jobs: jobsCount || 0,
-    candidates: candidatesCount || 0,
+    candidates: candidatesCount,
     applications: applicationsCount || 0,
     stageCounts,
     recentJobs: recentJobs || [],
@@ -73,7 +129,11 @@ async function getOrgStats() {
 }
 
 export default async function OrgDashboardPage() {
-  const stats = await getOrgStats()
+  const access = await getDepartmentAccess()
+  if (!access) {
+    return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Please log in to continue.</p></div>
+  }
+  const stats = await getOrgStats(access)
 
   // Real pipeline stages from database (using application status enum values)
   const pipelineStages = [

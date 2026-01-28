@@ -1,15 +1,23 @@
 // @ts-nocheck
 // Note: This file uses tables that may not exist in the database schema yet (job_types, job_grades, hiring_stages)
 import { createClient } from "@/lib/supabase/server"
+import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { JobsClient } from "./jobs-client"
 
-async function getJobs() {
+async function getJobs(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
-  const { data: jobs, error } = await supabase
+  let query = supabase
     .from("jobs")
     .select("*")
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false })
+
+  if (departmentIds) {
+    query = query.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: jobs, error } = await query
 
   if (error) {
     console.error("Error fetching jobs:", error)
@@ -105,8 +113,14 @@ async function getOrgSlug() {
 }
 
 export default async function OrgJobsPage() {
+  const access = await getDepartmentAccess()
+  if (!access) {
+    const { redirect } = await import("next/navigation")
+    redirect("/login")
+  }
+
   const [jobs, departments, jobTypes, jobGrades, locations, hiringStages, orgSlug] = await Promise.all([
-    getJobs(),
+    getJobs(access.orgId, access.departmentIds),
     getDepartments(),
     getJobTypes(),
     getJobGrades(),
