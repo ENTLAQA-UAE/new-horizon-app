@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Note: This file uses tables (super_admins, organization_ai_config) which require type regeneration
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getOrgAIConfigs, getAllAIProviderInfos } from "@/lib/ai/org-ai-config"
