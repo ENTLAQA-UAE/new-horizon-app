@@ -202,11 +202,11 @@ export async function sendNotification(
     }
 
     // 3. Get org notification settings (skip if no real event ID or platform-level)
-    let settings: { enabled: boolean; channels: string[] } | null = null
+    let settings: { enabled: boolean; channels: string[]; audience_roles: string[] | null; audience_users: string[] | null } | null = null
     if (!isPlatformLevel && resolvedEvent.id) {
       const { data } = await supabase
         .from("org_notification_settings")
-        .select("enabled, channels")
+        .select("enabled, channels, audience_roles, audience_users")
         .eq("org_id", options.orgId)
         .eq("event_id", resolvedEvent.id)
         .single()
@@ -218,6 +218,67 @@ export async function sendNotification(
     if (!isEnabled && !options.forceEmail && !options.forceInApp) {
       result.success = true // Not an error, just disabled
       return result
+    }
+
+    // 3b. Apply audience_roles and audience_users routing from org settings
+    // If configured, replace internal team recipients while preserving external recipients (candidates/guests)
+    let finalRecipients = options.recipients
+    const audienceRoles = settings?.audience_roles || []
+    const audienceUsers = settings?.audience_users || []
+
+    if (audienceRoles.length > 0 || audienceUsers.length > 0) {
+      // Keep external recipients (no userId = candidate or external guest)
+      const externalRecipients = options.recipients.filter(r => !r.userId)
+
+      // Resolve audience-configured recipients
+      const audienceRecipients: NotificationRecipient[] = []
+      const addedUserIds = new Set<string>()
+
+      if (audienceRoles.length > 0) {
+        const { data: roleUsers } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("org_id", options.orgId)
+          .in("role", audienceRoles)
+
+        if (roleUsers && roleUsers.length > 0) {
+          const userIds = roleUsers.map((r: { user_id: string }) => r.user_id)
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name, email")
+            .in("id", userIds)
+
+          profiles?.forEach((p: { id: string; first_name: string | null; last_name: string | null; email: string }) => {
+            addedUserIds.add(p.id)
+            audienceRecipients.push({
+              userId: p.id,
+              email: p.email,
+              name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email,
+            })
+          })
+        }
+      }
+
+      if (audienceUsers.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email")
+          .in("id", audienceUsers)
+
+        profiles?.forEach((p: { id: string; first_name: string | null; last_name: string | null; email: string }) => {
+          if (!addedUserIds.has(p.id)) {
+            addedUserIds.add(p.id)
+            audienceRecipients.push({
+              userId: p.id,
+              email: p.email,
+              name: [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email,
+            })
+          }
+        })
+      }
+
+      // Replace: external recipients (always) + audience-configured team recipients
+      finalRecipients = [...externalRecipients, ...audienceRecipients]
     }
 
     // Determine channels to use (channel names: 'mail', 'system', 'sms')
@@ -244,7 +305,7 @@ export async function sendNotification(
         isPlatformLevel ? "platform" : options.orgId,
         resolvedEvent.id || "",
         options.eventCode,
-        options.recipients.filter((r) => r.email),
+        finalRecipients.filter((r) => r.email),
         variables,
         {
           candidateId: options.candidateId,
@@ -266,7 +327,7 @@ export async function sendNotification(
       const inAppResult = await sendInAppNotification(
         supabase,
         options.eventCode,
-        options.recipients.filter((r) => r.userId),
+        finalRecipients.filter((r) => r.userId),
         variables,
         options
       )
@@ -281,7 +342,7 @@ export async function sendNotification(
       await logNotification(supabase, {
         orgId: options.orgId,
         eventId: resolvedEvent.id,
-        recipientCount: options.recipients.length,
+        recipientCount: finalRecipients.length,
         channels: {
           email: result.emailSent,
           inApp: result.inAppSent,
