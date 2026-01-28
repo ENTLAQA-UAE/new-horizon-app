@@ -49,7 +49,7 @@ export interface Scorecard {
   interview_id: string
   template_id: string | null
   interviewer_id: string
-  criteria_scores: Array<{ criteria_id: string; score: number; notes?: string }>
+  criteria_scores: Array<{ criteria_id: string; score: number; notes?: string; name?: string }>
   overall_score: number | null
   weighted_score: number | null
   recommendation: string
@@ -463,16 +463,21 @@ export function ScorecardsPageClient({
                       </h4>
                       <div className="space-y-3">
                         {selectedScorecard.criteria_scores.map((criteriaScore, index) => {
-                          // Try to find the criteria name from the template
-                          // Method 1: Match by criteria_id
-                          let templateCriteria = selectedScorecard.scorecard_templates?.criteria?.find(
-                            c => c.id === criteriaScore.criteria_id
-                          )
-                          // Method 2: If no match by ID, try matching by index position
-                          if (!templateCriteria && selectedScorecard.scorecard_templates?.criteria) {
-                            templateCriteria = selectedScorecard.scorecard_templates.criteria[index]
+                          // Use stored name as primary source (for data integrity)
+                          // Fall back to template lookup if no stored name
+                          let criteriaName = criteriaScore.name
+                          if (!criteriaName) {
+                            // Try to find the criteria name from the template
+                            // Method 1: Match by criteria_id
+                            let templateCriteria = selectedScorecard.scorecard_templates?.criteria?.find(
+                              c => c.id === criteriaScore.criteria_id
+                            )
+                            // Method 2: If no match by ID, try matching by index position
+                            if (!templateCriteria && selectedScorecard.scorecard_templates?.criteria) {
+                              templateCriteria = selectedScorecard.scorecard_templates.criteria[index]
+                            }
+                            criteriaName = templateCriteria?.name || `Criteria ${index + 1}`
                           }
-                          const criteriaName = templateCriteria?.name || `Criteria ${index + 1}`
 
                           return (
                             <div key={criteriaScore.criteria_id || index} className="p-3 rounded-lg border space-y-2">
