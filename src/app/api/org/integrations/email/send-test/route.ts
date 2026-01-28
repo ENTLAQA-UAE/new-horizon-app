@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: Type inference issues with provider string type
 /**
  * Send Test Email Endpoint
  *

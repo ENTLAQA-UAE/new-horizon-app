@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses RPC functions that don't exist in the database schema (has_permission)
+// Note: Supabase nested relation queries cause "Type instantiation is excessively deep" error
 import { createClient } from "@/lib/supabase/server"
 import { RolesManagementClient } from "./roles-client"
 import { redirect } from "next/navigation"
@@ -40,8 +40,8 @@ export default async function RolesPage() {
     .order("category")
     .order("code")
 
-  // Fetch role permissions
-  const { data: rolePermissions } = await supabase
+  // Fetch role permissions - use type assertion to avoid deep type instantiation
+  const rolePermissionsResult = await supabase
     .from("role_permissions")
     .select(`
       role_id,
@@ -52,6 +52,7 @@ export default async function RolesPage() {
         category
       )
     `)
+  const rolePermissions = rolePermissionsResult.data as { role_id: string; permission_id: string; permissions: { code: string; name: string; category: string } }[] | null
 
   return (
     <RolesManagementClient

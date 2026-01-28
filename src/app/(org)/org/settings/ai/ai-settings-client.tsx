@@ -51,6 +51,9 @@ import {
   Copy,
 } from "lucide-react"
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonValue = string | number | boolean | null | { [key: string]: any } | any[]
+
 interface AIConfig {
   id: string
   provider: string
@@ -58,8 +61,8 @@ interface AIConfig {
   is_configured: boolean
   is_verified: boolean
   is_default_provider: boolean
-  settings: Record<string, unknown> | null
-  provider_metadata: Record<string, unknown> | null
+  settings: JsonValue | null
+  provider_metadata: JsonValue | null
   verified_at: string | null
   last_used_at: string | null
 }
@@ -183,8 +186,9 @@ type AIProvider = keyof typeof AI_PROVIDER_CONFIG
 export function AISettingsClient({
   orgId,
   orgName,
-  aiConfigs,
+  aiConfigs: initialConfigs,
 }: AISettingsClientProps) {
+  const [configs, setConfigs] = useState<AIConfig[]>(initialConfigs)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -195,11 +199,24 @@ export function AISettingsClient({
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
+
+  // Fetch configs from API
+  const fetchConfigs = async () => {
+    try {
+      const response = await fetch(`/api/org/ai/config?orgId=${orgId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setConfigs(data.configs || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch AI configs:", error)
+    }
+  }
   const [isDeleting, setIsDeleting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; model?: string; error?: string } | null>(null)
 
   const getConfig = (provider: AIProvider) =>
-    aiConfigs.find((c) => c.provider === provider)
+    configs.find((c) => c.provider === provider)
 
   const handleConfigureClick = (provider: AIProvider) => {
     setSelectedProvider(provider)
@@ -212,11 +229,15 @@ export function AISettingsClient({
   const handleSettingsClick = (provider: AIProvider) => {
     const config = getConfig(provider)
     setSelectedProvider(provider)
+    // Cast settings to object for property access
+    const settingsObj = (config?.settings && typeof config.settings === 'object' && !Array.isArray(config.settings))
+      ? config.settings as Record<string, unknown>
+      : {}
     setSettings({
-      model: (config?.settings?.model as string) || AI_PROVIDER_CONFIG[provider].defaultModel,
-      temperature: (config?.settings?.temperature as number) || 0.7,
-      max_tokens: (config?.settings?.max_tokens as number) || 4096,
-      custom_instructions: (config?.settings?.custom_instructions as string) || "",
+      model: (settingsObj.model as string) || AI_PROVIDER_CONFIG[provider].defaultModel,
+      temperature: (settingsObj.temperature as number) || 0.7,
+      max_tokens: (settingsObj.max_tokens as number) || 4096,
+      custom_instructions: (settingsObj.custom_instructions as string) || "",
     })
     setSettingsDialogOpen(true)
   }
@@ -242,6 +263,9 @@ export function AISettingsClient({
           orgId,
           provider: selectedProvider,
           credentials,
+          // Pass verification status if test was successful
+          verified: testResult?.success === true,
+          verifiedModel: testResult?.model,
         }),
       })
 
@@ -251,8 +275,17 @@ export function AISettingsClient({
         throw new Error(result.error || "Failed to save credentials")
       }
 
-      toast.success("Credentials saved successfully. Please test to verify.")
-      // Don't close dialog - let user test first
+      // Refresh configs to show updated status
+      await fetchConfigs()
+
+      if (testResult?.success) {
+        toast.success("Credentials saved and verified successfully!")
+        setConfigDialogOpen(false)
+        setTestResult(null)
+        setCredentials({})
+      } else {
+        toast.success("Credentials saved. Please test to verify.")
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save credentials")
     } finally {
@@ -409,7 +442,7 @@ export function AISettingsClient({
     ? AI_PROVIDER_CONFIG[selectedProvider]
     : null
 
-  const hasAnyAIEnabled = aiConfigs.some((c) => c.is_enabled && c.is_verified)
+  const hasAnyAIEnabled = configs.some((c) => c.is_enabled && c.is_verified)
 
   return (
     <div className="space-y-6">
@@ -528,9 +561,9 @@ export function AISettingsClient({
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{config.description}</p>
-                    {aiConfig?.settings?.model && (
+                    {aiConfig?.settings && typeof aiConfig.settings === 'object' && !Array.isArray(aiConfig.settings) && (aiConfig.settings as Record<string, unknown>).model && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Model: {String(aiConfig.settings.model)}
+                        Model: {String((aiConfig.settings as Record<string, unknown>).model)}
                       </p>
                     )}
                   </div>

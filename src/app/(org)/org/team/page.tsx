@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: Type instantiation is excessively deep error
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { TeamClient } from "./team-client"

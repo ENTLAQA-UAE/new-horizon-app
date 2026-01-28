@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Delete Organization Integration Endpoint
  *

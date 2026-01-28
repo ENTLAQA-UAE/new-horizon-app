@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file has type issues with mailgun.js library
+// Note: MailgunMessageData type inference issues
 /**
  * Mailgun Email Provider
  */

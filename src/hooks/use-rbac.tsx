@@ -1,7 +1,6 @@
 "use client"
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 // Note: This file uses tables that don't match the database schema (role_permissions, etc.)
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react"

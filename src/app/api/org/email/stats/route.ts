@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist (email_logs)
+// Note: Type instantiation is excessively deep error
 /**
  * Email Analytics/Stats API
  *

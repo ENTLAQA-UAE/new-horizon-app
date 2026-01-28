@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables that require type regeneration
+// Note: candidate_ai_screening table type mismatch with upsert data
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getAICompletion, parseJSONFromAI, hasAIConfigured } from "@/lib/ai/unified-client"

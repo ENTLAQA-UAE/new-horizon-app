@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables (super_admins, organization_ai_config) which require type regeneration
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getOrgAIConfigs, getAllAIProviderInfos } from "@/lib/ai/org-ai-config"
@@ -31,14 +29,15 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!profile || profile.org_id !== orgId) {
-      // Check if super admin
-      const { data: superAdmin } = await supabase
-        .from("super_admins")
+      // Check if super admin using user_roles table
+      const { data: superAdminRole } = await supabase
+        .from("user_roles")
         .select("id")
         .eq("user_id", user.id)
+        .eq("role", "super_admin")
         .single()
 
-      if (!superAdmin) {
+      if (!superAdminRole) {
         return NextResponse.json({ error: "Not authorized" }, { status: 403 })
       }
     }

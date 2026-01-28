@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: Json type incompatibility with criteria_scores
+// Note: Type mismatch between criteria_scores and Json type
 "use client"
 
 import { useState } from "react"

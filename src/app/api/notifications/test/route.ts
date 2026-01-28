@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: notification_events table not in Supabase types
 /**
  * Notification System Test Endpoint
  *

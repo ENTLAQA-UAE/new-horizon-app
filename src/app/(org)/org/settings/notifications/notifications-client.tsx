@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: Type inference issues with Supabase insert data
 "use client"
 
 import { useState, useMemo } from "react"

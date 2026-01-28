@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file has Supabase relation query issues
+// Note: Supabase nested relation queries cause type inference issues
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getUserAuthInfo } from "@/lib/auth"

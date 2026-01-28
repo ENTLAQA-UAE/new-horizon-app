@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema yet (organization_email_config)
+// Note: email_domain_records table not in Supabase types
 /**
  * Email Settings Page
  *

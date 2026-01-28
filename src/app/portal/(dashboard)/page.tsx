@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: Supabase nested relation queries cause type inference issues
 "use client"
 
 import { useEffect, useState } from "react"

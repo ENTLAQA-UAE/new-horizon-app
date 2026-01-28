@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: Supabase nested relation queries cause "Type instantiation is excessively deep" error
 "use client"
 
 import { useState, useEffect } from "react"
@@ -170,13 +171,15 @@ export default function OnboardingPage() {
     try {
       const supabase = createClient()
 
-      // Find the invite
-      const { data: invite, error: inviteError } = await supabase
+      // Find the invite - use type assertion to avoid deep type instantiation
+      const inviteResult = await supabase
         .from("team_invites")
         .select("*, organizations(id, name)")
         .eq("invite_code", inviteCode)
         .eq("status", "pending")
         .single()
+      const invite = inviteResult.data as { id: string; email: string; org_id: string; role: string | null; expires_at: string | null; organizations: { id: string; name: string } | null } | null
+      const inviteError = inviteResult.error
 
       if (inviteError || !invite) {
         toast.error("Invalid or expired invite code")

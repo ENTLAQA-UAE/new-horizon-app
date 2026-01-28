@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file has type predicate issues
+// Note: Type predicate issues with WebhookEvent type
 /**
  * Email Webhook Handler
  *

@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema yet (organization_integrations)
+// Note: Type mismatch between Supabase Json type and Integration interface
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { IntegrationsSettingsClient } from "./integrations-settings-client"

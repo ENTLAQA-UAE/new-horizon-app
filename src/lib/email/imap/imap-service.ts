@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file has type issues with imap-simple library
+// Note: imap-simple types FetchOptions not exported
 /**
  * IMAP Email Sync Service
  *

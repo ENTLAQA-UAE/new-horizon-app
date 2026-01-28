@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that require type regeneration
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { verifyOrgAdmin } from "@/lib/auth"
@@ -17,7 +15,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { orgId, provider, credentials } = await request.json()
+    const { orgId, provider, credentials, verified, verifiedModel } = await request.json()
 
     if (!orgId || !provider || !credentials) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -41,8 +39,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "API key is required" }, { status: 400 })
     }
 
-    // Save credentials
-    const result = await saveOrgAICredentials(supabase, orgId, provider, credentials, user.id)
+    // Save credentials with optional verified status
+    const result = await saveOrgAICredentials(
+      supabase,
+      orgId,
+      provider,
+      credentials,
+      user.id,
+      verified === true, // Pass verified flag
+      verifiedModel // Pass model info for metadata
+    )
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 })

@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: application_attachments table may not be in generated types
+// Note: Supabase nested relation queries cause type inference issues
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { DocumentsClient } from "./documents-client"

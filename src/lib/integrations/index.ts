@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist (user_integrations)
 /**
  * Unified Integration Service
  * Provides a consistent interface for all video conferencing integrations

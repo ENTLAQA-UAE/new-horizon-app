@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Custom Password Reset Endpoint
  *

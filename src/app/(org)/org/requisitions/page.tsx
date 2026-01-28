@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: Supabase type relationship issues with departments/locations
+// Note: Type instantiation is excessively deep error
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"

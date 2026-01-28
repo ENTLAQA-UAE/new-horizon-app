@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables/fields that don't exist in the database schema yet
+// Note: Supabase query type inference issues with array operations
 "use client"
 
 import { useState } from "react"

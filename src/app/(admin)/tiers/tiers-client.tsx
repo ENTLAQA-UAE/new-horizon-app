@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file has field mismatches with the database schema
 "use client"
 
 import { useState } from "react"

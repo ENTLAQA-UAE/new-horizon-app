@@ -1,5 +1,5 @@
 // @ts-nocheck
-// Note: This file uses tables that don't exist (organization_email_config)
+// Note: organization_email_config table columns not in types
 /**
  * IMAP Configuration API
  *

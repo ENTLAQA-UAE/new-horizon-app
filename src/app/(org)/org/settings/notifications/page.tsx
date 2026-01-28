@@ -1,4 +1,5 @@
 // @ts-nocheck
+// Note: notification_events table not in Supabase types
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { NotificationSettingsClient } from "./notifications-client"
