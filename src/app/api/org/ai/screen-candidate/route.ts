@@ -243,20 +243,44 @@ Provide a comprehensive screening assessment.`
     // Parse the JSON response
     const screeningResult = parseJSONFromAI<CandidateScreeningResult>(result.content)
 
-    // Store screening result in database
+    // Fetch the application to get job_id and candidate_id (required fields)
+    const { data: application, error: appError } = await supabase
+      .from("applications")
+      .select("job_id, candidate_id")
+      .eq("id", input.applicationId)
+      .single()
+
+    if (appError || !application) {
+      console.error("Error fetching application:", appError)
+      // Return the result even if we can't save it
+      return NextResponse.json({
+        success: true,
+        data: screeningResult,
+        provider: result.provider,
+        model: result.model,
+        warning: "Could not persist screening result - application not found"
+      })
+    }
+
+    // Store screening result in database with correct field names
     const { data: screening, error: screeningError } = await supabase
       .from("candidate_ai_screening")
       .upsert({
         application_id: input.applicationId,
         org_id: orgId,
-        provider: result.provider,
-        model: result.model,
+        job_id: application.job_id,
+        candidate_id: application.candidate_id,
+        ai_provider: result.provider,
+        ai_model: result.model,
         overall_score: screeningResult.overallScore,
-        match_percentage: screeningResult.matchPercentage,
         recommendation: screeningResult.recommendation,
-        screening_data: screeningResult,
+        recommendation_reason: screeningResult.summary,
+        screening_feedback: screeningResult.summary,
+        skill_gaps: screeningResult.skillAnalysis?.missing || [],
+        strengths: screeningResult.strengths || [],
+        concerns: screeningResult.weaknesses || [],
+        screening_data: screeningResult, // Store the full AI result
         screened_by: user.id,
-        screened_at: new Date().toISOString(),
       }, {
         onConflict: "application_id",
       })
@@ -339,7 +363,9 @@ export async function GET(request: NextRequest) {
       success: true,
       data: screening?.screening_data || null,
       screeningId: screening?.id,
-      screenedAt: screening?.screened_at,
+      screenedAt: screening?.created_at,
+      provider: screening?.ai_provider,
+      model: screening?.ai_model,
     })
   } catch (error) {
     console.error("Error fetching screening:", error)

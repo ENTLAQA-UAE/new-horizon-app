@@ -396,30 +396,43 @@ export function JobsClient({
   const handleApplyGeneratedContent = () => {
     if (!generatedData) return
 
-    // Build full description with requirements, responsibilities, and benefits
-    const fullDescription = `${generatedData.description}
+    // Build full description with requirements, responsibilities, and benefits in HTML format
+    const fullDescription = `<p>${generatedData.description}</p>
 
-**Requirements:**
-${generatedData.requirements.map((r) => `• ${r}`).join("\n")}
+<h3>Requirements</h3>
+<ul>
+${generatedData.requirements.map((r) => `<li>${r}</li>`).join("\n")}
+</ul>
 
-**Responsibilities:**
-${generatedData.responsibilities.map((r) => `• ${r}`).join("\n")}
+<h3>Responsibilities</h3>
+<ul>
+${generatedData.responsibilities.map((r) => `<li>${r}</li>`).join("\n")}
+</ul>
 
-**Benefits:**
-${generatedData.benefits.map((b) => `• ${b}`).join("\n")}
+<h3>Benefits</h3>
+<ul>
+${generatedData.benefits.map((b) => `<li>${b}</li>`).join("\n")}
+</ul>
 
-**Skills:** ${generatedData.skills.join(", ")}`
+<h3>Skills</h3>
+<p>${generatedData.skills.join(", ")}</p>`
 
-    const fullDescriptionAr = `${generatedData.descriptionAr}
+    const fullDescriptionAr = `<p>${generatedData.descriptionAr}</p>
 
-**المتطلبات:**
-${generatedData.requirementsAr.map((r) => `• ${r}`).join("\n")}
+<h3>المتطلبات</h3>
+<ul>
+${generatedData.requirementsAr.map((r) => `<li>${r}</li>`).join("\n")}
+</ul>
 
-**المسؤوليات:**
-${generatedData.responsibilitiesAr.map((r) => `• ${r}`).join("\n")}
+<h3>المسؤوليات</h3>
+<ul>
+${generatedData.responsibilitiesAr.map((r) => `<li>${r}</li>`).join("\n")}
+</ul>
 
-**المزايا:**
-${generatedData.benefitsAr.map((b) => `• ${b}`).join("\n")}`
+<h3>المزايا</h3>
+<ul>
+${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
+</ul>`
 
     setFormData({
       ...formData,
