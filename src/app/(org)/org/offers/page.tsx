@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file has Supabase type relationship issues that require runtime casting
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { OffersClient } from "./offers-client"

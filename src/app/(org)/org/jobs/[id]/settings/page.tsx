@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema yet (application_form_sections, etc.)
 "use client"
 
 import { useState, useEffect, useRef } from "react"

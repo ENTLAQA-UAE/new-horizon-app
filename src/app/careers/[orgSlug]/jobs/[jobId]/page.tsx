@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses field names and tables that don't match the database schema
 import { notFound } from "next/navigation"
 import { createServiceClient } from "@/lib/supabase/service"
 import { JobDetailClient } from "./job-detail-client"

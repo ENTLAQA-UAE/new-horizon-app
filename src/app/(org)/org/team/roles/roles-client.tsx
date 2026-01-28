@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist in the database schema (roles, permissions)
 "use client"
 
 import { useState } from "react"

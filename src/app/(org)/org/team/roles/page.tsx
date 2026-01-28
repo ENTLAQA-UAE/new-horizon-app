@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses RPC functions that don't exist in the database schema (has_permission)
 import { createClient } from "@/lib/supabase/server"
 import { RolesManagementClient } from "./roles-client"
 import { redirect } from "next/navigation"

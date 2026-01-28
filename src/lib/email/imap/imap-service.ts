@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file has type issues with imap-simple library
 /**
  * IMAP Email Sync Service
  *

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file has Supabase type issues
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { notify } from "@/lib/notifications/send-notification"
