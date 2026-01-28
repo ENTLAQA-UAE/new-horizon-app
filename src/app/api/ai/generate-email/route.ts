@@ -6,7 +6,13 @@ import {
   translateEmailToArabic,
 } from "@/lib/ai/email-generator"
 
+/**
+ * @deprecated This endpoint uses global AI configuration.
+ * Will be migrated to use organization-level AI configuration.
+ * New endpoints should use /api/org/ai/* routes.
+ */
 export async function POST(request: NextRequest) {
+  console.warn("[DEPRECATED] /api/ai/generate-email uses global AI config. Migrate to org-level AI config.")
   try {
     const supabase = await createClient()
 

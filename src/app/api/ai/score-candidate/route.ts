@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { scoreCandidate } from "@/lib/ai/candidate-matcher"
 
+/**
+ * @deprecated This endpoint uses global AI configuration.
+ * Use /api/org/ai/screen-candidate instead for org-level AI configuration.
+ */
 export async function POST(request: NextRequest) {
+  console.warn("[DEPRECATED] /api/ai/score-candidate uses global AI config. Use /api/org/ai/screen-candidate instead.")
   try {
     const supabase = await createClient()
 

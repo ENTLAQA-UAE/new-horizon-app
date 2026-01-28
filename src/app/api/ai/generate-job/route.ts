@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateJobDescription, generateInterviewQuestions } from "@/lib/ai/job-generator"
 
+/**
+ * @deprecated This endpoint uses global AI configuration.
+ * For job descriptions, use /api/org/ai/generate-job-description instead.
+ * Interview questions generation will be migrated to org-level config soon.
+ */
 export async function POST(request: NextRequest) {
+  console.warn("[DEPRECATED] /api/ai/generate-job uses global AI config. Use /api/org/ai/generate-job-description for job descriptions.")
   try {
     const supabase = await createClient()
 

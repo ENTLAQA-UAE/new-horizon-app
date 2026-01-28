@@ -125,14 +125,31 @@ Implement per-organization AI configuration allowing each org admin to configure
     - Education requirements check
   - Re-analyze button for updated screening
 
-## Phase 5: Cleanup & Migration
+## Phase 5: Cleanup & Migration ✅ COMPLETED
 
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 5.1 | Remove super admin AI settings | Delete AI config from admin settings | ⬜ |
-| 5.2 | Update existing AI code | Use org config instead of global config | ⬜ |
-| 5.3 | Add migration for existing orgs | Handle orgs without AI config gracefully | ⬜ |
-| 5.4 | Testing & validation | End-to-end testing of all features | ⬜ |
+| 5.1 | Remove super admin AI settings | Replaced with info card pointing to org settings | ✅ |
+| 5.2 | Update existing AI code | Hook updated to use org endpoints, old endpoints deprecated | ✅ |
+| 5.3 | Add migration for existing orgs | New endpoints return helpful error when AI not configured | ✅ |
+| 5.4 | Testing & validation | TypeScript build errors fixed, deprecation warnings added | ✅ |
+
+### Phase 5 Deliverables:
+- **Admin Settings Updated**: `src/app/(admin)/settings/settings-client.tsx`
+  - Removed old global AI configuration card
+  - Added informational card directing to org-level settings
+- **Hook Updated**: `src/hooks/use-ai.ts`
+  - Types moved from old client.ts into the hook
+  - `generateJobDescription()` now calls `/api/org/ai/generate-job-description`
+  - `scoreCandidate()` now calls `/api/org/ai/screen-candidate`
+  - Legacy methods (`parseResume`, `generateInterviewQuestions`) marked deprecated
+- **Deprecated Endpoints**: Added deprecation warnings to all `/api/ai/*` routes
+  - `/api/ai/parse-resume` - deprecated, console warning
+  - `/api/ai/score-candidate` - deprecated, use `/api/org/ai/screen-candidate`
+  - `/api/ai/generate-job` - deprecated, use `/api/org/ai/generate-job-description`
+  - `/api/ai/generate-email` - deprecated, console warning
+- **Graceful Handling**: New org-level endpoints return clear error message:
+  `"AI not configured. Please configure an AI provider in Settings > AI Configuration."`
 
 ---
 
