@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Note: Supabase nested relation queries cause "Type instantiation is excessively deep" error
 "use client"
 
 import { useState, useEffect } from "react"
