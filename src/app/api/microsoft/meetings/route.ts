@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Microsoft Teams Meetings API
  * Uses organization-level credentials from organization_integrations

@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist (integration_webhooks)
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { verifyZoomWebhook, ZoomWebhookEvent } from "@/lib/zoom/zoom"

@@ -789,6 +789,18 @@ export type Database = {
           completed_at: string | null
           cancelled_at: string | null
           cancellation_reason: string | null
+          calendar_event_id: string | null
+          calendar_event_link: string | null
+          video_meeting_link: string | null
+          meeting_provider: string | null
+          zoom_meeting_id: string | null
+          zoom_join_url: string | null
+          zoom_start_url: string | null
+          zoom_password: string | null
+          teams_meeting_id: string | null
+          teams_join_url: string | null
+          google_meet_link: string | null
+          google_calendar_event_id: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -819,6 +831,18 @@ export type Database = {
           completed_at?: string | null
           cancelled_at?: string | null
           cancellation_reason?: string | null
+          calendar_event_id?: string | null
+          calendar_event_link?: string | null
+          video_meeting_link?: string | null
+          meeting_provider?: string | null
+          zoom_meeting_id?: string | null
+          zoom_join_url?: string | null
+          zoom_start_url?: string | null
+          zoom_password?: string | null
+          teams_meeting_id?: string | null
+          teams_join_url?: string | null
+          google_meet_link?: string | null
+          google_calendar_event_id?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -849,6 +873,18 @@ export type Database = {
           completed_at?: string | null
           cancelled_at?: string | null
           cancellation_reason?: string | null
+          calendar_event_id?: string | null
+          calendar_event_link?: string | null
+          video_meeting_link?: string | null
+          meeting_provider?: string | null
+          zoom_meeting_id?: string | null
+          zoom_join_url?: string | null
+          zoom_start_url?: string | null
+          zoom_password?: string | null
+          teams_meeting_id?: string | null
+          teams_join_url?: string | null
+          google_meet_link?: string | null
+          google_calendar_event_id?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -2278,6 +2314,319 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_integrations: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          access_token: string
+          refresh_token: string | null
+          expires_at: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          access_token: string
+          refresh_token?: string | null
+          expires_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          provider?: string
+          access_token?: string
+          refresh_token?: string | null
+          expires_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_integrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      organization_integrations: {
+        Row: {
+          id: string
+          org_id: string
+          provider: string
+          is_enabled: boolean | null
+          is_configured: boolean | null
+          is_verified: boolean | null
+          credentials_encrypted: string | null
+          settings: Json | null
+          is_default_meeting_provider: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+          last_used_at: string | null
+          provider_metadata: Json | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          provider: string
+          is_enabled?: boolean | null
+          is_configured?: boolean | null
+          is_verified?: boolean | null
+          credentials_encrypted?: string | null
+          settings?: Json | null
+          is_default_meeting_provider?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          last_used_at?: string | null
+          provider_metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          provider?: string
+          is_enabled?: boolean | null
+          is_configured?: boolean | null
+          is_verified?: boolean | null
+          credentials_encrypted?: string | null
+          settings?: Json | null
+          is_default_meeting_provider?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+          last_used_at?: string | null
+          provider_metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_integrations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      organization_email_config: {
+        Row: {
+          id: string
+          org_id: string
+          email_provider: string | null
+          api_key_encrypted: string | null
+          from_email: string
+          from_name: string
+          reply_to_email: string | null
+          smtp_host: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          smtp_password_encrypted: string | null
+          smtp_encryption: string | null
+          track_opens: boolean | null
+          track_clicks: boolean | null
+          domain: string | null
+          domain_verified: boolean | null
+          is_enabled: boolean | null
+          is_verified: boolean | null
+          verified_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          email_provider?: string | null
+          api_key_encrypted?: string | null
+          from_email: string
+          from_name: string
+          reply_to_email?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          smtp_password_encrypted?: string | null
+          smtp_encryption?: string | null
+          track_opens?: boolean | null
+          track_clicks?: boolean | null
+          domain?: string | null
+          domain_verified?: boolean | null
+          is_enabled?: boolean | null
+          is_verified?: boolean | null
+          verified_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          email_provider?: string | null
+          api_key_encrypted?: string | null
+          from_email?: string
+          from_name?: string
+          reply_to_email?: string | null
+          smtp_host?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          smtp_password_encrypted?: string | null
+          smtp_encryption?: string | null
+          track_opens?: boolean | null
+          track_clicks?: boolean | null
+          domain?: string | null
+          domain_verified?: boolean | null
+          is_enabled?: boolean | null
+          is_verified?: boolean | null
+          verified_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_email_config_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      organization_email_logs: {
+        Row: {
+          id: string
+          org_id: string
+          to_email: string
+          to_name: string | null
+          from_email: string
+          subject: string
+          template_id: string | null
+          status: string
+          provider: string
+          provider_message_id: string | null
+          provider_response: Json | null
+          error_message: string | null
+          error_code: string | null
+          opened_at: string | null
+          clicked_at: string | null
+          candidate_id: string | null
+          application_id: string | null
+          interview_id: string | null
+          created_at: string
+          sent_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          to_email: string
+          to_name?: string | null
+          from_email: string
+          subject: string
+          template_id?: string | null
+          status?: string
+          provider: string
+          provider_message_id?: string | null
+          provider_response?: Json | null
+          error_message?: string | null
+          error_code?: string | null
+          opened_at?: string | null
+          clicked_at?: string | null
+          candidate_id?: string | null
+          application_id?: string | null
+          interview_id?: string | null
+          created_at?: string
+          sent_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          to_email?: string
+          to_name?: string | null
+          from_email?: string
+          subject?: string
+          template_id?: string | null
+          status?: string
+          provider?: string
+          provider_message_id?: string | null
+          provider_response?: Json | null
+          error_message?: string | null
+          error_code?: string | null
+          opened_at?: string | null
+          clicked_at?: string | null
+          candidate_id?: string | null
+          application_id?: string | null
+          interview_id?: string | null
+          created_at?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_email_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      integration_webhook_logs: {
+        Row: {
+          id: string
+          org_id: string | null
+          provider: string
+          event_type: string
+          payload: Json
+          processed: boolean | null
+          processed_at: string | null
+          error: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          provider: string
+          event_type: string
+          payload: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          error?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          provider?: string
+          event_type?: string
+          payload?: Json
+          processed?: boolean | null
+          processed_at?: string | null
+          error?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_webhook_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           }
         ]

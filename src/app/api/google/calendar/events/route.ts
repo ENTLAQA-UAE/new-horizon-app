@@ -1,5 +1,3 @@
-// @ts-nocheck
-// Note: This file uses tables that don't exist (user_integrations)
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import {
