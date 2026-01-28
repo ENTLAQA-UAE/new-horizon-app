@@ -2943,6 +2943,7 @@ export type Database = {
           created_at: string
           updated_at: string
           screened_by: string | null
+          screening_data: Json | null
         }
         Insert: {
           id?: string
@@ -2972,6 +2973,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           screened_by?: string | null
+          screening_data?: Json | null
         }
         Update: {
           id?: string
@@ -3001,6 +3003,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
           screened_by?: string | null
+          screening_data?: Json | null
         }
         Relationships: [
           {
