@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Note: user_roles table type causes "Type instantiation is excessively deep" error
 import { createClient } from "@/lib/supabase/server"
 
 export interface DepartmentAccess {
