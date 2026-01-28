@@ -2,34 +2,22 @@
 // Note: Supabase type relationship issues with departments/locations
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { RequisitionsClient } from "./requisitions-client"
 
 export default async function RequisitionsPage() {
-  const supabase = await createClient()
+  const access = await getDepartmentAccess()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
+  if (!access) {
     redirect("/login")
   }
 
-  // Get user's profile with organization
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single()
+  const supabase = await createClient()
+  const orgId = access.orgId
+  const user = { id: access.userId }
 
-  if (!profile?.org_id) {
-    redirect("/org")
-  }
-
-  const orgId = profile.org_id
-
-  // Get job requisitions
-  const { data: requisitions } = await supabase
+  // Get job requisitions with department filtering
+  let requisitionsQuery = supabase
     .from("job_requisitions")
     .select(`
       *,
@@ -38,6 +26,12 @@ export default async function RequisitionsPage() {
     `)
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
+
+  if (access.departmentIds) {
+    requisitionsQuery = requisitionsQuery.in("department_id", access.departmentIds.length > 0 ? access.departmentIds : ["__none__"])
+  }
+
+  const { data: requisitions } = await requisitionsQuery
 
   // Get requisition approvals
   const { data: approvals } = await supabase

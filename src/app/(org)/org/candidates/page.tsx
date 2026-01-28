@@ -1,25 +1,51 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { OrgCandidatesClient } from "./candidates-client"
 
-async function getUserOrgId() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single()
-
-  return profile?.org_id || null
-}
-
-async function getCandidates(orgId: string) {
+async function getCandidates(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
+  if (departmentIds) {
+    // For hiring_manager: only candidates who applied to jobs in their departments
+    const deptFilter = departmentIds.length > 0 ? departmentIds : ["__none__"]
+
+    // Get job IDs for their departments
+    const { data: deptJobs } = await supabase
+      .from("jobs")
+      .select("id")
+      .eq("org_id", orgId)
+      .in("department_id", deptFilter)
+
+    const jobIds = deptJobs?.map((j) => j.id) || []
+
+    if (jobIds.length === 0) return []
+
+    // Get candidate IDs who applied to those jobs
+    const { data: apps } = await supabase
+      .from("applications")
+      .select("candidate_id")
+      .in("job_id", jobIds)
+
+    const candidateIds = [...new Set(apps?.map((a) => a.candidate_id) || [])]
+
+    if (candidateIds.length === 0) return []
+
+    const { data: candidates, error } = await supabase
+      .from("candidates")
+      .select("*")
+      .eq("org_id", orgId)
+      .in("id", candidateIds)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching candidates:", error)
+      return []
+    }
+    return candidates || []
+  }
+
+  // Full access - all candidates
   const { data: candidates, error } = await supabase
     .from("candidates")
     .select("*")
@@ -34,14 +60,20 @@ async function getCandidates(orgId: string) {
   return candidates || []
 }
 
-async function getJobs(orgId: string) {
+async function getJobs(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
-  const { data: jobs, error } = await supabase
+  let query = supabase
     .from("jobs")
     .select("id, title, title_ar, status")
     .eq("org_id", orgId)
     .order("title")
+
+  if (departmentIds) {
+    query = query.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: jobs, error } = await query
 
   if (error) {
     console.error("Error fetching jobs:", error)
@@ -52,17 +84,17 @@ async function getJobs(orgId: string) {
 }
 
 export default async function OrgCandidatesPage() {
-  const orgId = await getUserOrgId()
+  const access = await getDepartmentAccess()
 
-  if (!orgId) {
+  if (!access) {
     redirect("/org")
   }
 
   const [candidates, jobs] = await Promise.all([
-    getCandidates(orgId),
-    getJobs(orgId),
+    getCandidates(access.orgId, access.departmentIds),
+    getJobs(access.orgId, access.departmentIds),
   ])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <OrgCandidatesClient candidates={candidates as any} jobs={jobs} organizationId={orgId} />
+  return <OrgCandidatesClient candidates={candidates as any} jobs={jobs} organizationId={access.orgId} />
 }

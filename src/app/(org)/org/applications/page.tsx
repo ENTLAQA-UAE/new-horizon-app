@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { ApplicationsClient } from "./applications-client"
 
-async function getApplications() {
+async function getApplications(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
-  const { data: applications, error } = await supabase
+  let query = supabase
     .from("applications")
     .select(`
       *,
@@ -18,7 +20,7 @@ async function getApplications() {
         resume_url,
         avatar_url
       ),
-      jobs (
+      jobs!inner (
         id,
         title,
         title_ar,
@@ -35,7 +37,14 @@ async function getApplications() {
         stage_type
       )
     `)
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false })
+
+  if (departmentIds) {
+    query = query.in("jobs.department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: applications, error } = await query
 
   if (error) {
     console.error("Error fetching applications:", error)
@@ -59,11 +68,10 @@ async function getApplications() {
   return applicationsWithCount || []
 }
 
-async function getJobsWithPipelines() {
+async function getJobsWithPipelines(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
-  // Get jobs that have applications, with their pipeline stages
-  const { data: jobs, error } = await supabase
+  let query = supabase
     .from("jobs")
     .select(`
       id,
@@ -71,6 +79,7 @@ async function getJobsWithPipelines() {
       title_ar,
       status,
       pipeline_id,
+      department_id,
       pipelines:pipeline_id (
         id,
         name,
@@ -86,7 +95,14 @@ async function getJobsWithPipelines() {
         )
       )
     `)
+    .eq("org_id", orgId)
     .order("title")
+
+  if (departmentIds) {
+    query = query.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
+  }
+
+  const { data: jobs, error } = await query
 
   if (error) {
     console.error("Error fetching jobs with pipelines:", error)
@@ -97,9 +113,14 @@ async function getJobsWithPipelines() {
 }
 
 export default async function OrgApplicationsPage() {
+  const access = await getDepartmentAccess()
+  if (!access) {
+    redirect("/login")
+  }
+
   const [applications, jobsWithPipelines] = await Promise.all([
-    getApplications(),
-    getJobsWithPipelines(),
+    getApplications(access.orgId, access.departmentIds),
+    getJobsWithPipelines(access.orgId, access.departmentIds),
   ])
 
   return (
