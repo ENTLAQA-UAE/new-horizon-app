@@ -37,6 +37,7 @@ import { toast } from "sonner"
 
 interface Offer {
   id: string
+  application_id: string
   status: string
   job_title: string
   job_title_ar: string | null
@@ -115,7 +116,7 @@ export default function OffersPage() {
 
       // Fetch all offers for candidate's applications
       const { data: offersData } = await supabaseSelect<Offer[]>("offers", {
-        select: `id,status,job_title,job_title_ar,department,location,salary_amount,salary_currency,salary_period,benefits,start_date,expiry_date,offer_letter_url,created_at,accepted_at,rejected_at,applications(jobs(organizations:org_id(name,logo_url)))`,
+        select: `id,application_id,status,job_title,job_title_ar,department,location,salary_amount,salary_currency,salary_period,benefits,start_date,expiry_date,offer_letter_url,created_at,accepted_at,rejected_at,applications(jobs(organizations:org_id(name,logo_url)))`,
         filter: [{ column: "application_id", operator: "in", value: `(${applicationIds.join(",")})` }],
         order: { column: "created_at", ascending: false },
       })
@@ -173,6 +174,26 @@ export default function OffersPage() {
         }),
       }).catch((err) => {
         console.error("Failed to send offer response notification:", err)
+      })
+
+      // Log activity for offer response
+      fetch(`/api/applications/${selectedOffer.application_id}/activities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          activity_type: responseType === "accept" ? "offer_accepted" : "offer_declined",
+          description: responseType === "accept"
+            ? `Offer accepted for ${selectedOffer.job_title}`
+            : `Offer declined for ${selectedOffer.job_title}`,
+          metadata: {
+            offer_id: selectedOffer.id,
+            job_title: selectedOffer.job_title,
+            salary: `${selectedOffer.salary_currency} ${selectedOffer.salary_amount.toLocaleString()}/${selectedOffer.salary_period}`,
+            response_notes: responseNotes || null,
+          },
+        }),
+      }).catch((err) => {
+        console.error("Failed to log offer response activity:", err)
       })
 
       setResponseDialogOpen(false)
