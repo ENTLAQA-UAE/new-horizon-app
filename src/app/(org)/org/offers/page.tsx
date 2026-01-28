@@ -36,7 +36,7 @@ export default async function OffersPage() {
   const defaultCurrency = organization?.currency || "SAR"
 
   // Fetch offers with related data for this organization
-  const { data: offers } = await supabase
+  const { data: offers } = await (supabase
     .from("offers")
     .select(`
       *,
@@ -58,7 +58,7 @@ export default async function OffersPage() {
       )
     `)
     .eq("org_id", orgId)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false }) as unknown as Promise<{ data: any[] | null }>)
 
   // Fetch offer templates for this organization
   const { data: templates } = await supabase
@@ -70,7 +70,7 @@ export default async function OffersPage() {
 
   // Fetch applications eligible for offers (not rejected, not already hired)
   // Include applications in interview, assessment, and offer stages
-  const { data: applications } = await supabase
+  const { data: applications } = await (supabase
     .from("applications")
     .select(`
       id,
@@ -85,7 +85,7 @@ export default async function OffersPage() {
     `)
     .eq("org_id", orgId)
     .not("status", "in", '("rejected","hired","withdrawn")')
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false }) as unknown as Promise<{ data: { id: string; job_id: string; status: string; candidates: { id: string; first_name: string; last_name: string; email: string } | null }[] | null }>)
 
   // Get unique job IDs from applications
   const jobIds = [...new Set(applications?.map(a => a.job_id).filter(Boolean) || [])]

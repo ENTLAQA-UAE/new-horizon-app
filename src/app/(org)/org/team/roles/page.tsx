@@ -39,7 +39,7 @@ export default async function RolesPage() {
     .order("code")
 
   // Fetch role permissions
-  const { data: rolePermissions } = await supabase
+  const { data: rolePermissions } = await (supabase
     .from("role_permissions")
     .select(`
       role_id,
@@ -49,7 +49,7 @@ export default async function RolesPage() {
         name,
         category
       )
-    `)
+    `) as unknown as Promise<{ data: { role_id: string; permission_id: string; permissions: { code: string; name: string; category: string } }[] | null }>)
 
   return (
     <RolesManagementClient
