@@ -9,12 +9,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu"
@@ -34,14 +30,12 @@ import {
   Settings,
   Globe,
   Sparkles,
-  Keyboard,
   Briefcase,
   Users,
   BarChart3,
   Sun,
   Moon,
   Monitor,
-  Palette,
   CalendarDays,
   FileText,
   ChevronRight,
@@ -249,47 +243,11 @@ export function Header({ title, titleAr }: HeaderProps) {
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
-                onClick={() => router.push("/org/settings")}
+                onClick={() => router.push("/org/profile")}
                 className="gap-3 cursor-pointer py-2.5"
               >
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span>{language === "ar" ? "الملف الشخصي" : "Profile"}</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                onClick={() => router.push("/org/settings")}
-                className="gap-3 cursor-pointer py-2.5"
-              >
-                <Settings className="h-4 w-4 text-muted-foreground" />
-                <span>{t("nav.settings")}</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="gap-3 py-2.5">
-                  <Palette className="h-4 w-4 text-muted-foreground" />
-                  <span>{language === "ar" ? "المظهر" : "Appearance"}</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
-                    <DropdownMenuRadioItem value="light" className="gap-2">
-                      <Sun className="h-4 w-4" />
-                      {language === "ar" ? "فاتح" : "Light"}
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="dark" className="gap-2">
-                      <Moon className="h-4 w-4" />
-                      {language === "ar" ? "داكن" : "Dark"}
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="system" className="gap-2">
-                      <Monitor className="h-4 w-4" />
-                      {language === "ar" ? "النظام" : "System"}
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              <DropdownMenuItem className="gap-3 cursor-pointer py-2.5">
-                <Keyboard className="h-4 w-4 text-muted-foreground" />
-                <span>{language === "ar" ? "اختصارات لوحة المفاتيح" : "Keyboard shortcuts"}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
