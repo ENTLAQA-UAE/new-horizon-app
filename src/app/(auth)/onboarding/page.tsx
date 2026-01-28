@@ -170,12 +170,12 @@ export default function OnboardingPage() {
       const supabase = createClient()
 
       // Find the invite
-      const { data: invite, error: inviteError } = await supabase
+      const { data: invite, error: inviteError } = await (supabase
         .from("team_invites")
         .select("*, organizations(id, name)")
         .eq("invite_code", inviteCode)
         .eq("status", "pending")
-        .single()
+        .single() as Promise<{ data: { id: string; email: string; org_id: string; role: string | null; expires_at: string | null; organizations: { id: string; name: string } | null } | null; error: any }>)
 
       if (inviteError || !invite) {
         toast.error("Invalid or expired invite code")
