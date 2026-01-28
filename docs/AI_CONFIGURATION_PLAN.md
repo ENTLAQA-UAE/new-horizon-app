@@ -92,17 +92,38 @@ Implement per-organization AI configuration allowing each org admin to configure
   - Preview dialog showing generated content
   - Regenerate and Apply to Form buttons
 
-## Phase 4: CV Screening & Ranking
+## Phase 4: CV Screening & Ranking ✅ COMPLETED
 
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 4.1 | Add "Review with AI" button | In application details / attachment tab | ⬜ |
-| 4.2 | Create CV screening endpoint | `/api/org/ai/screen-candidate` | ⬜ |
-| 4.3 | Build screening result UI | Feedback, skill gap analysis display | ⬜ |
-| 4.4 | Create ranking system | Score & rank all applicants per job | ⬜ |
-| 4.5 | Add ranking display in job view | Show ranked candidates list | ⬜ |
-| 4.6 | Integrate scorecard data | Include interview feedback in ranking | ⬜ |
-| 4.7 | Add re-rank after scorecard | Regenerate ranking with scorecard data | ⬜ |
+| 4.1 | Add "Review with AI" button | In application details / AI Review tab | ✅ |
+| 4.2 | Create CV screening endpoint | `/api/org/ai/screen-candidate` | ✅ |
+| 4.3 | Build screening result UI | Feedback, skill gap analysis display | ✅ |
+| 4.4 | Create ranking system | Score & rank all applicants per job | ✅ |
+| 4.5 | Integrate scorecard data | Include interview feedback in screening | ✅ |
+| 4.6 | Add re-analyze functionality | Regenerate screening with updated data | ✅ |
+
+### Phase 4 Deliverables:
+- **CV Screening Endpoint**: `src/app/api/org/ai/screen-candidate/route.ts`
+  - POST: Run AI screening for candidate against job requirements
+  - GET: Retrieve existing screening results
+  - Stores results in `candidate_ai_screening` table
+  - Updates `ai_match_score` on applications
+- **Ranking Endpoint**: `src/app/api/org/ai/rank-applicants/route.ts`
+  - Ranks all applicants for a job
+  - Includes interview scorecard data for comprehensive ranking
+- **UI Components** (in `applications-client.tsx`):
+  - "AI Review" tab in application details dialog
+  - "Review with AI" button to trigger screening
+  - Comprehensive screening results display:
+    - Overall score and recommendation badge
+    - Skills analysis (matched, missing, additional)
+    - Experience analysis with highlights and concerns
+    - Strengths and weaknesses
+    - Interview focus areas
+    - Cultural fit score
+    - Education requirements check
+  - Re-analyze button for updated screening
 
 ## Phase 5: Cleanup & Migration
 
