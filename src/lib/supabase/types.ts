@@ -370,6 +370,8 @@ export type Database = {
           org_id: string
           department_id: string | null
           location_id: string | null
+          job_type_id: string | null
+          job_grade_id: string | null
           title: string
           title_ar: string | null
           slug: string
@@ -407,6 +409,9 @@ export type Database = {
           hiring_manager_id: string | null
           nationality_preference: Json | null
           saudization_applicable: boolean | null
+          thumbnail_url: string | null
+          deactivated_at: string | null
+          auto_deactivated: boolean | null
           created_at: string | null
           updated_at: string | null
         }
@@ -415,6 +420,8 @@ export type Database = {
           org_id: string
           department_id?: string | null
           location_id?: string | null
+          job_type_id?: string | null
+          job_grade_id?: string | null
           title: string
           title_ar?: string | null
           slug: string
@@ -452,6 +459,9 @@ export type Database = {
           hiring_manager_id?: string | null
           nationality_preference?: Json | null
           saudization_applicable?: boolean | null
+          thumbnail_url?: string | null
+          deactivated_at?: string | null
+          auto_deactivated?: boolean | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -460,6 +470,8 @@ export type Database = {
           org_id?: string
           department_id?: string | null
           location_id?: string | null
+          job_type_id?: string | null
+          job_grade_id?: string | null
           title?: string
           title_ar?: string | null
           slug?: string
@@ -497,10 +509,35 @@ export type Database = {
           hiring_manager_id?: string | null
           nationality_preference?: Json | null
           saudization_applicable?: boolean | null
+          thumbnail_url?: string | null
+          deactivated_at?: string | null
+          auto_deactivated?: boolean | null
           created_at?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jobs_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_job_type_id_fkey"
+            columns: ["job_type_id"]
+            isOneToOne: false
+            referencedRelation: "job_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_job_grade_id_fkey"
+            columns: ["job_grade_id"]
+            isOneToOne: false
+            referencedRelation: "job_grades"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       candidates: {
         Row: {
@@ -1731,6 +1768,519 @@ export type Database = {
           created_at?: string
         }
         Relationships: []
+      }
+      job_types: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          name_ar: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          name_ar?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          name_ar?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      job_grades: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          name_ar: string | null
+          level: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          name_ar?: string | null
+          level?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          name_ar?: string | null
+          level?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_grades_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      hiring_stages: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          name_ar: string | null
+          color: string
+          sort_order: number
+          is_active: boolean
+          is_default: boolean | null
+          is_terminal: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          name_ar?: string | null
+          color?: string
+          sort_order?: number
+          is_active?: boolean
+          is_default?: boolean | null
+          is_terminal?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          name_ar?: string | null
+          color?: string
+          sort_order?: number
+          is_active?: boolean
+          is_default?: boolean | null
+          is_terminal?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hiring_stages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      locations: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          name_ar: string | null
+          address: string | null
+          city: string | null
+          country: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          name_ar?: string | null
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          name_ar?: string | null
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      application_questions: {
+        Row: {
+          id: string
+          organization_id: string
+          question: string
+          question_ar: string | null
+          field_type: string
+          options: Json | null
+          is_required: boolean
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          question: string
+          question_ar?: string | null
+          field_type?: string
+          options?: Json | null
+          is_required?: boolean
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          question?: string
+          question_ar?: string | null
+          field_type?: string
+          options?: Json | null
+          is_required?: boolean
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_questions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      application_form_sections: {
+        Row: {
+          id: string
+          org_id: string | null
+          name: string
+          name_ar: string | null
+          description: string | null
+          icon: string | null
+          is_default: boolean | null
+          is_enabled: boolean | null
+          sort_order: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          icon?: string | null
+          is_default?: boolean | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          icon?: string | null
+          is_default?: boolean | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_form_sections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      application_form_fields: {
+        Row: {
+          id: string
+          section_id: string | null
+          org_id: string | null
+          name: string
+          name_ar: string | null
+          field_type: string
+          placeholder: string | null
+          placeholder_ar: string | null
+          options: Json | null
+          validation: Json | null
+          is_default: boolean | null
+          is_required: boolean | null
+          is_enabled: boolean | null
+          sort_order: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          section_id?: string | null
+          org_id?: string | null
+          name: string
+          name_ar?: string | null
+          field_type?: string
+          placeholder?: string | null
+          placeholder_ar?: string | null
+          options?: Json | null
+          validation?: Json | null
+          is_default?: boolean | null
+          is_required?: boolean | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          section_id?: string | null
+          org_id?: string | null
+          name?: string
+          name_ar?: string | null
+          field_type?: string
+          placeholder?: string | null
+          placeholder_ar?: string | null
+          options?: Json | null
+          validation?: Json | null
+          is_default?: boolean | null
+          is_required?: boolean | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_form_fields_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "application_form_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_form_fields_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      job_application_sections: {
+        Row: {
+          id: string
+          job_id: string | null
+          section_id: string | null
+          is_enabled: boolean | null
+          sort_order: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          job_id?: string | null
+          section_id?: string | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          job_id?: string | null
+          section_id?: string | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_application_sections_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_application_sections_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "application_form_sections"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      job_application_fields: {
+        Row: {
+          id: string
+          job_id: string | null
+          field_id: string | null
+          is_enabled: boolean | null
+          is_required: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          job_id?: string | null
+          field_id?: string | null
+          is_enabled?: boolean | null
+          is_required?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          job_id?: string | null
+          field_id?: string | null
+          is_enabled?: boolean | null
+          is_required?: boolean | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_application_fields_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_application_fields_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "application_form_fields"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      job_hiring_stages: {
+        Row: {
+          id: string
+          job_id: string | null
+          stage_id: string | null
+          is_enabled: boolean | null
+          sort_order: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          job_id?: string | null
+          stage_id?: string | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          job_id?: string | null
+          stage_id?: string | null
+          is_enabled?: boolean | null
+          sort_order?: number | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_hiring_stages_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_hiring_stages_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "hiring_stages"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      job_recruiters: {
+        Row: {
+          id: string
+          job_id: string | null
+          user_id: string | null
+          role: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          job_id?: string | null
+          user_id?: string | null
+          role?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          job_id?: string | null
+          user_id?: string | null
+          role?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_recruiters_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_recruiters_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       organization_ai_config: {
         Row: {
