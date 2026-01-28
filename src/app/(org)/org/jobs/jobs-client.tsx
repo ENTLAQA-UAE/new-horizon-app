@@ -67,6 +67,9 @@ import {
   Share2,
   Link,
   ExternalLink,
+  Sparkles,
+  RefreshCw,
+  CheckCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -269,6 +272,23 @@ export function JobsClient({
     closing_date: "",
   })
 
+  // AI Generation state
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedData, setGeneratedData] = useState<{
+    title: string
+    titleAr: string
+    description: string
+    descriptionAr: string
+    requirements: string[]
+    requirementsAr: string[]
+    responsibilities: string[]
+    responsibilitiesAr: string[]
+    benefits: string[]
+    benefitsAr: string[]
+    skills: string[]
+  } | null>(null)
+
   // Get location name from locations array using location_id
   const getLocationName = (locationId: string | null | undefined) => {
     if (!locationId) return null
@@ -321,6 +341,96 @@ export function JobsClient({
       is_remote: false,
       closing_date: "",
     })
+    setGeneratedData(null)
+  }
+
+  // AI GENERATION
+  const handleGenerateWithAI = async () => {
+    if (!formData.title) {
+      toast.error("Please enter a job title first")
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const locationName = formData.location_id
+        ? getLocationName(formData.location_id)
+        : formData.location
+      const departmentName = formData.department_id
+        ? getDepartmentName(formData.department_id)
+        : undefined
+
+      const response = await fetch("/api/org/ai/generate-job-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.title,
+          titleAr: formData.title_ar || undefined,
+          department: departmentName,
+          location: locationName || undefined,
+          employmentType: formData.job_type,
+          experienceLevel: formData.experience_level,
+          salaryMin: formData.salary_min || undefined,
+          salaryMax: formData.salary_max || undefined,
+          salaryCurrency: formData.salary_currency,
+          isRemote: formData.is_remote,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate job description")
+      }
+
+      setGeneratedData(result.data)
+      setIsAIDialogOpen(true)
+      toast.success(`Generated with ${result.provider} (${result.model})`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate job description")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleApplyGeneratedContent = () => {
+    if (!generatedData) return
+
+    // Build full description with requirements, responsibilities, and benefits
+    const fullDescription = `${generatedData.description}
+
+**Requirements:**
+${generatedData.requirements.map((r) => `• ${r}`).join("\n")}
+
+**Responsibilities:**
+${generatedData.responsibilities.map((r) => `• ${r}`).join("\n")}
+
+**Benefits:**
+${generatedData.benefits.map((b) => `• ${b}`).join("\n")}
+
+**Skills:** ${generatedData.skills.join(", ")}`
+
+    const fullDescriptionAr = `${generatedData.descriptionAr}
+
+**المتطلبات:**
+${generatedData.requirementsAr.map((r) => `• ${r}`).join("\n")}
+
+**المسؤوليات:**
+${generatedData.responsibilitiesAr.map((r) => `• ${r}`).join("\n")}
+
+**المزايا:**
+${generatedData.benefitsAr.map((b) => `• ${b}`).join("\n")}`
+
+    setFormData({
+      ...formData,
+      title: generatedData.title || formData.title,
+      title_ar: generatedData.titleAr || formData.title_ar,
+      description: fullDescription,
+      description_ar: fullDescriptionAr,
+    })
+
+    setIsAIDialogOpen(false)
+    toast.success("AI-generated content applied to form")
   }
 
   // CREATE
@@ -845,6 +955,37 @@ export function JobsClient({
             dir="rtl"
           />
         </div>
+      </div>
+
+      {/* AI Generation Button */}
+      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-purple-600" />
+          <div>
+            <p className="text-sm font-medium">Generate with AI</p>
+            <p className="text-xs text-muted-foreground">Auto-generate description, requirements & skills</p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleGenerateWithAI}
+          disabled={isGenerating || !formData.title}
+          className="bg-white dark:bg-gray-900"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate
+            </>
+          )}
+        </Button>
       </div>
 
       <div className="space-y-2">
@@ -1565,6 +1706,125 @@ export function JobsClient({
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete Job
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generated Content Preview Dialog */}
+      <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              AI Generated Job Description
+            </DialogTitle>
+            <DialogDescription>
+              Review the generated content and apply it to your job posting
+            </DialogDescription>
+          </DialogHeader>
+
+          {generatedData && (
+            <div className="flex-1 overflow-y-auto space-y-4 py-4">
+              {/* Title */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Title (English)</Label>
+                  <p className="font-medium">{generatedData.title}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Title (Arabic)</Label>
+                  <p className="font-medium" dir="rtl">{generatedData.titleAr}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Description */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Description (English)</Label>
+                <p className="text-sm mt-1 whitespace-pre-wrap">{generatedData.description}</p>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Description (Arabic)</Label>
+                <p className="text-sm mt-1 whitespace-pre-wrap" dir="rtl">{generatedData.descriptionAr}</p>
+              </div>
+
+              <Separator />
+
+              {/* Requirements & Responsibilities */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Requirements</Label>
+                  <ul className="text-sm space-y-1">
+                    {generatedData.requirements.map((req, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Responsibilities</Label>
+                  <ul className="text-sm space-y-1">
+                    {generatedData.responsibilities.map((resp, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                        <span>{resp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Benefits */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Benefits</Label>
+                <ul className="text-sm grid grid-cols-2 gap-2">
+                  {generatedData.benefits.map((benefit, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckCircle className="h-4 w-4 text-purple-500 mt-0.5 shrink-0" />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Skills */}
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Skills</Label>
+                <div className="flex flex-wrap gap-2">
+                  {generatedData.skills.map((skill, i) => (
+                    <Badge key={i} variant="secondary">{skill}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0 border-t pt-4">
+            <Button
+              variant="outline"
+              onClick={handleGenerateWithAI}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Regenerate
+            </Button>
+            <Button variant="outline" onClick={() => setIsAIDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApplyGeneratedContent}>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Apply to Form
             </Button>
           </DialogFooter>
         </DialogContent>

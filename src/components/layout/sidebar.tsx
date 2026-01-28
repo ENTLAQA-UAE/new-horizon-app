@@ -109,6 +109,7 @@ const orgAdminSections: NavSection[] = [
     collapsible: true,
     links: [
       { href: "/org/settings", label: "General", labelAr: "عام", icon: Settings },
+      { href: "/org/settings/ai", label: "AI Configuration", labelAr: "إعدادات الذكاء الاصطناعي", icon: Sparkles },
       { href: "/org/settings/integrations", label: "Video Integration", labelAr: "تكامل الفيديو", icon: Plug },
       { href: "/org/settings/email", label: "Email Integration", labelAr: "تكامل البريد", icon: Mail },
     ],

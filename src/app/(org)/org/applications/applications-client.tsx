@@ -78,6 +78,13 @@ import {
   ClipboardCheck,
   XCircle,
   ClipboardList,
+  Sparkles,
+  Brain,
+  Target,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -263,6 +270,38 @@ interface InterviewScorecard {
   }
 }
 
+interface AIScreeningResult {
+  overallScore: number
+  matchPercentage: number
+  recommendation: "strong_match" | "good_match" | "potential_match" | "weak_match" | "not_recommended"
+  summary: string
+  summaryAr: string
+  skillAnalysis: {
+    matched: Array<{ skill: string; proficiency: "expert" | "proficient" | "familiar" | "basic" }>
+    missing: Array<{ skill: string; importance: "critical" | "important" | "nice_to_have" }>
+    additional: string[]
+  }
+  experienceAnalysis: {
+    yearsRelevant: number
+    relevanceScore: number
+    highlights: string[]
+    concerns: string[]
+  }
+  educationAnalysis: {
+    meetsRequirements: boolean
+    details: string
+  }
+  strengths: string[]
+  strengthsAr: string[]
+  weaknesses: string[]
+  weaknessesAr: string[]
+  interviewFocus: string[]
+  culturalFit: {
+    score: number
+    notes: string
+  }
+}
+
 interface ApplicationsClientProps {
   applications: Application[]
   jobsWithPipelines: JobWithPipeline[]
@@ -336,6 +375,12 @@ export function ApplicationsClient({
   const [isScorecardSubmitDialogOpen, setIsScorecardSubmitDialogOpen] = useState(false)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
   const [selectedInterviewId, setSelectedInterviewId] = useState<string>("")
+
+  // AI Screening
+  const [aiScreeningResult, setAiScreeningResult] = useState<AIScreeningResult | null>(null)
+  const [isLoadingAIScreening, setIsLoadingAIScreening] = useState(false)
+  const [isRunningAIScreening, setIsRunningAIScreening] = useState(false)
+  const [aiScreeningError, setAiScreeningError] = useState<string | null>(null)
 
   // Get other applications for a candidate
   const getOtherApplicationsForCandidate = (candidateId: string, currentAppId: string) => {
@@ -490,12 +535,13 @@ export function ApplicationsClient({
     hired: applications.filter((a) => getStageType(a) === "hired").length,
   }
 
-  // Fetch application details (notes, interviews, activities, attachments, scorecards, screening)
+  // Fetch application details (notes, interviews, activities, attachments, scorecards, screening, AI review)
   const fetchApplicationDetails = async (applicationId: string) => {
     setIsLoadingDetails(true)
     setIsLoadingScorecards(true)
+    setIsLoadingAIScreening(true)
     try {
-      const [notesRes, interviewsRes, activitiesRes, attachmentsRes, scorecardsRes, templatesRes, screeningRes] = await Promise.all([
+      const [notesRes, interviewsRes, activitiesRes, attachmentsRes, scorecardsRes, templatesRes, screeningRes, aiScreeningRes] = await Promise.all([
         fetch(`/api/applications/${applicationId}/notes`),
         fetch(`/api/applications/${applicationId}/interviews`),
         fetch(`/api/applications/${applicationId}/activities`),
@@ -503,6 +549,7 @@ export function ApplicationsClient({
         fetch(`/api/applications/${applicationId}/scorecards`),
         fetch(`/api/scorecard-templates`),
         fetch(`/api/applications/${applicationId}/screening`),
+        fetch(`/api/org/ai/screen-candidate?applicationId=${applicationId}`),
       ])
 
       if (notesRes.ok) {
@@ -533,11 +580,16 @@ export function ApplicationsClient({
         const screeningData = await screeningRes.json()
         setScreeningResponses(screeningData.responses || [])
       }
+      if (aiScreeningRes.ok) {
+        const aiData = await aiScreeningRes.json()
+        setAiScreeningResult(aiData.data || null)
+      }
     } catch (error) {
       console.error("Error fetching application details:", error)
     } finally {
       setIsLoadingDetails(false)
       setIsLoadingScorecards(false)
+      setIsLoadingAIScreening(false)
     }
   }
 
@@ -551,6 +603,8 @@ export function ApplicationsClient({
     setApplicationScorecards([])
     setScorecardTemplates([])
     setScreeningResponses([])
+    setAiScreeningResult(null)
+    setAiScreeningError(null)
     setNewNote("")
     setDisqualifyReason("")
     setSelectedTemplateId("")
@@ -673,6 +727,119 @@ export function ApplicationsClient({
     }
     // Navigate to scorecard submission page with pre-selected values
     router.push(`/org/scorecards/submit?interview=${selectedInterviewId}&template=${selectedTemplateId}`)
+  }
+
+  // Run AI screening for candidate
+  const handleAIScreening = async () => {
+    if (!selectedApplication) return
+
+    setIsRunningAIScreening(true)
+    setAiScreeningError(null)
+
+    try {
+      // Get job details for the application
+      const job = jobsWithPipelines.find(j => j.id === selectedApplication.job_id)
+
+      const response = await fetch("/api/org/ai/screen-candidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          applicationId: selectedApplication.id,
+          candidateInfo: {
+            firstName: selectedApplication.candidates?.first_name || "",
+            lastName: selectedApplication.candidates?.last_name || "",
+            email: selectedApplication.candidates?.email || "",
+            phone: selectedApplication.candidates?.phone || undefined,
+            currentTitle: selectedApplication.candidates?.current_title || undefined,
+            resumeUrl: selectedApplication.candidates?.resume_url || undefined,
+          },
+          jobInfo: {
+            title: job?.title || selectedApplication.jobs?.title || "",
+            titleAr: job?.title_ar || selectedApplication.jobs?.title_ar || undefined,
+          },
+          screeningResponses: screeningResponses.map(r => ({
+            question: r.question?.question || "",
+            answer: r.answer || "",
+            isKnockout: r.question?.is_knockout || false,
+            knockoutTriggered: r.is_knockout_triggered,
+          })),
+          includeScorecard: applicationScorecards.length > 0,
+          scorecardData: applicationScorecards.length > 0 ? {
+            overallScore: applicationScorecards[0].overall_score || 0,
+            recommendation: applicationScorecards[0].recommendation,
+            strengths: applicationScorecards[0].strengths,
+            weaknesses: applicationScorecards[0].weaknesses,
+          } : undefined,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to run AI screening")
+      }
+
+      setAiScreeningResult(result.data)
+
+      // Update application's AI score in local state
+      setApplications(
+        applications.map((a) =>
+          a.id === selectedApplication.id
+            ? { ...a, ai_match_score: result.data.overallScore }
+            : a
+        )
+      )
+      if (selectedApplication) {
+        setSelectedApplication({
+          ...selectedApplication,
+          ai_match_score: result.data.overallScore,
+        })
+      }
+
+      toast.success(`AI screening completed (${result.provider})`)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to run AI screening"
+      setAiScreeningError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setIsRunningAIScreening(false)
+    }
+  }
+
+  // Get recommendation badge color
+  const getRecommendationColor = (recommendation: string) => {
+    switch (recommendation) {
+      case "strong_match":
+        return "bg-green-600 text-white"
+      case "good_match":
+        return "bg-green-500 text-white"
+      case "potential_match":
+        return "bg-yellow-500 text-white"
+      case "weak_match":
+        return "bg-orange-500 text-white"
+      case "not_recommended":
+        return "bg-red-600 text-white"
+      default:
+        return "bg-gray-500 text-white"
+    }
+  }
+
+  // Get recommendation label
+  const getRecommendationLabel = (recommendation: string) => {
+    switch (recommendation) {
+      case "strong_match":
+        return "Strong Match"
+      case "good_match":
+        return "Good Match"
+      case "potential_match":
+        return "Potential Match"
+      case "weak_match":
+        return "Weak Match"
+      case "not_recommended":
+        return "Not Recommended"
+      default:
+        return recommendation
+    }
   }
 
   // Add note to application
@@ -1607,6 +1774,18 @@ export function ApplicationsClient({
                         </Badge>
                       )}
                     </TabsTrigger>
+                    <TabsTrigger
+                      value="ai-review"
+                      className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      AI Review
+                      {aiScreeningResult && (
+                        <Badge className={cn("ml-2 h-5 px-1.5 text-[10px]", getRecommendationColor(aiScreeningResult.recommendation))}>
+                          {aiScreeningResult.overallScore}%
+                        </Badge>
+                      )}
+                    </TabsTrigger>
                   </TabsList>
                 </div>
 
@@ -2214,6 +2393,273 @@ export function ApplicationsClient({
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    {/* AI Review Tab */}
+                    <TabsContent value="ai-review" className="mt-0">
+                      {isLoadingAIScreening ? (
+                        <div className="flex items-center justify-center py-16">
+                          <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary,#6366f1)]" />
+                        </div>
+                      ) : !aiScreeningResult ? (
+                        <div className="text-center py-16">
+                          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mb-4">
+                            <Brain className="h-10 w-10 text-purple-600" />
+                          </div>
+                          <p className="text-muted-foreground font-medium mb-2">No AI Review Yet</p>
+                          <p className="text-sm text-muted-foreground mb-6">
+                            Run an AI-powered screening to analyze this candidate against the job requirements
+                          </p>
+                          {aiScreeningError && (
+                            <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+                              {aiScreeningError}
+                            </div>
+                          )}
+                          <Button
+                            onClick={handleAIScreening}
+                            disabled={isRunningAIScreening}
+                            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                          >
+                            {isRunningAIScreening ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Review with AI
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* Header with Score */}
+                          <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800">
+                            <div className="flex items-center gap-4">
+                              <div className="w-16 h-16 rounded-full bg-white dark:bg-gray-900 shadow-lg flex items-center justify-center border-4 border-purple-300 dark:border-purple-700">
+                                <span className="text-2xl font-bold text-purple-600">{aiScreeningResult.overallScore}</span>
+                              </div>
+                              <div>
+                                <Badge className={cn("mb-1", getRecommendationColor(aiScreeningResult.recommendation))}>
+                                  {getRecommendationLabel(aiScreeningResult.recommendation)}
+                                </Badge>
+                                <p className="text-sm text-muted-foreground">
+                                  {aiScreeningResult.matchPercentage}% match with job requirements
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleAIScreening}
+                              disabled={isRunningAIScreening}
+                            >
+                              {isRunningAIScreening ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              <span className="ml-2">Re-analyze</span>
+                            </Button>
+                          </div>
+
+                          {/* Summary */}
+                          <div className="p-4 border rounded-xl">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                              <Target className="h-4 w-4 text-purple-600" />
+                              Summary
+                            </h4>
+                            <p className="text-sm text-muted-foreground">{aiScreeningResult.summary}</p>
+                          </div>
+
+                          {/* Skills Analysis */}
+                          <div className="p-4 border rounded-xl">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              Skills Analysis
+                            </h4>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {/* Matched Skills */}
+                              <div>
+                                <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+                                  Matched Skills ({aiScreeningResult.skillAnalysis.matched.length})
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {aiScreeningResult.skillAnalysis.matched.map((skill, i) => (
+                                    <Badge key={i} variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:bg-green-900/20">
+                                      {skill.skill}
+                                      <span className="ml-1 text-xs opacity-70">({skill.proficiency})</span>
+                                    </Badge>
+                                  ))}
+                                  {aiScreeningResult.skillAnalysis.matched.length === 0 && (
+                                    <span className="text-xs text-muted-foreground">No matched skills identified</span>
+                                  )}
+                                </div>
+                              </div>
+                              {/* Missing Skills */}
+                              <div>
+                                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">
+                                  Missing Skills ({aiScreeningResult.skillAnalysis.missing.length})
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {aiScreeningResult.skillAnalysis.missing.map((skill, i) => (
+                                    <Badge key={i} variant="outline" className={cn(
+                                      "border-red-300",
+                                      skill.importance === "critical" ? "text-red-700 bg-red-100 dark:bg-red-900/30" :
+                                      skill.importance === "important" ? "text-orange-700 bg-orange-50 dark:bg-orange-900/20" :
+                                      "text-yellow-700 bg-yellow-50 dark:bg-yellow-900/20"
+                                    )}>
+                                      {skill.skill}
+                                      <span className="ml-1 text-xs opacity-70">({skill.importance})</span>
+                                    </Badge>
+                                  ))}
+                                  {aiScreeningResult.skillAnalysis.missing.length === 0 && (
+                                    <span className="text-xs text-muted-foreground">No missing skills identified</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            {aiScreeningResult.skillAnalysis.additional.length > 0 && (
+                              <div className="mt-4 pt-4 border-t">
+                                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
+                                  Additional Skills
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {aiScreeningResult.skillAnalysis.additional.map((skill, i) => (
+                                    <Badge key={i} variant="secondary">{skill}</Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Experience Analysis */}
+                          <div className="p-4 border rounded-xl">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-4">
+                              <TrendingUp className="h-4 w-4 text-blue-600" />
+                              Experience Analysis
+                            </h4>
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                                <p className="text-2xl font-bold text-blue-600">{aiScreeningResult.experienceAnalysis.yearsRelevant}</p>
+                                <p className="text-xs text-muted-foreground">Years Relevant</p>
+                              </div>
+                              <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                                <p className="text-2xl font-bold text-blue-600">{aiScreeningResult.experienceAnalysis.relevanceScore}%</p>
+                                <p className="text-xs text-muted-foreground">Relevance Score</p>
+                              </div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Highlights</p>
+                                <ul className="space-y-1">
+                                  {aiScreeningResult.experienceAnalysis.highlights.map((h, i) => (
+                                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                                      {h}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                              {aiScreeningResult.experienceAnalysis.concerns.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">Concerns</p>
+                                  <ul className="space-y-1">
+                                    {aiScreeningResult.experienceAnalysis.concerns.map((c, i) => (
+                                      <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                                        <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+                                        {c}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Strengths & Weaknesses */}
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div className="p-4 border rounded-xl border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
+                              <h4 className="font-semibold text-sm text-green-700 dark:text-green-400 mb-3">Strengths</h4>
+                              <ul className="space-y-2">
+                                {aiScreeningResult.strengths.map((s, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                                    {s}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="p-4 border rounded-xl border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
+                              <h4 className="font-semibold text-sm text-red-700 dark:text-red-400 mb-3">Areas for Improvement</h4>
+                              <ul className="space-y-2">
+                                {aiScreeningResult.weaknesses.map((w, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+                                    {w}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+
+                          {/* Interview Focus Areas */}
+                          {aiScreeningResult.interviewFocus.length > 0 && (
+                            <div className="p-4 border rounded-xl border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
+                              <h4 className="font-semibold text-sm text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                Suggested Interview Focus Areas
+                              </h4>
+                              <ul className="space-y-2">
+                                {aiScreeningResult.interviewFocus.map((f, i) => (
+                                  <li key={i} className="text-sm flex items-start gap-2">
+                                    <span className="w-5 h-5 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center text-xs font-medium text-purple-700 dark:text-purple-300 shrink-0">
+                                      {i + 1}
+                                    </span>
+                                    {f}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Cultural Fit */}
+                          <div className="p-4 border rounded-xl">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                              <User className="h-4 w-4 text-indigo-600" />
+                              Cultural Fit
+                            </h4>
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-indigo-600 rounded-full transition-all"
+                                  style={{ width: `${aiScreeningResult.culturalFit.score}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium">{aiScreeningResult.culturalFit.score}%</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{aiScreeningResult.culturalFit.notes}</p>
+                          </div>
+
+                          {/* Education */}
+                          <div className="p-4 border rounded-xl">
+                            <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                              <Briefcase className="h-4 w-4 text-cyan-600" />
+                              Education Requirements
+                            </h4>
+                            <div className="flex items-center gap-2 mb-2">
+                              {aiScreeningResult.educationAnalysis.meetsRequirements ? (
+                                <Badge className="bg-green-600">Meets Requirements</Badge>
+                              ) : (
+                                <Badge variant="destructive">Does Not Meet Requirements</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{aiScreeningResult.educationAnalysis.details}</p>
                           </div>
                         </div>
                       )}

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { parseResume } from "@/lib/ai/resume-parser"
 
+/**
+ * @deprecated This endpoint uses global AI configuration.
+ * Will be migrated to use organization-level AI configuration.
+ * New endpoints should use /api/org/ai/* routes.
+ */
 export async function POST(request: NextRequest) {
+  console.warn("[DEPRECATED] /api/ai/parse-resume uses global AI config. Migrate to org-level AI config.")
   try {
     const supabase = await createClient()
 

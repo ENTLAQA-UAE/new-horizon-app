@@ -415,48 +415,23 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           </CardContent>
         </Card>
 
-        {/* AI Configuration */}
+        {/* AI Configuration - Now Per-Organization */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Database className="h-5 w-5" />
               <CardTitle>AI Configuration</CardTitle>
             </div>
-            <CardDescription>AI service settings and features</CardDescription>
+            <CardDescription>AI settings are now configured per-organization</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>AI Provider</Label>
-              <Select
-                value={settings.ai_provider}
-                onValueChange={(value) => updateSetting("ai_provider", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="openai">OpenAI GPT-4</SelectItem>
-                  <SelectItem value="anthropic">Anthropic Claude</SelectItem>
-                  <SelectItem value="azure">Azure OpenAI</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-              <ToggleOption
-                label="AI Resume Parsing"
-                description="Automatically extract data from uploaded resumes"
-                enabled={settings.ai_resume_parsing_enabled}
-                onChange={(enabled) => updateSetting("ai_resume_parsing_enabled", enabled)}
-              />
-              <ToggleOption
-                label="AI Candidate Scoring"
-                description="Automatically score candidates based on job requirements"
-                enabled={settings.ai_candidate_scoring_enabled}
-                onChange={(enabled) => updateSetting("ai_candidate_scoring_enabled", enabled)}
-              />
+          <CardContent>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                AI configuration has been moved to organization-level settings. Each organization can now configure their own AI provider (Claude, OpenAI, Gemini, or Perplexity) with their own API credentials.
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+                Organization admins can configure AI in: <strong>Settings → AI Configuration</strong>
+              </p>
             </div>
           </CardContent>
         </Card>
