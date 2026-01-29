@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
     .single()
 
   const role = userRole?.role
-  if (!role || !["super_admin", "org_admin", "hr_manager"].includes(role)) {
-    return NextResponse.json({ error: "Only admins and HR managers can test notifications" }, { status: 403 })
+  if (!role || !["super_admin", "hr_manager"].includes(role)) {
+    return NextResponse.json({ error: "Only HR managers can test notifications" }, { status: 403 })
   }
 
   try {

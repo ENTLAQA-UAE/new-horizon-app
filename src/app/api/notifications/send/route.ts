@@ -29,17 +29,14 @@ async function getTeamRecipients(
   roles?: string[],
   departmentId?: string | null
 ): Promise<NotificationRecipient[]> {
-  // Always include org_admin in notifications (they oversee the entire organization)
-  const rolesWithAdmin = roles ? [...new Set([...roles, "org_admin"])] : undefined
-
   // Get user IDs from user_roles
   let query = supabase
     .from("user_roles")
     .select("user_id, role")
     .eq("org_id", orgId)
 
-  if (rolesWithAdmin && rolesWithAdmin.length > 0) {
-    query = query.in("role", rolesWithAdmin)
+  if (roles && roles.length > 0) {
+    query = query.in("role", roles)
   }
 
   const { data: roleData } = await query
@@ -148,7 +145,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   const sRole = senderRole?.role
-  const sAllowedRoles = ["super_admin", "org_admin", "hr_manager", "recruiter", "hiring_manager"]
+  const sAllowedRoles = ["super_admin", "hr_manager", "recruiter", "hiring_manager"]
   if (!sRole || !sAllowedRoles.includes(sRole)) {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
   }
@@ -626,7 +623,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "job_published": {
-        // Get ATS team to notify (org_admin always included via getTeamRecipients)
+        // Get ATS team to notify
         const jobDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
         const jobRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], jobDeptId)
 
