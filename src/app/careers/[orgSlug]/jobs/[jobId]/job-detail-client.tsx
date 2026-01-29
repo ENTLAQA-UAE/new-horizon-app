@@ -909,8 +909,15 @@ export function JobDetailClient({
                       ? formData[section.id]?.[entryIndex]?.[currentlyWorkingField.name]
                       : false
 
-                    // For date fields in repeatable sections: render as "From Date" + "To Date"
-                    if (field.field_type === "date" && section.is_repeatable) {
+                    // Skip "To Date" fields in sections that have "From Date" (already rendered as part of From Date pair)
+                    const sectionHasFromDate = section.fields.some(f => f.field_type === "date" && f.name.toLowerCase().includes("from"))
+                    if (field.field_type === "date" && field.name.toLowerCase().includes("to") && sectionHasFromDate) {
+                      return null
+                    }
+
+                    // For "From Date" fields in repeatable sections (Experience/Education): render as "From Date" + "To Date" pair
+                    const isFromDateField = field.field_type === "date" && section.is_repeatable && field.name.toLowerCase().includes("from")
+                    if (isFromDateField) {
                       const toDateKey = `${field.name}_to`
                       const toDateValue = formData[section.id]?.[entryIndex]?.[toDateKey] || ""
                       return (
