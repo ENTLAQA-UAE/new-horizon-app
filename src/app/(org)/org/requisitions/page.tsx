@@ -22,7 +22,7 @@ export default async function RequisitionsPage() {
     .select(`
       *,
       departments (id, name),
-      job_locations (id, name, city)
+      locations (id, name, city)
     `)
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
@@ -52,9 +52,9 @@ export default async function RequisitionsPage() {
 
   const { data: departments } = await departmentsQuery
 
-  // Get locations from job_locations table (matches job_requisitions foreign key)
+  // Get locations from locations table (managed by Vacancy Settings)
   const { data: locations } = await supabase
-    .from("job_locations")
+    .from("locations")
     .select("id, name, city")
     .eq("org_id", orgId)
     .order("name")

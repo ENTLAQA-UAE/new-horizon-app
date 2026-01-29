@@ -79,7 +79,7 @@ interface Requisition {
   requested_by: string | null
   created_at: string
   departments?: { id: string; name: string } | null
-  job_locations?: { id: string; name: string; city: string } | null
+  locations?: { id: string; name: string; city: string } | null
 }
 
 interface RequisitionApproval {
@@ -272,7 +272,7 @@ export function RequisitionsClient({
         const { data, error: selectError } = await supabaseSelect<Requisition>(
           'job_requisitions',
           {
-            select: '*, departments (id, name), job_locations (id, name, city)',
+            select: '*, departments (id, name), locations (id, name, city)',
             filter: [{ column: 'id', operator: 'eq', value: editingRequisition.id }],
             single: true
           }
@@ -293,7 +293,7 @@ export function RequisitionsClient({
         const { data, error: selectError } = await supabaseSelect<Requisition>(
           'job_requisitions',
           {
-            select: '*, departments (id, name), job_locations (id, name, city)',
+            select: '*, departments (id, name), locations (id, name, city)',
             filter: [{ column: 'id', operator: 'eq', value: insertData!.id }],
             single: true
           }
@@ -619,10 +619,10 @@ export function RequisitionsClient({
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <span>{requisition.departments?.name || "—"}</span>
                       </div>
-                      {requisition.job_locations && (
+                      {requisition.locations && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          <span>{requisition.job_locations.city}</span>
+                          <span>{requisition.locations.city}</span>
                         </div>
                       )}
                     </TableCell>
@@ -905,7 +905,7 @@ export function RequisitionsClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedRequisition.job_locations?.city || "No location"}</span>
+                  <span>{selectedRequisition.locations?.city || "No location"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
