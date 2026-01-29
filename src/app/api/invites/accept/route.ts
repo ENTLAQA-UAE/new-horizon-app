@@ -133,6 +133,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Assign department for hiring_manager role
+    if (invite.department_id && invite.role === "hiring_manager") {
+      // Look up department name to store in profile
+      const { data: dept } = await supabase
+        .from("departments")
+        .select("name")
+        .eq("id", invite.department_id)
+        .single()
+
+      if (dept?.name) {
+        await supabase
+          .from("profiles")
+          .update({ department: dept.name })
+          .eq("id", userId)
+      }
+
+      // Grant data access to the assigned department
+      await supabase
+        .from("user_role_departments")
+        .upsert({
+          user_id: userId,
+          org_id: invite.org_id,
+          department_id: invite.department_id,
+        }, {
+          onConflict: "user_id,org_id,department_id"
+        })
+    }
+
     // Mark invite as accepted
     const { error: updateError } = await supabase
       .from("team_invites")
