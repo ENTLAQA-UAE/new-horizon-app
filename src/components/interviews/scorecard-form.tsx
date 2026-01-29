@@ -50,6 +50,7 @@ interface CriteriaScore {
   criteria_id: string
   score: number
   notes: string
+  name?: string // Store criteria name for display (in case template changes)
 }
 
 interface ScorecardFormProps {
@@ -125,7 +126,9 @@ export function ScorecardForm({
           cs.criteria_id === criteriaId ? { ...cs, score } : cs
         )
       }
-      return [...prev, { criteria_id: criteriaId, score, notes: "" }]
+      // Get the criteria name from the template
+      const criteriaName = selectedTemplate?.criteria.find(c => c.id === criteriaId)?.name
+      return [...prev, { criteria_id: criteriaId, score, notes: "", name: criteriaName }]
     })
   }
 
@@ -137,7 +140,9 @@ export function ScorecardForm({
           cs.criteria_id === criteriaId ? { ...cs, notes } : cs
         )
       }
-      return [...prev, { criteria_id: criteriaId, score: 0, notes }]
+      // Get the criteria name from the template
+      const criteriaName = selectedTemplate?.criteria.find(c => c.id === criteriaId)?.name
+      return [...prev, { criteria_id: criteriaId, score: 0, notes, name: criteriaName }]
     })
   }
 
