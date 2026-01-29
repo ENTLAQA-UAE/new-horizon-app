@@ -52,8 +52,16 @@ export async function createNotification(
     .single()
 
   if (error) {
-    console.error("Failed to create notification:", error)
-    return null
+    console.error("[createNotification] Failed to create notification:", {
+      error: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      userId,
+      type: payload.type,
+      title: payload.title,
+    })
+    throw new Error(`Failed to create notification: ${error.message}`)
   }
 
   return data
@@ -77,7 +85,16 @@ export async function createBulkNotifications(
   const { error } = await supabase.from("notifications").insert(notifications)
 
   if (error) {
-    console.error("Failed to create bulk notifications:", error)
+    console.error("[createBulkNotifications] Failed to create bulk notifications:", {
+      error: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      userCount: userIds.length,
+      type: payload.type,
+      title: payload.title,
+    })
+    throw new Error(`Failed to create bulk notifications: ${error.message}`)
   }
 }
 

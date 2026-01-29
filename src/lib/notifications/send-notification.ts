@@ -289,6 +289,8 @@ export async function sendNotification(
     const shouldSendInApp = !isPlatformLevel && (options.forceInApp || channels.includes("system"))
     const shouldSendSms = !isPlatformLevel && channels.includes("sms")
 
+    console.log(`[sendNotification] Event: "${options.eventCode}", channels: [${channels.join(", ")}], sendEmail: ${shouldSendEmail}, sendInApp: ${shouldSendInApp}, recipients: ${finalRecipients.length}, source: ${settings ? "org_settings" : resolvedEvent.id ? "event_defaults" : "fallback_defaults"}`)
+
     // 4. Prepare variables with org branding
     const variables: NotificationVariables = {
       org_name: org?.name || "Organization",
@@ -510,6 +512,7 @@ async function sendInAppNotification(
   options: SendNotificationOptions
 ): Promise<{ success: boolean; error?: string }> {
   if (recipients.length === 0) {
+    console.warn(`[sendInAppNotification] No recipients for event "${eventCode}" - skipping`)
     return { success: true }
   }
 
@@ -519,8 +522,13 @@ async function sendInAppNotification(
 
     const userIds = recipients.filter((r) => r.userId).map((r) => r.userId!)
 
+    if (userIds.length === 0) {
+      console.warn(`[sendInAppNotification] Recipients provided but none have userId for event "${eventCode}" - no in-app notifications created`)
+      return { success: true }
+    }
+
     if (userIds.length === 1) {
-      await createNotification(supabase, userIds[0], {
+      const result = await createNotification(supabase, userIds[0], {
         type,
         title,
         message,
@@ -533,6 +541,7 @@ async function sendInAppNotification(
           jobId: options.jobId,
         },
       })
+      console.log(`[sendInAppNotification] Created in-app notification for event "${eventCode}", userId: ${userIds[0]}, notificationId: ${result?.id}`)
     } else if (userIds.length > 1) {
       await createBulkNotifications(supabase, userIds, {
         type,
@@ -547,13 +556,16 @@ async function sendInAppNotification(
           jobId: options.jobId,
         },
       })
+      console.log(`[sendInAppNotification] Created ${userIds.length} in-app notifications for event "${eventCode}"`)
     }
 
     return { success: true }
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : "Failed to send in-app notification"
+    console.error(`[sendInAppNotification] Failed for event "${eventCode}":`, errorMsg)
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to send in-app notification",
+      error: errorMsg,
     }
   }
 }
