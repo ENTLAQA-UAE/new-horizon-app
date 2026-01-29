@@ -57,7 +57,6 @@ export default async function RequisitionsPage() {
     .from("job_locations")
     .select("id, name, city")
     .eq("org_id", orgId)
-    .eq("is_active", true)
     .order("name")
 
   // Get job types from org's configured job_types
