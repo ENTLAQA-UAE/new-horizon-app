@@ -1166,8 +1166,8 @@ export async function POST(request: NextRequest) {
       case "requisition_created": {
         // Get requisition details
         const { data: requisition } = await serviceClient
-          .from("requisitions")
-          .select("id, title, department, positions_count")
+          .from("job_requisitions")
+          .select("id, title, positions_count, requested_by, departments(id, name)")
           .eq("id", data.requisitionId)
           .single()
 
@@ -1186,7 +1186,7 @@ export async function POST(request: NextRequest) {
         const { data: creator } = await serviceClient
           .from("profiles")
           .select("first_name, last_name")
-          .eq("id", user.id)
+          .eq("id", requisition.requested_by || user.id)
           .single()
 
         // Notify HR managers (sole approvers for requisitions)
@@ -1198,7 +1198,7 @@ export async function POST(request: NextRequest) {
           recipients: requisitionRecipients,
           variables: {
             requisition_title: requisition.title || "New Requisition",
-            department: requisition.department || "Not specified",
+            department: (requisition.departments as any)?.name || "Not specified",
             positions_count: String(requisition.positions_count || 1),
             created_by: getFullName(creator) || "A team member",
             org_name: org?.name || "the organization",
@@ -1211,8 +1211,8 @@ export async function POST(request: NextRequest) {
       case "requisition_approved": {
         // Get requisition details
         const { data: requisition } = await serviceClient
-          .from("requisitions")
-          .select("id, title, department, created_by")
+          .from("job_requisitions")
+          .select("id, title, requested_by, departments(id, name)")
           .eq("id", data.requisitionId)
           .single()
 
@@ -1235,11 +1235,13 @@ export async function POST(request: NextRequest) {
           .single()
 
         // Get creator to notify them
-        const { data: creator } = await serviceClient
-          .from("profiles")
-          .select("id, first_name, last_name, email")
-          .eq("id", requisition.created_by)
-          .single()
+        const { data: creator } = requisition.requested_by
+          ? await serviceClient
+              .from("profiles")
+              .select("id, first_name, last_name, email")
+              .eq("id", requisition.requested_by)
+              .single()
+          : { data: null }
 
         const approvedRecipients = creator
           ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
@@ -1251,7 +1253,7 @@ export async function POST(request: NextRequest) {
           recipients: approvedRecipients,
           variables: {
             requisition_title: requisition.title || "Requisition",
-            department: requisition.department || "Not specified",
+            department: (requisition.departments as any)?.name || "Not specified",
             approved_by: getFullName(approver) || "An approver",
             org_name: org?.name || "the organization",
             requisition_url: `/org/requisitions?id=${data.requisitionId}`,
@@ -1263,8 +1265,8 @@ export async function POST(request: NextRequest) {
       case "requisition_rejected": {
         // Get requisition details
         const { data: requisition } = await serviceClient
-          .from("requisitions")
-          .select("id, title, department, created_by")
+          .from("job_requisitions")
+          .select("id, title, requested_by, departments(id, name)")
           .eq("id", data.requisitionId)
           .single()
 
@@ -1287,11 +1289,13 @@ export async function POST(request: NextRequest) {
           .single()
 
         // Get creator to notify them
-        const { data: creator } = await serviceClient
-          .from("profiles")
-          .select("id, first_name, last_name, email")
-          .eq("id", requisition.created_by)
-          .single()
+        const { data: creator } = requisition.requested_by
+          ? await serviceClient
+              .from("profiles")
+              .select("id, first_name, last_name, email")
+              .eq("id", requisition.requested_by)
+              .single()
+          : { data: null }
 
         const rejectedRecipients = creator
           ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
@@ -1303,7 +1307,7 @@ export async function POST(request: NextRequest) {
           recipients: rejectedRecipients,
           variables: {
             requisition_title: requisition.title || "Requisition",
-            department: requisition.department || "Not specified",
+            department: (requisition.departments as any)?.name || "Not specified",
             rejected_by: getFullName(rejector) || "An approver",
             rejection_reason: data.reason || "Not specified",
             org_name: org?.name || "the organization",
