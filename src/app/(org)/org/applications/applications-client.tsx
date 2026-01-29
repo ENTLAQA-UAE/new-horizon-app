@@ -151,6 +151,8 @@ interface Application {
   jobs: Job | null
   pipeline_stages: PipelineStage | null
   candidate_app_count?: number
+  custom_answers?: Record<string, any> | null
+  cover_letter?: string | null
 }
 
 interface ApplicationNote {
@@ -1061,10 +1063,13 @@ export function ApplicationsClient({
   }
 
   const ApplicationCard = ({ app, index, isDragging }: { app: Application; index: number; isDragging?: boolean }) => (
-    <Card className={cn(
-      "mb-3 cursor-grab hover:shadow-md transition-shadow",
-      isDragging && "shadow-lg ring-2 ring-primary rotate-2"
-    )}>
+    <Card
+      className={cn(
+        "mb-3 cursor-pointer hover:shadow-md transition-shadow",
+        isDragging && "shadow-lg ring-2 ring-primary rotate-2"
+      )}
+      onClick={() => openViewDialog(app)}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -1087,11 +1092,11 @@ export function ApplicationsClient({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault()
@@ -1847,6 +1852,62 @@ export function ApplicationsClient({
                           </div>
                         </div>
                       </div>
+
+                      {/* Application Form Answers */}
+                      {selectedApplication.custom_answers && Object.keys(selectedApplication.custom_answers).length > 0 && (
+                        <div className="space-y-6 mt-6 pt-6 border-t">
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Application Form Answers</h4>
+                          {Object.entries(selectedApplication.custom_answers).map(([sectionId, sectionData]) => {
+                            if (!sectionData || (typeof sectionData === 'object' && Object.keys(sectionData).length === 0)) return null
+
+                            // Handle repeatable sections (array of entries) vs single sections (object)
+                            const isArray = Array.isArray(sectionData)
+                            const entries = isArray ? sectionData : [sectionData]
+
+                            // Try to determine section name from the data keys
+                            const hasEntries = entries.some((entry: any) => entry && Object.keys(entry).length > 0)
+                            if (!hasEntries) return null
+
+                            return (
+                              <div key={sectionId} className="space-y-3">
+                                {entries.map((entry: any, entryIndex: number) => {
+                                  if (!entry || Object.keys(entry).length === 0) return null
+                                  const fields = Object.entries(entry).filter(([key, value]) => value !== "" && value !== null && value !== undefined)
+                                  if (fields.length === 0) return null
+
+                                  return (
+                                    <div key={entryIndex} className="p-4 rounded-lg border bg-muted/20 space-y-2">
+                                      {isArray && (
+                                        <p className="text-xs font-medium text-muted-foreground mb-2">Entry {entryIndex + 1}</p>
+                                      )}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {fields.map(([fieldName, fieldValue]) => (
+                                          <div key={fieldName}>
+                                            <p className="text-xs text-muted-foreground">{fieldName}</p>
+                                            <p className="text-sm font-medium">
+                                              {typeof fieldValue === 'boolean' ? (fieldValue ? 'Yes' : 'No') : String(fieldValue)}
+                                            </p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Cover Letter */}
+                      {selectedApplication.cover_letter && (
+                        <div className="space-y-3 mt-6 pt-6 border-t">
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Cover Letter</h4>
+                          <div className="p-4 rounded-lg border bg-muted/20">
+                            <p className="text-sm whitespace-pre-wrap">{selectedApplication.cover_letter}</p>
+                          </div>
+                        </div>
+                      )}
                     </TabsContent>
 
                     {/* Attachments Tab */}

@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     const resumeFile = formData.get("resume") as File
     const screeningAnswersRaw = formData.get("screeningAnswers") as string | null
     const screeningAnswers = screeningAnswersRaw ? JSON.parse(screeningAnswersRaw) : {}
+    const applicationFormDataRaw = formData.get("applicationFormData") as string | null
+    const applicationFormAnswers = applicationFormDataRaw ? JSON.parse(applicationFormDataRaw) : null
 
     // Validate required fields
     if (!jobId || !firstName || !lastName || !email || !resumeFile) {
@@ -153,6 +155,7 @@ export async function POST(request: NextRequest) {
       source: "career_page",
       cover_letter: coverLetter || null,
       applied_at: new Date().toISOString(),
+      custom_answers: applicationFormAnswers || {},
     }
 
     // Add stage_id if we found the Applied stage
