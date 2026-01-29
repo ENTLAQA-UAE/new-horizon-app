@@ -623,7 +623,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "job_published": {
-        // Get ATS team to notify - per RBAC Blueprint v2, org_admin excluded from ATS notifications
+        // Get ATS team to notify
         const jobDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
         const jobRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], jobDeptId)
 
