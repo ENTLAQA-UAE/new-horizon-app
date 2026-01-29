@@ -331,6 +331,19 @@ export function RequisitionsClient({
         }
 
         if (data) setRequisitions([data, ...requisitions])
+
+        // Send notification to HR managers when a non-HR user submits a requisition
+        if (data && primaryRole !== "hr_manager" && primaryRole !== "super_admin") {
+          fetch("/api/notifications/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventType: "requisition_created",
+              data: { requisitionId: data.id },
+            }),
+          }).catch((err) => console.error("Failed to send requisition notification:", err))
+        }
+
         toast.success("Requisition created successfully")
       }
 
@@ -357,34 +370,48 @@ export function RequisitionsClient({
       (a) => a.requisition_id === selectedRequisition.id && a.approver_id === currentUserId
     )
 
-    if (!myApproval) {
-      toast.error("You are not an approver for this requisition")
-      return
-    }
-
     setIsLoading(true)
     try {
-      // Update approval status
-      const { error: approvalError } = await supabaseUpdate(
-        'requisition_approvals',
-        {
-          status: approved ? "approved" : "rejected",
-          responded_at: new Date().toISOString(),
-          comments: approvalComment || null,
-        },
-        { column: 'id', value: myApproval.id }
-      )
+      if (myApproval) {
+        // Update existing approval record
+        const { error: approvalError } = await supabaseUpdate(
+          'requisition_approvals',
+          {
+            status: approved ? "approved" : "rejected",
+            responded_at: new Date().toISOString(),
+            comments: approvalComment || null,
+          },
+          { column: 'id', value: myApproval.id }
+        )
+        if (approvalError) throw new Error(approvalError.message)
 
-      if (approvalError) throw new Error(approvalError.message)
+        // Update local approvals state
+        setApprovals(
+          approvals.map((a) =>
+            a.id === myApproval.id
+              ? { ...a, status: approved ? "approved" : "rejected", responded_at: new Date().toISOString() }
+              : a
+          )
+        )
+      } else {
+        // No explicit approval record - create one for this HR manager
+        const { data: newApproval, error: createError } = await supabaseInsert<RequisitionApproval>(
+          'requisition_approvals',
+          {
+            requisition_id: selectedRequisition.id,
+            approver_id: currentUserId,
+            approval_order: 1,
+            status: approved ? "approved" : "rejected",
+            responded_at: new Date().toISOString(),
+            comments: approvalComment || null,
+          }
+        )
+        if (createError) throw new Error(createError.message)
+        if (newApproval) setApprovals([...approvals, newApproval])
+      }
 
-      // Check if all approvers have approved
-      const requisitionApprovals = approvals.filter((a) => a.requisition_id === selectedRequisition.id)
-      const allApproved = requisitionApprovals.every((a) =>
-        a.approver_id === currentUserId ? approved : a.status === "approved"
-      )
-
-      // Update requisition status
-      const newStatus = !approved ? "rejected" : allApproved ? "approved" : "pending"
+      // Update requisition status directly
+      const newStatus = approved ? "approved" : "rejected"
       const { error: requisitionError } = await supabaseUpdate(
         'job_requisitions',
         { status: newStatus },
@@ -393,17 +420,23 @@ export function RequisitionsClient({
 
       if (requisitionError) throw new Error(requisitionError.message)
 
-      // Update local state
-      setApprovals(
-        approvals.map((a) =>
-          a.id === myApproval.id
-            ? { ...a, status: approved ? "approved" : "rejected", responded_at: new Date().toISOString() }
-            : a
-        )
-      )
+      // Update local requisitions state
       setRequisitions(
         requisitions.map((r) => (r.id === selectedRequisition.id ? { ...r, status: newStatus } : r))
       )
+
+      // Send notification to the requisition creator about approval/rejection
+      fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventType: approved ? "requisition_approved" : "requisition_rejected",
+          data: {
+            requisitionId: selectedRequisition.id,
+            reason: approvalComment || undefined,
+          },
+        }),
+      }).catch((err) => console.error("Failed to send approval notification:", err))
 
       setIsApprovalDialogOpen(false)
       setSelectedRequisition(null)
@@ -598,6 +631,9 @@ export function RequisitionsClient({
                 const statusConf = getStatusConfig(requisition.status)
                 const StatusIcon = statusConf.icon
                 const isPendingMyApproval = pendingMyApproval.some((r) => r.id === requisition.id)
+                const canApproveReject = isPendingMyApproval || (
+                  requisition.status === "pending" && (primaryRole === "hr_manager" || primaryRole === "super_admin")
+                )
 
                 return (
                   <TableRow key={requisition.id} className={isPendingMyApproval ? "bg-yellow-50" : ""}>
@@ -660,7 +696,7 @@ export function RequisitionsClient({
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          {isPendingMyApproval && (
+                          {canApproveReject && (
                             <DropdownMenuItem
                               onSelect={() => {
                                 setSelectedRequisition(requisition)
