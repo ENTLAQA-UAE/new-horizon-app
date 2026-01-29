@@ -360,13 +360,6 @@ export const hiringManagerNavigation: NavigationSection[] = [
         icon: Briefcase,
       },
       {
-        id: "candidates",
-        title: "Candidates to Review",
-        titleAr: "مرشحين للمراجعة",
-        href: "/org/candidates?filter=pending-review",
-        icon: UserSearch,
-      },
-      {
         id: "interviews",
         title: "My Interviews",
         titleAr: "مقابلاتي",

@@ -38,13 +38,19 @@ export default async function RequisitionsPage() {
     .from("requisition_approvals")
     .select("*")
 
-  // Get departments
-  const { data: departments } = await supabase
+  // Get departments (filtered by user's assigned departments for hiring managers)
+  let departmentsQuery = supabase
     .from("departments")
     .select("id, name, name_ar")
     .eq("org_id", orgId)
     .eq("is_active", true)
     .order("name")
+
+  if (access.departmentIds) {
+    departmentsQuery = departmentsQuery.in("id", access.departmentIds.length > 0 ? access.departmentIds : ["__none__"])
+  }
+
+  const { data: departments } = await departmentsQuery
 
   // Get locations from job_locations table (matches job_requisitions foreign key)
   const { data: locations } = await supabase

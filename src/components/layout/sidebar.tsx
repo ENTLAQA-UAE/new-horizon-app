@@ -196,7 +196,6 @@ const hiringManagerSections: NavSection[] = [
     collapsible: true,
     links: [
       { href: "/org/requisitions", label: "Requisitions", labelAr: "طلبات التوظيف", icon: FileCheck },
-      { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
       { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
       { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },

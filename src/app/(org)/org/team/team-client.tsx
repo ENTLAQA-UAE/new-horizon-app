@@ -84,6 +84,7 @@ interface Invite {
   status: string
   expires_at: string | null
   created_at: string
+  department_id?: string | null
 }
 
 interface Department {
@@ -139,12 +140,12 @@ export function TeamClient({
   const [inviteForm, setInviteForm] = useState({
     email: "",
     role: "recruiter",
+    department_id: "none",
   })
 
   const [editForm, setEditForm] = useState({
     role: "",
     department: "none",
-    assignedDepartments: [] as string[],
   })
 
   // Filter members
@@ -197,7 +198,7 @@ export function TeamClient({
 
       const inviteCode = generateCode()
 
-      const { data, error } = await supabaseInsert<Invite>("team_invites", {
+      const inviteData: Record<string, unknown> = {
         org_id: organizationId,
         email: inviteForm.email.toLowerCase(),
         role: inviteForm.role,
@@ -205,7 +206,14 @@ export function TeamClient({
         invited_by: currentUserId,
         status: "pending",
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-      })
+      }
+
+      // Include department_id for hiring_manager role
+      if (inviteForm.role === "hiring_manager" && inviteForm.department_id !== "none") {
+        inviteData.department_id = inviteForm.department_id
+      }
+
+      const { data, error } = await supabaseInsert<Invite>("team_invites", inviteData)
 
       if (error) {
         // Handle specific database constraint errors
@@ -222,7 +230,7 @@ export function TeamClient({
 
       setInvites([data, ...invites])
       setIsInviteDialogOpen(false)
-      setInviteForm({ email: "", role: "recruiter" })
+      setInviteForm({ email: "", role: "recruiter", department_id: "none" })
 
       // Send invitation email
       const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
@@ -327,29 +335,11 @@ export function TeamClient({
   }
 
   // Edit member role
-  const openEditDialog = async (member: TeamMember) => {
+  const openEditDialog = (member: TeamMember) => {
     setSelectedMember(member)
-    // Fetch department assignments for this member
-    let assignedDepts: string[] = []
-    if (member.role === "hiring_manager") {
-      const { data } = await supabaseSelect<{ department_id: string }>(
-        "user_role_departments",
-        {
-          select: "department_id",
-          filter: [
-            { column: "user_id", operator: "eq", value: member.id },
-            { column: "org_id", operator: "eq", value: organizationId },
-          ],
-        }
-      )
-      if (data && Array.isArray(data)) {
-        assignedDepts = data.map((d) => d.department_id)
-      }
-    }
     setEditForm({
       role: member.role,
       department: member.department || "none",
-      assignedDepartments: assignedDepts,
     })
     setIsEditDialogOpen(true)
   }
@@ -388,18 +378,20 @@ export function TeamClient({
       }
 
       // Update department assignments for hiring_manager
+      // Automatically use the selected department as the data access scope
       if (editForm.role === "hiring_manager") {
         // Delete existing department assignments
         await supabaseDelete("user_role_departments", [
           { column: "user_id", value: selectedMember.id },
           { column: "org_id", value: organizationId },
         ])
-        // Insert new department assignments
-        for (const deptId of editForm.assignedDepartments) {
+        // Find the department ID from the selected department name
+        const selectedDept = departments.find(d => d.name === editForm.department)
+        if (selectedDept) {
           await supabaseInsert("user_role_departments", {
             user_id: selectedMember.id,
             org_id: organizationId,
-            department_id: deptId,
+            department_id: selectedDept.id,
           })
         }
       } else if (roleChanged && previousRole === "hiring_manager") {
@@ -760,6 +752,11 @@ export function TeamClient({
                           <p className="font-medium">{invite.email}</p>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Badge variant="outline">{roleLabels[invite.role] || invite.role}</Badge>
+                            {invite.department_id && (
+                              <Badge variant="secondary">
+                                {departments.find(d => d.id === invite.department_id)?.name || "Department"}
+                              </Badge>
+                            )}
                             <span>•</span>
                             <span>
                               Sent {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
@@ -853,12 +850,39 @@ export function TeamClient({
                 </SelectContent>
               </Select>
             </div>
+            {inviteForm.role === "hiring_manager" && departments.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="invite_department">Department *</Label>
+                <Select
+                  value={inviteForm.department_id}
+                  onValueChange={(value) => setInviteForm({ ...inviteForm, department_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Select department</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  The Department Manager will have data access to the selected department.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleInvite} disabled={isLoading}>
+            <Button
+              onClick={handleInvite}
+              disabled={isLoading || (inviteForm.role === "hiring_manager" && inviteForm.department_id === "none")}
+            >
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -919,39 +943,10 @@ export function TeamClient({
                 </Select>
               </div>
             )}
-            {editForm.role === "hiring_manager" && departments.length > 0 && (
-              <div className="space-y-2">
-                <Label>Assigned Departments (Data Access)</Label>
-                <p className="text-xs text-muted-foreground">
-                  Select which departments this Department Manager can view hiring data for.
-                  If none selected, they can see all departments.
-                </p>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                  {departments.map((dept) => (
-                    <label key={dept.id} className="flex items-center gap-2 text-sm cursor-pointer p-1 rounded hover:bg-muted">
-                      <input
-                        type="checkbox"
-                        checked={editForm.assignedDepartments.includes(dept.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setEditForm({
-                              ...editForm,
-                              assignedDepartments: [...editForm.assignedDepartments, dept.id],
-                            })
-                          } else {
-                            setEditForm({
-                              ...editForm,
-                              assignedDepartments: editForm.assignedDepartments.filter((d) => d !== dept.id),
-                            })
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      {dept.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
+            {editForm.role === "hiring_manager" && departments.length > 0 && editForm.department === "none" && (
+              <p className="text-xs text-amber-600">
+                Please select a department above. The Department Manager will have data access to the selected department.
+              </p>
             )}
           </div>
           <DialogFooter>
