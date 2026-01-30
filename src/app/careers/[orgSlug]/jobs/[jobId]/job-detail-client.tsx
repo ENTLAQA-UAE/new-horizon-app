@@ -918,29 +918,34 @@ export function JobDetailClient({
                     // For "From Date" fields in repeatable sections (Experience/Education): render as "From Date" + "To Date" pair
                     const isFromDateField = field.field_type === "date" && section.is_repeatable && field.name.toLowerCase().includes("from")
                     if (isFromDateField) {
-                      const toDateKey = `${field.name}_to`
-                      const toDateValue = formData[section.id]?.[entryIndex]?.[toDateKey] || ""
+                      const toDateField = section.fields.find(f => f.field_type === "date" && f.name.toLowerCase().includes("to"))
+                      const toDateFieldName = toDateField?.name || "To Date"
+                      const toDateValue = formData[section.id]?.[entryIndex]?.[toDateFieldName] || ""
                       return (
                         <div key={field.id} className="md:col-span-2">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <Label className="text-sm">
-                                From Date
+                                {field.name}
                                 {field.is_required && <span className="text-red-500 ml-1">*</span>}
                               </Label>
                               {renderField(field, section.id, entryIndex)}
                             </div>
-                            {!isCurrentlyWorking && (
-                              <div className="space-y-1">
-                                <Label className="text-sm">To Date</Label>
+                            <div className="space-y-1">
+                              <Label className="text-sm">{toDateFieldName}</Label>
+                              {isCurrentlyWorking ? (
+                                <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-muted-foreground text-sm">
+                                  Present
+                                </div>
+                              ) : (
                                 <Input
                                   type="date"
                                   value={toDateValue}
-                                  onChange={(e) => updateFieldValue(section.id, toDateKey, e.target.value, entryIndex)}
+                                  onChange={(e) => updateFieldValue(section.id, toDateFieldName, e.target.value, entryIndex)}
                                   className="w-full"
                                 />
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
                       )
