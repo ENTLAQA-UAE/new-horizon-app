@@ -1011,6 +1011,7 @@ export function CareerPageBuilder({
                 block={selectedBlock}
                 onUpdate={(updates) => updateBlock(selectedBlock.id, updates)}
                 pageStyles={pageStyles}
+                organizationId={organization.id}
               />
             )}
           </SheetContent>
