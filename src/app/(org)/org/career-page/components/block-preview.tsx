@@ -124,15 +124,7 @@ export function BlockPreview({
           }}
         >
           <div className="flex items-center gap-3">
-            {organization.logo_url ? (
-              <img
-                src={organization.logo_url}
-                alt={organization.name}
-                className="h-8 object-contain"
-              />
-            ) : (
-              <span className="font-semibold text-xs">{organization.name}</span>
-            )}
+            <span className="font-semibold text-xs">{organization.name}</span>
           </div>
           {settings.language === "both" && (
             <div
