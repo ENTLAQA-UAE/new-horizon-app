@@ -58,8 +58,8 @@ BEGIN
 
   INSERT INTO application_form_fields (section_id, org_id, name, name_ar, field_type, options, is_default, is_required, is_enabled, sort_order) VALUES
   (v_education_id, p_org_id, 'Degree', 'الدرجة العلمية', 'select', '[{"value":"high_school","label":"High School","label_ar":"الثانوية"},{"value":"diploma","label":"Diploma","label_ar":"دبلوم"},{"value":"bachelors","label":"Bachelor''s Degree","label_ar":"بكالوريوس"},{"value":"masters","label":"Master''s Degree","label_ar":"ماجستير"},{"value":"phd","label":"PhD / Doctorate","label_ar":"دكتوراه"},{"value":"other","label":"Other","label_ar":"أخرى"}]'::jsonb, false, true, true, 1),
-  (v_education_id, p_org_id, 'Institution Name', 'اسم المؤسسة التعليمية', 'text', NULL, false, true, true, 2),
-  (v_education_id, p_org_id, 'Field of Study', 'التخصص', 'text', NULL, false, true, true, 3),
+  (v_education_id, p_org_id, 'University Name', 'اسم الجامعة', 'text', NULL, false, true, true, 2),
+  (v_education_id, p_org_id, 'Major', 'التخصص', 'text', NULL, false, false, true, 3),
   (v_education_id, p_org_id, 'From Date', 'من تاريخ', 'date', NULL, false, false, true, 4),
   (v_education_id, p_org_id, 'To Date', 'إلى تاريخ', 'date', NULL, false, false, true, 5),
   (v_education_id, p_org_id, 'Currently Studying', 'أدرس حالياً', 'checkbox', NULL, false, false, true, 6),
