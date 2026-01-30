@@ -547,7 +547,7 @@ export function CareerPageBuilder({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="styling" className="flex-1 m-0 p-2 overflow-auto">
+            <TabsContent value="styling" className="flex-1 m-0 p-2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 160px)" }}>
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="py-3">
@@ -733,7 +733,7 @@ export function CareerPageBuilder({
               </div>
             </TabsContent>
 
-            <TabsContent value="settings" className="flex-1 m-0 p-2 overflow-auto">
+            <TabsContent value="settings" className="flex-1 m-0 p-2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 160px)" }}>
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="py-3">
@@ -1011,6 +1011,7 @@ export function CareerPageBuilder({
                 block={selectedBlock}
                 onUpdate={(updates) => updateBlock(selectedBlock.id, updates)}
                 pageStyles={pageStyles}
+                organizationId={organization.id}
               />
             )}
           </SheetContent>

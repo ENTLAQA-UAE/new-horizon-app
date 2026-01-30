@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,7 +22,11 @@ import {
   GripVertical,
   Upload,
   Image as ImageIcon,
+  Loader2,
+  X,
 } from "lucide-react"
+import { toast } from "sonner"
+import { getAccessToken } from "@/lib/supabase/auth-fetch"
 import {
   CareerPageBlock,
   CareerPageStyles,
@@ -30,10 +34,14 @@ import {
   ContentItem,
 } from "@/lib/career-page/types"
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 interface BlockEditorProps {
   block: CareerPageBlock
   onUpdate: (updates: Partial<CareerPageBlock>) => void
   pageStyles: CareerPageStyles
+  organizationId: string
 }
 
 const iconOptions = [
@@ -42,8 +50,10 @@ const iconOptions = [
   "Target", "TrendingUp", "Lightbulb", "Coffee", "Gift", "Smile",
 ]
 
-export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
+export function BlockEditor({ block, onUpdate, pageStyles, organizationId }: BlockEditorProps) {
   const [activeTab, setActiveTab] = useState("content")
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
 
   const updateContent = (updates: any) => {
     onUpdate({ content: { ...block.content, ...updates } })
@@ -51,6 +61,63 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
 
   const updateStyles = (updates: Partial<BlockStyles>) => {
     onUpdate({ styles: { ...block.styles, ...updates } })
+  }
+
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !organizationId) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (JPG, PNG, or WebP)")
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB")
+      return
+    }
+
+    setIsUploadingBanner(true)
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        toast.error("Session expired. Please refresh.")
+        return
+      }
+
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${organizationId}/career-hero-banner.${fileExt}`
+
+      const uploadFormData = new FormData()
+      uploadFormData.append("", file)
+      const uploadResponse = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            apikey: SUPABASE_ANON_KEY || "",
+            "x-upsert": "true",
+          },
+          body: uploadFormData,
+        }
+      )
+
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
+      }
+
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      updateContent({ backgroundImage: publicUrl })
+      toast.success("Banner image uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading banner:", error)
+      toast.error("Failed to upload banner image")
+    } finally {
+      setIsUploadingBanner(false)
+      if (bannerInputRef.current) bannerInputRef.current.value = ""
+    }
   }
 
   const addItem = () => {
@@ -133,12 +200,71 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
               </div>
               <Separator />
               <div className="space-y-2">
-                <Label>Background Image URL</Label>
-                <Input
-                  value={block.content.backgroundImage || ""}
-                  onChange={(e) => updateContent({ backgroundImage: e.target.value })}
-                  placeholder="https://..."
+                <Label>Hero Banner Image</Label>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 1920 × 600px (or wider). Max file size: 5MB. JPG, PNG, or WebP.
+                </p>
+                <input
+                  ref={bannerInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleBannerUpload}
                 />
+                {block.content.backgroundImage ? (
+                  <div className="relative rounded-lg overflow-hidden border">
+                    <img
+                      src={block.content.backgroundImage}
+                      alt="Hero banner preview"
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 text-xs"
+                        onClick={() => bannerInputRef.current?.click()}
+                        disabled={isUploadingBanner}
+                      >
+                        {isUploadingBanner ? (
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        ) : (
+                          <Upload className="h-3 w-3 mr-1" />
+                        )}
+                        Replace
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 text-xs"
+                        onClick={() => updateContent({ backgroundImage: "" })}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={isUploadingBanner}
+                    className="w-full h-28 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isUploadingBanner ? (
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="text-xs">Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-6 w-6" />
+                        <span className="text-xs font-medium">Click to upload banner image</span>
+                        <span className="text-xs opacity-60">1920 × 600px recommended</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-3">
