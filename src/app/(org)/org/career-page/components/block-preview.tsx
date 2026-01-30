@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   CareerPageBlock,
@@ -36,6 +35,7 @@ import {
   Smile,
   Quote,
   ExternalLink,
+  ArrowRight,
 } from "lucide-react"
 
 interface Organization {
@@ -78,9 +78,9 @@ const iconMap: Record<string, any> = {
 
 const paddingMap = {
   none: "py-0",
-  small: "py-6",
-  medium: "py-12",
-  large: "py-20",
+  small: "py-8",
+  medium: "py-16",
+  large: "py-24",
 }
 
 const alignmentMap = {
@@ -108,15 +108,18 @@ export function BlockPreview({
         backgroundColor: styles.backgroundColor,
       }}
     >
-      {/* Header */}
+      {/* Header - Frosted Glass Sticky */}
       {settings.showHeader && (
         <header
           className={`
-            border-b px-4 py-3 flex items-center justify-between
-            ${styles.headerStyle === "bold" ? "shadow-md" : ""}
+            sticky top-0 z-50 px-4 py-3 flex items-center justify-between
+            backdrop-blur-xl border-b border-white/10 transition-all duration-300
+            ${styles.headerStyle === "bold" ? "shadow-lg" : "shadow-sm"}
           `}
           style={{
-            backgroundColor: styles.headerStyle === "bold" ? styles.primaryColor : "white",
+            backgroundColor: styles.headerStyle === "bold"
+              ? styles.primaryColor + "ee"
+              : "rgba(255,255,255,0.85)",
             color: styles.headerStyle === "bold" ? "white" : styles.textColor,
           }}
         >
@@ -125,24 +128,38 @@ export function BlockPreview({
               <img
                 src={organization.logo_url}
                 alt={organization.name}
-                className="h-8 object-contain"
+                className="h-10 object-contain"
               />
             ) : settings.showLogo ? (
               <div
-                className="w-8 h-8 rounded flex items-center justify-center text-white"
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md"
                 style={{ backgroundColor: styles.primaryColor }}
               >
-                <Building2 className="h-4 w-4" />
+                <Building2 className="h-5 w-5" />
               </div>
             ) : null}
-            {styles.headerStyle !== "minimal" && (
-              <span className="font-semibold">{organization.name}</span>
-            )}
           </div>
           {settings.language === "both" && (
-            <div className="flex gap-2 text-sm">
-              <button className="px-2 py-1 rounded hover:bg-black/10">EN</button>
-              <button className="px-2 py-1 rounded hover:bg-black/10">عربي</button>
+            <div
+              className="flex rounded-full p-1"
+              style={{
+                backgroundColor: styles.headerStyle === "bold"
+                  ? "rgba(255,255,255,0.15)"
+                  : "rgba(0,0,0,0.05)",
+              }}
+            >
+              <button
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  styles.headerStyle === "bold"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "bg-gray-900 text-white shadow-sm"
+                }`}
+              >
+                EN
+              </button>
+              <button className="px-3 py-1 rounded-full text-xs opacity-60">
+                عربي
+              </button>
             </div>
           )}
         </header>
@@ -165,25 +182,31 @@ export function BlockPreview({
       {settings.showFooter && (
         <footer
           className={`
-            border-t px-4 py-6 text-center text-sm
-            ${styles.footerStyle === "detailed" ? "py-10" : ""}
+            px-4 text-center
+            ${styles.footerStyle === "detailed" ? "py-12" : "py-8"}
           `}
           style={{ color: styles.textColor + "80" }}
         >
+          <div
+            className="h-px mb-6 mx-auto"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${styles.textColor}20, transparent)`,
+              maxWidth: "400px",
+            }}
+          />
           {styles.footerStyle === "detailed" && (
             <div className="mb-4">
               {organization.logo_url && (
                 <img
                   src={organization.logo_url}
                   alt={organization.name}
-                  className="h-8 mx-auto mb-2 object-contain"
+                  className="h-8 mx-auto mb-2 object-contain opacity-70"
                 />
               )}
-              <p className="font-medium">{organization.name}</p>
             </div>
           )}
-          <p>&copy; {new Date().getFullYear()} {organization.name}. All rights reserved.</p>
-          <p className="mt-1 text-xs">Powered by Jadarat ATS</p>
+          <p className="text-xs">&copy; {new Date().getFullYear()} {organization.name}. All rights reserved.</p>
+          <p className="mt-1 text-xs opacity-50">Powered by Jadarat ATS</p>
         </footer>
       )}
     </div>
@@ -218,7 +241,7 @@ function BlockRenderer({
     case "hero":
       return (
         <section
-          className={`${padding} relative`}
+          className={`relative overflow-hidden flex items-center`}
           style={{
             backgroundColor: block.content.backgroundImage ? undefined : styles.primaryColor,
             backgroundImage: block.content.backgroundImage
@@ -229,20 +252,31 @@ function BlockRenderer({
             minHeight: isMobile ? "300px" : "400px",
           }}
         >
-          {block.content.backgroundImage && (
-            <div className="absolute inset-0 bg-black/50" />
-          )}
-          <div className={`${containerClass} relative z-10 flex flex-col justify-center h-full ${alignment}`}>
+          {/* Gradient overlay */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: block.content.backgroundImage
+                ? `linear-gradient(135deg, ${styles.primaryColor}cc 0%, rgba(0,0,0,0.6) 100%)`
+                : `linear-gradient(135deg, ${styles.primaryColor} 0%, ${styles.secondaryColor || styles.primaryColor}dd 100%)`,
+            }}
+          />
+          {/* Decorative elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 -right-10 w-48 h-48 rounded-full blur-3xl bg-white" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl bg-white" />
+          </div>
+          <div className={`${containerClass} relative z-10 ${padding} flex flex-col justify-center h-full ${alignment}`}>
             <h1
               className={`
-                font-bold text-white mb-3
-                ${isMobile ? "text-2xl" : "text-4xl"}
+                font-extrabold text-white mb-4 tracking-tight leading-tight
+                ${isMobile ? "text-3xl" : "text-5xl"}
               `}
             >
               {block.content.title}
             </h1>
             {block.content.subtitle && (
-              <p className={`text-white/80 mb-6 ${isMobile ? "text-base" : "text-xl"}`}>
+              <p className={`text-white/80 mb-8 ${isMobile ? "text-base" : "text-xl"}`}>
                 {block.content.subtitle}
               </p>
             )}
@@ -250,18 +284,19 @@ function BlockRenderer({
               {block.content.ctaText && (
                 <Button
                   size={isMobile ? "sm" : "lg"}
-                  className="bg-white hover:bg-white/90"
-                  style={{ color: styles.primaryColor }}
+                  className="bg-white hover:bg-white/90 shadow-xl font-semibold"
+                  style={{ color: styles.primaryColor, borderRadius: styles.borderRadius }}
                 >
                   {block.content.ctaText}
-                  <ChevronRight className="ml-1 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}
               {block.content.secondaryCtaText && (
                 <Button
                   size={isMobile ? "sm" : "lg"}
                   variant="outline"
-                  className="border-white text-white hover:bg-white/10"
+                  className="border-2 border-white/40 text-white hover:bg-white/10 backdrop-blur-sm font-semibold"
+                  style={{ borderRadius: styles.borderRadius }}
                 >
                   {block.content.secondaryCtaText}
                 </Button>
@@ -284,7 +319,11 @@ function BlockRenderer({
               </p>
             )}
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -295,11 +334,11 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
               {block.content.title}
             </h2>
             <div
-              className={`grid gap-6 ${
+              className={`grid gap-5 ${
                 isMobile
                   ? "grid-cols-1"
                   : columns === 2
@@ -312,30 +351,35 @@ function BlockRenderer({
               {items.map((item) => {
                 const Icon = iconMap[item.icon || "Star"] || Star
                 return (
-                  <Card
+                  <div
                     key={item.id}
-                    className="border-none shadow-none bg-transparent"
-                    style={{ textAlign: block.styles.alignment || "left" }}
+                    className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100/50"
+                    style={{
+                      textAlign: (block.styles.alignment as any) || "left",
+                      borderRadius: styles.borderRadius,
+                    }}
                   >
-                    <CardContent className="p-4">
-                      <div
-                        className={`
-                          w-12 h-12 rounded-lg flex items-center justify-center mb-3
-                          ${block.styles.alignment === "center" ? "mx-auto" : ""}
-                        `}
-                        style={{ backgroundColor: styles.primaryColor + "20" }}
-                      >
-                        <Icon className="h-6 w-6" style={{ color: styles.primaryColor }} />
-                      </div>
-                      <h3 className="font-semibold mb-2">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
-                    </CardContent>
-                  </Card>
+                    <div
+                      className={`
+                        w-12 h-12 rounded-2xl flex items-center justify-center mb-4
+                        ${block.styles.alignment === "center" ? "mx-auto" : ""}
+                      `}
+                      style={{ backgroundColor: styles.primaryColor + "12" }}
+                    >
+                      <Icon className="h-6 w-6" style={{ color: styles.primaryColor }} />
+                    </div>
+                    <h3 className="font-semibold mb-2">{item.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                  </div>
                 )
               })}
             </div>
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -346,7 +390,7 @@ function BlockRenderer({
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
             {block.content.title && (
-              <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+              <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
                 {block.content.title}
               </h2>
             )}
@@ -362,19 +406,23 @@ function BlockRenderer({
               }`}
             >
               {statItems.map((item) => (
-                <div key={item.id} className="text-center">
+                <div key={item.id} className="text-center group">
                   <div
-                    className={`font-bold ${isMobile ? "text-3xl" : "text-4xl"}`}
+                    className={`font-extrabold mb-1 ${isMobile ? "text-3xl" : "text-4xl"}`}
                     style={{ color: styles.primaryColor }}
                   >
                     {item.value}
                   </div>
-                  <div className="text-muted-foreground mt-1">{item.label}</div>
+                  <div className="text-muted-foreground font-medium text-sm">{item.label}</div>
                 </div>
               ))}
             </div>
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -384,11 +432,11 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
               {block.content.title}
             </h2>
             <div
-              className={`grid gap-6 ${
+              className={`grid gap-8 ${
                 isMobile
                   ? "grid-cols-2"
                   : teamColumns === 2
@@ -399,30 +447,34 @@ function BlockRenderer({
               }`}
             >
               {teamItems.map((item) => (
-                <div key={item.id} className="text-center">
+                <div key={item.id} className="text-center group">
                   {item.image ? (
                     <img
                       src={item.image}
                       alt={item.title}
-                      className="w-24 h-24 rounded-full mx-auto mb-3 object-cover"
+                      className="w-24 h-24 rounded-full mx-auto mb-3 object-cover ring-4 ring-white shadow-lg transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div
-                      className="w-24 h-24 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-2xl font-bold"
-                      style={{ backgroundColor: styles.primaryColor }}
+                      className="w-24 h-24 rounded-full mx-auto mb-3 flex items-center justify-center ring-4 ring-white shadow-lg"
+                      style={{ backgroundColor: styles.primaryColor + "12" }}
                     >
-                      {item.title?.charAt(0)}
+                      <Users className="h-10 w-10" style={{ color: styles.primaryColor }} />
                     </div>
                   )}
                   <h3 className="font-semibold">{item.title}</h3>
                   {item.role && (
-                    <p className="text-sm text-muted-foreground">{item.role}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{item.role}</p>
                   )}
                 </div>
               ))}
             </div>
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -431,43 +483,49 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
               {block.content.title}
             </h2>
             <div className={`grid gap-6 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}>
               {testimonialItems.map((item) => (
-                <Card key={item.id}>
-                  <CardContent className="p-6">
-                    <Quote className="h-8 w-8 text-muted-foreground/30 mb-3" />
-                    <p className="text-muted-foreground mb-4">{item.description}</p>
-                    <div className="flex items-center gap-3">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.author}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                          style={{ backgroundColor: styles.primaryColor }}
-                        >
-                          {item.author?.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-semibold text-sm">{item.author}</div>
-                        {item.authorRole && (
-                          <div className="text-xs text-muted-foreground">{item.authorRole}</div>
-                        )}
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100/50"
+                  style={{ borderRadius: styles.borderRadius }}
+                >
+                  <Quote className="h-8 w-8 mb-3 opacity-20" style={{ color: styles.primaryColor }} />
+                  <p className="text-muted-foreground mb-4 italic leading-relaxed">{item.description}</p>
+                  <div className="flex items-center gap-3">
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.author}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
+                      />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: styles.primaryColor + "12" }}
+                      >
+                        <Users className="h-5 w-5" style={{ color: styles.primaryColor }} />
                       </div>
+                    )}
+                    <div>
+                      <div className="font-semibold text-sm">{item.author || item.title}</div>
+                      {item.authorRole && (
+                        <div className="text-xs text-muted-foreground">{item.authorRole}</div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -475,18 +533,21 @@ function BlockRenderer({
       return (
         <section id="jobs" className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-6 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
               {block.content.title}
             </h2>
 
             {settings.showJobSearch && (
-              <div className="mb-6">
+              <div
+                className="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-4"
+                style={{ borderRadius: styles.borderRadius }}
+              >
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search jobs..."
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm"
                     style={{ borderRadius: styles.borderRadius }}
                     disabled
                   />
@@ -494,69 +555,95 @@ function BlockRenderer({
               </div>
             )}
 
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground mb-6 text-sm">
               {jobsCount} {jobsCount === 1 ? "position" : "positions"} available
             </p>
 
-            {/* Sample job cards */}
-            <div className="space-y-4">
+            {/* Job Cards Grid */}
+            <div className={`grid gap-5 ${isMobile ? "grid-cols-1" : "grid-cols-3"}`}>
               {[1, 2, 3].map((i) => (
-                <Card key={i} style={{ borderRadius: styles.borderRadius }}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold mb-1">Sample Job Title {i}</h3>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-2">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            Location
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Briefcase className="h-3 w-3" />
-                            Full-time
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          This is a sample job description that would appear here...
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        style={{ backgroundColor: styles.primaryColor }}
-                      >
-                        Apply
-                      </Button>
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
+                  style={{ borderRadius: styles.borderRadius }}
+                >
+                  {/* Thumbnail placeholder */}
+                  <div
+                    className="h-28 flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${styles.primaryColor}12 0%, ${styles.primaryColor}06 100%)`,
+                    }}
+                  >
+                    <Briefcase className="h-8 w-8" style={{ color: styles.primaryColor + "40" }} />
+                    <Badge className="absolute top-2 left-2 text-xs font-medium" variant="secondary">
+                      Department
+                    </Badge>
+                  </div>
+                  {/* Content */}
+                  <div className="p-4">
+                    <h3 className="font-semibold mb-2 text-sm">Sample Job Title {i}</h3>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Location
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="h-3 w-3" />
+                        Full-time
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="pt-3 border-t border-gray-50 flex items-center justify-between">
+                      <span
+                        className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: styles.primaryColor }}
+                      >
+                        View & Apply
+                        <ArrowRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
     case "cta":
       return (
         <section
-          className={`${padding} ${alignment}`}
-          style={{ backgroundColor: styles.primaryColor }}
+          className={`${padding} ${alignment} relative overflow-hidden`}
         >
-          <div className={containerClass}>
-            <h2 className={`font-bold text-white mb-2 ${isMobile ? "text-xl" : "text-2xl"}`}>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(135deg, ${styles.primaryColor} 0%, ${styles.secondaryColor || styles.primaryColor}cc 100%)`,
+            }}
+          />
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-5 right-5 w-32 h-32 rounded-full blur-3xl bg-white" />
+            <div className="absolute bottom-5 left-5 w-24 h-24 rounded-full blur-3xl bg-white" />
+          </div>
+          <div className={`${containerClass} relative z-10`}>
+            <h2 className={`font-bold text-white mb-3 ${isMobile ? "text-xl" : "text-2xl"}`}>
               {block.content.title}
             </h2>
             {block.content.subtitle && (
-              <p className="text-white/80 mb-6">{block.content.subtitle}</p>
+              <p className="text-white/80 mb-8">{block.content.subtitle}</p>
             )}
             {block.content.ctaText && (
               <Button
                 size={isMobile ? "default" : "lg"}
-                className="bg-white hover:bg-white/90"
-                style={{ color: styles.primaryColor }}
+                className="bg-white hover:bg-white/90 shadow-xl font-semibold"
+                style={{ color: styles.primaryColor, borderRadius: styles.borderRadius }}
               >
                 {block.content.ctaText}
-                <ChevronRight className="ml-1 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
           </div>
@@ -567,55 +654,59 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-6 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
               {block.content.title}
             </h2>
-            <div className={`space-y-4 ${block.styles.alignment === "center" ? "max-w-md mx-auto" : ""}`}>
+            <div className={`space-y-5 ${block.styles.alignment === "center" ? "max-w-md mx-auto" : ""}`}>
               {block.content.email && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4 group">
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: styles.primaryColor + "20" }}
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: styles.primaryColor + "12" }}
                   >
                     <Mail className="h-5 w-5" style={{ color: styles.primaryColor }} />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Email</div>
-                    <div className="font-medium">{block.content.email}</div>
+                    <div className="text-xs text-muted-foreground">Email</div>
+                    <div className="font-medium text-sm">{block.content.email}</div>
                   </div>
                 </div>
               )}
               {block.content.phone && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4 group">
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: styles.primaryColor + "20" }}
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: styles.primaryColor + "12" }}
                   >
                     <Phone className="h-5 w-5" style={{ color: styles.primaryColor }} />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Phone</div>
-                    <div className="font-medium">{block.content.phone}</div>
+                    <div className="text-xs text-muted-foreground">Phone</div>
+                    <div className="font-medium text-sm">{block.content.phone}</div>
                   </div>
                 </div>
               )}
               {block.content.address && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4 group">
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: styles.primaryColor + "20" }}
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: styles.primaryColor + "12" }}
                   >
                     <MapPinned className="h-5 w-5" style={{ color: styles.primaryColor }} />
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Address</div>
-                    <div className="font-medium">{block.content.address}</div>
+                    <div className="text-xs text-muted-foreground">Address</div>
+                    <div className="font-medium text-sm">{block.content.address}</div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -626,7 +717,7 @@ function BlockRenderer({
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
             {block.content.title && (
-              <h2 className={`font-bold mb-6 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+              <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
                 {block.content.title}
               </h2>
             )}
@@ -645,13 +736,13 @@ function BlockRenderer({
                 {images.map((image) => (
                   <div
                     key={image.id}
-                    className="aspect-video rounded-lg overflow-hidden"
+                    className="aspect-video rounded-lg overflow-hidden group"
                     style={{ borderRadius: styles.borderRadius }}
                   >
                     <img
                       src={image.url}
                       alt={image.alt || ""}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   </div>
                 ))}
@@ -670,7 +761,11 @@ function BlockRenderer({
               </div>
             )}
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 
@@ -681,12 +776,16 @@ function BlockRenderer({
             {block.content.html ? (
               <div dangerouslySetInnerHTML={{ __html: block.content.html }} />
             ) : (
-              <div className="p-8 border-2 border-dashed rounded-lg text-center text-muted-foreground">
+              <div className="p-8 border-2 border-dashed rounded-2xl text-center text-muted-foreground">
                 Custom HTML content will appear here
               </div>
             )}
           </div>
-          {block.styles.showDivider && <hr className="mt-8 border-border" />}
+          {block.styles.showDivider && (
+            <div className="mt-8 mx-auto" style={{ maxWidth: "600px" }}>
+              <div className="h-px" style={{ background: `linear-gradient(90deg, transparent, ${styles.textColor}15, transparent)` }} />
+            </div>
+          )}
         </section>
       )
 

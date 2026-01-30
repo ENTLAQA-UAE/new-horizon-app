@@ -111,6 +111,7 @@ export interface CareerPageStyles {
   backgroundColor: string
   textColor: string
   fontFamily: string
+  fontSize: 'small' | 'medium' | 'large'
   borderRadius: string
   headerStyle: 'minimal' | 'standard' | 'bold'
   footerStyle: 'minimal' | 'standard' | 'detailed'
@@ -125,6 +126,16 @@ export interface CareerPageSeo {
   ogImage?: string
 }
 
+export interface ThankYouPageConfig {
+  title?: string
+  titleAr?: string
+  message?: string
+  messageAr?: string
+  showLogo: boolean
+  ctaText?: string
+  ctaTextAr?: string
+}
+
 export interface CareerPageSettings {
   showHeader: boolean
   showFooter: boolean
@@ -133,6 +144,7 @@ export interface CareerPageSettings {
   showJobFilters: boolean
   language: 'en' | 'ar' | 'both'
   defaultLanguage: 'en' | 'ar'
+  thankYouPage?: ThankYouPageConfig
 }
 
 export interface CareerPageConfig {
