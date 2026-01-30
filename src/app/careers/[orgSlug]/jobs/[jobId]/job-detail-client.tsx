@@ -140,12 +140,23 @@ interface ApplicationFormSection {
   fields: ApplicationFormField[]
 }
 
+interface ThankYouConfig {
+  title?: string
+  titleAr?: string
+  message?: string
+  messageAr?: string
+  showLogo: boolean
+  ctaText?: string
+  ctaTextAr?: string
+}
+
 interface JobDetailClientProps {
   organization: Organization
   job: Job
   branding: Branding | null
   screeningQuestions?: ScreeningQuestion[]
   applicationFormSections?: ApplicationFormSection[]
+  thankYouConfig?: ThankYouConfig | null
 }
 
 const employmentTypeLabels: Record<string, string> = {
@@ -300,7 +311,8 @@ export function JobDetailClient({
   job,
   branding,
   screeningQuestions = [],
-  applicationFormSections = []
+  applicationFormSections = [],
+  thankYouConfig = null
 }: JobDetailClientProps) {
   const router = useRouter()
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false)
@@ -993,28 +1005,61 @@ export function JobDetailClient({
   }
 
   if (isSuccess) {
+    const tyTitle = thankYouConfig?.title || "Application Submitted!"
+    const tyMessage = thankYouConfig?.message || `Thank you for applying to ${job.title} at ${organization.name}. We will review your application and get back to you soon.`
+    const tyCtaText = thankYouConfig?.ctaText || "View More Jobs"
+    const showTyLogo = thankYouConfig?.showLogo !== false
+
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+            {/* Gradient accent bar */}
             <div
-              className="mx-auto h-16 w-16 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: `${primaryColor}20` }}
-            >
-              <CheckCircle className="h-8 w-8" style={{ color: primaryColor }} />
+              className="h-2"
+              style={{
+                background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}88)`,
+              }}
+            />
+            <div className="px-8 py-10 text-center">
+              {/* Logo */}
+              {showTyLogo && branding?.logo_url && (
+                <div className="mb-6">
+                  <img
+                    src={branding.logo_url}
+                    alt={organization.name}
+                    className="h-14 mx-auto object-contain"
+                  />
+                </div>
+              )}
+              {/* Success icon */}
+              <div
+                className="mx-auto h-20 w-20 rounded-full flex items-center justify-center mb-6"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}20, ${primaryColor}10)`,
+                }}
+              >
+                <CheckCircle className="h-10 w-10" style={{ color: primaryColor }} />
+              </div>
+              <h2 className="text-2xl font-bold mb-3 tracking-tight">{tyTitle}</h2>
+              <p className="text-muted-foreground mb-8 leading-relaxed">
+                {tyMessage}
+              </p>
+              <Link href={`/careers/${organization.slug}`}>
+                <Button
+                  size="lg"
+                  className="shadow-lg hover:shadow-xl transition-all duration-300 text-white font-semibold px-8"
+                  style={{ backgroundColor: primaryColor, borderRadius: "12px" }}
+                >
+                  {tyCtaText}
+                </Button>
+              </Link>
             </div>
-            <h2 className="text-2xl font-bold mb-2">Application Submitted!</h2>
-            <p className="text-muted-foreground mb-6">
-              Thank you for applying to {job.title} at {organization.name}. We will review your application and get back to you soon.
-            </p>
-            <Link href={`/careers/${organization.slug}`}>
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                View More Jobs
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-center text-xs text-muted-foreground/50 mt-6">
+            Powered by Jadarat ATS
+          </p>
+        </div>
       </div>
     )
   }

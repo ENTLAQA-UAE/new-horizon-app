@@ -120,6 +120,7 @@ const defaultPageStyles: CareerPageStyles = {
   backgroundColor: "#FFFFFF",
   textColor: "#1F2937",
   fontFamily: "Inter",
+  fontSize: "medium",
   borderRadius: "8px",
   headerStyle: "standard",
   footerStyle: "standard",
@@ -640,12 +641,32 @@ export function CareerPageBuilder({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Inter">Inter</SelectItem>
-                          <SelectItem value="Roboto">Roboto</SelectItem>
-                          <SelectItem value="Open Sans">Open Sans</SelectItem>
-                          <SelectItem value="Lato">Lato</SelectItem>
                           <SelectItem value="Poppins">Poppins</SelectItem>
+                          <SelectItem value="DM Sans">DM Sans</SelectItem>
+                          <SelectItem value="Montserrat">Montserrat</SelectItem>
+                          <SelectItem value="Raleway">Raleway</SelectItem>
+                          <SelectItem value="Plus Jakarta Sans">Plus Jakarta Sans</SelectItem>
+                          <SelectItem value="Outfit">Outfit</SelectItem>
+                          <SelectItem value="Manrope">Manrope</SelectItem>
+                          <SelectItem value="Rubik">Rubik</SelectItem>
                           <SelectItem value="Cairo">Cairo (Arabic)</SelectItem>
                           <SelectItem value="Tajawal">Tajawal (Arabic)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Font Size</Label>
+                      <Select
+                        value={pageStyles.fontSize}
+                        onValueChange={(v: any) => setPageStyles({ ...pageStyles, fontSize: v })}
+                      >
+                        <SelectTrigger className="h-8 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="small">Small</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="large">Large</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -806,6 +827,116 @@ export function CareerPageBuilder({
                           <SelectItem value="ar">Arabic</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm">Thank You Page</CardTitle>
+                    <CardDescription className="text-xs">Customize the page shown after a candidate submits an application</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Show Logo</Label>
+                      <Switch
+                        checked={pageSettings.thankYouPage?.showLogo !== false}
+                        onCheckedChange={(v) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: v },
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Title</Label>
+                      <Input
+                        value={pageSettings.thankYouPage?.title || ""}
+                        onChange={(e) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: pageSettings.thankYouPage?.showLogo !== false, title: e.target.value },
+                          })
+                        }
+                        placeholder="Application Submitted!"
+                        className="h-8 mt-1 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Title (Arabic)</Label>
+                      <Input
+                        value={pageSettings.thankYouPage?.titleAr || ""}
+                        onChange={(e) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: pageSettings.thankYouPage?.showLogo !== false, titleAr: e.target.value },
+                          })
+                        }
+                        placeholder="تم تقديم الطلب!"
+                        className="h-8 mt-1 text-xs"
+                        dir="rtl"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Message</Label>
+                      <Textarea
+                        value={pageSettings.thankYouPage?.message || ""}
+                        onChange={(e) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: pageSettings.thankYouPage?.showLogo !== false, message: e.target.value },
+                          })
+                        }
+                        placeholder="Thank you for applying. We will review your application and get back to you soon."
+                        className="mt-1 text-xs min-h-[60px]"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Message (Arabic)</Label>
+                      <Textarea
+                        value={pageSettings.thankYouPage?.messageAr || ""}
+                        onChange={(e) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: pageSettings.thankYouPage?.showLogo !== false, messageAr: e.target.value },
+                          })
+                        }
+                        placeholder="شكراً لتقديمك. سنراجع طلبك ونعود إليك قريباً."
+                        className="mt-1 text-xs min-h-[60px]"
+                        rows={3}
+                        dir="rtl"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Button Text</Label>
+                      <Input
+                        value={pageSettings.thankYouPage?.ctaText || ""}
+                        onChange={(e) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: pageSettings.thankYouPage?.showLogo !== false, ctaText: e.target.value },
+                          })
+                        }
+                        placeholder="View More Jobs"
+                        className="h-8 mt-1 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Button Text (Arabic)</Label>
+                      <Input
+                        value={pageSettings.thankYouPage?.ctaTextAr || ""}
+                        onChange={(e) =>
+                          setPageSettings({
+                            ...pageSettings,
+                            thankYouPage: { ...pageSettings.thankYouPage, showLogo: pageSettings.thankYouPage?.showLogo !== false, ctaTextAr: e.target.value },
+                          })
+                        }
+                        placeholder="عرض المزيد من الوظائف"
+                        className="h-8 mt-1 text-xs"
+                        dir="rtl"
+                      />
                     </div>
                   </CardContent>
                 </Card>

@@ -123,6 +123,9 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     fields: (formFieldsData || []).filter((f: any) => f.section_id === section.id)
   }))
 
+  // Extract thank you page config from career page settings
+  const thankYouConfig = organization.career_page_config?.settings?.thankYouPage || null
+
   return (
     <JobDetailClient
       organization={organization}
@@ -130,6 +133,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       branding={branding}
       screeningQuestions={screeningQuestions}
       applicationFormSections={applicationFormSections}
+      thankYouConfig={thankYouConfig}
     />
   )
 }
