@@ -294,17 +294,9 @@ export function CareerPageClient({
           }}
         >
           <div className="flex items-center gap-3">
-            {organization.logoUrl ? (
-              <img
-                src={organization.logoUrl}
-                alt={organization.name}
-                className="h-10 object-contain"
-              />
-            ) : (
-              <span className="font-semibold text-sm">
-                {isRtl && organization.nameAr ? organization.nameAr : organization.name}
-              </span>
-            )}
+            <span className="font-semibold text-sm">
+              {isRtl && organization.nameAr ? organization.nameAr : organization.name}
+            </span>
           </div>
 
           <div className="flex items-center gap-4">
