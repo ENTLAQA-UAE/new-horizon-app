@@ -294,20 +294,17 @@ export function CareerPageClient({
           }}
         >
           <div className="flex items-center gap-3">
-            {settings.showLogo && organization.logoUrl ? (
+            {organization.logoUrl ? (
               <img
                 src={organization.logoUrl}
                 alt={organization.name}
-                className="h-12 object-contain"
+                className="h-10 object-contain"
               />
-            ) : settings.showLogo ? (
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md"
-                style={{ backgroundColor: styles.primaryColor }}
-              >
-                <Building2 className="h-6 w-6" />
-              </div>
-            ) : null}
+            ) : (
+              <span className="font-semibold text-sm">
+                {isRtl && organization.nameAr ? organization.nameAr : organization.name}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -510,6 +507,17 @@ function BlockRenderer({
             className={`${containerClass} relative z-10 ${padding}`}
             style={{ textAlign: alignment as any }}
           >
+            {/* Logo in Hero */}
+            {settings.showLogo && organization.logoUrl && (
+              <div className="mb-8">
+                <img
+                  src={organization.logoUrl}
+                  alt={organization.name}
+                  className="h-16 md:h-20 object-contain bg-white/10 backdrop-blur-sm rounded-2xl p-3 shadow-xl"
+                  style={{ display: alignment === "center" ? "block" : "inline-block", marginInline: alignment === "center" ? "auto" : undefined }}
+                />
+              </div>
+            )}
             <h1 className={`${fs.headingHero} font-extrabold text-white mb-6 tracking-tight leading-tight`}>
               {getContent("title", "titleAr")}
             </h1>

@@ -124,20 +124,15 @@ export function BlockPreview({
           }}
         >
           <div className="flex items-center gap-3">
-            {settings.showLogo && organization.logo_url ? (
+            {organization.logo_url ? (
               <img
                 src={organization.logo_url}
                 alt={organization.name}
-                className="h-10 object-contain"
+                className="h-8 object-contain"
               />
-            ) : settings.showLogo ? (
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md"
-                style={{ backgroundColor: styles.primaryColor }}
-              >
-                <Building2 className="h-5 w-5" />
-              </div>
-            ) : null}
+            ) : (
+              <span className="font-semibold text-xs">{organization.name}</span>
+            )}
           </div>
           {settings.language === "both" && (
             <div
@@ -267,6 +262,17 @@ function BlockRenderer({
             <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-3xl bg-white" />
           </div>
           <div className={`${containerClass} relative z-10 ${padding} flex flex-col justify-center h-full ${alignment}`}>
+            {/* Logo in Hero */}
+            {settings.showLogo && organization.logo_url && (
+              <div className="mb-6">
+                <img
+                  src={organization.logo_url}
+                  alt={organization.name}
+                  className={`${isMobile ? "h-10" : "h-14"} object-contain bg-white/10 backdrop-blur-sm rounded-xl p-2 shadow-xl`}
+                  style={{ display: block.styles.alignment === "center" ? "block" : "inline-block", marginInline: block.styles.alignment === "center" ? "auto" : undefined }}
+                />
+              </div>
+            )}
             <h1
               className={`
                 font-extrabold text-white mb-4 tracking-tight leading-tight
@@ -569,15 +575,12 @@ function BlockRenderer({
                 >
                   {/* Thumbnail placeholder */}
                   <div
-                    className="h-28 flex items-center justify-center"
+                    className="relative h-28 flex items-center justify-center"
                     style={{
                       background: `linear-gradient(135deg, ${styles.primaryColor}12 0%, ${styles.primaryColor}06 100%)`,
                     }}
                   >
                     <Briefcase className="h-8 w-8" style={{ color: styles.primaryColor + "40" }} />
-                    <Badge className="absolute top-2 left-2 text-xs font-medium" variant="secondary">
-                      Department
-                    </Badge>
                   </div>
                   {/* Content */}
                   <div className="p-4">
