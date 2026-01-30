@@ -68,6 +68,16 @@ async function getApplications(orgId: string, departmentIds: string[] | null) {
   return applicationsWithCount || []
 }
 
+async function getFormSections(orgId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("application_form_sections")
+    .select("id, name, name_ar, icon, is_repeatable")
+    .eq("org_id", orgId)
+    .order("sort_order", { ascending: true })
+  return data || []
+}
+
 async function getJobsWithPipelines(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
@@ -118,9 +128,10 @@ export default async function OrgApplicationsPage() {
     redirect("/login")
   }
 
-  const [applications, jobsWithPipelines] = await Promise.all([
+  const [applications, jobsWithPipelines, formSections] = await Promise.all([
     getApplications(access.orgId, access.departmentIds),
     getJobsWithPipelines(access.orgId, access.departmentIds),
+    getFormSections(access.orgId),
   ])
 
   return (
@@ -128,6 +139,7 @@ export default async function OrgApplicationsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       applications={applications as any}
       jobsWithPipelines={jobsWithPipelines as any}
+      formSections={formSections as any}
     />
   )
 }

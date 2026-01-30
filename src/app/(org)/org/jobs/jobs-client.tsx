@@ -70,6 +70,7 @@ import {
   Sparkles,
   RefreshCw,
   CheckCircle,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -1733,7 +1734,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               AI Generated Job Description
             </DialogTitle>
             <DialogDescription>
-              Review the generated content and apply it to your job posting
+              Review and edit the generated content, then apply it to your job posting
             </DialogDescription>
           </DialogHeader>
 
@@ -1743,11 +1744,20 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground">Title (English)</Label>
-                  <p className="font-medium">{generatedData.title}</p>
+                  <Input
+                    value={generatedData.title}
+                    onChange={(e) => setGeneratedData({ ...generatedData, title: e.target.value })}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Title (Arabic)</Label>
-                  <p className="font-medium" dir="rtl">{generatedData.titleAr}</p>
+                  <Input
+                    value={generatedData.titleAr}
+                    onChange={(e) => setGeneratedData({ ...generatedData, titleAr: e.target.value })}
+                    className="mt-1"
+                    dir="rtl"
+                  />
                 </div>
               </div>
 
@@ -1756,12 +1766,23 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               {/* Description */}
               <div>
                 <Label className="text-xs text-muted-foreground">Description (English)</Label>
-                <p className="text-sm mt-1 whitespace-pre-wrap">{generatedData.description}</p>
+                <Textarea
+                  value={generatedData.description}
+                  onChange={(e) => setGeneratedData({ ...generatedData, description: e.target.value })}
+                  className="mt-1 min-h-[80px]"
+                  rows={3}
+                />
               </div>
 
               <div>
                 <Label className="text-xs text-muted-foreground">Description (Arabic)</Label>
-                <p className="text-sm mt-1 whitespace-pre-wrap" dir="rtl">{generatedData.descriptionAr}</p>
+                <Textarea
+                  value={generatedData.descriptionAr}
+                  onChange={(e) => setGeneratedData({ ...generatedData, descriptionAr: e.target.value })}
+                  className="mt-1 min-h-[80px]"
+                  rows={3}
+                  dir="rtl"
+                />
               </div>
 
               <Separator />
@@ -1770,25 +1791,83 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground mb-2 block">Requirements</Label>
-                  <ul className="text-sm space-y-1">
+                  <ul className="text-sm space-y-1.5">
                     {generatedData.requirements.map((req, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                        <span>{req}</span>
+                      <li key={i} className="flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                        <Input
+                          value={req}
+                          onChange={(e) => {
+                            const updated = [...generatedData.requirements]
+                            updated[i] = e.target.value
+                            setGeneratedData({ ...generatedData, requirements: updated })
+                          }}
+                          className="h-8 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            const updated = generatedData.requirements.filter((_, idx) => idx !== i)
+                            setGeneratedData({ ...generatedData, requirements: updated })
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </li>
                     ))}
                   </ul>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs text-muted-foreground"
+                    onClick={() => setGeneratedData({ ...generatedData, requirements: [...generatedData.requirements, ""] })}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Add requirement
+                  </Button>
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground mb-2 block">Responsibilities</Label>
-                  <ul className="text-sm space-y-1">
+                  <ul className="text-sm space-y-1.5">
                     {generatedData.responsibilities.map((resp, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                        <span>{resp}</span>
+                      <li key={i} className="flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-blue-500 shrink-0" />
+                        <Input
+                          value={resp}
+                          onChange={(e) => {
+                            const updated = [...generatedData.responsibilities]
+                            updated[i] = e.target.value
+                            setGeneratedData({ ...generatedData, responsibilities: updated })
+                          }}
+                          className="h-8 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            const updated = generatedData.responsibilities.filter((_, idx) => idx !== i)
+                            setGeneratedData({ ...generatedData, responsibilities: updated })
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </li>
                     ))}
                   </ul>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs text-muted-foreground"
+                    onClick={() => setGeneratedData({ ...generatedData, responsibilities: [...generatedData.responsibilities, ""] })}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Add responsibility
+                  </Button>
                 </div>
               </div>
 
@@ -1797,14 +1876,43 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               {/* Benefits */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block">Benefits</Label>
-                <ul className="text-sm grid grid-cols-2 gap-2">
+                <ul className="text-sm grid grid-cols-2 gap-1.5">
                   {generatedData.benefits.map((benefit, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <CheckCircle className="h-4 w-4 text-purple-500 mt-0.5 shrink-0" />
-                      <span>{benefit}</span>
+                    <li key={i} className="flex items-center gap-1.5">
+                      <CheckCircle className="h-4 w-4 text-purple-500 shrink-0" />
+                      <Input
+                        value={benefit}
+                        onChange={(e) => {
+                          const updated = [...generatedData.benefits]
+                          updated[i] = e.target.value
+                          setGeneratedData({ ...generatedData, benefits: updated })
+                        }}
+                        className="h-8 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          const updated = generatedData.benefits.filter((_, idx) => idx !== i)
+                          setGeneratedData({ ...generatedData, benefits: updated })
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </li>
                   ))}
                 </ul>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 text-xs text-muted-foreground"
+                  onClick={() => setGeneratedData({ ...generatedData, benefits: [...generatedData.benefits, ""] })}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add benefit
+                </Button>
               </div>
 
               {/* Skills */}
@@ -1812,8 +1920,38 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                 <Label className="text-xs text-muted-foreground mb-2 block">Skills</Label>
                 <div className="flex flex-wrap gap-2">
                   {generatedData.skills.map((skill, i) => (
-                    <Badge key={i} variant="secondary">{skill}</Badge>
+                    <Badge key={i} variant="secondary" className="flex items-center gap-1 pr-1">
+                      <input
+                        value={skill}
+                        onChange={(e) => {
+                          const updated = [...generatedData.skills]
+                          updated[i] = e.target.value
+                          setGeneratedData({ ...generatedData, skills: updated })
+                        }}
+                        className="bg-transparent border-none outline-none text-xs w-auto min-w-[60px]"
+                        style={{ width: `${Math.max(skill.length, 6)}ch` }}
+                      />
+                      <button
+                        type="button"
+                        className="ml-0.5 rounded-full hover:bg-muted p-0.5"
+                        onClick={() => {
+                          const updated = generatedData.skills.filter((_, idx) => idx !== i)
+                          setGeneratedData({ ...generatedData, skills: updated })
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
                   ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => setGeneratedData({ ...generatedData, skills: [...generatedData.skills, ""] })}
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
                 </div>
               </div>
             </div>

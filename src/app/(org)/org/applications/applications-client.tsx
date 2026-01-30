@@ -304,9 +304,18 @@ interface AIScreeningResult {
   }
 }
 
+interface FormSection {
+  id: string
+  name: string
+  name_ar: string | null
+  icon: string | null
+  is_repeatable: boolean
+}
+
 interface ApplicationsClientProps {
   applications: Application[]
   jobsWithPipelines: JobWithPipeline[]
+  formSections?: FormSection[]
 }
 
 // Default stage colors by type
@@ -323,6 +332,7 @@ const stageTypeColors: Record<string, string> = {
 export function ApplicationsClient({
   applications: initialApplications,
   jobsWithPipelines,
+  formSections = [],
 }: ApplicationsClientProps) {
   const router = useRouter()
   const [applications, setApplications] = useState(initialApplications)
@@ -330,6 +340,13 @@ export function ApplicationsClient({
   const [stageFilter, setStageFilter] = useState<string>("all")
   const [jobFilter, setJobFilter] = useState<string>("all")
   const [viewMode, setViewMode] = useState<"list" | "pipeline">("list")
+
+  // Build section ID → name map for displaying form answers
+  const sectionNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    formSections.forEach(s => { map[s.id] = s.name })
+    return map
+  }, [formSections])
 
   // For pipeline view - selected job
   const [selectedPipelineJob, setSelectedPipelineJob] = useState<string | null>(null)
@@ -1864,21 +1881,36 @@ export function ApplicationsClient({
                             const isArray = Array.isArray(sectionData)
                             const entries = isArray ? sectionData : [sectionData]
 
-                            // Try to determine section name from the data keys
                             const hasEntries = entries.some((entry: any) => entry && Object.keys(entry).length > 0)
                             if (!hasEntries) return null
 
+                            // Look up section name from the map
+                            const sectionName = sectionNameMap[sectionId] || null
+
                             return (
                               <div key={sectionId} className="space-y-3">
+                                {sectionName && (
+                                  <h5 className="font-semibold text-sm">{sectionName}</h5>
+                                )}
                                 {entries.map((entry: any, entryIndex: number) => {
                                   if (!entry || Object.keys(entry).length === 0) return null
                                   const fields = Object.entries(entry).filter(([key, value]) => value !== "" && value !== null && value !== undefined)
                                   if (fields.length === 0) return null
 
+                                  // For repeatable sections, try to derive a meaningful label from the entry data
+                                  let entryLabel = `Entry ${entryIndex + 1}`
+                                  if (isArray) {
+                                    // Use first text field value as label (e.g. Position, University Name, Certification Name, etc.)
+                                    const nameField = entry["Position"] || entry["Company Name"] || entry["University Name"] || entry["Institution Name"] || entry["Certification Name"] || entry["Language"] || entry["Faculty Name"] || entry["Degree"]
+                                    if (nameField && typeof nameField === "string") {
+                                      entryLabel = nameField
+                                    }
+                                  }
+
                                   return (
                                     <div key={entryIndex} className="p-4 rounded-lg border bg-muted/20 space-y-2">
                                       {isArray && (
-                                        <p className="text-xs font-medium text-muted-foreground mb-2">Entry {entryIndex + 1}</p>
+                                        <p className="text-xs font-medium text-muted-foreground mb-2">{entryLabel}</p>
                                       )}
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {fields.map(([fieldName, fieldValue]) => (
