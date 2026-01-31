@@ -640,11 +640,6 @@ export function RequisitionsClient({
                     <TableCell>
                       <div>
                         <span className="font-medium">{requisition.title}</span>
-                        {requisition.title_ar && (
-                          <p className="text-sm text-muted-foreground" dir="rtl">
-                            {requisition.title_ar}
-                          </p>
-                        )}
                         <p className="text-xs text-muted-foreground">
                           {jobTypes.find((t) => t.value === requisition.job_type)?.label || requisition.job_type}
                         </p>
@@ -927,11 +922,6 @@ export function RequisitionsClient({
             <div className="space-y-4 py-4">
               <div>
                 <h3 className="font-semibold text-lg">{selectedRequisition.title}</h3>
-                {selectedRequisition.title_ar && (
-                  <p className="text-muted-foreground" dir="rtl">
-                    {selectedRequisition.title_ar}
-                  </p>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">

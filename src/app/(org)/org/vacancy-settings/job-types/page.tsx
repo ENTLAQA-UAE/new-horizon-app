@@ -224,7 +224,6 @@ export default function JobTypesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Arabic Name</TableHead>
               <TableHead>Active</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -232,7 +231,7 @@ export default function JobTypesPage() {
           <TableBody>
             {jobTypes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                   No job types found. Add your first job type.
                 </TableCell>
               </TableRow>
@@ -240,7 +239,6 @@ export default function JobTypesPage() {
               jobTypes.map((type) => (
                 <TableRow key={type.id}>
                   <TableCell className="font-medium">{type.name}</TableCell>
-                  <TableCell dir="rtl">{type.name_ar || "—"}</TableCell>
                   <TableCell>
                     <Switch
                       checked={type.is_active}

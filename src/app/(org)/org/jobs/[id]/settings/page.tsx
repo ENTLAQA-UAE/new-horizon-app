@@ -242,11 +242,6 @@ function SortableSectionItem({ item, onToggle, isExpanded, onExpandToggle }: Sor
             className="text-left"
           >
             <p className="font-medium">{item.section?.name}</p>
-            {item.section?.name_ar && (
-              <p className="text-sm text-muted-foreground" dir="rtl">
-                {item.section.name_ar}
-              </p>
-            )}
           </button>
           {item.section?.is_default && (
             <Badge variant="secondary" className="ml-2">
@@ -283,12 +278,6 @@ function SortableSectionItem({ item, onToggle, isExpanded, onExpandToggle }: Sor
                 <span className="text-muted-foreground">Name:</span>{" "}
                 <span className="font-medium">{item.section?.name}</span>
               </div>
-              {item.section?.name_ar && (
-                <div dir="rtl">
-                  <span className="text-muted-foreground">الاسم:</span>{" "}
-                  <span className="font-medium">{item.section.name_ar}</span>
-                </div>
-              )}
               <div>
                 <span className="text-muted-foreground">Status:</span>{" "}
                 <Badge variant={item.is_enabled ? "default" : "secondary"} className="text-xs ml-1">

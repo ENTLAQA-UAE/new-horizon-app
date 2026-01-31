@@ -491,11 +491,6 @@ export function OfferTemplatesClient({ templates: initialTemplates, orgId }: Off
                 <TableRow key={template.id}>
                   <TableCell>
                     <div className="font-medium">{template.name}</div>
-                    {template.name_ar && (
-                      <div className="text-sm text-muted-foreground" dir="rtl">
-                        {template.name_ar}
-                      </div>
-                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {template.description || "—"}

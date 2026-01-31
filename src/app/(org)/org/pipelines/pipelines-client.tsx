@@ -219,11 +219,6 @@ function SortableStageItem({ stage, stageTypeConfig, onEdit, onDelete }: Sortabl
             </Badge>
           )}
         </div>
-        {stage.name_ar && (
-          <span className="text-sm text-muted-foreground" dir="rtl">
-            {stage.name_ar}
-          </span>
-        )}
       </div>
       <div className="flex items-center gap-2">
         {!stage.is_system && (

@@ -1007,9 +1007,6 @@ export function OrganizationsClient({
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">{selectedOrg.name}</h3>
-                  {selectedOrg.name_ar && (
-                    <p className="text-muted-foreground" dir="rtl">{selectedOrg.name_ar}</p>
-                  )}
                   <p className="text-sm text-muted-foreground">{selectedOrg.slug}.jadarat.com</p>
                 </div>
               </div>

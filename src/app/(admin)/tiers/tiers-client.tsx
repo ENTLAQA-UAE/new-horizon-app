@@ -309,11 +309,6 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
                   {getTierIcon(tier.name)}
                   <div>
                     <CardTitle className="text-lg">{tier.name}</CardTitle>
-                    {tier.name_ar && (
-                      <p className="text-sm text-muted-foreground" dir="rtl">
-                        {tier.name_ar}
-                      </p>
-                    )}
                   </div>
                 </div>
                 <DropdownMenu>
