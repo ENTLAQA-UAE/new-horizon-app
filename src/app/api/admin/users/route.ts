@@ -158,7 +158,7 @@ async function handleCreateUserForOrg(
     type: "magiclink",
     email,
     options: {
-      redirectTo: `${productionUrl}/org`,
+      redirectTo: `${productionUrl}/`,
     },
   })
 
