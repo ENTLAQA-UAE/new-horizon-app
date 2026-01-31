@@ -111,6 +111,7 @@ export default async function CareerPage({ params }: CareerPageProps) {
     backgroundColor: "#FFFFFF",
     textColor: "#1F2937",
     fontFamily: "Inter",
+    fontSize: "medium",
     borderRadius: "8px",
     headerStyle: "standard",
     footerStyle: "standard",

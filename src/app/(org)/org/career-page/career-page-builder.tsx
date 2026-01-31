@@ -651,6 +651,7 @@ export function CareerPageBuilder({
                           <SelectItem value="Rubik">Rubik</SelectItem>
                           <SelectItem value="Cairo">Cairo (Arabic)</SelectItem>
                           <SelectItem value="Tajawal">Tajawal (Arabic)</SelectItem>
+                          <SelectItem value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
