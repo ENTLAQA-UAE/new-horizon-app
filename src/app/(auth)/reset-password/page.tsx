@@ -73,9 +73,8 @@ function ResetPasswordContent() {
         const hashParams = new URLSearchParams(hash.substring(1))
         const accessToken = hashParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token')
-        const type = hashParams.get('type')
 
-        if (accessToken && type === 'recovery') {
+        if (accessToken) {
           try {
             // Set the session using the tokens from the URL
             const { data, error } = await supabase.auth.setSession({
@@ -93,6 +92,8 @@ function ResetPasswordContent() {
               setSessionReady(true)
               // Clear the hash from URL for cleaner look
               window.history.replaceState(null, '', window.location.pathname)
+            } else {
+              setSessionError('Reset link has expired. Please request a new one.')
             }
           } catch (err: any) {
             console.error('Failed to establish session:', err)
