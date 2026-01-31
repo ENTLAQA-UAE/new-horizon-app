@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Note: Type instantiation is excessively deep error with team_invites table
 import { createClient } from "@/lib/supabase/server"
+import { getServerTranslation } from "@/lib/i18n/server"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
@@ -177,6 +178,14 @@ async function getOrgAdminDashboardData(orgId: string) {
 
 export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
   const stats = await getOrgAdminDashboardData(orgId)
+  const { t } = await getServerTranslation()
+
+  const roleLabels: Record<string, string> = {
+    hr_manager: t("dashboard.roles.hrManager"),
+    recruiter: t("dashboard.roles.recruiter"),
+    hiring_manager: t("dashboard.roles.hiringManager"),
+    interviewer: t("dashboard.roles.interviewer"),
+  }
 
   const maxRoleCount = Math.max(...stats.roleDistribution.map((r) => r.count), 1)
 
@@ -200,27 +209,27 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                   <Users className="h-6 w-6" />
                 </div>
                 <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                  Organization
+                  {t("dashboard.orgAdmin.organization")}
                 </Badge>
               </div>
 
               <div className="flex-1 flex flex-col justify-center">
-                <p className="text-white/70 text-sm font-medium mb-2">Team Members</p>
+                <p className="text-white/70 text-sm font-medium mb-2">{t("dashboard.stats.teamMembers")}</p>
                 <div className="flex items-end gap-3">
                   <span className="text-6xl font-bold">{stats.totalMembers}</span>
                 </div>
                 <p className="text-white/60 text-sm mt-2">
-                  Total people in your organization
+                  {t("dashboard.orgAdmin.totalPeopleInOrg")}
                 </p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/70 text-sm">Active Members</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.stats.activeMembers")}</span>
                   <span className="font-semibold">{stats.activeMembers}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-white/70 text-sm">Departments</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.stats.departments")}</span>
                   <span className="font-semibold">{stats.activeDepartments}</span>
                 </div>
               </div>
@@ -239,14 +248,14 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 <Building2 className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Departments</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.departments")}</p>
             <p className="text-3xl font-bold mt-1">{stats.activeDepartments}</p>
             <Link
               href="/org/departments"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              Manage <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.manage")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -261,17 +270,17 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 <Mail className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
               {stats.pendingInvites > 0 && (
-                <Badge variant="warning">{stats.pendingInvites} pending</Badge>
+                <Badge variant="warning">{stats.pendingInvites} {t("dashboard.orgAdmin.pending")}</Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Pending Invites</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.pendingInvites")}</p>
             <p className="text-3xl font-bold mt-1">{stats.pendingInvites}</p>
             <Link
               href="/org/team"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -287,9 +296,9 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 <Shield className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Active Roles</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.activeRoles")}</p>
             <p className="text-3xl font-bold mt-1">{stats.distinctRolesAssigned}</p>
-            <p className="text-sm text-muted-foreground mt-3">Distinct roles assigned</p>
+            <p className="text-sm text-muted-foreground mt-3">{t("dashboard.orgAdmin.distinctRolesAssigned")}</p>
           </div>
         </div>
 
@@ -303,14 +312,14 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 <Users className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Team Members</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.teamMembers")}</p>
             <p className="text-3xl font-bold mt-1">{stats.totalMembers}</p>
             <Link
               href="/org/team"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -320,15 +329,15 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold">Role Distribution</h3>
-                <p className="text-sm text-muted-foreground">Team members by role</p>
+                <h3 className="text-lg font-semibold">{t("dashboard.orgAdmin.roleDistribution")}</h3>
+                <p className="text-sm text-muted-foreground">{t("dashboard.orgAdmin.teamMembersByRole")}</p>
               </div>
               <Link
                 href="/org/team"
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                Manage Roles <ArrowRight className="h-4 w-4" />
+                {t("dashboard.orgAdmin.manageRoles")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -337,9 +346,9 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 {stats.roleDistribution.map((role) => (
                   <div key={role.role} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{role.label}</span>
+                      <span className="text-sm font-medium">{roleLabels[role.role] || role.label}</span>
                       <span className="text-sm text-muted-foreground">
-                        {role.count} {role.count === 1 ? "member" : "members"}
+                        {role.count} {role.count === 1 ? t("dashboard.orgAdmin.member") : t("dashboard.orgAdmin.members")}
                       </span>
                     </div>
                     <div className="h-3 rounded-full bg-muted overflow-hidden">
@@ -363,9 +372,9 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                   >
                     <Shield className="h-6 w-6" style={{ color: "var(--brand-primary)" }} />
                   </div>
-                  <p className="text-sm text-muted-foreground">No roles assigned yet</p>
+                  <p className="text-sm text-muted-foreground">{t("dashboard.emptyStates.noRolesAssigned")}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Invite team members and assign roles to see the distribution
+                    {t("dashboard.emptyStates.noRolesAssignedDesc")}
                   </p>
                 </div>
               </div>
@@ -377,7 +386,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
         <div className="col-span-12 lg:col-span-4">
           <div className="bento-card p-6 h-full">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">Quick Actions</h3>
+              <h3 className="text-lg font-semibold">{t("dashboard.quickActions")}</h3>
               <Sparkles className="h-5 w-5 text-muted-foreground" />
             </div>
 
@@ -393,8 +402,8 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                   <UserPlus className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Manage Team</p>
-                  <p className="text-xs text-muted-foreground">Invite and manage members</p>
+                  <p className="font-medium text-sm">{t("dashboard.orgAdmin.manageTeam")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dashboard.orgAdmin.inviteAndManageMembers")}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -410,8 +419,8 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                   <FolderTree className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Manage Departments</p>
-                  <p className="text-xs text-muted-foreground">Organize your teams</p>
+                  <p className="font-medium text-sm">{t("dashboard.orgAdmin.manageDepartments")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dashboard.orgAdmin.organizeYourTeams")}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -427,8 +436,8 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                   <Palette className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Branding</p>
-                  <p className="text-xs text-muted-foreground">Customize your look</p>
+                  <p className="font-medium text-sm">{t("dashboard.orgAdmin.branding")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dashboard.orgAdmin.customizeYourLook")}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -441,15 +450,15 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Recent Members</h3>
-                <p className="text-sm text-muted-foreground">Newest team additions</p>
+                <h3 className="text-lg font-semibold">{t("dashboard.orgAdmin.recentMembers")}</h3>
+                <p className="text-sm text-muted-foreground">{t("dashboard.orgAdmin.newestTeamAdditions")}</p>
               </div>
               <Link
                 href="/org/team"
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -486,7 +495,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                           variant="outline"
                           className={ROLE_BADGE_STYLES[member.role] || ""}
                         >
-                          {ROLE_LABELS[member.role] || member.role}
+                          {roleLabels[member.role] || member.role}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
@@ -506,13 +515,13 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 >
                   <Users className="h-6 w-6" style={{ color: "var(--brand-primary)" }} />
                 </div>
-                <p className="text-sm text-muted-foreground">No team members yet</p>
+                <p className="text-sm text-muted-foreground">{t("dashboard.emptyStates.noTeamMembers")}</p>
                 <Link
                   href="/org/team"
                   className="inline-flex items-center gap-1 text-sm font-medium mt-2"
                   style={{ color: "var(--brand-primary)" }}
                 >
-                  Invite members <ArrowRight className="h-4 w-4" />
+                  {t("dashboard.orgAdmin.inviteMembers")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}
@@ -524,8 +533,8 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Getting Started</h3>
-                <p className="text-sm text-muted-foreground">Complete your setup</p>
+                <h3 className="text-lg font-semibold">{t("dashboard.orgAdmin.gettingStarted")}</h3>
+                <p className="text-sm text-muted-foreground">{t("dashboard.orgAdmin.completeYourSetup")}</p>
               </div>
               <Sparkles className="h-5 w-5 text-muted-foreground" />
             </div>
@@ -550,10 +559,10 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                       stats.hasLogo ? "line-through text-muted-foreground" : ""
                     }`}
                   >
-                    Set up branding
+                    {t("dashboard.orgAdmin.setUpBranding")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Upload your organization logo and customize colors
+                    {t("dashboard.orgAdmin.setUpBrandingDesc")}
                   </p>
                 </div>
                 {!stats.hasLogo && (
@@ -562,7 +571,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                     className="text-xs font-medium shrink-0 hover:underline"
                     style={{ color: "var(--brand-primary)" }}
                   >
-                    Set up
+                    {t("dashboard.actions.setUp")}
                   </Link>
                 )}
               </div>
@@ -588,10 +597,10 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                         : ""
                     }`}
                   >
-                    Add departments
+                    {t("dashboard.orgAdmin.addDepartments")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Create departments to organize your team structure
+                    {t("dashboard.orgAdmin.addDepartmentsDesc")}
                   </p>
                 </div>
                 {stats.totalDepartments === 0 && (
@@ -600,7 +609,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                     className="text-xs font-medium shrink-0 hover:underline"
                     style={{ color: "var(--brand-primary)" }}
                   >
-                    Add
+                    {t("common.add")}
                   </Link>
                 )}
               </div>
@@ -626,10 +635,10 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                         : ""
                     }`}
                   >
-                    Invite team members
+                    {t("dashboard.orgAdmin.inviteTeamMembers")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Bring your colleagues on board to collaborate
+                    {t("dashboard.orgAdmin.inviteTeamMembersDesc")}
                   </p>
                 </div>
                 {stats.totalMembers <= 1 && (
@@ -638,7 +647,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                     className="text-xs font-medium shrink-0 hover:underline"
                     style={{ color: "var(--brand-primary)" }}
                   >
-                    Invite
+                    {t("dashboard.actions.invite")}
                   </Link>
                 )}
               </div>
@@ -650,7 +659,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 className="flex items-center justify-center gap-2 text-sm font-medium py-2 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: "var(--brand-primary)" }}
               >
-                Configure settings <ArrowRight className="h-4 w-4" />
+                {t("dashboard.orgAdmin.configureSettings")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

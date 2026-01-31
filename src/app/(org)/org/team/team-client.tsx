@@ -61,6 +61,7 @@ import {
   Link,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 import { formatDistanceToNow } from "date-fns"
 
 interface TeamMember {
@@ -100,14 +101,6 @@ interface TeamClientProps {
   currentUserId: string
 }
 
-const roleLabels: Record<string, string> = {
-  org_admin: "Admin",
-  hr_manager: "HR Manager",
-  recruiter: "Recruiter",
-  hiring_manager: "Department Manager",
-  interviewer: "Interviewer",
-}
-
 const roleColors: Record<string, string> = {
   org_admin: "bg-purple-500",
   hr_manager: "bg-blue-500",
@@ -124,6 +117,16 @@ export function TeamClient({
   currentUserId,
 }: TeamClientProps) {
   const router = useRouter()
+  const { t, language, isRTL } = useI18n()
+
+  const roleLabels: Record<string, string> = {
+    org_admin: t("settings.roles.orgAdmin"),
+    hr_manager: t("settings.roles.hrManager"),
+    recruiter: t("settings.roles.recruiter"),
+    hiring_manager: t("settings.roles.hiringManager"),
+    interviewer: t("settings.roles.interviewer"),
+  }
+
   const [members, setMembers] = useState(initialMembers)
   const [invites, setInvites] = useState(initialInvites)
   const [searchQuery, setSearchQuery] = useState("")
@@ -168,19 +171,19 @@ export function TeamClient({
   // Send invite
   const handleInvite = async () => {
     if (!inviteForm.email) {
-      toast.error("Please enter an email address")
+      toast.error(t("settings.messages.enterEmail"))
       return
     }
 
     // Check if already a member
     if (members.some(m => m.email.toLowerCase() === inviteForm.email.toLowerCase())) {
-      toast.error("This person is already a team member")
+      toast.error(t("settings.messages.alreadyMember"))
       return
     }
 
     // Check if already invited
     if (invites.some(i => i.email.toLowerCase() === inviteForm.email.toLowerCase())) {
-      toast.error("This person already has a pending invite")
+      toast.error(t("settings.messages.alreadyInvited"))
       return
     }
 
@@ -218,7 +221,7 @@ export function TeamClient({
       if (error) {
         // Handle specific database constraint errors
         if (error.code === "23505" || error.message?.includes("duplicate") || error.message?.includes("unique constraint")) {
-          toast.error("This person already has a pending invite. Please cancel the existing invite first or wait for them to accept it.")
+          toast.error(t("settings.messages.duplicateInvite"))
           // Refresh invites list to sync state
           router.refresh()
           setIsLoading(false)
@@ -254,14 +257,14 @@ export function TeamClient({
         console.error("Failed to send invitation email:", err)
       })
 
-      toast.success("Invitation sent! The invite email has been delivered.")
+      toast.success(t("settings.messages.inviteSentDetails"))
     } catch (error: any) {
       console.error("Error sending invite:", error)
       // Provide user-friendly error messages
       if (error.code === "23505" || error.message?.includes("duplicate")) {
-        toast.error("This person already has a pending invite")
+        toast.error(t("settings.messages.alreadyInvited"))
       } else {
-        toast.error(error.message || "Failed to send invitation")
+        toast.error(error.message || t("settings.messages.failedToSendInvite"))
       }
     } finally {
       setIsLoading(false)
@@ -271,7 +274,7 @@ export function TeamClient({
   // Copy invite code
   const copyInviteCode = (code: string) => {
     navigator.clipboard.writeText(code)
-    toast.success("Invite code copied to clipboard")
+    toast.success(t("settings.messages.inviteCodeCopied"))
   }
 
   // Copy invite link
@@ -279,7 +282,7 @@ export function TeamClient({
     const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
     const inviteLink = `${baseUrl}/signup?code=${code}`
     navigator.clipboard.writeText(inviteLink)
-    toast.success("Invite link copied to clipboard")
+    toast.success(t("settings.messages.inviteLinkCopied"))
   }
 
   // Resend invite (generate new code)
@@ -312,9 +315,9 @@ export function TeamClient({
       setInvites(invites.map(i =>
         i.id === invite.id ? { ...i, invite_code: newCode } : i
       ))
-      toast.success("New invite code generated")
+      toast.success(t("settings.messages.newCodeGenerated"))
     } catch (error: any) {
-      toast.error(error.message || "Failed to resend invite")
+      toast.error(error.message || t("settings.messages.failedToResendInvite"))
     } finally {
       setIsLoading(false)
     }
@@ -328,9 +331,9 @@ export function TeamClient({
       if (error) throw error
 
       setInvites(invites.filter(i => i.id !== invite.id))
-      toast.success("Invitation cancelled")
+      toast.success(t("settings.messages.inviteCancelled"))
     } catch (error: any) {
-      toast.error(error.message || "Failed to cancel invite")
+      toast.error(error.message || t("settings.messages.failedToCancelInvite"))
     }
   }
 
@@ -411,7 +414,7 @@ export function TeamClient({
       )
       setIsEditDialogOpen(false)
       setSelectedMember(null)
-      toast.success("Team member updated")
+      toast.success(t("settings.messages.memberUpdated"))
 
       // Send role changed notification if role was actually changed
       if (roleChanged) {
@@ -444,7 +447,7 @@ export function TeamClient({
         }
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to update member")
+      toast.error(error.message || t("settings.messages.failedToUpdateMember"))
     } finally {
       setIsLoading(false)
     }
@@ -453,7 +456,7 @@ export function TeamClient({
   // Toggle active status
   const toggleStatus = async (member: TeamMember) => {
     if (member.id === currentUserId) {
-      toast.error("You cannot deactivate yourself")
+      toast.error(t("settings.messages.cannotDeactivateSelf"))
       return
     }
 
@@ -471,16 +474,16 @@ export function TeamClient({
           m.id === member.id ? { ...m, is_active: !m.is_active } : m
         )
       )
-      toast.success(`User ${member.is_active ? "deactivated" : "activated"}`)
+      toast.success(member.is_active ? t("settings.messages.userDeactivated") : t("settings.messages.userActivated"))
     } catch (error: any) {
-      toast.error(error.message || "Failed to update status")
+      toast.error(error.message || t("settings.messages.failedToUpdateStatus"))
     }
   }
 
   // Remove member from org
   const openDeleteDialog = (member: TeamMember) => {
     if (member.id === currentUserId) {
-      toast.error("You cannot remove yourself")
+      toast.error(t("settings.messages.cannotRemoveSelf"))
       return
     }
     setSelectedMember(member)
@@ -510,9 +513,9 @@ export function TeamClient({
       setMembers(members.filter((m) => m.id !== selectedMember.id))
       setIsDeleteDialogOpen(false)
       setSelectedMember(null)
-      toast.success("Team member removed from organization")
+      toast.success(t("settings.messages.memberRemovedFromOrg"))
     } catch (error: any) {
-      toast.error(error.message || "Failed to remove member")
+      toast.error(error.message || t("settings.messages.failedToRemoveMember"))
     } finally {
       setIsLoading(false)
     }
@@ -523,14 +526,14 @@ export function TeamClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Team</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("nav.team")}</h2>
           <p className="text-muted-foreground">
-            Manage your team members and invitations
+            {t("settings.team.manageDescription")}
           </p>
         </div>
         <Button onClick={() => setIsInviteDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
-          Invite Team Member
+          {t("settings.team.inviteTeamMember")}
         </Button>
       </div>
 
@@ -538,7 +541,7 @@ export function TeamClient({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Members</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("settings.team.totalMembers")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -546,7 +549,7 @@ export function TeamClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("settings.team.active")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.active}</div>
@@ -554,7 +557,7 @@ export function TeamClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Invites</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("settings.team.pendingInvites")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
@@ -562,7 +565,7 @@ export function TeamClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Admins</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("settings.team.admins")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.admins}</div>
@@ -575,11 +578,11 @@ export function TeamClient({
         <TabsList>
           <TabsTrigger value="members">
             <Users className="mr-2 h-4 w-4" />
-            Members ({members.length})
+            {t("settings.team.members")} ({members.length})
           </TabsTrigger>
           <TabsTrigger value="invites">
             <Mail className="mr-2 h-4 w-4" />
-            Pending Invites ({invites.length})
+            {t("settings.team.pendingInvites")} ({invites.length})
           </TabsTrigger>
         </TabsList>
 
@@ -589,7 +592,7 @@ export function TeamClient({
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or email..."
+                placeholder={t("settings.team.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -598,10 +601,10 @@ export function TeamClient({
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-40">
                 <Shield className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Role" />
+                <SelectValue placeholder={t("settings.team.inviteRole")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="all">{t("settings.team.allRoles")}</SelectItem>
                 {Object.entries(roleLabels).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
@@ -616,12 +619,12 @@ export function TeamClient({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("settings.team.member")}</TableHead>
+                  <TableHead>{t("settings.team.inviteRole")}</TableHead>
+                  <TableHead>{t("settings.team.department")}</TableHead>
+                  <TableHead>{t("settings.team.status")}</TableHead>
+                  <TableHead>{t("settings.team.joined")}</TableHead>
+                  <TableHead className="text-right">{t("common.table.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -629,7 +632,7 @@ export function TeamClient({
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-12">
                       <Users className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                      <p className="text-muted-foreground">No team members found</p>
+                      <p className="text-muted-foreground">{t("settings.team.noMembersFound")}</p>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -647,7 +650,7 @@ export function TeamClient({
                             <div className="font-medium">
                               {member.first_name} {member.last_name}
                               {member.id === currentUserId && (
-                                <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                                <Badge variant="outline" className="ml-2 text-xs">{t("settings.team.you")}</Badge>
                               )}
                             </div>
                             <div className="text-sm text-muted-foreground">
@@ -668,7 +671,7 @@ export function TeamClient({
                       </TableCell>
                       <TableCell>
                         <Badge variant={member.is_active !== false ? "default" : "secondary"}>
-                          {member.is_active !== false ? "Active" : "Inactive"}
+                          {member.is_active !== false ? t("common.status.active") : t("common.status.inactive")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -688,7 +691,7 @@ export function TeamClient({
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => openEditDialog(member)}>
                               <Pencil className="mr-2 h-4 w-4" />
-                              Edit Role
+                              {t("settings.team.editRole")}
                             </DropdownMenuItem>
                             {member.id !== currentUserId && (
                               <>
@@ -696,12 +699,12 @@ export function TeamClient({
                                   {member.is_active !== false ? (
                                     <>
                                       <UserX className="mr-2 h-4 w-4" />
-                                      Deactivate
+                                      {t("settings.team.deactivate")}
                                     </>
                                   ) : (
                                     <>
                                       <UserCheck className="mr-2 h-4 w-4" />
-                                      Activate
+                                      {t("settings.team.activate")}
                                     </>
                                   )}
                                 </DropdownMenuItem>
@@ -711,7 +714,7 @@ export function TeamClient({
                                   onClick={() => openDeleteDialog(member)}
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Remove
+                                  {t("common.remove")}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -731,10 +734,10 @@ export function TeamClient({
             <Card>
               <CardContent className="py-12 text-center">
                 <Mail className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No pending invitations</p>
+                <p className="text-muted-foreground">{t("settings.team.noPendingInvitations")}</p>
                 <Button className="mt-4" onClick={() => setIsInviteDialogOpen(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Invite Team Member
+                  {t("settings.team.inviteTeamMember")}
                 </Button>
               </CardContent>
             </Card>
@@ -754,12 +757,12 @@ export function TeamClient({
                             <Badge variant="outline">{roleLabels[invite.role] || invite.role}</Badge>
                             {invite.department_id && (
                               <Badge variant="secondary">
-                                {departments.find(d => d.id === invite.department_id)?.name || "Department"}
+                                {departments.find(d => d.id === invite.department_id)?.name || t("settings.team.department")}
                               </Badge>
                             )}
                             <span>•</span>
                             <span>
-                              Sent {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
+                              {t("settings.team.sent")} {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
                             </span>
                           </div>
                         </div>
@@ -772,7 +775,7 @@ export function TeamClient({
                             size="icon"
                             className="h-6 w-6"
                             onClick={() => copyInviteCode(invite.invite_code)}
-                            title="Copy code"
+                            title={t("settings.team.copyCode")}
                           >
                             <Copy className="h-3 w-3" />
                           </Button>
@@ -781,7 +784,7 @@ export function TeamClient({
                           variant="ghost"
                           size="icon"
                           onClick={() => copyInviteLink(invite.invite_code)}
-                          title="Copy invite link"
+                          title={t("settings.team.copyInviteLink")}
                         >
                           <Link className="h-4 w-4" />
                         </Button>
@@ -789,7 +792,7 @@ export function TeamClient({
                           variant="ghost"
                           size="icon"
                           onClick={() => resendInvite(invite)}
-                          title="Generate new code"
+                          title={t("settings.team.generateNewCode")}
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
@@ -798,7 +801,7 @@ export function TeamClient({
                           size="icon"
                           className="text-destructive"
                           onClick={() => cancelInvite(invite)}
-                          title="Cancel invite"
+                          title={t("settings.team.cancelInvite")}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -816,14 +819,14 @@ export function TeamClient({
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Invite Team Member</DialogTitle>
+            <DialogTitle>{t("settings.team.inviteTeamMember")}</DialogTitle>
             <DialogDescription>
-              Send an invitation to join your organization. They'll receive a code to sign up.
+              {t("settings.team.inviteDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
+              <Label htmlFor="email">{t("settings.team.inviteEmail")} *</Label>
               <Input
                 id="email"
                 type="email"
@@ -833,7 +836,7 @@ export function TeamClient({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">Role *</Label>
+              <Label htmlFor="role">{t("settings.team.inviteRole")} *</Label>
               <Select
                 value={inviteForm.role}
                 onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
@@ -852,16 +855,16 @@ export function TeamClient({
             </div>
             {inviteForm.role === "hiring_manager" && departments.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="invite_department">Department *</Label>
+                <Label htmlFor="invite_department">{t("settings.team.department")} *</Label>
                 <Select
                   value={inviteForm.department_id}
                   onValueChange={(value) => setInviteForm({ ...inviteForm, department_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("settings.team.selectDepartment")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Select department</SelectItem>
+                    <SelectItem value="none">{t("settings.team.selectDepartment")}</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name}
@@ -870,14 +873,14 @@ export function TeamClient({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  The Department Manager will have data access to the selected department.
+                  {t("settings.team.departmentAccessNote")}
                 </p>
               </div>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleInvite}
@@ -888,7 +891,7 @@ export function TeamClient({
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}
-              Send Invitation
+              {t("settings.team.sendInvitation")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -898,14 +901,14 @@ export function TeamClient({
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Team Member</DialogTitle>
+            <DialogTitle>{t("settings.team.editTeamMember")}</DialogTitle>
             <DialogDescription>
-              Update role and department for {selectedMember?.first_name} {selectedMember?.last_name}
+              {t("settings.team.updateRoleDescription")} {selectedMember?.first_name} {selectedMember?.last_name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_role">Role</Label>
+              <Label htmlFor="edit_role">{t("settings.team.inviteRole")}</Label>
               <Select
                 value={editForm.role}
                 onValueChange={(value) => setEditForm({ ...editForm, role: value })}
@@ -924,16 +927,16 @@ export function TeamClient({
             </div>
             {departments.length > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="edit_department">Department</Label>
+                <Label htmlFor="edit_department">{t("settings.team.department")}</Label>
                 <Select
                   value={editForm.department}
                   onValueChange={(value) => setEditForm({ ...editForm, department: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("settings.team.selectDepartment")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No department</SelectItem>
+                    <SelectItem value="none">{t("settings.team.noDepartment")}</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.name}>
                         {dept.name}
@@ -945,17 +948,17 @@ export function TeamClient({
             )}
             {editForm.role === "hiring_manager" && departments.length > 0 && editForm.department === "none" && (
               <p className="text-xs text-amber-600">
-                Please select a department above. The Department Manager will have data access to the selected department.
+                {t("settings.team.selectDepartmentWarning")}
               </p>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {t("settings.team.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -965,9 +968,9 @@ export function TeamClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogTitle>{t("settings.team.removeMember")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove this person from your organization?
+              {t("settings.team.removeDescription")}
             </DialogDescription>
           </DialogHeader>
           {selectedMember && (
@@ -979,17 +982,17 @@ export function TeamClient({
                 <p className="text-sm text-muted-foreground">{selectedMember.email}</p>
               </div>
               <p className="text-sm text-muted-foreground mt-4">
-                They will lose access to all organization data but their account will remain.
+                {t("settings.team.removeWarning")}
               </p>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleRemove} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Remove Member
+              {t("settings.team.removeMember")}
             </Button>
           </DialogFooter>
         </DialogContent>

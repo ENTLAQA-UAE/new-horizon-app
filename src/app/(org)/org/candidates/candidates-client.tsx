@@ -69,6 +69,7 @@ import {
 } from "lucide-react"
 import { useAI } from "@/hooks/use-ai"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface Candidate {
   id: string
@@ -113,18 +114,11 @@ const statusStyles: Record<string, string> = {
   withdrawn: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 }
 
-const sourceOptions = [
-  { value: "direct", label: "Direct Application" },
-  { value: "career_page", label: "Career Page" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "indeed", label: "Indeed" },
-  { value: "referral", label: "Employee Referral" },
-  { value: "agency", label: "Recruitment Agency" },
-  { value: "other", label: "Other" },
-]
+const sourceValues = ["direct", "career_page", "linkedin", "indeed", "referral", "agency", "other"]
 
 export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organizationId }: OrgCandidatesClientProps) {
   const router = useRouter()
+  const { t, language, isRTL } = useI18n()
   const { parseResume, isLoading: isAiLoading, error: aiError } = useAI()
   const [candidates, setCandidates] = useState(initialCandidates)
   const [searchQuery, setSearchQuery] = useState("")
@@ -207,7 +201,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
   // Open resume in new tab (like Google Drive - view & download from there)
   const handleOpenResume = (resumeUrl: string) => {
     if (!resumeUrl) {
-      toast.error("Resume URL not available")
+      toast.error(t("candidates.messages.resumeNotAvailable"))
       return
     }
     // Open the file directly in a new tab - user can view and download from there
@@ -217,7 +211,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
   // CREATE
   const handleCreate = async () => {
     if (!formData.first_name || !formData.last_name || !formData.email) {
-      toast.error("Please fill in required fields")
+      toast.error(t("candidates.messages.fillRequired"))
       return
     }
 
@@ -242,7 +236,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       if (error) {
         if (error.code === "23505") {
-          toast.error("A candidate with this email already exists")
+          toast.error(t("errors.candidates.duplicateEmail"))
         } else {
           toast.error(error.message)
         }
@@ -265,10 +259,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       setCandidates([data as any, ...candidates])
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success("Candidate added successfully")
+      toast.success(t("candidates.messages.created"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
       setIsUploadingResume(false)
@@ -298,7 +292,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
   const handleEdit = async () => {
     if (!selectedCandidate || !formData.first_name || !formData.last_name || !formData.email) {
-      toast.error("Please fill in required fields")
+      toast.error(t("candidates.messages.fillRequired"))
       return
     }
 
@@ -339,10 +333,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       setIsEditDialogOpen(false)
       setSelectedCandidate(null)
       resetForm()
-      toast.success("Candidate updated successfully")
+      toast.success(t("candidates.messages.updated"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -375,10 +369,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       setCandidates(candidates.filter((c) => c.id !== selectedCandidate.id))
       setIsDeleteDialogOpen(false)
       setSelectedCandidate(null)
-      toast.success("Candidate deleted successfully")
+      toast.success(t("candidates.messages.deleted"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -402,10 +396,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           c.id === candidateId ? { ...c, overall_status: newStatus } : c
         )
       )
-      toast.success(`Status updated to ${newStatus}`)
+      toast.success(t("candidates.messages.statusUpdated", { status: t(`candidates.status.${newStatus}`) }))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     }
   }
 
@@ -418,7 +412,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
   const handleApplyToJob = async () => {
     if (!selectedCandidate || !selectedJobId) {
-      toast.error("Please select a job")
+      toast.error(t("candidates.messages.selectJob"))
       return
     }
 
@@ -435,7 +429,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       })
 
       if (existingApp) {
-        toast.error("This candidate has already applied to this job")
+        toast.error(t("candidates.messages.alreadyApplied"))
         setIsLoading(false)
         return
       }
@@ -507,10 +501,10 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       setIsApplyDialogOpen(false)
       setSelectedCandidate(null)
       setSelectedJobId("")
-      toast.success("Candidate applied to job successfully")
+      toast.success(t("candidates.messages.appliedToJob"))
       router.push("/org/applications")
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -554,12 +548,12 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       // Validate file type
       const validTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
       if (!validTypes.includes(file.type)) {
-        toast.error("Please upload a PDF or Word document")
+        toast.error(t("candidates.messages.invalidResumeType"))
         return
       }
       // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("File size must be less than 10MB")
+        toast.error(t("candidates.messages.fileTooLarge"))
         return
       }
       setResumeFile(file)
@@ -612,7 +606,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
   // AI Parse resume handler
   const handleAIParseResume = async () => {
     if (!resumeText && !resumeFile) {
-      toast.error("Please upload a resume first")
+      toast.error(t("candidates.messages.uploadResumeFirst"))
       return
     }
 
@@ -625,14 +619,14 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         try {
           textToParse = await resumeFile.text()
         } catch {
-          toast.error("Could not read resume file. Please try a different format.")
+          toast.error(t("candidates.messages.cannotReadResume"))
           setIsParsing(false)
           return
         }
       }
 
       if (!textToParse) {
-        toast.error("Could not extract text from resume")
+        toast.error(t("candidates.messages.cannotExtractText"))
         setIsParsing(false)
         return
       }
@@ -656,12 +650,12 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           skills: result.skills?.join(", ") || formData.skills,
           source: formData.source,
         })
-        toast.success("Resume parsed successfully! Form has been auto-filled.")
+        toast.success(t("candidates.messages.resumeParsed"))
       } else if (aiError) {
         toast.error(aiError)
       }
     } catch {
-      toast.error("Failed to parse resume")
+      toast.error(t("errors.candidates.parseResumeFailed"))
     } finally {
       setIsParsing(false)
     }
@@ -684,7 +678,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
     <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-first_name`}>First Name *</Label>
+          <Label htmlFor={`${idPrefix}-first_name`}>{t("candidates.fields.firstName")} *</Label>
           <Input
             id={`${idPrefix}-first_name`}
             value={formData.first_name}
@@ -693,7 +687,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-last_name`}>Last Name *</Label>
+          <Label htmlFor={`${idPrefix}-last_name`}>{t("candidates.fields.lastName")} *</Label>
           <Input
             id={`${idPrefix}-last_name`}
             value={formData.last_name}
@@ -705,7 +699,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-email`}>Email *</Label>
+          <Label htmlFor={`${idPrefix}-email`}>{t("candidates.fields.email")} *</Label>
           <Input
             id={`${idPrefix}-email`}
             type="email"
@@ -715,7 +709,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-phone`}>Phone</Label>
+          <Label htmlFor={`${idPrefix}-phone`}>{t("candidates.fields.phone")}</Label>
           <Input
             id={`${idPrefix}-phone`}
             value={formData.phone}
@@ -729,7 +723,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-city`}>City</Label>
+          <Label htmlFor={`${idPrefix}-city`}>{t("candidates.fields.city")}</Label>
           <Input
             id={`${idPrefix}-city`}
             value={formData.city}
@@ -738,7 +732,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-country`}>Country</Label>
+          <Label htmlFor={`${idPrefix}-country`}>{t("candidates.fields.country")}</Label>
           <Input
             id={`${idPrefix}-country`}
             value={formData.country}
@@ -747,7 +741,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-nationality`}>Nationality</Label>
+          <Label htmlFor={`${idPrefix}-nationality`}>{t("candidates.fields.nationality")}</Label>
           <Input
             id={`${idPrefix}-nationality`}
             value={formData.nationality}
@@ -761,7 +755,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-current_job_title`}>Current Job Title</Label>
+          <Label htmlFor={`${idPrefix}-current_job_title`}>{t("candidates.fields.currentTitle")}</Label>
           <Input
             id={`${idPrefix}-current_job_title`}
             value={formData.current_job_title}
@@ -770,7 +764,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-current_company`}>Current Company</Label>
+          <Label htmlFor={`${idPrefix}-current_company`}>{t("candidates.fields.currentCompany")}</Label>
           <Input
             id={`${idPrefix}-current_company`}
             value={formData.current_company}
@@ -782,7 +776,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-years_of_experience`}>Years of Experience</Label>
+          <Label htmlFor={`${idPrefix}-years_of_experience`}>{t("candidates.fields.yearsExperience")}</Label>
           <Input
             id={`${idPrefix}-years_of_experience`}
             type="number"
@@ -792,27 +786,27 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-highest_education`}>Highest Education</Label>
+          <Label htmlFor={`${idPrefix}-highest_education`}>{t("candidates.fields.education")}</Label>
           <Select
             value={formData.highest_education}
             onValueChange={(value) => setFormData({ ...formData, highest_education: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select education" />
+              <SelectValue placeholder={t("candidates.selectEducation")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="high_school">High School</SelectItem>
-              <SelectItem value="diploma">Diploma</SelectItem>
-              <SelectItem value="bachelors">Bachelor&apos;s Degree</SelectItem>
-              <SelectItem value="masters">Master&apos;s Degree</SelectItem>
-              <SelectItem value="phd">PhD / Doctorate</SelectItem>
+              <SelectItem value="high_school">{t("candidates.educationLevels.high_school")}</SelectItem>
+              <SelectItem value="diploma">{t("candidates.educationLevels.diploma")}</SelectItem>
+              <SelectItem value="bachelors">{t("candidates.educationLevels.bachelors")}</SelectItem>
+              <SelectItem value="masters">{t("candidates.educationLevels.masters")}</SelectItem>
+              <SelectItem value="phd">{t("candidates.educationLevels.phd")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-skills`}>Skills (comma separated)</Label>
+        <Label htmlFor={`${idPrefix}-skills`}>{t("candidates.skillsCommaSeparated")}</Label>
         <Textarea
           id={`${idPrefix}-skills`}
           value={formData.skills}
@@ -823,7 +817,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-source`}>Source</Label>
+        <Label htmlFor={`${idPrefix}-source`}>{t("candidates.fields.source")}</Label>
         <Select
           value={formData.source}
           onValueChange={(value) => setFormData({ ...formData, source: value })}
@@ -832,9 +826,9 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {sourceOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+            {sourceValues.map((value) => (
+              <SelectItem key={value} value={value}>
+                {t(`candidates.sources.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -845,7 +839,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor={`${idPrefix}-resume`}>Resume (PDF or Word)</Label>
+          <Label htmlFor={`${idPrefix}-resume`}>{t("candidates.resumePdfOrWord")}</Label>
           {resumeFile && (
             <Button
               type="button"
@@ -860,7 +854,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
               ) : (
                 <Sparkles className="h-3 w-3" />
               )}
-              Parse with AI
+              {t("candidates.parseWithAI")}
             </Button>
           )}
         </div>
@@ -888,7 +882,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
             <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-lg">
               <Wand2 className="h-4 w-4 text-violet-500" />
               <p className="text-xs text-muted-foreground">
-                Click <span className="font-medium text-violet-600">&quot;Parse with AI&quot;</span> to auto-fill candidate details from this resume
+                {t("candidates.parseWithAIHintPrefix")} <span className="font-medium text-violet-600">&quot;{t("candidates.parseWithAI")}&quot;</span> {t("candidates.parseWithAIHintSuffix")}
               </p>
             </div>
           </div>
@@ -904,7 +898,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
             <div className="flex items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg hover:border-primary/50 transition-colors">
               <Upload className="h-5 w-5 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                Click or drag to upload resume (PDF, DOC, DOCX - Max 10MB)
+                {t("candidates.uploadResumeHint")}
               </span>
             </div>
           </div>
@@ -918,14 +912,14 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Candidates</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("candidates.title")}</h2>
           <p className="text-muted-foreground">
-            Manage your talent pool and candidates
+            {t("candidates.subtitle")}
           </p>
         </div>
         <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Candidate
+          {t("candidates.addCandidate")}
         </Button>
       </div>
 
@@ -933,7 +927,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("candidates.stats.total")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -941,7 +935,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">New</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("candidates.stats.new")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
@@ -949,7 +943,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Screening</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("candidates.stats.screening")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.screening}</div>
@@ -957,7 +951,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Interviewing</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("candidates.stats.interviewing")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.interviewing}</div>
@@ -965,7 +959,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Hired</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("candidates.stats.hired")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">{stats.hired}</div>
@@ -978,7 +972,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, job title..."
+            placeholder={t("candidates.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -987,16 +981,16 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
             <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("candidates.filters.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="screening">Screening</SelectItem>
-            <SelectItem value="interviewing">Interviewing</SelectItem>
-            <SelectItem value="offered">Offered</SelectItem>
-            <SelectItem value="hired">Hired</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">{t("candidates.allStatus")}</SelectItem>
+            <SelectItem value="new">{t("candidates.status.new")}</SelectItem>
+            <SelectItem value="screening">{t("candidates.status.screening")}</SelectItem>
+            <SelectItem value="interviewing">{t("candidates.status.interviewing")}</SelectItem>
+            <SelectItem value="offered">{t("candidates.status.offered")}</SelectItem>
+            <SelectItem value="hired">{t("candidates.status.hired")}</SelectItem>
+            <SelectItem value="rejected">{t("candidates.status.rejected")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -1006,13 +1000,13 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Candidate</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Current Role</TableHead>
-              <TableHead>Experience</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("candidates.candidate")}</TableHead>
+              <TableHead>{t("candidates.contact")}</TableHead>
+              <TableHead>{t("candidates.currentRole")}</TableHead>
+              <TableHead>{t("candidates.fields.experience")}</TableHead>
+              <TableHead>{t("candidates.filters.status")}</TableHead>
+              <TableHead>{t("candidates.fields.source")}</TableHead>
+              <TableHead className="text-right">{t("common.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1020,13 +1014,13 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12">
                   <UserSearch className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No candidates found</p>
+                  <p className="text-muted-foreground">{t("candidates.emptyState.title")}</p>
                   <Button
                     variant="link"
                     onClick={() => setIsCreateDialogOpen(true)}
                     className="mt-2"
                   >
-                    Add your first candidate
+                    {t("candidates.emptyState.addFirst")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -1074,17 +1068,17 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                   </TableCell>
                   <TableCell>
                     {candidate.years_of_experience !== null
-                      ? `${candidate.years_of_experience} years`
+                      ? t("candidates.yearsCount", { count: String(candidate.years_of_experience) })
                       : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge className={cn("capitalize", statusStyles[candidate.overall_status || "new"])}>
-                      {candidate.overall_status || "new"}
+                      {t(`candidates.status.${candidate.overall_status || "new"}`)}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground capitalize">
-                      {candidate.source?.replace("_", " ") || "-"}
+                      {candidate.source ? t(`candidates.sources.${candidate.source}`) : "-"}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -1102,7 +1096,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                           }}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View Profile
+                          {t("candidates.viewProfile")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -1111,14 +1105,14 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                           }}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit
+                          {t("common.edit")}
                         </DropdownMenuItem>
                         {candidate.resume_url && (
                           <DropdownMenuItem
                             onSelect={() => handleOpenResume(candidate.resume_url!)}
                           >
                             <ExternalLink className="mr-2 h-4 w-4" />
-                            View Resume
+                            {t("candidates.actions.viewResume")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -1130,7 +1124,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                           className="text-primary"
                         >
                           <Briefcase className="mr-2 h-4 w-4" />
-                          Apply to Job
+                          {t("candidates.applyToJob")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -1141,7 +1135,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1157,19 +1151,19 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add New Candidate</DialogTitle>
+            <DialogTitle>{t("candidates.addNewCandidate")}</DialogTitle>
             <DialogDescription>
-              Add a new candidate to your talent pool.
+              {t("candidates.addNewCandidateDescription")}
             </DialogDescription>
           </DialogHeader>
           {renderCandidateFormFields("create")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add Candidate
+              {t("candidates.addCandidate")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1179,19 +1173,19 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Candidate</DialogTitle>
+            <DialogTitle>{t("candidates.editCandidate")}</DialogTitle>
             <DialogDescription>
-              Update candidate information.
+              {t("candidates.editCandidateDescription")}
             </DialogDescription>
           </DialogHeader>
           {renderCandidateFormFields("edit")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {t("common.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1201,7 +1195,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Candidate Profile</DialogTitle>
+            <DialogTitle>{t("candidates.candidateProfile")}</DialogTitle>
           </DialogHeader>
           {selectedCandidate && (
             <div className="space-y-4">
@@ -1216,11 +1210,11 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                     {selectedCandidate.first_name} {selectedCandidate.last_name}
                   </h3>
                   <p className="text-muted-foreground">
-                    {selectedCandidate.current_job_title || "No title"}
-                    {selectedCandidate.current_company && ` at ${selectedCandidate.current_company}`}
+                    {selectedCandidate.current_job_title || t("candidates.noTitle")}
+                    {selectedCandidate.current_company && ` ${t("candidates.atCompany", { company: selectedCandidate.current_company })}`}
                   </p>
                   <Badge className={cn("capitalize mt-1", statusStyles[selectedCandidate.overall_status || "new"])}>
-                    {selectedCandidate.overall_status || "new"}
+                    {t(`candidates.status.${selectedCandidate.overall_status || "new"}`)}
                   </Badge>
                 </div>
               </div>
@@ -1249,13 +1243,13 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                 {selectedCandidate.years_of_experience !== null && (
                   <div className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedCandidate.years_of_experience} years experience</span>
+                    <span>{t("candidates.yearsExperience", { count: String(selectedCandidate.years_of_experience) })}</span>
                   </div>
                 )}
                 {selectedCandidate.highest_education && (
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    <span className="capitalize">{selectedCandidate.highest_education.replace("_", " ")}</span>
+                    <span>{t(`candidates.educationLevels.${selectedCandidate.highest_education}`)}</span>
                   </div>
                 )}
               </div>
@@ -1264,7 +1258,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                 <>
                   <Separator />
                   <div>
-                    <p className="text-sm font-medium mb-2">Skills</p>
+                    <p className="text-sm font-medium mb-2">{t("candidates.fields.skills")}</p>
                     <div className="flex flex-wrap gap-2">
                       {selectedCandidate.skills.map((skill, i) => (
                         <Badge key={i} variant="secondary">
@@ -1279,21 +1273,21 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
               <Separator />
 
               <div className="text-xs text-muted-foreground">
-                Added on {selectedCandidate.created_at ? new Date(selectedCandidate.created_at).toLocaleDateString() : "N/A"}
-                {selectedCandidate.source && ` via ${selectedCandidate.source.replace("_", " ")}`}
+                {t("candidates.addedOnDate", { date: selectedCandidate.created_at ? new Date(selectedCandidate.created_at).toLocaleDateString() : "N/A" })}
+                {selectedCandidate.source && ` ${t("candidates.viaSource", { source: t(`candidates.sources.${selectedCandidate.source}`) })}`}
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
+              {t("common.close")}
             </Button>
             <Button onClick={() => {
               setIsViewDialogOpen(false)
               if (selectedCandidate) openEditDialog(selectedCandidate)
             }}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t("common.edit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1303,9 +1297,9 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Candidate</DialogTitle>
+            <DialogTitle>{t("candidates.deleteCandidate")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this candidate? This action cannot be undone.
+              {t("candidates.confirmations.delete")}
             </DialogDescription>
           </DialogHeader>
           {selectedCandidate && (
@@ -1320,11 +1314,11 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Candidate
+              {t("candidates.deleteCandidate")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1334,9 +1328,9 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
       <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Apply Candidate to Job</DialogTitle>
+            <DialogTitle>{t("candidates.applyCandidateToJob")}</DialogTitle>
             <DialogDescription>
-              Select a job to create an application for this candidate.
+              {t("candidates.applyToJobDescription")}
             </DialogDescription>
           </DialogHeader>
           {selectedCandidate && (
@@ -1352,17 +1346,17 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                     {selectedCandidate.first_name} {selectedCandidate.last_name}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {selectedCandidate.current_job_title || "No title"}
+                    {selectedCandidate.current_job_title || t("candidates.noTitle")}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="apply-job">Select Job *</Label>
+                <Label htmlFor="apply-job">{t("candidates.selectJob")} *</Label>
                 {publishedJobs.length > 0 ? (
                   <Select value={selectedJobId} onValueChange={setSelectedJobId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a job position" />
+                      <SelectValue placeholder={t("candidates.selectJobPosition")} />
                     </SelectTrigger>
                     <SelectContent>
                       {publishedJobs.map((job) => (
@@ -1374,8 +1368,8 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                   </Select>
                 ) : (
                   <div className="p-4 text-center text-muted-foreground border border-dashed rounded-lg">
-                    <p>No published jobs available</p>
-                    <p className="text-sm">Publish a job first to apply candidates</p>
+                    <p>{t("candidates.noPublishedJobs")}</p>
+                    <p className="text-sm">{t("candidates.publishJobFirst")}</p>
                   </div>
                 )}
               </div>
@@ -1383,14 +1377,14 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsApplyDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleApplyToJob}
               disabled={isLoading || !selectedJobId || publishedJobs.length === 0}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Application
+              {t("candidates.createApplication")}
             </Button>
           </DialogFooter>
         </DialogContent>

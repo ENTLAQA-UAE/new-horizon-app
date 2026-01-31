@@ -70,6 +70,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface Pipeline {
   id: string
@@ -156,6 +157,7 @@ interface SortableStageItemProps {
 }
 
 function SortableStageItem({ stage, stageTypeConfig, onEdit, onDelete }: SortableStageItemProps) {
+  const { t } = useI18n()
   const {
     attributes,
     listeners,
@@ -199,23 +201,23 @@ function SortableStageItem({ stage, stageTypeConfig, onEdit, onDelete }: Sortabl
         <div className="flex items-center gap-2">
           <span className="font-medium">{stage.name}</span>
           <Badge variant="outline" className="text-xs">
-            {stageTypeConfig.label}
+            {t(`pipelines.stageTypes.${stageTypeConfig.value}`)}
           </Badge>
           {stage.is_system && (
             <Badge variant="default" className="text-xs bg-slate-600">
-              System
+              {t("pipelines.system")}
             </Badge>
           )}
           {stage.requires_approval && (
             <Badge variant="secondary" className="text-xs">
               <UserCheck className="h-3 w-3 mr-1" />
-              Approval
+              {t("pipelines.approval")}
             </Badge>
           )}
           {stage.auto_email_template_id && (
             <Badge variant="secondary" className="text-xs">
               <Mail className="h-3 w-3 mr-1" />
-              Auto-email
+              {t("pipelines.autoEmail")}
             </Badge>
           )}
         </div>
@@ -254,6 +256,7 @@ export function PipelinesClient({
   organizationId,
 }: PipelinesClientProps) {
   const router = useRouter()
+  const { t, language, isRTL } = useI18n()
 
   const [pipelines, setPipelines] = useState(initialPipelines)
   const [allStages, setAllStages] = useState(initialStages)
@@ -383,7 +386,7 @@ export function PipelinesClient({
   // PIPELINE CRUD
   const handleSavePipeline = async () => {
     if (!pipelineForm.name) {
-      toast.error("Please enter pipeline name")
+      toast.error(t("pipelines.toast.enterPipelineName"))
       return
     }
 
@@ -406,7 +409,7 @@ export function PipelinesClient({
         if (data) {
           setPipelines(pipelines.map((p) => (p.id === editingPipeline.id ? data : p)))
         }
-        toast.success("Pipeline updated successfully")
+        toast.success(t("pipelines.toast.pipelineUpdated"))
       } else {
         // Create the pipeline
         const { data, error } = await supabaseInsert<Pipeline>(
@@ -455,14 +458,14 @@ export function PipelinesClient({
         }
 
         setPipelines([data, ...pipelines])
-        toast.success("Pipeline created with default stages")
+        toast.success(t("pipelines.toast.pipelineCreated"))
       }
 
       setIsPipelineDialogOpen(false)
       resetPipelineForm()
       router.refresh()
     } catch (error) {
-      toast.error("Failed to save pipeline")
+      toast.error(t("pipelines.toast.failedToSavePipeline"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -485,10 +488,10 @@ export function PipelinesClient({
       setAllStages(allStages.filter((s) => s.pipeline_id !== selectedPipeline.id))
       setIsDeleteDialogOpen(false)
       setSelectedPipeline(null)
-      toast.success("Pipeline deleted successfully")
+      toast.success(t("pipelines.toast.pipelineDeleted"))
       router.refresh()
     } catch (error) {
-      toast.error("Failed to delete pipeline")
+      toast.error(t("pipelines.toast.failedToDeletePipeline"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -550,10 +553,10 @@ export function PipelinesClient({
       }
 
       setPipelines([newPipeline, ...pipelines])
-      toast.success("Pipeline duplicated successfully")
+      toast.success(t("pipelines.toast.pipelineDuplicated"))
       router.refresh()
     } catch (error) {
-      toast.error("Failed to duplicate pipeline")
+      toast.error(t("pipelines.toast.failedToDuplicatePipeline"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -575,7 +578,7 @@ export function PipelinesClient({
   // STAGE CRUD
   const handleSaveStage = async () => {
     if (!stageForm.name || !selectedPipeline) {
-      toast.error("Please enter stage name")
+      toast.error(t("pipelines.toast.enterStageName"))
       return
     }
 
@@ -604,7 +607,7 @@ export function PipelinesClient({
         if (data) {
           setAllStages(allStages.map((s) => (s.id === editingStage.id ? data : s)))
         }
-        toast.success("Stage updated successfully")
+        toast.success(t("pipelines.toast.stageUpdated"))
       } else {
         const pipelineStages = getPipelineStages(selectedPipeline.id)
         const maxOrder = pipelineStages.length > 0
@@ -635,14 +638,14 @@ export function PipelinesClient({
         if (data) {
           setAllStages([...allStages, data])
         }
-        toast.success("Stage added successfully")
+        toast.success(t("pipelines.toast.stageAdded"))
       }
 
       setIsStageDialogOpen(false)
       resetStageForm()
       router.refresh()
     } catch (error) {
-      toast.error("Failed to save stage")
+      toast.error(t("pipelines.toast.failedToSaveStage"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -660,10 +663,10 @@ export function PipelinesClient({
       if (error) throw error
 
       setAllStages(allStages.filter((s) => s.id !== stageId))
-      toast.success("Stage deleted successfully")
+      toast.success(t("pipelines.toast.stageDeleted"))
       router.refresh()
     } catch (error) {
-      toast.error("Failed to delete stage")
+      toast.error(t("pipelines.toast.failedToDeleteStage"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -706,7 +709,7 @@ export function PipelinesClient({
                 <CardTitle className="text-base flex items-center gap-2">
                   {pipeline.name}
                   {pipeline.is_default && (
-                    <Badge variant="secondary" className="text-xs">Default</Badge>
+                    <Badge variant="secondary" className="text-xs">{t("pipelines.default")}</Badge>
                   )}
                 </CardTitle>
                 {pipeline.description && (
@@ -725,15 +728,15 @@ export function PipelinesClient({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => setSelectedPipeline(pipeline)}>
                   <Settings2 className="mr-2 h-4 w-4" />
-                  Manage Stages
+                  {t("pipelines.manageStages")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => openEditPipelineDialog(pipeline)}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Edit
+                  {t("common.edit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleDuplicatePipeline(pipeline)}>
                   <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
+                  {t("pipelines.duplicate")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -744,7 +747,7 @@ export function PipelinesClient({
                   className="text-red-600"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t("common.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -753,10 +756,10 @@ export function PipelinesClient({
         <CardContent>
           <div className="flex items-center gap-2 mb-3">
             <Badge variant={pipeline.is_active ? "default" : "secondary"}>
-              {pipeline.is_active ? "Active" : "Inactive"}
+              {pipeline.is_active ? t("common.status.active") : t("common.status.inactive")}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {pipelineStages.length} stages
+              {t("pipelines.stagesCount", { count: pipelineStages.length })}
             </span>
           </div>
           {pipelineStages.length > 0 && (
@@ -776,7 +779,7 @@ export function PipelinesClient({
               ))}
               {pipelineStages.length > 5 && (
                 <span className="text-xs text-muted-foreground ml-1">
-                  +{pipelineStages.length - 5} more
+                  {t("pipelines.moreStages", { count: pipelineStages.length - 5 })}
                 </span>
               )}
             </div>
@@ -791,14 +794,14 @@ export function PipelinesClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Hiring Pipelines</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("pipelines.title")}</h2>
           <p className="text-muted-foreground">
-            Create and manage custom hiring pipelines with stages
+            {t("pipelines.subtitle")}
           </p>
         </div>
         <Button onClick={() => { resetPipelineForm(); setIsPipelineDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Pipeline
+          {t("pipelines.createPipeline")}
         </Button>
       </div>
 
@@ -806,7 +809,7 @@ export function PipelinesClient({
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Pipelines</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("pipelines.totalPipelines")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -814,7 +817,7 @@ export function PipelinesClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.status.active")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.active}</div>
@@ -822,7 +825,7 @@ export function PipelinesClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Default Set</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("pipelines.defaultSet")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -831,7 +834,7 @@ export function PipelinesClient({
               ) : (
                 <AlertCircle className="h-5 w-5 text-amber-500" />
               )}
-              <span className="text-sm">{stats.hasDefault ? "Yes" : "No"}</span>
+              <span className="text-sm">{stats.hasDefault ? t("common.yes") : t("common.no")}</span>
             </div>
           </CardContent>
         </Card>
@@ -841,7 +844,7 @@ export function PipelinesClient({
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search pipelines..."
+          placeholder={t("pipelines.searchPipelines")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9"
@@ -856,10 +859,10 @@ export function PipelinesClient({
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <GitBranch className="h-5 w-5" />
-                  {selectedPipeline.name} - Stages
+                  {selectedPipeline.name} - {t("pipelines.stages")}
                 </CardTitle>
                 <CardDescription>
-                  Configure stages, approvals, and automations
+                  {t("pipelines.configureStages")}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -869,7 +872,7 @@ export function PipelinesClient({
                   onClick={() => { resetStageForm(); setIsStageDialogOpen(true); }}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Stage
+                  {t("pipelines.addStage")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -886,12 +889,12 @@ export function PipelinesClient({
               {getPipelineStages(selectedPipeline.id).length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <GitBranch className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>No stages configured yet</p>
+                  <p>{t("pipelines.noStages")}</p>
                   <Button
                     variant="link"
                     onClick={() => { resetStageForm(); setIsStageDialogOpen(true); }}
                   >
-                    Add your first stage
+                    {t("pipelines.addFirstStage")}
                   </Button>
                 </div>
               ) : (
@@ -928,13 +931,13 @@ export function PipelinesClient({
             <Card>
               <CardContent className="py-12 text-center">
                 <GitBranch className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No pipelines found</p>
+                <p className="text-muted-foreground">{t("pipelines.noPipelines")}</p>
                 <Button
                   variant="link"
                   onClick={() => { resetPipelineForm(); setIsPipelineDialogOpen(true); }}
                   className="mt-2"
                 >
-                  Create your first pipeline
+                  {t("pipelines.createFirstPipeline")}
                 </Button>
               </CardContent>
             </Card>
@@ -953,48 +956,48 @@ export function PipelinesClient({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingPipeline ? "Edit Pipeline" : "Create Pipeline"}
+              {editingPipeline ? t("pipelines.editPipeline") : t("pipelines.createPipeline")}
             </DialogTitle>
             <DialogDescription>
               {editingPipeline
-                ? "Update pipeline details"
-                : "Create a new hiring pipeline template"}
+                ? t("pipelines.updatePipelineDetails")
+                : t("pipelines.createPipelineDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Name (English) *</Label>
+                <Label>{t("pipelines.nameEnglish")} *</Label>
                 <Input
                   value={pipelineForm.name}
                   onChange={(e) => setPipelineForm({ ...pipelineForm, name: e.target.value })}
-                  placeholder="e.g., Technical Hiring"
+                  placeholder={t("pipelines.placeholderTechnicalHiring")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Name (Arabic)</Label>
+                <Label>{t("pipelines.nameArabic")}</Label>
                 <Input
                   value={pipelineForm.name_ar}
                   onChange={(e) => setPipelineForm({ ...pipelineForm, name_ar: e.target.value })}
-                  placeholder="التوظيف التقني"
+                  placeholder={t("pipelines.placeholderTechnicalHiringAr")}
                   dir="rtl"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("pipelines.description")}</Label>
               <Textarea
                 value={pipelineForm.description}
                 onChange={(e) => setPipelineForm({ ...pipelineForm, description: e.target.value })}
-                placeholder="Describe this pipeline..."
+                placeholder={t("pipelines.descriptionPlaceholder")}
                 rows={2}
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Set as Default</Label>
+                <Label>{t("pipelines.setAsDefault")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Use for new jobs by default
+                  {t("pipelines.useForNewJobs")}
                 </p>
               </div>
               <Switch
@@ -1007,11 +1010,11 @@ export function PipelinesClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsPipelineDialogOpen(false); resetPipelineForm(); }}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSavePipeline} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingPipeline ? "Update" : "Create"}
+              {editingPipeline ? t("pipelines.update") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1022,41 +1025,41 @@ export function PipelinesClient({
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingStage ? "Edit Stage" : "Add Stage"}
+              {editingStage ? t("pipelines.editStage") : t("pipelines.addStage")}
             </DialogTitle>
             <DialogDescription>
-              Configure stage settings, approvals, and automations
+              {t("pipelines.configureStageSettings")}
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="basic" className="py-4">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="approval">Approvals</TabsTrigger>
-              <TabsTrigger value="automation">Automation</TabsTrigger>
+              <TabsTrigger value="basic">{t("pipelines.basicInfo")}</TabsTrigger>
+              <TabsTrigger value="approval">{t("pipelines.approvals")}</TabsTrigger>
+              <TabsTrigger value="automation">{t("pipelines.automation")}</TabsTrigger>
             </TabsList>
             <TabsContent value="basic" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Name (English) *</Label>
+                  <Label>{t("pipelines.nameEnglish")} *</Label>
                   <Input
                     value={stageForm.name}
                     onChange={(e) => setStageForm({ ...stageForm, name: e.target.value })}
-                    placeholder="e.g., Technical Interview"
+                    placeholder={t("pipelines.placeholderTechnicalInterview")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Name (Arabic)</Label>
+                  <Label>{t("pipelines.nameArabic")}</Label>
                   <Input
                     value={stageForm.name_ar}
                     onChange={(e) => setStageForm({ ...stageForm, name_ar: e.target.value })}
-                    placeholder="المقابلة التقنية"
+                    placeholder={t("pipelines.placeholderTechnicalInterviewAr")}
                     dir="rtl"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Stage Type</Label>
+                  <Label>{t("pipelines.stageType")}</Label>
                   <Select
                     value={stageForm.stage_type}
                     onValueChange={(value) => setStageForm({ ...stageForm, stage_type: value })}
@@ -1067,14 +1070,14 @@ export function PipelinesClient({
                     <SelectContent>
                       {stageTypes.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
-                          {type.label}
+                          {t(`pipelines.stageTypes.${type.value}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Color</Label>
+                  <Label>{t("pipelines.color")}</Label>
                   <div className="flex gap-2 flex-wrap">
                     {defaultColors.map((color) => (
                       <button
@@ -1097,9 +1100,9 @@ export function PipelinesClient({
             <TabsContent value="approval" className="space-y-4 mt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Require Approval</Label>
+                  <Label>{t("pipelines.requireApproval")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Candidates must be approved to move to this stage
+                    {t("pipelines.requireApprovalDescription")}
                   </p>
                 </div>
                 <Switch
@@ -1111,7 +1114,7 @@ export function PipelinesClient({
               </div>
               {stageForm.requires_approval && (
                 <div className="space-y-2">
-                  <Label>Approvers</Label>
+                  <Label>{t("pipelines.approvers")}</Label>
                   <Select
                     value={stageForm.approvers[0] || "none"}
                     onValueChange={(value) =>
@@ -1122,10 +1125,10 @@ export function PipelinesClient({
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select approver" />
+                      <SelectValue placeholder={t("pipelines.selectApprover")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No approver required</SelectItem>
+                      <SelectItem value="none">{t("pipelines.noApproverRequired")}</SelectItem>
                       {teamMembers.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.name}
@@ -1134,14 +1137,14 @@ export function PipelinesClient({
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Select team members who can approve candidates for this stage
+                    {t("pipelines.selectApproversDescription")}
                   </p>
                 </div>
               )}
             </TabsContent>
             <TabsContent value="automation" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label>Auto-send Email</Label>
+                <Label>{t("pipelines.autoSendEmail")}</Label>
                 <Select
                   value={stageForm.auto_email_template_id}
                   onValueChange={(value) =>
@@ -1149,10 +1152,10 @@ export function PipelinesClient({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select email template" />
+                    <SelectValue placeholder={t("pipelines.selectEmailTemplate")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{t("common.none")}</SelectItem>
                     {emailTemplates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
@@ -1161,14 +1164,14 @@ export function PipelinesClient({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Automatically send this email when candidate moves to this stage
+                  {t("pipelines.autoSendEmailDescription")}
                 </p>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Auto-Reject</Label>
+                  <Label>{t("pipelines.autoReject")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Automatically reject if no action taken
+                    {t("pipelines.autoRejectDescription")}
                   </p>
                 </div>
                 <Switch
@@ -1180,7 +1183,7 @@ export function PipelinesClient({
               </div>
               {stageForm.auto_reject_enabled && (
                 <div className="space-y-2">
-                  <Label>Days until auto-reject</Label>
+                  <Label>{t("pipelines.daysUntilAutoReject")}</Label>
                   <Input
                     type="number"
                     value={stageForm.auto_reject_days}
@@ -1194,7 +1197,7 @@ export function PipelinesClient({
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>SLA Warning (days)</Label>
+                  <Label>{t("pipelines.slaWarningDays")}</Label>
                   <Input
                     type="number"
                     value={stageForm.sla_warning_days}
@@ -1206,7 +1209,7 @@ export function PipelinesClient({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>SLA Critical (days)</Label>
+                  <Label>{t("pipelines.slaCriticalDays")}</Label>
                   <Input
                     type="number"
                     value={stageForm.sla_critical_days}
@@ -1222,11 +1225,11 @@ export function PipelinesClient({
           </Tabs>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsStageDialogOpen(false); resetStageForm(); }}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSaveStage} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingStage ? "Update" : "Add Stage"}
+              {editingStage ? t("pipelines.update") : t("pipelines.addStage")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1236,18 +1239,18 @@ export function PipelinesClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Pipeline</DialogTitle>
+            <DialogTitle>{t("pipelines.deletePipeline")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{selectedPipeline?.name}&quot;? This will also delete all associated stages. This action cannot be undone.
+              {t("pipelines.deleteConfirmation", { name: selectedPipeline?.name || "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeletePipeline} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

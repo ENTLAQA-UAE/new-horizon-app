@@ -56,6 +56,7 @@ import {
   Hash,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 import type { Json } from "@/lib/supabase/types"
 
 interface ScreeningQuestion {
@@ -88,16 +89,6 @@ interface ScreeningQuestionsClientProps {
   organizationId: string
 }
 
-const questionTypes = [
-  { value: "text", label: "Short Text", icon: Type, description: "Single line text input" },
-  { value: "textarea", label: "Long Text", icon: Type, description: "Multi-line text area" },
-  { value: "select", label: "Single Select", icon: List, description: "Dropdown with options" },
-  { value: "multiselect", label: "Multi Select", icon: CheckSquare, description: "Multiple choice checkboxes" },
-  { value: "boolean", label: "Yes/No", icon: ToggleLeft, description: "Simple yes or no toggle" },
-  { value: "number", label: "Number", icon: Hash, description: "Numeric input" },
-  { value: "file", label: "File Upload", icon: FileUp, description: "Document or file upload" },
-]
-
 interface QuestionFormData {
   question: string
   question_ar: string
@@ -123,6 +114,17 @@ export function ScreeningQuestionsClient({
   organizationId,
 }: ScreeningQuestionsClientProps) {
   const router = useRouter()
+  const { t, language, isRTL } = useI18n()
+
+  const questionTypes = [
+    { value: "text", label: t("screeningQuestions.questionTypes.shortText"), icon: Type, description: t("screeningQuestions.questionTypeDescriptions.shortText") },
+    { value: "textarea", label: t("screeningQuestions.questionTypes.longText"), icon: Type, description: t("screeningQuestions.questionTypeDescriptions.longText") },
+    { value: "select", label: t("screeningQuestions.questionTypes.singleSelect"), icon: List, description: t("screeningQuestions.questionTypeDescriptions.singleSelect") },
+    { value: "multiselect", label: t("screeningQuestions.questionTypes.multiSelect"), icon: CheckSquare, description: t("screeningQuestions.questionTypeDescriptions.multiSelect") },
+    { value: "boolean", label: t("screeningQuestions.questionTypes.yesNo"), icon: ToggleLeft, description: t("screeningQuestions.questionTypeDescriptions.yesNo") },
+    { value: "number", label: t("screeningQuestions.questionTypes.number"), icon: Hash, description: t("screeningQuestions.questionTypeDescriptions.number") },
+    { value: "file", label: t("screeningQuestions.questionTypes.fileUpload"), icon: FileUp, description: t("screeningQuestions.questionTypeDescriptions.fileUpload") },
+  ]
 
   const [questions, setQuestions] = useState(initialQuestions)
   const [searchQuery, setSearchQuery] = useState("")
@@ -189,13 +191,13 @@ export function ScreeningQuestionsClient({
 
   const handleSave = async () => {
     if (!formData.question) {
-      toast.error("Please enter a question")
+      toast.error(t("screeningQuestions.toast.enterQuestion"))
       return
     }
 
     if ((formData.question_type === "select" || formData.question_type === "multiselect") &&
         formData.options.filter(o => o.trim()).length < 2) {
-      toast.error("Please add at least 2 options")
+      toast.error(t("screeningQuestions.toast.addAtLeastTwoOptions"))
       return
     }
 
@@ -236,7 +238,7 @@ export function ScreeningQuestionsClient({
         if (data) {
           setQuestions(questions.map((q) => (q.id === editingQuestion.id ? data : q)))
         }
-        toast.success("Question updated successfully")
+        toast.success(t("screeningQuestions.toast.questionUpdated"))
       } else {
         const maxOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.sort_order)) : 0
         const { data, error } = await supabaseInsert<ScreeningQuestion>(
@@ -252,14 +254,14 @@ export function ScreeningQuestionsClient({
         if (data) {
           setQuestions([...questions, data])
         }
-        toast.success("Question created successfully")
+        toast.success(t("screeningQuestions.toast.questionCreated"))
       }
 
       setIsDialogOpen(false)
       resetForm()
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "Failed to save question")
+      toast.error(error.message || t("screeningQuestions.toast.saveFailed"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -281,10 +283,10 @@ export function ScreeningQuestionsClient({
       setQuestions(questions.filter((q) => q.id !== deletingQuestion.id))
       setIsDeleteDialogOpen(false)
       setDeletingQuestion(null)
-      toast.success("Question deleted successfully")
+      toast.success(t("screeningQuestions.toast.questionDeleted"))
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete question")
+      toast.error(error.message || t("screeningQuestions.toast.deleteFailed"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -300,7 +302,7 @@ export function ScreeningQuestionsClient({
         {
           org_id: organizationId,
           job_id: question.job_id,
-          question: `${question.question} (Copy)`,
+          question: `${question.question} ${t("screeningQuestions.copySuffix")}`,
           question_ar: question.question_ar,
           description: question.description,
           description_ar: question.description_ar,
@@ -323,11 +325,11 @@ export function ScreeningQuestionsClient({
       if (error) throw new Error(error.message)
       if (data) {
         setQuestions([...questions, data])
-        toast.success("Question duplicated successfully")
+        toast.success(t("screeningQuestions.toast.questionDuplicated"))
       }
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "Failed to duplicate question")
+      toast.error(error.message || t("screeningQuestions.toast.duplicateFailed"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -383,14 +385,14 @@ export function ScreeningQuestionsClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Screening Questions</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("nav.screeningQuestions")}</h2>
           <p className="text-muted-foreground">
-            Create pre-application questions to filter candidates
+            {t("screeningQuestions.description")}
           </p>
         </div>
         <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Question
+          {t("screeningQuestions.addQuestion")}
         </Button>
       </div>
 
@@ -398,7 +400,7 @@ export function ScreeningQuestionsClient({
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Questions</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("screeningQuestions.totalQuestions")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -406,7 +408,7 @@ export function ScreeningQuestionsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Required</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.form.required")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.required}</div>
@@ -414,7 +416,7 @@ export function ScreeningQuestionsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Knockout</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("screeningQuestions.knockout")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.knockout}</div>
@@ -427,7 +429,7 @@ export function ScreeningQuestionsClient({
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search questions..."
+            placeholder={t("screeningQuestions.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -435,11 +437,11 @@ export function ScreeningQuestionsClient({
         </div>
         <Select value={filterJobId} onValueChange={setFilterJobId}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All questions" />
+            <SelectValue placeholder={t("screeningQuestions.allQuestions")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All questions</SelectItem>
-            <SelectItem value="global">Global (all jobs)</SelectItem>
+            <SelectItem value="all">{t("screeningQuestions.allQuestions")}</SelectItem>
+            <SelectItem value="global">{t("screeningQuestions.globalAllJobs")}</SelectItem>
             {jobs.map((job) => (
               <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
             ))}
@@ -453,10 +455,10 @@ export function ScreeningQuestionsClient({
           <TableHeader>
             <TableRow>
               <TableHead className="w-12"></TableHead>
-              <TableHead>Question</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Scope</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
+              <TableHead>{t("screeningQuestions.question")}</TableHead>
+              <TableHead>{t("screeningQuestions.type")}</TableHead>
+              <TableHead>{t("screeningQuestions.scope")}</TableHead>
+              <TableHead className="w-24">{t("common.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -464,13 +466,13 @@ export function ScreeningQuestionsClient({
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">
                   <HelpCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No screening questions found</p>
+                  <p className="text-muted-foreground">{t("screeningQuestions.noQuestionsFound")}</p>
                   <Button
                     variant="link"
                     onClick={() => { resetForm(); setIsDialogOpen(true); }}
                     className="mt-2"
                   >
-                    Add your first question
+                    {t("screeningQuestions.addFirstQuestion")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -488,12 +490,12 @@ export function ScreeningQuestionsClient({
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{question.question}</span>
                           {question.is_required && (
-                            <Badge variant="outline" className="text-xs">Required</Badge>
+                            <Badge variant="outline" className="text-xs">{t("common.form.required")}</Badge>
                           )}
                           {question.is_knockout && (
                             <Badge variant="destructive" className="text-xs">
                               <AlertTriangle className="h-3 w-3 mr-1" />
-                              Knockout
+                              {t("screeningQuestions.knockout")}
                             </Badge>
                           )}
                         </div>
@@ -513,10 +515,10 @@ export function ScreeningQuestionsClient({
                     <TableCell>
                       {question.job_id ? (
                         <Badge variant="secondary">
-                          {jobs.find((j) => j.id === question.job_id)?.title || "Job-specific"}
+                          {jobs.find((j) => j.id === question.job_id)?.title || t("screeningQuestions.jobSpecific")}
                         </Badge>
                       ) : (
-                        <Badge variant="outline">Global</Badge>
+                        <Badge variant="outline">{t("screeningQuestions.global")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -563,30 +565,30 @@ export function ScreeningQuestionsClient({
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingQuestion ? "Edit Question" : "Add Question"}
+              {editingQuestion ? t("screeningQuestions.editQuestion") : t("screeningQuestions.addQuestion")}
             </DialogTitle>
             <DialogDescription>
-              Create a screening question for candidates
+              {t("screeningQuestions.dialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Question Text */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Question (English) *</Label>
+                <Label>{t("screeningQuestions.questionEnglish")}</Label>
                 <Textarea
                   value={formData.question}
                   onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                  placeholder="e.g., How many years of experience do you have with React?"
+                  placeholder={t("screeningQuestions.questionEnglishPlaceholder")}
                   rows={2}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Question (Arabic)</Label>
+                <Label>{t("screeningQuestions.questionArabic")}</Label>
                 <Textarea
                   value={formData.question_ar}
                   onChange={(e) => setFormData({ ...formData, question_ar: e.target.value })}
-                  placeholder="السؤال بالعربية..."
+                  placeholder={t("screeningQuestions.questionArabicPlaceholder")}
                   rows={2}
                   dir="rtl"
                 />
@@ -595,17 +597,17 @@ export function ScreeningQuestionsClient({
 
             {/* Description */}
             <div className="space-y-2">
-              <Label>Description (optional)</Label>
+              <Label>{t("screeningQuestions.descriptionOptional")}</Label>
               <Input
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Additional context or instructions for the question"
+                placeholder={t("screeningQuestions.descriptionPlaceholder")}
               />
             </div>
 
             {/* Question Type */}
             <div className="space-y-2">
-              <Label>Question Type</Label>
+              <Label>{t("screeningQuestions.questionType")}</Label>
               <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                 {questionTypes.map((type) => {
                   const Icon = type.icon
@@ -632,14 +634,14 @@ export function ScreeningQuestionsClient({
             {/* Options for Select/Multi-select */}
             {(formData.question_type === "select" || formData.question_type === "multiselect") && (
               <div className="space-y-2">
-                <Label>Options *</Label>
+                <Label>{t("screeningQuestions.options")}</Label>
                 <div className="space-y-2">
                   {formData.options.map((option, index) => (
                     <div key={index} className="flex gap-2">
                       <Input
                         value={option}
                         onChange={(e) => updateOption(index, e.target.value)}
-                        placeholder={`Option ${index + 1}`}
+                        placeholder={t("screeningQuestions.optionPlaceholder", { number: index + 1 })}
                       />
                       {formData.options.length > 2 && (
                         <Button
@@ -655,7 +657,7 @@ export function ScreeningQuestionsClient({
                   ))}
                   <Button type="button" variant="outline" size="sm" onClick={addOption}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Option
+                    {t("screeningQuestions.addOption")}
                   </Button>
                 </div>
               </div>
@@ -665,7 +667,7 @@ export function ScreeningQuestionsClient({
             {formData.question_type === "number" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Minimum Value</Label>
+                  <Label>{t("screeningQuestions.minimumValue")}</Label>
                   <Input
                     type="number"
                     value={formData.min_value ?? ""}
@@ -673,11 +675,11 @@ export function ScreeningQuestionsClient({
                       ...formData,
                       min_value: e.target.value ? parseInt(e.target.value) : null
                     })}
-                    placeholder="No minimum"
+                    placeholder={t("screeningQuestions.noMinimum")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Maximum Value</Label>
+                  <Label>{t("screeningQuestions.maximumValue")}</Label>
                   <Input
                     type="number"
                     value={formData.max_value ?? ""}
@@ -685,7 +687,7 @@ export function ScreeningQuestionsClient({
                       ...formData,
                       max_value: e.target.value ? parseInt(e.target.value) : null
                     })}
-                    placeholder="No maximum"
+                    placeholder={t("screeningQuestions.noMaximum")}
                   />
                 </div>
               </div>
@@ -695,7 +697,7 @@ export function ScreeningQuestionsClient({
             {(formData.question_type === "text" || formData.question_type === "textarea") && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Minimum Length</Label>
+                  <Label>{t("screeningQuestions.minimumLength")}</Label>
                   <Input
                     type="number"
                     value={formData.min_length ?? ""}
@@ -703,11 +705,11 @@ export function ScreeningQuestionsClient({
                       ...formData,
                       min_length: e.target.value ? parseInt(e.target.value) : null
                     })}
-                    placeholder="No minimum"
+                    placeholder={t("screeningQuestions.noMinimum")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Maximum Length</Label>
+                  <Label>{t("screeningQuestions.maximumLength")}</Label>
                   <Input
                     type="number"
                     value={formData.max_length ?? ""}
@@ -715,7 +717,7 @@ export function ScreeningQuestionsClient({
                       ...formData,
                       max_length: e.target.value ? parseInt(e.target.value) : null
                     })}
-                    placeholder="No maximum"
+                    placeholder={t("screeningQuestions.noMaximum")}
                   />
                 </div>
               </div>
@@ -723,23 +725,23 @@ export function ScreeningQuestionsClient({
 
             {/* Job scope */}
             <div className="space-y-2">
-              <Label>Apply to Job</Label>
+              <Label>{t("screeningQuestions.applyToJob")}</Label>
               <Select
                 value={formData.job_id}
                 onValueChange={(value) => setFormData({ ...formData, job_id: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="All jobs (global)" />
+                  <SelectValue placeholder={t("screeningQuestions.allJobsGlobal")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="global">All jobs (global)</SelectItem>
+                  <SelectItem value="global">{t("screeningQuestions.allJobsGlobal")}</SelectItem>
                   {jobs.map((job) => (
                     <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Global questions appear in all job applications
+                {t("screeningQuestions.globalQuestionsHint")}
               </p>
             </div>
 
@@ -747,8 +749,8 @@ export function ScreeningQuestionsClient({
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label>Required</Label>
-                  <p className="text-sm text-muted-foreground">Must be answered</p>
+                  <Label>{t("common.form.required")}</Label>
+                  <p className="text-sm text-muted-foreground">{t("screeningQuestions.mustBeAnswered")}</p>
                 </div>
                 <Switch
                   checked={formData.is_required}
@@ -759,8 +761,8 @@ export function ScreeningQuestionsClient({
               </div>
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label>Knockout Question</Label>
-                  <p className="text-sm text-muted-foreground">Auto-reject wrong answer</p>
+                  <Label>{t("screeningQuestions.knockoutQuestion")}</Label>
+                  <p className="text-sm text-muted-foreground">{t("screeningQuestions.autoRejectWrongAnswer")}</p>
                 </div>
                 <Switch
                   checked={formData.is_knockout}
@@ -774,9 +776,9 @@ export function ScreeningQuestionsClient({
             {/* Knockout value */}
             {formData.is_knockout && (
               <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                <Label className="text-red-700">Knockout Value</Label>
+                <Label className="text-red-700">{t("screeningQuestions.knockoutValue")}</Label>
                 <p className="text-sm text-red-600 mb-2">
-                  If candidate answers this, they will be automatically rejected
+                  {t("screeningQuestions.knockoutDescription")}
                 </p>
                 {formData.question_type === "boolean" ? (
                   <Select
@@ -784,11 +786,11 @@ export function ScreeningQuestionsClient({
                     onValueChange={(value) => setFormData({ ...formData, knockout_value: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select answer that disqualifies" />
+                      <SelectValue placeholder={t("screeningQuestions.selectDisqualifyingAnswer")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="yes">{t("common.yes")}</SelectItem>
+                      <SelectItem value="no">{t("common.no")}</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (formData.question_type === "select" || formData.question_type === "multiselect") ? (
@@ -797,7 +799,7 @@ export function ScreeningQuestionsClient({
                     onValueChange={(value) => setFormData({ ...formData, knockout_value: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select option that disqualifies" />
+                      <SelectValue placeholder={t("screeningQuestions.selectDisqualifyingOption")} />
                     </SelectTrigger>
                     <SelectContent>
                       {formData.options.filter(o => o.trim()).map((option, index) => (
@@ -809,7 +811,7 @@ export function ScreeningQuestionsClient({
                   <Input
                     value={formData.knockout_value}
                     onChange={(e) => setFormData({ ...formData, knockout_value: e.target.value })}
-                    placeholder="Enter the disqualifying answer"
+                    placeholder={t("screeningQuestions.enterDisqualifyingAnswer")}
                   />
                 )}
               </div>
@@ -817,7 +819,7 @@ export function ScreeningQuestionsClient({
 
             {/* Scoring */}
             <div className="space-y-2">
-              <Label>Scoring Weight</Label>
+              <Label>{t("screeningQuestions.scoringWeight")}</Label>
               <div className="flex items-center gap-4">
                 <Input
                   type="number"
@@ -831,18 +833,18 @@ export function ScreeningQuestionsClient({
                   className="w-24"
                 />
                 <span className="text-sm text-muted-foreground">
-                  Higher weight = more important for scoring
+                  {t("screeningQuestions.scoringWeightHint")}
                 </span>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingQuestion ? "Update" : "Add Question"}
+              {editingQuestion ? t("screeningQuestions.update") : t("screeningQuestions.addQuestion")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -852,9 +854,9 @@ export function ScreeningQuestionsClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Question</DialogTitle>
+            <DialogTitle>{t("screeningQuestions.deleteQuestion")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this question? This action cannot be undone.
+              {t("screeningQuestions.deleteConfirmation")}
             </DialogDescription>
           </DialogHeader>
           {deletingQuestion && (
@@ -864,11 +866,11 @@ export function ScreeningQuestionsClient({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

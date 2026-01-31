@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { useAuth } from "@/lib/auth/auth-context"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -130,12 +131,12 @@ const currencies = [
   { value: "PKR", label: "PKR - Pakistani Rupee" },
 ]
 
-const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  draft: { label: "Draft", color: "bg-gray-100 text-gray-800", icon: FileCheck },
-  pending: { label: "Pending Approval", color: "bg-yellow-100 text-yellow-800", icon: Clock },
-  approved: { label: "Approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  rejected: { label: "Rejected", color: "bg-red-100 text-red-800", icon: XCircle },
-  cancelled: { label: "Cancelled", color: "bg-gray-100 text-gray-800", icon: AlertCircle },
+const statusConfig: Record<string, { labelKey: string; color: string; icon: typeof Clock }> = {
+  draft: { labelKey: "common.status.draft", color: "bg-gray-100 text-gray-800", icon: FileCheck },
+  pending: { labelKey: "requisitions.pendingApproval", color: "bg-yellow-100 text-yellow-800", icon: Clock },
+  approved: { labelKey: "common.status.approved", color: "bg-green-100 text-green-800", icon: CheckCircle },
+  rejected: { labelKey: "common.status.rejected", color: "bg-red-100 text-red-800", icon: XCircle },
+  cancelled: { labelKey: "common.status.cancelled", color: "bg-gray-100 text-gray-800", icon: AlertCircle },
 }
 
 export function RequisitionsClient({
@@ -151,11 +152,18 @@ export function RequisitionsClient({
 }: RequisitionsClientProps) {
   const router = useRouter()
   const { primaryRole } = useAuth()
+  const { t, language, isRTL } = useI18n()
 
   // Use org's configured job types or fallback to defaults
   const jobTypes = orgJobTypes.length > 0
     ? orgJobTypes.map(jt => ({ value: jt.id, label: jt.name }))
-    : defaultJobTypes
+    : [
+        { value: "full_time", label: t("requisitions.fallbackJobTypes.fullTime") },
+        { value: "part_time", label: t("requisitions.fallbackJobTypes.partTime") },
+        { value: "contract", label: t("requisitions.fallbackJobTypes.contract") },
+        { value: "temporary", label: t("requisitions.fallbackJobTypes.temporary") },
+        { value: "internship", label: t("requisitions.fallbackJobTypes.internship") },
+      ]
 
   const [requisitions, setRequisitions] = useState(initialRequisitions)
   const [approvals, setApprovals] = useState(initialApprovals)
@@ -232,12 +240,12 @@ export function RequisitionsClient({
 
   const handleSave = async () => {
     if (!formData.title) {
-      toast.error("Please enter job title")
+      toast.error(t("requisitions.messages.enterJobTitle"))
       return
     }
 
     if (!formData.justification) {
-      toast.error("Please provide justification")
+      toast.error(t("requisitions.messages.provideJustification"))
       return
     }
 
@@ -280,7 +288,7 @@ export function RequisitionsClient({
 
         if (selectError) throw new Error(selectError.message)
         if (data) setRequisitions(requisitions.map((r) => (r.id === editingRequisition.id ? data : r)))
-        toast.success("Requisition updated successfully")
+        toast.success(t("requisitions.messages.updatedSuccess"))
       } else {
         const { data: insertData, error } = await supabaseInsert<{ id: string }>(
           'job_requisitions',
@@ -344,14 +352,14 @@ export function RequisitionsClient({
           }).catch((err) => console.error("Failed to send requisition notification:", err))
         }
 
-        toast.success("Requisition created successfully")
+        toast.success(t("requisitions.messages.createdSuccess"))
       }
 
       setIsDialogOpen(false)
       resetForm()
       router.refresh()
     } catch (error) {
-      toast.error("Failed to save requisition")
+      toast.error(t("requisitions.messages.saveFailed"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -362,7 +370,7 @@ export function RequisitionsClient({
     if (!selectedRequisition) return
 
     if (primaryRole !== "hr_manager" && primaryRole !== "super_admin") {
-      toast.error("Only HR managers can approve or reject requisitions")
+      toast.error(t("requisitions.messages.onlyHrCanApprove"))
       return
     }
 
@@ -441,10 +449,10 @@ export function RequisitionsClient({
       setIsApprovalDialogOpen(false)
       setSelectedRequisition(null)
       setApprovalComment("")
-      toast.success(`Requisition ${approved ? "approved" : "rejected"} successfully`)
+      toast.success(approved ? t("requisitions.messages.approvedSuccess") : t("requisitions.messages.rejectedSuccess"))
       router.refresh()
     } catch (error) {
-      toast.error("Failed to submit approval")
+      toast.error(t("requisitions.messages.approvalFailed"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -468,10 +476,10 @@ export function RequisitionsClient({
       setApprovals(approvals.filter((a) => a.requisition_id !== selectedRequisition.id))
       setIsDeleteDialogOpen(false)
       setSelectedRequisition(null)
-      toast.success("Requisition deleted successfully")
+      toast.success(t("requisitions.messages.deletedSuccess"))
       router.refresh()
     } catch (error) {
-      toast.error("Failed to delete requisition")
+      toast.error(t("requisitions.messages.deleteFailed"))
       console.error(error)
     } finally {
       setIsLoading(false)
@@ -506,8 +514,8 @@ export function RequisitionsClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Job Requisitions</h2>
-          <p className="text-muted-foreground">Request and track approval for new job positions</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("requisitions.title")}</h2>
+          <p className="text-muted-foreground">{t("requisitions.description")}</p>
         </div>
         <Button
           onClick={() => {
@@ -515,8 +523,8 @@ export function RequisitionsClient({
             setIsDialogOpen(true)
           }}
         >
-          <Plus className="mr-2 h-4 w-4" />
-          New Requisition
+          <Plus className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+          {t("requisitions.newRequisition")}
         </Button>
       </div>
 
@@ -528,9 +536,9 @@ export function RequisitionsClient({
               <Clock className="h-5 w-5 text-yellow-600" />
               <div>
                 <p className="font-medium text-yellow-800">
-                  {pendingMyApproval.length} requisition(s) awaiting your approval
+                  {t("requisitions.awaitingApproval", { count: pendingMyApproval.length })}
                 </p>
-                <p className="text-sm text-yellow-600">Review and approve or reject the pending requests</p>
+                <p className="text-sm text-yellow-600">{t("requisitions.reviewPendingRequests")}</p>
               </div>
             </div>
           </CardContent>
@@ -541,7 +549,7 @@ export function RequisitionsClient({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("requisitions.total")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -549,7 +557,7 @@ export function RequisitionsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.status.pending")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
@@ -557,7 +565,7 @@ export function RequisitionsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.status.approved")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
@@ -565,7 +573,7 @@ export function RequisitionsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rejected</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("common.status.rejected")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
@@ -578,7 +586,7 @@ export function RequisitionsClient({
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search requisitions..."
+            placeholder={t("requisitions.searchRequisitions")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -586,11 +594,11 @@ export function RequisitionsClient({
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-            <TabsTrigger value="mine">My Requests</TabsTrigger>
+            <TabsTrigger value="all">{t("common.all")}</TabsTrigger>
+            <TabsTrigger value="pending">{t("common.status.pending")}</TabsTrigger>
+            <TabsTrigger value="approved">{t("common.status.approved")}</TabsTrigger>
+            <TabsTrigger value="rejected">{t("common.status.rejected")}</TabsTrigger>
+            <TabsTrigger value="mine">{t("requisitions.myRequests")}</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -600,12 +608,12 @@ export function RequisitionsClient({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Position</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Positions</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="w-20">Actions</TableHead>
+              <TableHead>{t("requisitions.position")}</TableHead>
+              <TableHead>{t("jobs.fields.department")}</TableHead>
+              <TableHead>{t("requisitions.positions")}</TableHead>
+              <TableHead>{t("jobs.filters.status")}</TableHead>
+              <TableHead>{t("requisitions.created")}</TableHead>
+              <TableHead className="w-20">{t("common.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -613,7 +621,7 @@ export function RequisitionsClient({
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12">
                   <FileCheck className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No requisitions found</p>
+                  <p className="text-muted-foreground">{t("requisitions.noRequisitionsFound")}</p>
                   <Button
                     variant="link"
                     onClick={() => {
@@ -622,7 +630,7 @@ export function RequisitionsClient({
                     }}
                     className="mt-2"
                   >
-                    Create your first requisition
+                    {t("requisitions.createFirstRequisition")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -665,8 +673,8 @@ export function RequisitionsClient({
                     </TableCell>
                     <TableCell>
                       <Badge className={statusConf.color}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusConf.label}
+                        <StatusIcon className={isRTL ? "h-3 w-3 ml-1" : "h-3 w-3 mr-1"} />
+                        {t(statusConf.labelKey)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -688,8 +696,8 @@ export function RequisitionsClient({
                               setIsViewDialogOpen(true)
                             }}
                           >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                            <Eye className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("common.viewDetails")}
                           </DropdownMenuItem>
                           {canApproveReject && (
                             <DropdownMenuItem
@@ -698,15 +706,15 @@ export function RequisitionsClient({
                                 setIsApprovalDialogOpen(true)
                               }}
                             >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Approve/Reject
+                              <CheckCircle className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                              {t("requisitions.approveReject")}
                             </DropdownMenuItem>
                           )}
                           {requisition.requested_by === currentUserId && requisition.status === "draft" && (
                             <>
                               <DropdownMenuItem onSelect={() => openEditDialog(requisition)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit
+                                <Pencil className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                                {t("common.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onSelect={() => {
@@ -715,8 +723,8 @@ export function RequisitionsClient({
                                 }}
                                 className="text-red-600"
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                <Trash2 className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                                {t("common.delete")}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -735,30 +743,30 @@ export function RequisitionsClient({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingRequisition ? "Edit Requisition" : "New Requisition"}</DialogTitle>
+            <DialogTitle>{editingRequisition ? t("requisitions.editRequisition") : t("requisitions.newRequisition")}</DialogTitle>
             <DialogDescription>
               {editingRequisition
-                ? "Update job requisition details"
-                : "Request approval for a new job position"}
+                ? t("requisitions.form.updateDetails")
+                : t("requisitions.form.requestApproval")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Title */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Job Title (English) *</Label>
+                <Label>{t("requisitions.form.jobTitleEn")}</Label>
                 <Input
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g., Senior Software Engineer"
+                  placeholder={t("requisitions.form.jobTitlePlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Job Title (Arabic)</Label>
+                <Label>{t("requisitions.form.jobTitleAr")}</Label>
                 <Input
                   value={formData.title_ar}
                   onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
-                  placeholder="مهندس برمجيات أول"
+                  placeholder={t("requisitions.form.jobTitleArPlaceholder")}
                   dir="rtl"
                 />
               </div>
@@ -767,13 +775,13 @@ export function RequisitionsClient({
             {/* Department & Location */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Department</Label>
+                <Label>{t("jobs.fields.department")}</Label>
                 <Select
                   value={formData.department_id}
                   onValueChange={(value) => setFormData({ ...formData, department_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue placeholder={t("requisitions.form.selectDepartment")} />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
@@ -785,13 +793,13 @@ export function RequisitionsClient({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Location</Label>
+                <Label>{t("jobs.fields.location")}</Label>
                 <Select
                   value={formData.location_id}
                   onValueChange={(value) => setFormData({ ...formData, location_id: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
+                    <SelectValue placeholder={t("requisitions.form.selectLocation")} />
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((loc) => (
@@ -807,7 +815,7 @@ export function RequisitionsClient({
             {/* Job Type & Positions */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Job Type</Label>
+                <Label>{t("requisitions.form.jobType")}</Label>
                 <Select
                   value={formData.job_type}
                   onValueChange={(value) => setFormData({ ...formData, job_type: value })}
@@ -825,7 +833,7 @@ export function RequisitionsClient({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Number of Positions</Label>
+                <Label>{t("requisitions.form.numberOfPositions")}</Label>
                 <Input
                   type="number"
                   value={formData.positions_count}
@@ -839,7 +847,7 @@ export function RequisitionsClient({
 
             {/* Salary Range */}
             <div className="space-y-2">
-              <Label>Salary Range</Label>
+              <Label>{t("requisitions.form.salaryRange")}</Label>
               <div className="flex items-center gap-2">
                 <Select
                   value={formData.salary_currency}
@@ -858,14 +866,14 @@ export function RequisitionsClient({
                 </Select>
                 <Input
                   type="number"
-                  placeholder="Min"
+                  placeholder={t("requisitions.form.min")}
                   value={formData.salary_range_min}
                   onChange={(e) => setFormData({ ...formData, salary_range_min: e.target.value })}
                 />
-                <span className="text-muted-foreground">to</span>
+                <span className="text-muted-foreground">{t("requisitions.form.to")}</span>
                 <Input
                   type="number"
-                  placeholder="Max"
+                  placeholder={t("requisitions.form.max")}
                   value={formData.salary_range_max}
                   onChange={(e) => setFormData({ ...formData, salary_range_max: e.target.value })}
                 />
@@ -874,11 +882,11 @@ export function RequisitionsClient({
 
             {/* Justification */}
             <div className="space-y-2">
-              <Label>Justification *</Label>
+              <Label>{t("requisitions.form.justification")}</Label>
               <Textarea
                 value={formData.justification}
                 onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
-                placeholder="Explain why this position is needed..."
+                placeholder={t("requisitions.form.justificationPlaceholder")}
                 rows={4}
               />
             </div>
@@ -888,8 +896,8 @@ export function RequisitionsClient({
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   {primaryRole === "hr_manager" || primaryRole === "super_admin"
-                    ? "As an HR Manager, this requisition will be auto-approved upon creation."
-                    : "This requisition will be automatically submitted to HR managers for approval."}
+                    ? t("requisitions.form.autoApproved")
+                    : t("requisitions.form.submittedForApproval")}
                 </p>
               </div>
             )}
@@ -902,11 +910,11 @@ export function RequisitionsClient({
                 resetForm()
               }}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingRequisition ? "Update" : (primaryRole === "hr_manager" || primaryRole === "super_admin") ? "Create & Approve" : "Submit for Approval"}
+              {editingRequisition ? t("requisitions.form.update") : (primaryRole === "hr_manager" || primaryRole === "super_admin") ? t("requisitions.form.createAndApprove") : t("requisitions.form.submitForApproval")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -916,7 +924,7 @@ export function RequisitionsClient({
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Requisition Details</DialogTitle>
+            <DialogTitle>{t("requisitions.requisitionDetails")}</DialogTitle>
           </DialogHeader>
           {selectedRequisition && (
             <div className="space-y-4 py-4">
@@ -927,15 +935,15 @@ export function RequisitionsClient({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedRequisition.departments?.name || "No department"}</span>
+                  <span>{selectedRequisition.departments?.name || t("requisitions.noDepartment")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedRequisition.locations?.city || "No location"}</span>
+                  <span>{selectedRequisition.locations?.city || t("requisitions.noLocation")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedRequisition.positions_count} position(s)</span>
+                  <span>{t("requisitions.positionCount", { count: selectedRequisition.positions_count || 0 })}</span>
                 </div>
                 {selectedRequisition.salary_range_min && (
                   <div className="flex items-center gap-2">
@@ -950,25 +958,25 @@ export function RequisitionsClient({
               </div>
 
               <div>
-                <Label className="text-sm text-muted-foreground">Justification</Label>
-                <p className="mt-1">{selectedRequisition.justification || "No justification provided"}</p>
+                <Label className="text-sm text-muted-foreground">{t("requisitions.form.justification").replace(" *", "")}</Label>
+                <p className="mt-1">{selectedRequisition.justification || t("requisitions.noJustification")}</p>
               </div>
 
               <div>
-                <Label className="text-sm text-muted-foreground">Approval Status</Label>
+                <Label className="text-sm text-muted-foreground">{t("requisitions.approvalStatus")}</Label>
                 <div className="mt-2 space-y-2">
                   {getRequisitionApprovals(selectedRequisition.id).map((approval) => {
                     const approver = teamMembers.find((m) => m.id === approval.approver_id)
                     const statusConf = getStatusConfig(approval.status)
                     return (
                       <div key={approval.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                        <span>{approver?.name || "Unknown"}</span>
-                        <Badge className={statusConf.color}>{statusConf.label}</Badge>
+                        <span>{approver?.name || t("requisitions.unknown")}</span>
+                        <Badge className={statusConf.color}>{t(statusConf.labelKey)}</Badge>
                       </div>
                     )
                   })}
                   {getRequisitionApprovals(selectedRequisition.id).length === 0 && (
-                    <p className="text-sm text-muted-foreground">No approvers assigned</p>
+                    <p className="text-sm text-muted-foreground">{t("requisitions.noApproversAssigned")}</p>
                   )}
                 </div>
               </div>
@@ -976,7 +984,7 @@ export function RequisitionsClient({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -986,9 +994,9 @@ export function RequisitionsClient({
       <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Review Requisition</DialogTitle>
+            <DialogTitle>{t("requisitions.reviewRequisition")}</DialogTitle>
             <DialogDescription>
-              Approve or reject this job requisition request
+              {t("requisitions.approveOrRejectDescription")}
             </DialogDescription>
           </DialogHeader>
           {selectedRequisition && (
@@ -996,15 +1004,15 @@ export function RequisitionsClient({
               <div className="p-4 bg-muted rounded-lg mb-4">
                 <h4 className="font-semibold">{selectedRequisition.title}</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {selectedRequisition.departments?.name} • {selectedRequisition.positions_count} position(s)
+                  {selectedRequisition.departments?.name} • {t("requisitions.positionCount", { count: selectedRequisition.positions_count || 0 })}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label>Comments (optional)</Label>
+                <Label>{t("requisitions.commentsOptional")}</Label>
                 <Textarea
                   value={approvalComment}
                   onChange={(e) => setApprovalComment(e.target.value)}
-                  placeholder="Add any comments or feedback..."
+                  placeholder={t("requisitions.addCommentsPlaceholder")}
                   rows={3}
                 />
               </div>
@@ -1012,17 +1020,17 @@ export function RequisitionsClient({
           )}
           <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={() => handleApprovalResponse(false)} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <XCircle className="mr-2 h-4 w-4" />
-              Reject
+              {isLoading && <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />}
+              <XCircle className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+              {t("requisitions.reject")}
             </Button>
             <Button onClick={() => handleApprovalResponse(true)} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Approve
+              {isLoading && <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />}
+              <CheckCircle className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+              {t("requisitions.approve")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1032,9 +1040,9 @@ export function RequisitionsClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Requisition</DialogTitle>
+            <DialogTitle>{t("requisitions.deleteRequisition")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this requisition? This action cannot be undone.
+              {t("requisitions.deleteConfirmation")}
             </DialogDescription>
           </DialogHeader>
           {selectedRequisition && (
@@ -1044,11 +1052,11 @@ export function RequisitionsClient({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {isLoading && <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />}
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

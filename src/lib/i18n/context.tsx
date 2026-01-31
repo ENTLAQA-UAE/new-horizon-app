@@ -44,6 +44,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang)
     localStorage.setItem(STORAGE_KEY, lang)
+    // Also set a cookie so server components can read the language
+    document.cookie = `${STORAGE_KEY}=${lang};path=/;max-age=31536000;SameSite=Lax`
   }, [])
 
   const t = useCallback((keyPath: string, variables?: Record<string, string | number>) => {

@@ -27,6 +27,7 @@ import {
   Calendar,
   DollarSign,
 } from "lucide-react"
+import { useI18n } from "@/lib/i18n"
 
 interface OrgSettings {
   timezone: string
@@ -83,6 +84,7 @@ const currencies = [
 ]
 
 export default function OrgSettingsPage() {
+  const { t, language: currentLanguage, isRTL } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [organizationId, setOrganizationId] = useState<string | null>(null)
@@ -169,7 +171,7 @@ export default function OrgSettingsPage() {
 
   const handleSave = async () => {
     if (!organizationId) {
-      toast.error("Organization not found. Please refresh the page.")
+      toast.error(t("settings.messages.orgNotFound"))
       return
     }
 
@@ -204,10 +206,10 @@ export default function OrgSettingsPage() {
         }
       }
 
-      toast.success("Settings saved successfully")
+      toast.success(t("settings.messages.saved"))
     } catch (error) {
       console.error("Error saving settings:", error)
-      toast.error("Failed to save settings")
+      toast.error(t("settings.messages.saveFailed"))
     } finally {
       setIsSaving(false)
     }
@@ -226,14 +228,14 @@ export default function OrgSettingsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Organization Settings</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("settings.org.title")}</h2>
           <p className="text-muted-foreground">
-            Configure your organization&apos;s preferences and policies
+            {t("settings.org.description")}
           </p>
         </div>
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Changes
+          {t("settings.actions.save")}
         </Button>
       </div>
 
@@ -243,15 +245,15 @@ export default function OrgSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
-              Regional Settings
+              {t("settings.regional.title")}
             </CardTitle>
             <CardDescription>
-              Configure timezone, language, and date format
+              {t("settings.regional.description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="timezone">Timezone</Label>
+              <Label htmlFor="timezone">{t("settings.general.timezone")}</Label>
               <Select
                 value={settings.timezone}
                 onValueChange={(value) =>
@@ -259,7 +261,7 @@ export default function OrgSettingsPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select timezone" />
+                  <SelectValue placeholder={t("settings.general.selectTimezone")} />
                 </SelectTrigger>
                 <SelectContent>
                   {timezones.map((tz) => (
@@ -271,7 +273,7 @@ export default function OrgSettingsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="language">Default Language</Label>
+              <Label htmlFor="language">{t("settings.general.defaultLanguage")}</Label>
               <Select
                 value={settings.language}
                 onValueChange={(value) =>
@@ -279,7 +281,7 @@ export default function OrgSettingsPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select language" />
+                  <SelectValue placeholder={t("settings.general.selectLanguage")} />
                 </SelectTrigger>
                 <SelectContent>
                   {languages.map((lang) => (
@@ -291,7 +293,7 @@ export default function OrgSettingsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date_format">Date Format</Label>
+              <Label htmlFor="date_format">{t("settings.general.dateFormat")}</Label>
               <Select
                 value={settings.date_format}
                 onValueChange={(value) =>
@@ -299,7 +301,7 @@ export default function OrgSettingsPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select date format" />
+                  <SelectValue placeholder={t("settings.general.selectDateFormat")} />
                 </SelectTrigger>
                 <SelectContent>
                   {dateFormats.map((df) => (
@@ -314,7 +316,7 @@ export default function OrgSettingsPage() {
               <Label htmlFor="currency">
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  Preferred Currency
+                  {t("settings.general.preferredCurrency")}
                 </div>
               </Label>
               <Select
@@ -324,7 +326,7 @@ export default function OrgSettingsPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
+                  <SelectValue placeholder={t("settings.general.selectCurrency")} />
                 </SelectTrigger>
                 <SelectContent>
                   {currencies.map((currency) => (
@@ -335,7 +337,7 @@ export default function OrgSettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Currency displayed for salaries and compensation
+                {t("settings.general.currencyDescription")}
               </p>
             </div>
           </CardContent>
@@ -346,18 +348,18 @@ export default function OrgSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Notifications
+              {t("settings.notifications.title")}
             </CardTitle>
             <CardDescription>
-              Configure email and notification preferences
+              {t("settings.notifications.description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Email Notifications</Label>
+                <Label>{t("settings.notifications.email")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Receive email updates for important events
+                  {t("settings.notifications.emailDescription")}
                 </p>
               </div>
               <Switch
@@ -369,9 +371,9 @@ export default function OrgSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Application Alerts</Label>
+                <Label>{t("settings.notifications.applicationAlerts")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Get notified when new applications arrive
+                  {t("settings.notifications.applicationAlertsDescription")}
                 </p>
               </div>
               <Switch
@@ -383,9 +385,9 @@ export default function OrgSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Weekly Digest</Label>
+                <Label>{t("settings.notifications.weeklyDigest")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Receive a weekly summary of activity
+                  {t("settings.notifications.weeklyDigestDescription")}
                 </p>
               </div>
               <Switch
@@ -403,16 +405,16 @@ export default function OrgSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Application Policies
+              {t("settings.application.title")}
             </CardTitle>
             <CardDescription>
-              Configure application handling rules
+              {t("settings.application.description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="auto_reject_days">
-                Auto-reject after (days)
+                {t("settings.application.autoRejectDays")}
               </Label>
               <Input
                 id="auto_reject_days"
@@ -428,14 +430,14 @@ export default function OrgSettingsPage() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Automatically reject applications after this many days (0 = disabled)
+                {t("settings.application.autoRejectDescription")}
               </p>
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Require Cover Letter</Label>
+                <Label>{t("settings.application.requireCoverLetter")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Make cover letter mandatory for applications
+                  {t("settings.application.requireCoverLetterDescription")}
                 </p>
               </div>
               <Switch
@@ -447,9 +449,9 @@ export default function OrgSettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Allow Referrals</Label>
+                <Label>{t("settings.application.allowReferrals")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Enable employee referral program
+                  {t("settings.application.allowReferralsDescription")}
                 </p>
               </div>
               <Switch
@@ -467,18 +469,18 @@ export default function OrgSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Privacy & Compliance
+              {t("settings.privacy.title")}
             </CardTitle>
             <CardDescription>
-              GDPR and data retention settings
+              {t("settings.privacy.description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>GDPR Compliance</Label>
+                <Label>{t("settings.privacy.gdprCompliance")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Enable GDPR compliance features
+                  {t("settings.privacy.gdprDescription")}
                 </p>
               </div>
               <Switch
@@ -490,7 +492,7 @@ export default function OrgSettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="data_retention_days">
-                Data Retention Period (days)
+                {t("settings.privacy.dataRetentionPeriod")}
               </Label>
               <Input
                 id="data_retention_days"
@@ -506,7 +508,7 @@ export default function OrgSettingsPage() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                How long to retain candidate data (minimum 30 days)
+                {t("settings.privacy.dataRetentionDescription")}
               </p>
             </div>
           </CardContent>
@@ -517,16 +519,16 @@ export default function OrgSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Contact Information
+              {t("settings.contact.title")}
             </CardTitle>
             <CardDescription>
-              Email addresses for communications
+              {t("settings.contact.description")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="contact_email">Contact Email</Label>
+                <Label htmlFor="contact_email">{t("settings.contact.contactEmail")}</Label>
                 <Input
                   id="contact_email"
                   type="email"
@@ -537,11 +539,11 @@ export default function OrgSettingsPage() {
                   placeholder="hr@company.com"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Primary contact email for candidates
+                  {t("settings.contact.contactEmailDescription")}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="support_email">Support Email</Label>
+                <Label htmlFor="support_email">{t("settings.contact.supportEmail")}</Label>
                 <Input
                   id="support_email"
                   type="email"
@@ -552,7 +554,7 @@ export default function OrgSettingsPage() {
                   placeholder="support@company.com"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Email for technical support inquiries
+                  {t("settings.contact.supportEmailDescription")}
                 </p>
               </div>
             </div>

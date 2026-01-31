@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Note: Type instantiation is excessively deep error with Supabase typed client
 import { createClient } from "@/lib/supabase/server"
+import { getServerTranslation } from "@/lib/i18n/server"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
@@ -168,6 +169,8 @@ export async function HiringManagerDashboard({
   orgId,
   departmentIds,
 }: HiringManagerDashboardProps) {
+  const { t } = await getServerTranslation()
+
   if (!departmentIds || departmentIds.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -181,9 +184,9 @@ export async function HiringManagerDashboard({
               style={{ color: "var(--brand-primary)" }}
             />
           </div>
-          <p className="text-lg font-semibold">No departments assigned</p>
+          <p className="text-lg font-semibold">{t("dashboard.emptyStates.noDepartmentsAssigned")}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            No departments assigned. Please contact your admin.
+            {t("dashboard.emptyStates.noDepartmentsAssignedDesc")}
           </p>
         </div>
       </div>
@@ -193,27 +196,27 @@ export async function HiringManagerDashboard({
   const stats = await getHiringManagerStats(orgId, departmentIds)
 
   const departmentNames =
-    stats.departments.map((d) => d.name).join(", ") || "My Department"
+    stats.departments.map((d) => d.name).join(", ") || t("dashboard.hiringManager.myDepartment")
 
   const pipelineStages = [
-    { name: "New", count: stats.stageCounts["new"] || 0, color: "#6366f1" },
+    { name: t("dashboard.pipeline.new"), count: stats.stageCounts["new"] || 0, color: "#6366f1" },
     {
-      name: "Screening",
+      name: t("dashboard.pipeline.screening"),
       count: stats.stageCounts["screening"] || 0,
       color: "#8b5cf6",
     },
     {
-      name: "Interview",
+      name: t("dashboard.pipeline.interview"),
       count: stats.stageCounts["interview"] || 0,
       color: "#06b6d4",
     },
     {
-      name: "Offer",
+      name: t("dashboard.pipeline.offer"),
       count: stats.stageCounts["offer"] || 0,
       color: "#10b981",
     },
     {
-      name: "Hired",
+      name: t("dashboard.pipeline.hired"),
       count: stats.stageCounts["hired"] || 0,
       color: "#22c55e",
     },
@@ -244,7 +247,7 @@ export async function HiringManagerDashboard({
                   <Building2 className="h-6 w-6" />
                 </div>
                 <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                  My Department
+                  {t("dashboard.hiringManager.myDepartment")}
                 </Badge>
               </div>
 
@@ -256,14 +259,14 @@ export async function HiringManagerDashboard({
                   <span className="text-6xl font-bold">{stats.activeJobs}</span>
                 </div>
                 <p className="text-white/60 text-sm mt-2">
-                  Active open positions
+                  {t("dashboard.hiringManager.activeOpenPositions")}
                 </p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex items-center justify-between">
                   <span className="text-white/70 text-sm">
-                    Total Applications
+                    {t("dashboard.stats.totalApplications")}
                   </span>
                   <span className="font-semibold">
                     {stats.totalApplications}
@@ -271,7 +274,7 @@ export async function HiringManagerDashboard({
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-white/70 text-sm">
-                    Upcoming Interviews
+                    {t("dashboard.upcomingInterviews")}
                   </span>
                   <span className="font-semibold">
                     {stats.upcomingInterviews.length}
@@ -297,7 +300,7 @@ export async function HiringManagerDashboard({
               </div>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Open Positions
+              {t("dashboard.stats.openPositions")}
             </p>
             <p className="text-3xl font-bold mt-1">{stats.activeJobs}</p>
             <Link
@@ -305,7 +308,7 @@ export async function HiringManagerDashboard({
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -324,13 +327,13 @@ export async function HiringManagerDashboard({
               </div>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Applications
+              {t("dashboard.stats.applications")}
             </p>
             <p className="text-3xl font-bold mt-1">
               {stats.totalApplications}
             </p>
             <p className="text-sm text-muted-foreground mt-3">
-              Total for department
+              {t("dashboard.hiringManager.totalForDepartment")}
             </p>
           </div>
         </div>
@@ -349,11 +352,11 @@ export async function HiringManagerDashboard({
                 />
               </div>
               <Badge variant="secondary" className="text-xs">
-                Upcoming
+                {t("dashboard.upcomingInterviews")}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Upcoming Interviews
+              {t("dashboard.upcomingInterviews")}
             </p>
             <p className="text-3xl font-bold mt-1">
               {stats.upcomingInterviews.length}
@@ -363,7 +366,7 @@ export async function HiringManagerDashboard({
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View schedule <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewSchedule")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -382,12 +385,12 @@ export async function HiringManagerDashboard({
               </div>
               {stats.requisitionCounts.pending > 0 && (
                 <Badge className="bg-amber-500/10 text-amber-600 border-amber-200">
-                  {stats.requisitionCounts.pending} pending
+                  {stats.requisitionCounts.pending} {t("dashboard.orgAdmin.pending")}
                 </Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Pending Requisitions
+              {t("dashboard.stats.pendingRequisitions")}
             </p>
             <p className="text-3xl font-bold mt-1">
               {stats.requisitionCounts.pending}
@@ -397,7 +400,7 @@ export async function HiringManagerDashboard({
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              Manage <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.manage")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -407,9 +410,9 @@ export async function HiringManagerDashboard({
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold">Hiring Pipeline</h3>
+                <h3 className="text-lg font-semibold">{t("dashboard.recruiter.hiringPipeline")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Department candidates by stage
+                  {t("dashboard.hiringManager.departmentCandidatesByStage")}
                 </p>
               </div>
               <Link
@@ -417,7 +420,7 @@ export async function HiringManagerDashboard({
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View All <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -465,10 +468,10 @@ export async function HiringManagerDashboard({
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    No applications yet
+                    {t("dashboard.emptyStates.noApplications")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Applications will appear here as candidates apply
+                    {t("dashboard.emptyStates.noApplicationsDesc")}
                   </p>
                 </div>
               </div>
@@ -480,7 +483,7 @@ export async function HiringManagerDashboard({
         <div className="col-span-12 lg:col-span-4">
           <div className="bento-card p-6 h-full">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">Quick Actions</h3>
+              <h3 className="text-lg font-semibold">{t("dashboard.quickActions")}</h3>
               <Zap className="h-5 w-5 text-muted-foreground" />
             </div>
 
@@ -499,9 +502,9 @@ export async function HiringManagerDashboard({
                   />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Create Requisition</p>
+                  <p className="font-medium text-sm">{t("dashboard.hiringManager.createRequisition")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Request a new position
+                    {t("dashboard.hiringManager.requestANewPosition")}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -521,9 +524,9 @@ export async function HiringManagerDashboard({
                   />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">View Applications</p>
+                  <p className="font-medium text-sm">{t("dashboard.recruiter.viewApplications")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Review department candidates
+                    {t("dashboard.hiringManager.reviewDepartmentCandidates")}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -543,9 +546,9 @@ export async function HiringManagerDashboard({
                   />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">My Scorecards</p>
+                  <p className="font-medium text-sm">{t("dashboard.hiringManager.myScorecards")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Submit interview feedback
+                    {t("dashboard.hiringManager.submitInterviewFeedback")}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -559,9 +562,9 @@ export async function HiringManagerDashboard({
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Recent Applications</h3>
+                <h3 className="text-lg font-semibold">{t("dashboard.widgets.recentApplications")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Latest department applications
+                  {t("dashboard.hiringManager.latestDepartmentApplications")}
                 </p>
               </div>
               <Link
@@ -569,7 +572,7 @@ export async function HiringManagerDashboard({
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -578,8 +581,8 @@ export async function HiringManagerDashboard({
                 {stats.recentApplications.map((app) => {
                   const candidateName = app.candidates
                     ? `${app.candidates.first_name} ${app.candidates.last_name}`
-                    : "Unknown Candidate"
-                  const jobTitle = app.jobs?.title || "Unknown Position"
+                    : t("dashboard.recruiter.unknownCandidate")
+                  const jobTitle = app.jobs?.title || t("dashboard.recruiter.untitledPosition")
                   return (
                     <div
                       key={app.id}
@@ -629,11 +632,10 @@ export async function HiringManagerDashboard({
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  No applications yet
+                  {t("dashboard.emptyStates.noApplications")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Applications will appear as candidates apply to your
-                  department jobs
+                  {t("dashboard.emptyStates.applicationsWillAppear")}
                 </p>
               </div>
             )}
@@ -645,9 +647,9 @@ export async function HiringManagerDashboard({
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Upcoming Interviews</h3>
+                <h3 className="text-lg font-semibold">{t("dashboard.upcomingInterviews")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Next scheduled interviews
+                  {t("dashboard.hiringManager.nextScheduledInterviews")}
                 </p>
               </div>
               <Link
@@ -655,7 +657,7 @@ export async function HiringManagerDashboard({
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -664,9 +666,9 @@ export async function HiringManagerDashboard({
                 {stats.upcomingInterviews.map((interview) => {
                   const candidateName = interview.candidates
                     ? `${interview.candidates.first_name} ${interview.candidates.last_name}`
-                    : "Unknown Candidate"
+                    : t("dashboard.recruiter.unknownCandidate")
                   const jobTitle =
-                    interview.jobs?.title || "Unknown Position"
+                    interview.jobs?.title || t("dashboard.recruiter.untitledPosition")
                   const scheduledDate = new Date(interview.scheduled_at)
                   return (
                     <div
@@ -718,10 +720,10 @@ export async function HiringManagerDashboard({
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  No upcoming interviews
+                  {t("dashboard.emptyStates.noInterviews")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Interviews will appear here once scheduled
+                  {t("dashboard.emptyStates.interviewsWillAppearScheduled")}
                 </p>
               </div>
             )}

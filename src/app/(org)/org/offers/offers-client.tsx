@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
 import { useAuth } from "@/lib/auth/auth-context"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -138,54 +139,6 @@ interface OffersClientProps {
   defaultCurrency?: string
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  draft: { label: "Draft", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200", icon: FileText },
-  pending_approval: { label: "Pending Approval", color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200", icon: Clock },
-  approved: { label: "Approved", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", icon: CheckCircle },
-  sent: { label: "Sent", color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200", icon: Send },
-  viewed: { label: "Viewed", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200", icon: Eye },
-  accepted: { label: "Accepted", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle },
-  declined: { label: "Declined", color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", icon: XCircle },
-  withdrawn: { label: "Withdrawn", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200", icon: XCircle },
-  expired: { label: "Expired", color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", icon: Clock },
-  counter_offered: { label: "Counter Offered", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", icon: FileText },
-}
-
-const employmentTypes = [
-  { value: "full_time", label: "Full Time" },
-  { value: "part_time", label: "Part Time" },
-  { value: "contract", label: "Contract" },
-  { value: "temporary", label: "Temporary" },
-]
-
-const salaryPeriods = [
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-  { value: "hourly", label: "Hourly" },
-]
-
-const currencies = [
-  { value: "SAR", label: "SAR - Saudi Riyal" },
-  { value: "AED", label: "AED - UAE Dirham" },
-  { value: "USD", label: "USD - US Dollar" },
-  { value: "EUR", label: "EUR - Euro" },
-  { value: "GBP", label: "GBP - British Pound" },
-  { value: "QAR", label: "QAR - Qatari Riyal" },
-  { value: "KWD", label: "KWD - Kuwaiti Dinar" },
-  { value: "BHD", label: "BHD - Bahraini Dinar" },
-  { value: "OMR", label: "OMR - Omani Rial" },
-  { value: "EGP", label: "EGP - Egyptian Pound" },
-  { value: "JOD", label: "JOD - Jordanian Dinar" },
-  { value: "INR", label: "INR - Indian Rupee" },
-  { value: "PKR", label: "PKR - Pakistani Rupee" },
-  { value: "PHP", label: "PHP - Philippine Peso" },
-  { value: "CAD", label: "CAD - Canadian Dollar" },
-  { value: "AUD", label: "AUD - Australian Dollar" },
-  { value: "CHF", label: "CHF - Swiss Franc" },
-  { value: "JPY", label: "JPY - Japanese Yen" },
-  { value: "CNY", label: "CNY - Chinese Yuan" },
-]
-
 export function OffersClient({
   offers: initialOffers,
   templates,
@@ -195,6 +148,55 @@ export function OffersClient({
 }: OffersClientProps) {
   const router = useRouter()
   const { primaryRole } = useAuth()
+  const { t, language, isRTL } = useI18n()
+
+  const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+    draft: { label: t("offers.status.draft"), color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200", icon: FileText },
+    pending_approval: { label: t("offers.status.pending"), color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200", icon: Clock },
+    approved: { label: t("offers.status.approved"), color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200", icon: CheckCircle },
+    sent: { label: t("offers.status.sent"), color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200", icon: Send },
+    viewed: { label: t("offers.status.viewed"), color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200", icon: Eye },
+    accepted: { label: t("offers.status.accepted"), color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle },
+    declined: { label: t("offers.status.declined"), color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200", icon: XCircle },
+    withdrawn: { label: t("offers.status.withdrawn"), color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200", icon: XCircle },
+    expired: { label: t("offers.status.expired"), color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", icon: Clock },
+    counter_offered: { label: t("offers.status.counterOffered"), color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", icon: FileText },
+  }
+
+  const employmentTypes = [
+    { value: "full_time", label: t("offers.employmentTypes.fullTime") },
+    { value: "part_time", label: t("offers.employmentTypes.partTime") },
+    { value: "contract", label: t("offers.employmentTypes.contract") },
+    { value: "temporary", label: t("offers.employmentTypes.temporary") },
+  ]
+
+  const salaryPeriods = [
+    { value: "monthly", label: t("offers.payPeriods.monthly") },
+    { value: "yearly", label: t("offers.payPeriods.yearly") },
+    { value: "hourly", label: t("offers.payPeriods.hourly") },
+  ]
+
+  const currencies = [
+    { value: "SAR", label: t("offers.currencies.SAR") },
+    { value: "AED", label: t("offers.currencies.AED") },
+    { value: "USD", label: t("offers.currencies.USD") },
+    { value: "EUR", label: t("offers.currencies.EUR") },
+    { value: "GBP", label: t("offers.currencies.GBP") },
+    { value: "QAR", label: t("offers.currencies.QAR") },
+    { value: "KWD", label: t("offers.currencies.KWD") },
+    { value: "BHD", label: t("offers.currencies.BHD") },
+    { value: "OMR", label: t("offers.currencies.OMR") },
+    { value: "EGP", label: t("offers.currencies.EGP") },
+    { value: "JOD", label: t("offers.currencies.JOD") },
+    { value: "INR", label: t("offers.currencies.INR") },
+    { value: "PKR", label: t("offers.currencies.PKR") },
+    { value: "PHP", label: t("offers.currencies.PHP") },
+    { value: "CAD", label: t("offers.currencies.CAD") },
+    { value: "AUD", label: t("offers.currencies.AUD") },
+    { value: "CHF", label: t("offers.currencies.CHF") },
+    { value: "JPY", label: t("offers.currencies.JPY") },
+    { value: "CNY", label: t("offers.currencies.CNY") },
+  ]
 
   const [offers, setOffers] = useState(initialOffers)
   const [searchQuery, setSearchQuery] = useState("")
@@ -283,12 +285,12 @@ export function OffersClient({
   // CREATE
   const handleCreate = async () => {
     if (!formData.application_id) {
-      toast.error("Please select a candidate")
+      toast.error(t("offers.messages.selectCandidate"))
       return
     }
 
     if (!formData.job_title || formData.salary_amount <= 0) {
-      toast.error("Please fill in required fields")
+      toast.error(t("offers.messages.fillRequired"))
       return
     }
 
@@ -355,10 +357,10 @@ export function OffersClient({
       }
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success(primaryRole === "recruiter" ? "Offer created and submitted for approval" : "Offer created successfully")
+      toast.success(primaryRole === "recruiter" ? t("offers.messages.createdForApproval") : t("offers.messages.created"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("offers.messages.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -432,10 +434,10 @@ export function OffersClient({
         })
       }
 
-      toast.success("Offer sent successfully")
+      toast.success(t("offers.messages.sentSuccess"))
       router.refresh()
     } catch {
-      toast.error("Failed to send offer")
+      toast.error(t("offers.messages.sendFailed"))
     } finally {
       setIsLoading(false)
     }
@@ -472,10 +474,10 @@ export function OffersClient({
       setOffers(offers.map((o) =>
         o.id === offerId ? { ...o, status: "approved" } : o
       ))
-      toast.success("Offer approved. You can now send it to the candidate.")
+      toast.success(t("offers.messages.approvedSendable"))
       router.refresh()
     } catch {
-      toast.error("Failed to approve offer")
+      toast.error(t("offers.messages.approveFailed"))
     } finally {
       setIsLoading(false)
     }
@@ -512,10 +514,10 @@ export function OffersClient({
       setOffers(offers.map((o) =>
         o.id === offerId ? { ...o, status: "draft" } : o
       ))
-      toast.success("Offer rejected and returned to draft")
+      toast.success(t("offers.messages.rejectedToDraft"))
       router.refresh()
     } catch {
-      toast.error("Failed to reject offer")
+      toast.error(t("offers.messages.rejectFailed"))
     } finally {
       setIsLoading(false)
     }
@@ -534,10 +536,10 @@ export function OffersClient({
       setOffers(offers.filter((o) => o.id !== selectedOffer.id))
       setIsDeleteDialogOpen(false)
       setSelectedOffer(null)
-      toast.success("Offer deleted successfully")
+      toast.success(t("offers.messages.deleted"))
       router.refresh()
     } catch {
-      toast.error("Failed to delete offer")
+      toast.error(t("offers.messages.deleteFailed"))
     } finally {
       setIsLoading(false)
     }
@@ -549,7 +551,7 @@ export function OffersClient({
       currency: currency,
       minimumFractionDigits: 0,
     }).format(amount)
-    return `${formatted}/${period === "monthly" ? "mo" : period === "yearly" ? "yr" : "hr"}`
+    return `${formatted}/${period === "monthly" ? t("offers.payPeriods.monthlyShort") : period === "yearly" ? t("offers.payPeriods.yearlyShort") : t("offers.payPeriods.hourlyShort")}`
   }
 
   const OfferCard = ({ offer }: { offer: Offer }) => {
@@ -594,13 +596,13 @@ export function OffersClient({
                     }}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View Details
+                    {t("common.viewDetails")}
                   </DropdownMenuItem>
                   {/* hr_manager can send draft or approved offers directly */}
                   {(offer.status === "draft" || offer.status === "approved") && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
                     <DropdownMenuItem onSelect={() => handleSendOffer(offer.id)}>
                       <Send className="mr-2 h-4 w-4" />
-                      Send Offer
+                      {t("offers.sendOffer")}
                     </DropdownMenuItem>
                   )}
                   {/* hr_manager can approve/reject pending offers */}
@@ -608,11 +610,11 @@ export function OffersClient({
                     <>
                       <DropdownMenuItem onSelect={() => handleApproveOffer(offer.id)} className="text-green-600">
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Approve
+                        {t("offers.actions.approve")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handleRejectOffer(offer.id)} className="text-red-600">
                         <XCircle className="mr-2 h-4 w-4" />
-                        Reject
+                        {t("offers.actions.reject")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -627,7 +629,7 @@ export function OffersClient({
                         className="text-red-600"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
+                        {t("common.delete")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -642,7 +644,7 @@ export function OffersClient({
             </div>
             <div className="flex items-center gap-1">
               <CalendarIcon className="h-3 w-3" />
-              <span>Start: {format(new Date(offer.start_date), "MMM d, yyyy")}</span>
+              <span>{t("offers.fields.startDate")}: {format(new Date(offer.start_date), "MMM d, yyyy")}</span>
             </div>
             {offer.department && (
               <div className="flex items-center gap-1">
@@ -667,14 +669,14 @@ export function OffersClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Offers</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("offers.title")}</h2>
           <p className="text-muted-foreground">
-            Create and manage job offers for candidates
+            {t("offers.description")}
           </p>
         </div>
         <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Offer
+          {t("offers.createOffer")}
         </Button>
       </div>
 
@@ -682,7 +684,7 @@ export function OffersClient({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Offers</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("offers.stats.totalOffers")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -690,7 +692,7 @@ export function OffersClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("offers.stats.pending")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">{stats.pending}</div>
@@ -698,7 +700,7 @@ export function OffersClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Accepted</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("offers.stats.accepted")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.accepted}</div>
@@ -706,7 +708,7 @@ export function OffersClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Declined</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("offers.stats.declined")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.declined}</div>
@@ -719,7 +721,7 @@ export function OffersClient({
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by candidate or job..."
+            placeholder={t("offers.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -727,10 +729,10 @@ export function OffersClient({
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("offers.fields.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">{t("offers.allStatus")}</SelectItem>
             {Object.entries(statusConfig).map(([key, config]) => (
               <SelectItem key={key} value={key}>
                 {config.label}
@@ -745,13 +747,13 @@ export function OffersClient({
         <Card>
           <CardContent className="py-12 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">No offers found</p>
+            <p className="text-muted-foreground">{t("offers.emptyState.noResults")}</p>
             <Button
               variant="link"
               onClick={() => setIsCreateDialogOpen(true)}
               className="mt-2"
             >
-              Create your first offer
+              {t("offers.emptyState.createFirst")}
             </Button>
           </CardContent>
         </Card>
@@ -767,21 +769,21 @@ export function OffersClient({
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create Offer</DialogTitle>
+            <DialogTitle>{t("offers.createOffer")}</DialogTitle>
             <DialogDescription>
-              Create a new job offer for a candidate
+              {t("offers.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Candidate Selection */}
             <div className="space-y-2">
-              <Label>Select Candidate *</Label>
+              <Label>{t("offers.fields.selectCandidate")} *</Label>
               <Select
                 value={formData.application_id}
                 onValueChange={handleApplicationSelect}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select candidate application" />
+                  <SelectValue placeholder={t("offers.placeholders.selectApplication")} />
                 </SelectTrigger>
                 <SelectContent>
                   {applications.map((app) => (
@@ -795,13 +797,13 @@ export function OffersClient({
 
             {/* Template Selection */}
             <div className="space-y-2">
-              <Label>Offer Template (Optional)</Label>
+              <Label>{t("offers.fields.offerTemplate")}</Label>
               <Select
                 value={formData.template_id}
                 onValueChange={(value) => setFormData({ ...formData, template_id: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select template" />
+                  <SelectValue placeholder={t("offers.placeholders.selectTemplate")} />
                 </SelectTrigger>
                 <SelectContent>
                   {templates.map((template) => (
@@ -816,21 +818,21 @@ export function OffersClient({
             {/* Job Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="job_title">Job Title *</Label>
+                <Label htmlFor="job_title">{t("offers.fields.jobTitle")} *</Label>
                 <Input
                   id="job_title"
                   value={formData.job_title}
                   onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                  placeholder="e.g., Senior Software Engineer"
+                  placeholder={t("offers.placeholders.jobTitle")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="job_title_ar">Job Title (Arabic)</Label>
+                <Label htmlFor="job_title_ar">{t("offers.fields.jobTitleAr")}</Label>
                 <Input
                   id="job_title_ar"
                   value={formData.job_title_ar}
                   onChange={(e) => setFormData({ ...formData, job_title_ar: e.target.value })}
-                  placeholder="مهندس برمجيات أول"
+                  placeholder={t("offers.placeholders.jobTitle")}
                   dir="rtl"
                 />
               </div>
@@ -838,41 +840,41 @@ export function OffersClient({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
+                <Label htmlFor="department">{t("offers.fields.department")}</Label>
                 <Input
                   id="department"
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  placeholder="e.g., Engineering"
+                  placeholder={t("offers.placeholders.department")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">{t("offers.fields.location")}</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="e.g., Riyadh"
+                  placeholder={t("offers.placeholders.location")}
                 />
               </div>
             </div>
 
             {/* Compensation */}
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-4">Compensation</h4>
+              <h4 className="font-medium mb-4">{t("offers.compensation.title")}</h4>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="salary_amount">Salary Amount *</Label>
+                  <Label htmlFor="salary_amount">{t("offers.fields.salaryAmount")} *</Label>
                   <Input
                     id="salary_amount"
                     type="number"
                     value={formData.salary_amount || ""}
                     onChange={(e) => setFormData({ ...formData, salary_amount: parseFloat(e.target.value) || 0 })}
-                    placeholder="15000"
+                    placeholder={t("offers.placeholders.salaryAmount")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Currency</Label>
+                  <Label>{t("offers.fields.currency")}</Label>
                   <Select
                     value={formData.salary_currency}
                     onValueChange={(value) => setFormData({ ...formData, salary_currency: value })}
@@ -890,7 +892,7 @@ export function OffersClient({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Period</Label>
+                  <Label>{t("offers.fields.payPeriod")}</Label>
                   <Select
                     value={formData.salary_period}
                     onValueChange={(value) => setFormData({ ...formData, salary_period: value })}
@@ -911,7 +913,7 @@ export function OffersClient({
 
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signing_bonus">Signing Bonus</Label>
+                  <Label htmlFor="signing_bonus">{t("offers.fields.bonus")}</Label>
                   <Input
                     id="signing_bonus"
                     type="number"
@@ -921,7 +923,7 @@ export function OffersClient({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="annual_bonus">Annual Bonus %</Label>
+                  <Label htmlFor="annual_bonus">{t("offers.fields.annualBonus")}</Label>
                   <Input
                     id="annual_bonus"
                     type="number"
@@ -935,10 +937,10 @@ export function OffersClient({
 
             {/* Dates & Employment */}
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-4">Employment Details</h4>
+              <h4 className="font-medium mb-4">{t("offers.employmentDetails")}</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Start Date *</Label>
+                  <Label>{t("offers.fields.startDate")} *</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -957,7 +959,7 @@ export function OffersClient({
                             size="sm"
                             onClick={() => setFormData({ ...formData, start_date: new Date() })}
                           >
-                            Today
+                            {t("common.time.today")}
                           </Button>
                           <Button
                             variant="outline"
@@ -968,7 +970,7 @@ export function OffersClient({
                               setFormData({ ...formData, start_date: tomorrow })
                             }}
                           >
-                            Tomorrow
+                            {t("common.time.tomorrow")}
                           </Button>
                           <Button
                             variant="outline"
@@ -979,7 +981,7 @@ export function OffersClient({
                               setFormData({ ...formData, start_date: nextWeek })
                             }}
                           >
-                            Next Week
+                            {t("offers.dateShortcuts.nextWeek")}
                           </Button>
                           <Button
                             variant="outline"
@@ -991,7 +993,7 @@ export function OffersClient({
                               setFormData({ ...formData, start_date: nextMonth })
                             }}
                           >
-                            1st Next Month
+                            {t("offers.dateShortcuts.firstNextMonth")}
                           </Button>
                         </div>
                       </div>
@@ -1008,7 +1010,7 @@ export function OffersClient({
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label>Offer Expiry Date</Label>
+                  <Label>{t("offers.fields.expirationDate")}</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -1031,7 +1033,7 @@ export function OffersClient({
                               setFormData({ ...formData, offer_expiry_date: in3Days })
                             }}
                           >
-                            3 Days
+                            {t("offers.dateShortcuts.threeDays")}
                           </Button>
                           <Button
                             variant="outline"
@@ -1042,7 +1044,7 @@ export function OffersClient({
                               setFormData({ ...formData, offer_expiry_date: in7Days })
                             }}
                           >
-                            1 Week
+                            {t("offers.dateShortcuts.oneWeek")}
                           </Button>
                           <Button
                             variant="outline"
@@ -1053,7 +1055,7 @@ export function OffersClient({
                               setFormData({ ...formData, offer_expiry_date: in14Days })
                             }}
                           >
-                            2 Weeks
+                            {t("offers.dateShortcuts.twoWeeks")}
                           </Button>
                           <Button
                             variant="outline"
@@ -1064,7 +1066,7 @@ export function OffersClient({
                               setFormData({ ...formData, offer_expiry_date: in30Days })
                             }}
                           >
-                            30 Days
+                            {t("offers.dateShortcuts.thirtyDays")}
                           </Button>
                         </div>
                       </div>
@@ -1084,7 +1086,7 @@ export function OffersClient({
 
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Employment Type</Label>
+                  <Label>{t("offers.fields.employmentType")}</Label>
                   <Select
                     value={formData.employment_type}
                     onValueChange={(value) => setFormData({ ...formData, employment_type: value })}
@@ -1093,16 +1095,16 @@ export function OffersClient({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {employmentTypes.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
+                      {employmentTypes.map((et) => (
+                        <SelectItem key={et.value} value={et.value}>
+                          {et.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="probation">Probation Period (months)</Label>
+                  <Label htmlFor="probation">{t("offers.fields.probationPeriod")}</Label>
                   <Input
                     id="probation"
                     type="number"
@@ -1117,11 +1119,11 @@ export function OffersClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Offer
+              {t("offers.createOffer")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1131,7 +1133,7 @@ export function OffersClient({
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Offer Details</DialogTitle>
+            <DialogTitle>{t("offers.offerDetails")}</DialogTitle>
           </DialogHeader>
           {selectedOffer && (
             <div className="space-y-4 py-4">
@@ -1152,18 +1154,18 @@ export function OffersClient({
 
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Position</span>
+                  <span className="text-muted-foreground">{t("offers.fields.position")}</span>
                   <span className="font-medium">{selectedOffer.job_title}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Salary</span>
+                  <span className="text-muted-foreground">{t("offers.fields.salary")}</span>
                   <span className="font-medium">
                     {formatSalary(selectedOffer.salary_amount, selectedOffer.salary_currency, selectedOffer.salary_period)}
                   </span>
                 </div>
                 {selectedOffer.signing_bonus && selectedOffer.signing_bonus > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Signing Bonus</span>
+                    <span className="text-muted-foreground">{t("offers.fields.bonus")}</span>
                     <span className="font-medium">
                       {new Intl.NumberFormat("en-US", {
                         style: "currency",
@@ -1173,19 +1175,19 @@ export function OffersClient({
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Start Date</span>
+                  <span className="text-muted-foreground">{t("offers.fields.startDate")}</span>
                   <span className="font-medium">
                     {format(new Date(selectedOffer.start_date), "MMM d, yyyy")}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Employment Type</span>
+                  <span className="text-muted-foreground">{t("offers.fields.employmentType")}</span>
                   <span className="font-medium capitalize">
                     {selectedOffer.employment_type.replace("_", " ")}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Status</span>
+                  <span className="text-muted-foreground">{t("offers.fields.status")}</span>
                   <Badge className={statusConfig[selectedOffer.status]?.color}>
                     {statusConfig[selectedOffer.status]?.label}
                   </Badge>
@@ -1195,7 +1197,7 @@ export function OffersClient({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
+              {t("common.close")}
             </Button>
             {/* hr_manager can send draft/approved offers */}
             {(selectedOffer?.status === "draft" || selectedOffer?.status === "approved") && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
@@ -1204,7 +1206,7 @@ export function OffersClient({
                 setIsViewDialogOpen(false)
               }}>
                 <Send className="mr-2 h-4 w-4" />
-                Send Offer
+                {t("offers.sendOffer")}
               </Button>
             )}
             {/* hr_manager can approve pending offers */}
@@ -1215,14 +1217,14 @@ export function OffersClient({
                   setIsViewDialogOpen(false)
                 }} className="bg-green-600 hover:bg-green-700">
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Approve
+                  {t("offers.actions.approve")}
                 </Button>
                 <Button variant="destructive" onClick={() => {
                   handleRejectOffer(selectedOffer.id)
                   setIsViewDialogOpen(false)
                 }}>
                   <XCircle className="mr-2 h-4 w-4" />
-                  Reject
+                  {t("offers.actions.reject")}
                 </Button>
               </>
             )}
@@ -1234,18 +1236,18 @@ export function OffersClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Offer</DialogTitle>
+            <DialogTitle>{t("offers.deleteOffer")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this offer? This action cannot be undone.
+              {t("offers.confirmations.deleteDescription")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

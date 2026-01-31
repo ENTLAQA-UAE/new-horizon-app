@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Note: Type instantiation is excessively deep error with Supabase typed client
 import { createClient } from "@/lib/supabase/server"
+import { getServerTranslation } from "@/lib/i18n/server"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
@@ -127,13 +128,14 @@ function getStatusBadgeClasses(status: string): string {
 
 export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
   const stats = await getRecruiterStats(orgId)
+  const { t } = await getServerTranslation()
 
   const pipelineStages = [
-    { name: "New", count: stats.stageCounts["new"] || 0, color: "#6366f1" },
-    { name: "Screening", count: stats.stageCounts["screening"] || 0, color: "#8b5cf6" },
-    { name: "Interview", count: stats.stageCounts["interview"] || 0, color: "#06b6d4" },
-    { name: "Offer", count: stats.stageCounts["offer"] || 0, color: "#10b981" },
-    { name: "Hired", count: stats.stageCounts["hired"] || 0, color: "#22c55e" },
+    { name: t("dashboard.pipeline.new"), count: stats.stageCounts["new"] || 0, color: "#6366f1" },
+    { name: t("dashboard.pipeline.screening"), count: stats.stageCounts["screening"] || 0, color: "#8b5cf6" },
+    { name: t("dashboard.pipeline.interview"), count: stats.stageCounts["interview"] || 0, color: "#06b6d4" },
+    { name: t("dashboard.pipeline.offer"), count: stats.stageCounts["offer"] || 0, color: "#10b981" },
+    { name: t("dashboard.pipeline.hired"), count: stats.stageCounts["hired"] || 0, color: "#22c55e" },
   ]
 
   const totalPipelineCount = pipelineStages.reduce((sum, stage) => sum + stage.count, 0)
@@ -165,27 +167,27 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   <Target className="h-6 w-6" />
                 </div>
                 <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                  Pipeline
+                  {t("dashboard.recruiter.pipeline")}
                 </Badge>
               </div>
 
               <div className="flex-1 flex flex-col justify-center">
-                <p className="text-white/70 text-sm font-medium mb-2">My Pipeline</p>
+                <p className="text-white/70 text-sm font-medium mb-2">{t("dashboard.recruiter.myPipeline")}</p>
                 <div className="flex items-end gap-3">
                   <span className="text-6xl font-bold">{activePipeline}</span>
                 </div>
                 <p className="text-white/60 text-sm mt-2">
-                  Active applications in progress
+                  {t("dashboard.recruiter.activeApplicationsInProgress")}
                 </p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/70 text-sm">Hired</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.stats.hired")}</span>
                   <span className="font-semibold">{stats.hired}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-white/70 text-sm">Active Jobs</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.stats.activeJobs")}</span>
                   <span className="font-semibold">{stats.activeJobs}</span>
                 </div>
               </div>
@@ -204,14 +206,14 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                 <Briefcase className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Active Jobs</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.activeJobs")}</p>
             <p className="text-3xl font-bold mt-1">{stats.activeJobs}</p>
             <Link
               href="/org/jobs"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -225,11 +227,11 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
               >
                 <FileText className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
-              <Badge variant="secondary" className="text-xs">This Week</Badge>
+              <Badge variant="secondary" className="text-xs">{t("common.time.thisWeek")}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">New This Week</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.newThisWeek")}</p>
             <p className="text-3xl font-bold mt-1">{stats.newThisWeek}</p>
-            <p className="text-sm text-muted-foreground mt-3">Applications received</p>
+            <p className="text-sm text-muted-foreground mt-3">{t("dashboard.recruiter.applicationsReceived")}</p>
           </div>
         </div>
 
@@ -243,16 +245,16 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
               >
                 <Calendar className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
-              <Badge variant="secondary" className="text-xs">Upcoming</Badge>
+              <Badge variant="secondary" className="text-xs">{t("common.status.scheduled")}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Interviews</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.interviews")}</p>
             <p className="text-3xl font-bold mt-1">{stats.upcomingInterviews.length}</p>
             <Link
               href="/org/interviews"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              Schedule <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.schedule")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -267,9 +269,9 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                 <CheckCircle className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Hired</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.hired")}</p>
             <p className="text-3xl font-bold mt-1">{stats.hired}</p>
-            <p className="text-sm text-muted-foreground mt-3">Total placements</p>
+            <p className="text-sm text-muted-foreground mt-3">{t("dashboard.hrManager.totalPlacements")}</p>
           </div>
         </div>
 
@@ -278,15 +280,15 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-semibold">Hiring Pipeline</h3>
-                <p className="text-sm text-muted-foreground">Candidates by stage</p>
+                <h3 className="text-lg font-semibold">{t("dashboard.recruiter.hiringPipeline")}</h3>
+                <p className="text-sm text-muted-foreground">{t("dashboard.recruiter.candidatesByStage")}</p>
               </div>
               <Link
                 href="/org/applications"
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View All <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -320,8 +322,8 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   >
                     <Target className="h-6 w-6" style={{ color: "var(--brand-primary)" }} />
                   </div>
-                  <p className="text-sm text-muted-foreground">No applications yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Applications will appear here as candidates apply</p>
+                  <p className="text-sm text-muted-foreground">{t("dashboard.emptyStates.noApplications")}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("dashboard.emptyStates.noApplicationsDesc")}</p>
                 </div>
               </div>
             )}
@@ -332,7 +334,7 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
         <div className="col-span-12 lg:col-span-4">
           <div className="bento-card p-6 h-full">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">Quick Actions</h3>
+              <h3 className="text-lg font-semibold">{t("dashboard.quickActions")}</h3>
               <Zap className="h-5 w-5 text-muted-foreground" />
             </div>
 
@@ -348,8 +350,8 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   <Briefcase className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Post a Job</p>
-                  <p className="text-xs text-muted-foreground">Create a new job listing</p>
+                  <p className="font-medium text-sm">{t("dashboard.recruiter.postAJob")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dashboard.recruiter.createNewJobListing")}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -365,8 +367,8 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   <UserSearch className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">View Candidates</p>
-                  <p className="text-xs text-muted-foreground">Browse candidate pool</p>
+                  <p className="font-medium text-sm">{t("dashboard.recruiter.viewCandidates")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dashboard.recruiter.browseCandidatePool")}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -382,8 +384,8 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   <FileText className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">View Applications</p>
-                  <p className="text-xs text-muted-foreground">Review all applications</p>
+                  <p className="font-medium text-sm">{t("dashboard.recruiter.viewApplications")}</p>
+                  <p className="text-xs text-muted-foreground">{t("dashboard.recruiter.reviewAllApplications")}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -396,15 +398,15 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Recent Applications</h3>
-                <p className="text-sm text-muted-foreground">Latest candidates applied</p>
+                <h3 className="text-lg font-semibold">{t("dashboard.widgets.recentApplications")}</h3>
+                <p className="text-sm text-muted-foreground">{t("dashboard.recruiter.latestCandidatesApplied")}</p>
               </div>
               <Link
                 href="/org/applications"
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -415,8 +417,8 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   const job = app.job as any
                   const candidateName = candidate
                     ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
-                    : "Unknown Candidate"
-                  const jobTitle = job?.title || "Untitled Position"
+                    : t("dashboard.recruiter.unknownCandidate")
+                  const jobTitle = job?.title || t("dashboard.recruiter.untitledPosition")
 
                   return (
                     <div
@@ -456,13 +458,13 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                 >
                   <FileText className="h-6 w-6" style={{ color: "var(--brand-primary)" }} />
                 </div>
-                <p className="text-sm text-muted-foreground">No applications yet</p>
+                <p className="text-sm text-muted-foreground">{t("dashboard.emptyStates.noApplications")}</p>
                 <Link
                   href="/org/jobs"
                   className="inline-flex items-center gap-1 text-sm font-medium mt-2"
                   style={{ color: "var(--brand-primary)" }}
                 >
-                  Post a job to get started <ArrowRight className="h-4 w-4" />
+                  {t("dashboard.recruiter.postAJobToGetStarted")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}
@@ -474,15 +476,15 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Upcoming Interviews</h3>
-                <p className="text-sm text-muted-foreground">Your scheduled interviews</p>
+                <h3 className="text-lg font-semibold">{t("dashboard.upcomingInterviews")}</h3>
+                <p className="text-sm text-muted-foreground">{t("dashboard.recruiter.yourScheduledInterviews")}</p>
               </div>
               <Link
                 href="/org/interviews"
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all <ArrowRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -493,8 +495,8 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                   const job = interview.job as any
                   const candidateName = candidate
                     ? `${candidate.first_name || ""} ${candidate.last_name || ""}`.trim()
-                    : "Unknown Candidate"
-                  const jobTitle = job?.title || "Untitled Position"
+                    : t("dashboard.recruiter.unknownCandidate")
+                  const jobTitle = job?.title || t("dashboard.recruiter.untitledPosition")
                   const scheduledDate = new Date(interview.scheduled_at)
 
                   return (
@@ -533,13 +535,13 @@ export async function RecruiterDashboard({ orgId }: RecruiterDashboardProps) {
                 >
                   <Calendar className="h-6 w-6" style={{ color: "var(--brand-primary)" }} />
                 </div>
-                <p className="text-sm text-muted-foreground">No upcoming interviews</p>
+                <p className="text-sm text-muted-foreground">{t("dashboard.emptyStates.noInterviews")}</p>
                 <Link
                   href="/org/interviews"
                   className="inline-flex items-center gap-1 text-sm font-medium mt-2"
                   style={{ color: "var(--brand-primary)" }}
                 >
-                  Schedule an interview <ArrowRight className="h-4 w-4" />
+                  {t("dashboard.recruiter.scheduleAnInterview")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}

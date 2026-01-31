@@ -87,6 +87,7 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface Candidate {
   id: string
@@ -335,6 +336,7 @@ export function ApplicationsClient({
   formSections = [],
 }: ApplicationsClientProps) {
   const router = useRouter()
+  const { t, language, isRTL } = useI18n()
   const [applications, setApplications] = useState(initialApplications)
   const [searchQuery, setSearchQuery] = useState("")
   const [stageFilter, setStageFilter] = useState<string>("all")
@@ -436,7 +438,7 @@ export function ApplicationsClient({
       )
 
       if (error) {
-        toast.error("Failed to update rating")
+        toast.error(t("applications.messages.failedRating"))
         return
       }
 
@@ -449,9 +451,9 @@ export function ApplicationsClient({
       if (selectedApplication?.id === applicationId) {
         setSelectedApplication({ ...selectedApplication, manual_score: score })
       }
-      toast.success("Rating updated")
+      toast.success(t("applications.messages.ratingUpdated"))
     } catch {
-      toast.error("Failed to update rating")
+      toast.error(t("applications.messages.failedRating"))
     } finally {
       setIsUpdatingRating(false)
     }
@@ -520,7 +522,7 @@ export function ApplicationsClient({
     // Fallback: find stage from job's pipeline
     const job = jobsWithPipelines.find(j => j.id === app.job_id)
     const stage = job?.pipelines?.pipeline_stages?.find(s => s.id === app.stage_id)
-    return stage?.name || "Unknown"
+    return stage?.name || t("common.unknown")
   }
 
   // Get stage color
@@ -643,7 +645,7 @@ export function ApplicationsClient({
       const rejectedStage = job?.pipelines?.pipeline_stages?.find(s => s.stage_type === "rejected")
 
       if (!rejectedStage) {
-        toast.error("No rejection stage found in pipeline")
+        toast.error(t("applications.messages.noRejectionStage"))
         return
       }
 
@@ -716,7 +718,7 @@ export function ApplicationsClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             activity_type: "disqualified",
-            description: disqualifyReason ? `Disqualified: ${disqualifyReason}` : "Candidate disqualified",
+            description: disqualifyReason ? `${t("applications.messages.disqualified")}: ${disqualifyReason}` : t("applications.messages.disqualified"),
             metadata: {
               reason: disqualifyReason || null,
               job_title: selectedApplication.jobs.title,
@@ -729,10 +731,10 @@ export function ApplicationsClient({
 
       setIsDisqualifyDialogOpen(false)
       setDisqualifyReason("")
-      toast.success("Candidate disqualified")
+      toast.success(t("applications.messages.disqualified"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("applications.messages.unexpectedError"))
     } finally {
       setIsDisqualifying(false)
     }
@@ -741,7 +743,7 @@ export function ApplicationsClient({
   // Open scorecard submission page
   const handleOpenScorecardSubmit = () => {
     if (!selectedInterviewId || !selectedTemplateId) {
-      toast.error("Please select an interview and template")
+      toast.error(t("applications.messages.selectInterviewAndTemplate"))
       return
     }
     // Navigate to scorecard submission page with pre-selected values
@@ -795,7 +797,7 @@ export function ApplicationsClient({
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to run AI screening")
+        throw new Error(result.error || t("applications.messages.failedAIScreening"))
       }
 
       setAiScreeningResult(result.data)
@@ -815,9 +817,9 @@ export function ApplicationsClient({
         })
       }
 
-      toast.success(`AI screening completed (${result.provider})`)
+      toast.success(t("applications.messages.aiScreeningCompleted", { provider: result.provider }))
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to run AI screening"
+      const errorMessage = error instanceof Error ? error.message : t("applications.messages.failedAIScreening")
       setAiScreeningError(errorMessage)
       toast.error(errorMessage)
     } finally {
@@ -847,15 +849,15 @@ export function ApplicationsClient({
   const getRecommendationLabel = (recommendation: string) => {
     switch (recommendation) {
       case "strong_match":
-        return "Strong Match"
+        return t("applications.ai.strongMatch")
       case "good_match":
-        return "Good Match"
+        return t("applications.ai.goodMatch")
       case "potential_match":
-        return "Potential Match"
+        return t("applications.ai.potentialMatch")
       case "weak_match":
-        return "Weak Match"
+        return t("applications.ai.weakMatch")
       case "not_recommended":
-        return "Not Recommended"
+        return t("applications.ai.notRecommended")
       default:
         return recommendation
     }
@@ -877,12 +879,12 @@ export function ApplicationsClient({
         const data = await res.json()
         setApplicationNotes([data.note, ...applicationNotes])
         setNewNote("")
-        toast.success("Note added successfully")
+        toast.success(t("applications.messages.noteAdded"))
       } else {
-        toast.error("Failed to add note")
+        toast.error(t("applications.messages.failedNote"))
       }
     } catch {
-      toast.error("Failed to add note")
+      toast.error(t("applications.messages.failedNote"))
     } finally {
       setIsAddingNote(false)
     }
@@ -891,7 +893,7 @@ export function ApplicationsClient({
   // Open resume/attachment in new tab (like Google Drive - view & download from there)
   const handleOpenFile = (fileUrl: string) => {
     if (!fileUrl) {
-      toast.error("File URL not available")
+      toast.error(t("applications.messages.fileNotAvailable"))
       return
     }
     // Open the file directly in a new tab - user can view and download from there
@@ -930,9 +932,9 @@ export function ApplicationsClient({
         )
       )
       setIsNotesDialogOpen(false)
-      toast.success("Notes saved successfully")
+      toast.success(t("applications.messages.notesSaved"))
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("applications.messages.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -962,10 +964,10 @@ export function ApplicationsClient({
       setApplications(applications.filter((a) => a.id !== selectedApplication.id))
       setIsDeleteDialogOpen(false)
       setSelectedApplication(null)
-      toast.success("Application deleted successfully")
+      toast.success(t("applications.messages.deleted"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("applications.messages.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -1033,7 +1035,7 @@ export function ApplicationsClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             activity_type: "stage_changed",
-            description: `Moved to ${stage?.name || "new stage"}`,
+            description: t("applications.messages.moved", { stage: stage?.name || t("applications.stages.new") }),
             metadata: {
               new_stage_id: newStageId,
               new_stage_name: stage?.name,
@@ -1045,11 +1047,11 @@ export function ApplicationsClient({
         })
       }
 
-      toast.success(`Moved to ${stage?.name || "new stage"}`)
+      toast.success(t("applications.messages.moved", { stage: stage?.name || t("applications.stages.new") }))
     } catch {
       // Revert on error
       setApplications(previousApplications)
-      toast.error("An unexpected error occurred")
+      toast.error(t("applications.messages.unexpectedError"))
     }
   }
 
@@ -1072,7 +1074,7 @@ export function ApplicationsClient({
 
   const formatDate = (date: string | null) => {
     if (!date) return "N/A"
-    return new Date(date).toLocaleDateString("en-US", {
+    return new Date(date).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -1103,7 +1105,7 @@ export function ApplicationsClient({
                 {app.candidates?.first_name} {app.candidates?.last_name}
               </p>
               <p className="text-xs text-muted-foreground">
-                {app.candidates?.current_title || "No title"}
+                {app.candidates?.current_title || t("applications.noTitle")}
               </p>
             </div>
           </div>
@@ -1121,7 +1123,7 @@ export function ApplicationsClient({
                 }}
               >
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                {t("common.viewDetails")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={(e) => {
@@ -1130,7 +1132,7 @@ export function ApplicationsClient({
                 }}
               >
                 <MessageSquare className="mr-2 h-4 w-4" />
-                Add Notes
+                {t("applications.actions.addNote")}
               </DropdownMenuItem>
               {app.candidates?.resume_url && (
                 <DropdownMenuItem
@@ -1139,7 +1141,7 @@ export function ApplicationsClient({
                   }}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download Resume
+                  {t("applications.downloadResume")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -1151,7 +1153,7 @@ export function ApplicationsClient({
                     onSelect={() => handleStageChange(app.id, stage.id)}
                   >
                     <ArrowRight className="mr-2 h-4 w-4" />
-                    Move to {stage.name}
+                    {t("applications.actions.moveStage")} {stage.name}
                   </DropdownMenuItem>
                 ))}
               <DropdownMenuSeparator />
@@ -1163,7 +1165,7 @@ export function ApplicationsClient({
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                {t("common.delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1171,7 +1173,7 @@ export function ApplicationsClient({
         <div className="mt-3 space-y-2">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
-            <span>Applied {formatDate(app.applied_at || app.created_at)}</span>
+            <span>{t("applications.applied")} {formatDate(app.applied_at || app.created_at)}</span>
           </div>
         </div>
         {(app.ai_match_score !== null || app.manual_score !== null) && (
@@ -1194,9 +1196,9 @@ export function ApplicationsClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Applications</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("applications.title")}</h2>
           <p className="text-muted-foreground">
-            Track and manage candidate applications through your hiring pipeline
+            {t("applications.description")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1214,7 +1216,7 @@ export function ApplicationsClient({
             }}
           >
             <LayoutGrid className="mr-2 h-4 w-4" />
-            Pipeline
+            {t("applications.pipeline")}
           </Button>
           <Button
             variant={viewMode === "list" ? "default" : "outline"}
@@ -1225,7 +1227,7 @@ export function ApplicationsClient({
             }}
           >
             <List className="mr-2 h-4 w-4" />
-            Table
+            {t("applications.list")}
           </Button>
         </div>
       </div>
@@ -1235,7 +1237,7 @@ export function ApplicationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Applications
+              {t("applications.stats.totalApplications")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1245,7 +1247,7 @@ export function ApplicationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              This Week
+              {t("common.time.thisWeek")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1255,7 +1257,7 @@ export function ApplicationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              In Progress
+              {t("common.status.inProgress")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1265,7 +1267,7 @@ export function ApplicationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Hired
+              {t("applications.stages.hired")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1280,7 +1282,7 @@ export function ApplicationsClient({
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, email, or job..."
+              placeholder={t("applications.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -1289,10 +1291,10 @@ export function ApplicationsClient({
           <Select value={stageFilter} onValueChange={setStageFilter}>
             <SelectTrigger className="w-40">
               <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Stage" />
+              <SelectValue placeholder={t("applications.fields.stage")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Stages</SelectItem>
+              <SelectItem value="all">{t("applications.allStages")}</SelectItem>
               {allStages.map((stage) => (
                 <SelectItem key={stage.id} value={stage.id}>
                   {stage.name}
@@ -1302,10 +1304,10 @@ export function ApplicationsClient({
           </Select>
           <Select value={jobFilter} onValueChange={setJobFilter}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Job" />
+              <SelectValue placeholder={t("applications.fields.job")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Jobs</SelectItem>
+              <SelectItem value="all">{t("applications.allJobs")}</SelectItem>
               {jobsWithPipelines.map((job) => (
                 <SelectItem key={job.id} value={job.id}>
                   {job.title}
@@ -1322,14 +1324,14 @@ export function ApplicationsClient({
           <div className="text-center space-y-4">
             <LayoutGrid className="h-12 w-12 mx-auto text-muted-foreground" />
             <div>
-              <h3 className="text-lg font-semibold">No Job Selected</h3>
+              <h3 className="text-lg font-semibold">{t("applications.noJobSelected")}</h3>
               <p className="text-muted-foreground text-sm mt-1">
-                Select a job to view its hiring pipeline and manage applications by stage.
+                {t("applications.selectJobDescription")}
               </p>
             </div>
             <Button onClick={() => setIsPipelineJobDialogOpen(true)}>
               <Briefcase className="mr-2 h-4 w-4" />
-              Select Job
+              {t("applications.selectJob")}
             </Button>
           </div>
         </Card>
@@ -1345,18 +1347,18 @@ export function ApplicationsClient({
               onClick={() => setIsPipelineJobDialogOpen(true)}
             >
               <Briefcase className="h-4 w-4 mr-1" />
-              Change Job
+              {t("applications.changeJob")}
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <div>
-              <span className="text-sm text-muted-foreground">Pipeline for:</span>
+              <span className="text-sm text-muted-foreground">{t("applications.pipelineFor")}:</span>
               <span className="font-medium ml-2">
                 {jobsWithPipelines.find(j => j.id === selectedPipelineJob)?.title}
               </span>
             </div>
           </div>
           <Badge variant="secondary">
-            {pipelineApplications.length} application{pipelineApplications.length !== 1 ? "s" : ""}
+            {pipelineApplications.length} {pipelineApplications.length !== 1 ? t("applications.applicationsPlural") : t("applications.applicationSingular")}
           </Badge>
         </div>
       )}
@@ -1395,7 +1397,7 @@ export function ApplicationsClient({
                               <Card className="border-dashed">
                                 <CardContent className="py-8 text-center">
                                   <p className="text-sm text-muted-foreground">
-                                    Drop applications here
+                                    {t("applications.emptyState.stageDescription")}
                                   </p>
                                 </CardContent>
                               </Card>
@@ -1438,12 +1440,12 @@ export function ApplicationsClient({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8"></TableHead>
-                <TableHead>Candidate</TableHead>
-                <TableHead>Job</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Applied</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("applications.fields.candidate")}</TableHead>
+                <TableHead>{t("applications.fields.job")}</TableHead>
+                <TableHead>{t("applications.fields.stage")}</TableHead>
+                <TableHead>{t("applications.fields.appliedDate")}</TableHead>
+                <TableHead>{t("applications.fields.rating")}</TableHead>
+                <TableHead>{t("applications.fields.status")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1451,7 +1453,7 @@ export function ApplicationsClient({
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12">
                     <FileText className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">No applications found</p>
+                    <p className="text-muted-foreground">{t("applications.emptyState.title")}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1540,11 +1542,11 @@ export function ApplicationsClient({
                         <TableCell>
                           {isMulti ? (
                             <Badge className="bg-orange-500 hover:bg-orange-600 text-white">
-                              Multi
+                              {t("applications.multi")}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-muted-foreground">
-                              Single
+                              {t("applications.single")}
                             </Badge>
                           )}
                         </TableCell>
@@ -1565,7 +1567,7 @@ export function ApplicationsClient({
                             <TableCell>
                               <div className="flex items-center gap-3 pl-4">
                                 <div className="text-sm text-muted-foreground">
-                                  Same candidate
+                                  {t("applications.sameCandidate")}
                                 </div>
                               </div>
                             </TableCell>
@@ -1640,7 +1642,7 @@ export function ApplicationsClient({
                       {selectedApplication.candidates?.last_name}
                     </h2>
                     <p className="text-sm text-muted-foreground truncate mt-0.5">
-                      {selectedApplication.candidates?.current_title || "No title"} • {selectedApplication.jobs?.title}
+                      {selectedApplication.candidates?.current_title || t("applications.noTitle")} • {selectedApplication.jobs?.title}
                     </p>
                     <div className="flex items-center gap-3 mt-2">
                       {/* Stage dropdown */}
@@ -1690,7 +1692,7 @@ export function ApplicationsClient({
                         }}
                       >
                         <Calendar className="h-3.5 w-3.5" />
-                        Schedule Interview
+                        {t("applications.actions.scheduleInterview")}
                       </Button>
                       <Button
                         variant="outline"
@@ -1699,10 +1701,10 @@ export function ApplicationsClient({
                         onClick={() => setIsDisqualifyDialogOpen(true)}
                       >
                         <XCircle className="h-3.5 w-3.5" />
-                        Disqualify
+                        {t("applications.actions.disqualify")}
                       </Button>
                       <span className="text-xs text-muted-foreground">
-                        Applied {formatDate(selectedApplication.applied_at || selectedApplication.created_at)}
+                        {t("applications.applied")} {formatDate(selectedApplication.applied_at || selectedApplication.created_at)}
                       </span>
                     </div>
                   </div>
@@ -1733,7 +1735,7 @@ export function ApplicationsClient({
                         )
                       })}
                     </div>
-                    <span className="text-xs text-muted-foreground mt-1">Rating</span>
+                    <span className="text-xs text-muted-foreground mt-1">{t("applications.fields.rating")}</span>
                   </div>
                 </div>
               </div>
@@ -1747,52 +1749,52 @@ export function ApplicationsClient({
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <User className="h-4 w-4 mr-2" />
-                      Applicant Details
+                      {t("applications.tabs.overview")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="attachments"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <Paperclip className="h-4 w-4 mr-2" />
-                      Attachments
+                      {t("applications.tabs.attachments")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="notes"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
-                      Notes
+                      {t("applications.tabs.notes")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="events"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <Calendar className="h-4 w-4 mr-2" />
-                      Events
+                      {t("applications.tabs.events")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="timeline"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <Clock className="h-4 w-4 mr-2" />
-                      Timeline
+                      {t("applications.tabs.timeline")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="scorecards"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <ClipboardList className="h-4 w-4 mr-2" />
-                      Scorecards
+                      {t("applications.tabs.scorecards")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="screening"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <ClipboardCheck className="h-4 w-4 mr-2" />
-                      Screening
+                      {t("applications.tabs.screening")}
                       {screeningResponses.some(r => r.is_knockout_triggered) && (
                         <Badge variant="destructive" className="ml-2 h-5 px-1.5 text-[10px]">
-                          Knockout
+                          {t("applications.screening.knockout")}
                         </Badge>
                       )}
                     </TabsTrigger>
@@ -1801,7 +1803,7 @@ export function ApplicationsClient({
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
-                      AI Review
+                      {t("applications.tabs.aiReview")}
                       {aiScreeningResult && (
                         <Badge className={cn("ml-2 h-5 px-1.5 text-[10px]", getRecommendationColor(aiScreeningResult.recommendation))}>
                           {aiScreeningResult.overallScore}%
@@ -1817,14 +1819,14 @@ export function ApplicationsClient({
                     <TabsContent value="details" className="mt-0 space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Contact Information</h4>
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t("applications.contactInformation")}</h4>
                           <div className="space-y-3">
                             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                               <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                                 <Mail className="h-5 w-5 text-blue-600" />
                               </div>
                               <div>
-                                <p className="text-xs text-muted-foreground">Email</p>
+                                <p className="text-xs text-muted-foreground">{t("applications.email")}</p>
                                 <a href={`mailto:${selectedApplication.candidates?.email}`} className="text-sm font-medium text-[var(--brand-primary,#6366f1)] hover:underline">
                                   {selectedApplication.candidates?.email}
                                 </a>
@@ -1836,7 +1838,7 @@ export function ApplicationsClient({
                                   <Phone className="h-5 w-5 text-green-600" />
                                 </div>
                                 <div>
-                                  <p className="text-xs text-muted-foreground">Phone</p>
+                                  <p className="text-xs text-muted-foreground">{t("applications.phone")}</p>
                                   <a href={`tel:${selectedApplication.candidates.phone}`} className="text-sm font-medium text-[var(--brand-primary,#6366f1)] hover:underline">
                                     {selectedApplication.candidates.phone}
                                   </a>
@@ -1846,14 +1848,14 @@ export function ApplicationsClient({
                           </div>
                         </div>
                         <div className="space-y-4">
-                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Application Details</h4>
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t("applications.applicationDetails")}</h4>
                           <div className="space-y-3">
                             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                               <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                                 <Briefcase className="h-5 w-5 text-purple-600" />
                               </div>
                               <div>
-                                <p className="text-xs text-muted-foreground">Position</p>
+                                <p className="text-xs text-muted-foreground">{t("applications.position")}</p>
                                 <p className="text-sm font-medium">{selectedApplication.jobs?.title || "N/A"}</p>
                               </div>
                             </div>
@@ -1862,7 +1864,7 @@ export function ApplicationsClient({
                                 <Calendar className="h-5 w-5 text-orange-600" />
                               </div>
                               <div>
-                                <p className="text-xs text-muted-foreground">Applied Date</p>
+                                <p className="text-xs text-muted-foreground">{t("applications.fields.appliedDate")}</p>
                                 <p className="text-sm font-medium">{formatDate(selectedApplication.applied_at || selectedApplication.created_at)}</p>
                               </div>
                             </div>
@@ -1873,7 +1875,7 @@ export function ApplicationsClient({
                       {/* Application Form Answers */}
                       {selectedApplication.custom_answers && Object.keys(selectedApplication.custom_answers).length > 0 && (
                         <div className="space-y-6 mt-6 pt-6 border-t">
-                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Application Form Answers</h4>
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t("applications.formAnswers")}</h4>
                           {Object.entries(selectedApplication.custom_answers).map(([sectionId, sectionData]) => {
                             if (!sectionData || (typeof sectionData === 'object' && Object.keys(sectionData).length === 0)) return null
 
@@ -1917,7 +1919,7 @@ export function ApplicationsClient({
                                           <div key={fieldName}>
                                             <p className="text-xs text-muted-foreground">{fieldName}</p>
                                             <p className="text-sm font-medium">
-                                              {typeof fieldValue === 'boolean' ? (fieldValue ? 'Yes' : 'No') : String(fieldValue)}
+                                              {typeof fieldValue === 'boolean' ? (fieldValue ? t("common.yes") : t("common.no")) : String(fieldValue)}
                                             </p>
                                           </div>
                                         ))}
@@ -1934,7 +1936,7 @@ export function ApplicationsClient({
                       {/* Cover Letter */}
                       {selectedApplication.cover_letter && (
                         <div className="space-y-3 mt-6 pt-6 border-t">
-                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Cover Letter</h4>
+                          <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t("applications.coverLetter")}</h4>
                           <div className="p-4 rounded-lg border bg-muted/20">
                             <p className="text-sm whitespace-pre-wrap">{selectedApplication.cover_letter}</p>
                           </div>
@@ -1957,8 +1959,8 @@ export function ApplicationsClient({
                                   <FileText className="h-6 w-6 text-blue-600" />
                                 </div>
                                 <div>
-                                  <p className="font-medium">Resume - {selectedApplication.candidates?.first_name} {selectedApplication.candidates?.last_name}</p>
-                                  <p className="text-sm text-muted-foreground">From candidate profile</p>
+                                  <p className="font-medium">{t("applications.resume")} - {selectedApplication.candidates?.first_name} {selectedApplication.candidates?.last_name}</p>
+                                  <p className="text-sm text-muted-foreground">{t("applications.fromCandidateProfile")}</p>
                                 </div>
                               </div>
                               <Button
@@ -1980,7 +1982,7 @@ export function ApplicationsClient({
                                 <div>
                                   <p className="font-medium">{attachment.file_name}</p>
                                   <p className="text-sm text-muted-foreground">
-                                    {attachment.file_type || "Document"} • {formatDate(attachment.created_at)}
+                                    {attachment.file_type || t("applications.document")} • {formatDate(attachment.created_at)}
                                   </p>
                                 </div>
                               </div>
@@ -1999,8 +2001,8 @@ export function ApplicationsClient({
                               <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
                                 <Paperclip className="h-8 w-8 text-muted-foreground/50" />
                               </div>
-                              <p className="text-muted-foreground font-medium">No attachments yet</p>
-                              <p className="text-sm text-muted-foreground mt-1">Attachments will appear here when added</p>
+                              <p className="text-muted-foreground font-medium">{t("applications.emptyState.noAttachments")}</p>
+                              <p className="text-sm text-muted-foreground mt-1">{t("applications.emptyState.attachmentsDescription")}</p>
                             </div>
                           )}
                         </div>
@@ -2011,7 +2013,7 @@ export function ApplicationsClient({
                     <TabsContent value="notes" className="mt-0 space-y-6">
                       <div className="space-y-3">
                         <Textarea
-                          placeholder="Add a note about this candidate..."
+                          placeholder={t("applications.addNotePlaceholder")}
                           value={newNote}
                           onChange={(e) => setNewNote(e.target.value)}
                           className="min-h-[100px] resize-none"
@@ -2023,7 +2025,7 @@ export function ApplicationsClient({
                             className="bg-[var(--brand-primary,#6366f1)] hover:bg-[var(--brand-primary,#6366f1)]/90"
                           >
                             {isAddingNote && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Add Note
+                            {t("applications.actions.addNote")}
                           </Button>
                         </div>
                       </div>
@@ -2037,8 +2039,8 @@ export function ApplicationsClient({
                           <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
                             <MessageSquare className="h-8 w-8 text-muted-foreground/50" />
                           </div>
-                          <p className="text-muted-foreground font-medium">No notes yet</p>
-                          <p className="text-sm text-muted-foreground mt-1">Add a note to track important information</p>
+                          <p className="text-muted-foreground font-medium">{t("applications.emptyState.noNotes")}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t("applications.emptyState.notesDescription")}</p>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -2077,8 +2079,8 @@ export function ApplicationsClient({
                           <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
                             <Calendar className="h-8 w-8 text-muted-foreground/50" />
                           </div>
-                          <p className="text-muted-foreground font-medium">No interviews scheduled</p>
-                          <p className="text-sm text-muted-foreground mt-1">Schedule an interview from the Interviews page</p>
+                          <p className="text-muted-foreground font-medium">{t("applications.emptyState.noInterviews")}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t("applications.emptyState.interviewsDescription")}</p>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -2105,7 +2107,7 @@ export function ApplicationsClient({
                                     <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                                       <Calendar className="h-4 w-4" />
                                       <span>
-                                        {new Date(interview.scheduled_at).toLocaleDateString("en-US", {
+                                        {new Date(interview.scheduled_at).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US", {
                                           weekday: "short",
                                           month: "short",
                                           day: "numeric",
@@ -2130,7 +2132,7 @@ export function ApplicationsClient({
                                         className="inline-flex items-center gap-1 mt-2 text-sm text-[var(--brand-primary,#6366f1)] hover:underline"
                                       >
                                         <ExternalLink className="h-4 w-4" />
-                                        Join Meeting
+                                        {t("applications.joinMeeting")}
                                       </a>
                                     )}
                                   </div>
@@ -2156,7 +2158,7 @@ export function ApplicationsClient({
                                       }}
                                     >
                                       <ClipboardCheck className="h-4 w-4" />
-                                      Fill Scorecard
+                                      {t("applications.fillScorecard")}
                                     </Button>
                                   )}
                                 </div>
@@ -2202,7 +2204,7 @@ export function ApplicationsClient({
                                 timelineEvents.push({
                                   id: `interview-${interview.id}`,
                                   type: "interview_scheduled",
-                                  description: `Interview scheduled: ${interview.title}`,
+                                  description: `${t("applications.timeline.interviewScheduled")}: ${interview.title}`,
                                   date: interview.scheduled_at,
                                   icon: "interview",
                                 })
@@ -2213,7 +2215,7 @@ export function ApplicationsClient({
                                 timelineEvents.push({
                                   id: `scorecard-${scorecard.id}`,
                                   type: "scorecard_submitted",
-                                  description: `Scorecard submitted: ${scorecard.recommendation?.replace("_", " ")} (${scorecard.overall_score?.toFixed(1) || "N/A"})`,
+                                  description: `${t("applications.timeline.scorecardSubmitted")}: ${scorecard.recommendation?.replace("_", " ")} (${scorecard.overall_score?.toFixed(1) || "N/A"})`,
                                   date: scorecard.submitted_at || scorecard.created_at,
                                   user: scorecard.profiles ? `${scorecard.profiles.first_name} ${scorecard.profiles.last_name}` : undefined,
                                   icon: "scorecard",
@@ -2248,7 +2250,7 @@ export function ApplicationsClient({
                                     <p className="font-medium">{event.description}</p>
                                     <p className="text-sm text-muted-foreground mt-0.5">
                                       {event.user && `${event.user} • `}
-                                      {new Date(event.date).toLocaleDateString("en-US", {
+                                      {new Date(event.date).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US", {
                                         month: "short",
                                         day: "numeric",
                                         year: "numeric",
@@ -2276,9 +2278,9 @@ export function ApplicationsClient({
                           <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
                             <ClipboardList className="h-8 w-8 text-muted-foreground/50" />
                           </div>
-                          <p className="text-muted-foreground font-medium">No scorecards submitted yet</p>
+                          <p className="text-muted-foreground font-medium">{t("applications.emptyState.noScorecards")}</p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Scorecards will appear here once interviewers submit their evaluations
+                            {t("applications.emptyState.scorecardsDescription")}
                           </p>
                           {applicationInterviews.length > 0 && (
                             <Button
@@ -2287,7 +2289,7 @@ export function ApplicationsClient({
                               onClick={() => setIsScorecardSubmitDialogOpen(true)}
                             >
                               <ClipboardList className="mr-2 h-4 w-4" />
-                              Submit Scorecard
+                              {t("applications.submitScorecard")}
                             </Button>
                           )}
                         </div>
@@ -2307,11 +2309,11 @@ export function ApplicationsClient({
                                       {scorecard.profiles?.first_name} {scorecard.profiles?.last_name}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
-                                      {scorecard.scorecard_templates?.name || "General Evaluation"}
+                                      {scorecard.scorecard_templates?.name || t("applications.generalEvaluation")}
                                     </p>
                                     {scorecard.interviews && (
                                       <p className="text-xs text-muted-foreground mt-1">
-                                        Interview: {scorecard.interviews.title}
+                                        {t("applications.tabs.interviews")}: {scorecard.interviews.title}
                                       </p>
                                     )}
                                   </div>
@@ -2333,11 +2335,11 @@ export function ApplicationsClient({
                                         : ""
                                     }
                                   >
-                                    {scorecard.recommendation === "strong_yes" && "Strong Yes"}
-                                    {scorecard.recommendation === "yes" && "Yes"}
-                                    {scorecard.recommendation === "neutral" && "Neutral"}
-                                    {scorecard.recommendation === "no" && "No"}
-                                    {scorecard.recommendation === "strong_no" && "Strong No"}
+                                    {scorecard.recommendation === "strong_yes" && t("applications.feedback.strongYes")}
+                                    {scorecard.recommendation === "yes" && t("applications.feedback.yes")}
+                                    {scorecard.recommendation === "neutral" && t("applications.feedback.neutral")}
+                                    {scorecard.recommendation === "no" && t("applications.feedback.no")}
+                                    {scorecard.recommendation === "strong_no" && t("applications.feedback.strongNo")}
                                   </Badge>
                                   {scorecard.overall_score !== null && (
                                     <div className="flex items-center gap-1">
@@ -2352,7 +2354,7 @@ export function ApplicationsClient({
                                   {scorecard.strengths && (
                                     <div>
                                       <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">
-                                        Strengths
+                                        {t("applications.feedback.strengths")}
                                       </p>
                                       <p className="text-sm text-muted-foreground">{scorecard.strengths}</p>
                                     </div>
@@ -2360,7 +2362,7 @@ export function ApplicationsClient({
                                   {scorecard.weaknesses && (
                                     <div>
                                       <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">
-                                        Areas for Improvement
+                                        {t("applications.feedback.weaknesses")}
                                       </p>
                                       <p className="text-sm text-muted-foreground">{scorecard.weaknesses}</p>
                                     </div>
@@ -2369,7 +2371,7 @@ export function ApplicationsClient({
                               )}
                               <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs text-muted-foreground">
                                 <span>
-                                  Submitted {scorecard.submitted_at ? formatDate(scorecard.submitted_at) : formatDate(scorecard.created_at)}
+                                  {t("applications.submitted")} {scorecard.submitted_at ? formatDate(scorecard.submitted_at) : formatDate(scorecard.created_at)}
                                 </span>
                                 <Badge variant="outline" className="text-xs">
                                   {scorecard.status}
@@ -2392,9 +2394,9 @@ export function ApplicationsClient({
                           <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
                             <ClipboardCheck className="h-8 w-8 text-muted-foreground/50" />
                           </div>
-                          <p className="text-muted-foreground font-medium">No screening questions answered</p>
+                          <p className="text-muted-foreground font-medium">{t("applications.emptyState.noScreening")}</p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            This application did not have any screening questions configured
+                            {t("applications.emptyState.screeningDescription")}
                           </p>
                         </div>
                       ) : (
@@ -2407,9 +2409,9 @@ export function ApplicationsClient({
                                   <XCircle className="h-5 w-5 text-red-600" />
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-red-800 dark:text-red-200">Knockout Triggered</p>
+                                  <p className="font-semibold text-red-800 dark:text-red-200">{t("applications.screening.knockoutTriggered")}</p>
                                   <p className="text-sm text-red-600 dark:text-red-300">
-                                    This candidate failed {screeningResponses.filter(r => r.is_knockout_triggered).length} disqualifying question(s)
+                                    {t("applications.screening.knockoutDescription", { count: screeningResponses.filter(r => r.is_knockout_triggered).length })}
                                   </p>
                                 </div>
                               </div>
@@ -2435,20 +2437,20 @@ export function ApplicationsClient({
                                         Q{index + 1}
                                       </span>
                                       {response.question?.is_required && (
-                                        <Badge variant="outline" className="text-xs">Required</Badge>
+                                        <Badge variant="outline" className="text-xs">{t("common.form.required")}</Badge>
                                       )}
                                       {response.question?.is_knockout && (
-                                        <Badge variant="destructive" className="text-xs">Knockout</Badge>
+                                        <Badge variant="destructive" className="text-xs">{t("applications.screening.knockout")}</Badge>
                                       )}
                                       {response.is_knockout_triggered && (
-                                        <Badge className="text-xs bg-red-600">Failed</Badge>
+                                        <Badge className="text-xs bg-red-600">{t("applications.screening.failed")}</Badge>
                                       )}
                                     </div>
                                     <p className="font-medium text-sm mb-2">
-                                      {response.question?.question || "Unknown question"}
+                                      {response.question?.question || t("common.unknown")}
                                     </p>
                                     <div className="flex items-start gap-2">
-                                      <span className="text-xs font-semibold text-muted-foreground uppercase mt-1">Answer:</span>
+                                      <span className="text-xs font-semibold text-muted-foreground uppercase mt-1">{t("applications.screening.answer")}:</span>
                                       <div className="flex-1">
                                         {response.question?.question_type === "boolean" ? (
                                           <Badge
@@ -2457,7 +2459,7 @@ export function ApplicationsClient({
                                               response.is_knockout_triggered && "bg-red-600"
                                             )}
                                           >
-                                            {response.answer === "true" || response.answer === "yes" ? "Yes" : "No"}
+                                            {response.answer === "true" || response.answer === "yes" ? t("common.yes") : t("common.no")}
                                           </Badge>
                                         ) : response.question?.question_type === "select" || response.question?.question_type === "multiselect" ? (
                                           <div className="flex flex-wrap gap-1">
@@ -2472,14 +2474,14 @@ export function ApplicationsClient({
                                           </div>
                                         ) : (
                                           <p className="text-sm text-muted-foreground">
-                                            {response.answer || (response.answer_json ? JSON.stringify(response.answer_json) : "No answer")}
+                                            {response.answer || (response.answer_json ? JSON.stringify(response.answer_json) : t("applications.screening.noAnswer"))}
                                           </p>
                                         )}
                                       </div>
                                     </div>
                                     {response.question?.is_knockout && response.question?.knockout_value && (
                                       <p className="text-xs text-muted-foreground mt-2">
-                                        <span className="font-medium">Knockout value:</span> {response.question.knockout_value === "true" ? "Yes" : response.question.knockout_value === "false" ? "No" : response.question.knockout_value}
+                                        <span className="font-medium">{t("applications.screening.knockoutValue")}:</span> {response.question.knockout_value === "true" ? t("common.yes") : response.question.knockout_value === "false" ? t("common.no") : response.question.knockout_value}
                                       </p>
                                     )}
                                   </div>
@@ -2502,9 +2504,9 @@ export function ApplicationsClient({
                           <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 flex items-center justify-center mb-4">
                             <Brain className="h-10 w-10 text-purple-600" />
                           </div>
-                          <p className="text-muted-foreground font-medium mb-2">No AI Review Yet</p>
+                          <p className="text-muted-foreground font-medium mb-2">{t("applications.ai.noReviewYet")}</p>
                           <p className="text-sm text-muted-foreground mb-6">
-                            Run an AI-powered screening to analyze this candidate against the job requirements
+                            {t("applications.ai.noReviewDescription")}
                           </p>
                           {aiScreeningError && (
                             <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
@@ -2519,12 +2521,12 @@ export function ApplicationsClient({
                             {isRunningAIScreening ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Analyzing...
+                                {t("applications.ai.analyzing")}
                               </>
                             ) : (
                               <>
                                 <Sparkles className="mr-2 h-4 w-4" />
-                                Review with AI
+                                {t("applications.ai.reviewWithAI")}
                               </>
                             )}
                           </Button>
@@ -2542,7 +2544,7 @@ export function ApplicationsClient({
                                   {getRecommendationLabel(aiScreeningResult.recommendation)}
                                 </Badge>
                                 <p className="text-sm text-muted-foreground">
-                                  {aiScreeningResult.matchPercentage}% match with job requirements
+                                  {t("applications.ai.matchPercentage", { percentage: aiScreeningResult.matchPercentage })}
                                 </p>
                               </div>
                             </div>
@@ -2557,7 +2559,7 @@ export function ApplicationsClient({
                               ) : (
                                 <RefreshCw className="h-4 w-4" />
                               )}
-                              <span className="ml-2">Re-analyze</span>
+                              <span className="ml-2">{t("applications.ai.reAnalyze")}</span>
                             </Button>
                           </div>
 
@@ -2565,7 +2567,7 @@ export function ApplicationsClient({
                           <div className="p-4 border rounded-xl">
                             <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
                               <Target className="h-4 w-4 text-purple-600" />
-                              Summary
+                              {t("applications.ai.summary")}
                             </h4>
                             <p className="text-sm text-muted-foreground">{aiScreeningResult.summary}</p>
                           </div>
@@ -2574,13 +2576,13 @@ export function ApplicationsClient({
                           <div className="p-4 border rounded-xl">
                             <h4 className="font-semibold text-sm flex items-center gap-2 mb-4">
                               <CheckCircle className="h-4 w-4 text-green-600" />
-                              Skills Analysis
+                              {t("applications.ai.skillsAnalysis")}
                             </h4>
                             <div className="grid md:grid-cols-2 gap-4">
                               {/* Matched Skills */}
                               <div>
                                 <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
-                                  Matched Skills ({aiScreeningResult.skillAnalysis.matched.length})
+                                  {t("applications.ai.matchedSkills")} ({aiScreeningResult.skillAnalysis.matched.length})
                                 </p>
                                 <div className="flex flex-wrap gap-1.5">
                                   {aiScreeningResult.skillAnalysis.matched.map((skill, i) => (
@@ -2590,14 +2592,14 @@ export function ApplicationsClient({
                                     </Badge>
                                   ))}
                                   {aiScreeningResult.skillAnalysis.matched.length === 0 && (
-                                    <span className="text-xs text-muted-foreground">No matched skills identified</span>
+                                    <span className="text-xs text-muted-foreground">{t("applications.ai.noMatchedSkills")}</span>
                                   )}
                                 </div>
                               </div>
                               {/* Missing Skills */}
                               <div>
                                 <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">
-                                  Missing Skills ({aiScreeningResult.skillAnalysis.missing.length})
+                                  {t("applications.ai.missingSkills")} ({aiScreeningResult.skillAnalysis.missing.length})
                                 </p>
                                 <div className="flex flex-wrap gap-1.5">
                                   {aiScreeningResult.skillAnalysis.missing.map((skill, i) => (
@@ -2612,7 +2614,7 @@ export function ApplicationsClient({
                                     </Badge>
                                   ))}
                                   {aiScreeningResult.skillAnalysis.missing.length === 0 && (
-                                    <span className="text-xs text-muted-foreground">No missing skills identified</span>
+                                    <span className="text-xs text-muted-foreground">{t("applications.ai.noMissingSkills")}</span>
                                   )}
                                 </div>
                               </div>
@@ -2620,7 +2622,7 @@ export function ApplicationsClient({
                             {aiScreeningResult.skillAnalysis.additional.length > 0 && (
                               <div className="mt-4 pt-4 border-t">
                                 <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">
-                                  Additional Skills
+                                  {t("applications.ai.additionalSkills")}
                                 </p>
                                 <div className="flex flex-wrap gap-1.5">
                                   {aiScreeningResult.skillAnalysis.additional.map((skill, i) => (
@@ -2635,21 +2637,21 @@ export function ApplicationsClient({
                           <div className="p-4 border rounded-xl">
                             <h4 className="font-semibold text-sm flex items-center gap-2 mb-4">
                               <TrendingUp className="h-4 w-4 text-blue-600" />
-                              Experience Analysis
+                              {t("applications.ai.experienceAnalysis")}
                             </h4>
                             <div className="flex items-center gap-4 mb-4">
                               <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                                 <p className="text-2xl font-bold text-blue-600">{aiScreeningResult.experienceAnalysis.yearsRelevant}</p>
-                                <p className="text-xs text-muted-foreground">Years Relevant</p>
+                                <p className="text-xs text-muted-foreground">{t("applications.ai.yearsRelevant")}</p>
                               </div>
                               <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                                 <p className="text-2xl font-bold text-blue-600">{aiScreeningResult.experienceAnalysis.relevanceScore}%</p>
-                                <p className="text-xs text-muted-foreground">Relevance Score</p>
+                                <p className="text-xs text-muted-foreground">{t("applications.ai.relevanceScore")}</p>
                               </div>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                               <div>
-                                <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">Highlights</p>
+                                <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">{t("applications.ai.highlights")}</p>
                                 <ul className="space-y-1">
                                   {aiScreeningResult.experienceAnalysis.highlights.map((h, i) => (
                                     <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
@@ -2661,7 +2663,7 @@ export function ApplicationsClient({
                               </div>
                               {aiScreeningResult.experienceAnalysis.concerns.length > 0 && (
                                 <div>
-                                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">Concerns</p>
+                                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">{t("applications.ai.concerns")}</p>
                                   <ul className="space-y-1">
                                     {aiScreeningResult.experienceAnalysis.concerns.map((c, i) => (
                                       <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
@@ -2678,7 +2680,7 @@ export function ApplicationsClient({
                           {/* Strengths & Weaknesses */}
                           <div className="grid md:grid-cols-2 gap-4">
                             <div className="p-4 border rounded-xl border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
-                              <h4 className="font-semibold text-sm text-green-700 dark:text-green-400 mb-3">Strengths</h4>
+                              <h4 className="font-semibold text-sm text-green-700 dark:text-green-400 mb-3">{t("applications.feedback.strengths")}</h4>
                               <ul className="space-y-2">
                                 {aiScreeningResult.strengths.map((s, i) => (
                                   <li key={i} className="text-sm flex items-start gap-2">
@@ -2689,7 +2691,7 @@ export function ApplicationsClient({
                               </ul>
                             </div>
                             <div className="p-4 border rounded-xl border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
-                              <h4 className="font-semibold text-sm text-red-700 dark:text-red-400 mb-3">Areas for Improvement</h4>
+                              <h4 className="font-semibold text-sm text-red-700 dark:text-red-400 mb-3">{t("applications.feedback.weaknesses")}</h4>
                               <ul className="space-y-2">
                                 {aiScreeningResult.weaknesses.map((w, i) => (
                                   <li key={i} className="text-sm flex items-start gap-2">
@@ -2706,7 +2708,7 @@ export function ApplicationsClient({
                             <div className="p-4 border rounded-xl border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
                               <h4 className="font-semibold text-sm text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4" />
-                                Suggested Interview Focus Areas
+                                {t("applications.ai.interviewFocusAreas")}
                               </h4>
                               <ul className="space-y-2">
                                 {aiScreeningResult.interviewFocus.map((f, i) => (
@@ -2725,7 +2727,7 @@ export function ApplicationsClient({
                           <div className="p-4 border rounded-xl">
                             <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
                               <User className="h-4 w-4 text-indigo-600" />
-                              Cultural Fit
+                              {t("applications.ai.culturalFit")}
                             </h4>
                             <div className="flex items-center gap-3 mb-2">
                               <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -2743,13 +2745,13 @@ export function ApplicationsClient({
                           <div className="p-4 border rounded-xl">
                             <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
                               <Briefcase className="h-4 w-4 text-cyan-600" />
-                              Education Requirements
+                              {t("applications.ai.educationRequirements")}
                             </h4>
                             <div className="flex items-center gap-2 mb-2">
                               {aiScreeningResult.educationAnalysis.meetsRequirements ? (
-                                <Badge className="bg-green-600">Meets Requirements</Badge>
+                                <Badge className="bg-green-600">{t("applications.ai.meetsRequirements")}</Badge>
                               ) : (
-                                <Badge variant="destructive">Does Not Meet Requirements</Badge>
+                                <Badge variant="destructive">{t("applications.ai.doesNotMeetRequirements")}</Badge>
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">{aiScreeningResult.educationAnalysis.details}</p>
@@ -2764,7 +2766,7 @@ export function ApplicationsClient({
               {/* Footer */}
               <div className="px-6 py-4 border-t bg-muted/30 flex justify-end">
                 <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                  Close
+                  {t("common.close")}
                 </Button>
               </div>
             </>
@@ -2776,24 +2778,24 @@ export function ApplicationsClient({
       <Dialog open={isNotesDialogOpen} onOpenChange={setIsNotesDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Notes</DialogTitle>
+            <DialogTitle>{t("applications.actions.addNote")}</DialogTitle>
             <DialogDescription>
-              Add notes about this application
+              {t("applications.addNotesDescription")}
             </DialogDescription>
           </DialogHeader>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Enter your notes here..."
+            placeholder={t("applications.enterNotesPlaceholder")}
             className="min-h-[150px]"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNotesDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSaveNotes} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Notes
+              {t("applications.saveNotes")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2803,9 +2805,9 @@ export function ApplicationsClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Application</DialogTitle>
+            <DialogTitle>{t("applications.deleteApplication")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this application? This action cannot be undone.
+              {t("applications.confirmations.delete")}
             </DialogDescription>
           </DialogHeader>
           {selectedApplication && (
@@ -2815,18 +2817,18 @@ export function ApplicationsClient({
                   {selectedApplication.candidates?.first_name} {selectedApplication.candidates?.last_name}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Applied for: {selectedApplication.jobs?.title}
+                  {t("applications.appliedFor")}: {selectedApplication.jobs?.title}
                 </p>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2836,18 +2838,18 @@ export function ApplicationsClient({
       <Dialog open={isPipelineJobDialogOpen} onOpenChange={setIsPipelineJobDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Select Job for Pipeline View</DialogTitle>
+            <DialogTitle>{t("applications.selectJobForPipeline")}</DialogTitle>
             <DialogDescription>
-              Choose a job to view its hiring pipeline and manage applications by stage.
+              {t("applications.selectJobDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             {jobsWithApplications.length === 0 ? (
               <div className="text-center py-6">
                 <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No jobs with applications found</p>
+                <p className="text-muted-foreground">{t("applications.emptyState.noJobsWithApplications")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Applications will appear here once candidates apply
+                  {t("applications.emptyState.description")}
                 </p>
               </div>
             ) : (
@@ -2867,7 +2869,7 @@ export function ApplicationsClient({
                       <div>
                         <p className="font-medium group-hover:text-primary">{job.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {job.pipelines?.name || "Default Pipeline"} • {appCount} application{appCount !== 1 ? "s" : ""}
+                          {job.pipelines?.name || t("applications.defaultPipeline")} • {appCount} {appCount !== 1 ? t("applications.applicationsPlural") : t("applications.applicationSingular")}
                         </p>
                       </div>
                       <LayoutGrid className="h-5 w-5 text-muted-foreground group-hover:text-primary" />
@@ -2879,7 +2881,7 @@ export function ApplicationsClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPipelineJobDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2889,9 +2891,9 @@ export function ApplicationsClient({
       <Dialog open={isDisqualifyDialogOpen} onOpenChange={setIsDisqualifyDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Disqualify Candidate</DialogTitle>
+            <DialogTitle>{t("applications.disqualifyCandidate")}</DialogTitle>
             <DialogDescription>
-              This will move the candidate to the rejected stage. Optionally provide a reason.
+              {t("applications.disqualifyDescription")}
             </DialogDescription>
           </DialogHeader>
           {selectedApplication && (
@@ -2901,16 +2903,16 @@ export function ApplicationsClient({
                   {selectedApplication.candidates?.first_name} {selectedApplication.candidates?.last_name}
                 </p>
                 <p className="text-sm text-red-600 dark:text-red-300">
-                  Applied for: {selectedApplication.jobs?.title}
+                  {t("applications.appliedFor")}: {selectedApplication.jobs?.title}
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="disqualify-reason">Reason (Optional)</Label>
+                <Label htmlFor="disqualify-reason">{t("applications.reasonOptional")}</Label>
                 <Textarea
                   id="disqualify-reason"
                   value={disqualifyReason}
                   onChange={(e) => setDisqualifyReason(e.target.value)}
-                  placeholder="Provide a reason for disqualification..."
+                  placeholder={t("applications.disqualifyReasonPlaceholder")}
                   rows={3}
                 />
               </div>
@@ -2918,7 +2920,7 @@ export function ApplicationsClient({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDisqualifyDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -2926,7 +2928,7 @@ export function ApplicationsClient({
               disabled={isDisqualifying}
             >
               {isDisqualifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Disqualify
+              {t("applications.actions.disqualify")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2936,22 +2938,22 @@ export function ApplicationsClient({
       <Dialog open={isScorecardSubmitDialogOpen} onOpenChange={setIsScorecardSubmitDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Submit Scorecard</DialogTitle>
+            <DialogTitle>{t("applications.submitScorecard")}</DialogTitle>
             <DialogDescription>
-              Select an interview and template to submit a scorecard for this candidate.
+              {t("applications.submitScorecardDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Select Interview</Label>
+              <Label>{t("applications.selectInterview")}</Label>
               <Select value={selectedInterviewId} onValueChange={setSelectedInterviewId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose an interview" />
+                  <SelectValue placeholder={t("applications.chooseInterview")} />
                 </SelectTrigger>
                 <SelectContent>
                   {applicationInterviews.length === 0 ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      No interviews scheduled yet
+                      {t("applications.emptyState.noInterviewsYet")}
                     </div>
                   ) : (
                     applicationInterviews.map((interview) => (
@@ -2970,15 +2972,15 @@ export function ApplicationsClient({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Select Template</Label>
+              <Label>{t("applications.selectTemplate")}</Label>
               <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a scorecard template" />
+                  <SelectValue placeholder={t("applications.chooseScorecardTemplate")} />
                 </SelectTrigger>
                 <SelectContent>
                   {scorecardTemplates.length === 0 ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      No templates available
+                      {t("applications.emptyState.noTemplates")}
                     </div>
                   ) : (
                     scorecardTemplates.map((template) => (
@@ -2999,14 +3001,14 @@ export function ApplicationsClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsScorecardSubmitDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleOpenScorecardSubmit}
               disabled={!selectedInterviewId || !selectedTemplateId}
             >
               <ClipboardCheck className="mr-2 h-4 w-4" />
-              Continue to Scorecard
+              {t("applications.continueToScorecard")}
             </Button>
           </DialogFooter>
         </DialogContent>

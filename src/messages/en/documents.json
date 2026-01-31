@@ -1,0 +1,25 @@
+{
+  "description": "All candidate attachments organized by job position",
+  "totalDocuments": "Total Documents",
+  "resumes": "Resumes",
+  "otherAttachments": "Other Attachments",
+  "jobPositions": "Job Positions",
+  "searchPlaceholder": "Search documents, candidates, or jobs...",
+  "filterByJob": "Filter by job",
+  "allJobs": "All Jobs",
+  "filterByType": "Filter by type",
+  "allTypes": "All Types",
+  "noDocumentsFound": "No documents found",
+  "noDocumentsDescription": "Documents will appear here when candidates apply with attachments.",
+  "documentSingular": "document",
+  "documentPlural": "documents",
+  "fileNotAvailable": "File URL not available",
+  "openInNewTab": "Open in new tab",
+  "table": {
+    "document": "Document",
+    "candidate": "Candidate",
+    "type": "Type",
+    "size": "Size",
+    "uploaded": "Uploaded"
+  }
+}

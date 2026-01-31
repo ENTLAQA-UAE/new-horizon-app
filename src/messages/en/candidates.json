@@ -1,14 +1,45 @@
 {
   "title": "Candidates",
+  "subtitle": "Manage your talent pool and candidates",
   "allCandidates": "All Candidates",
   "addCandidate": "Add Candidate",
+  "addNewCandidate": "Add New Candidate",
+  "addNewCandidateDescription": "Add a new candidate to your talent pool.",
   "editCandidate": "Edit Candidate",
+  "editCandidateDescription": "Update candidate information.",
   "viewCandidate": "View Candidate",
   "deleteCandidate": "Delete Candidate",
   "importCandidates": "Import Candidates",
   "exportCandidates": "Export Candidates",
   "candidateProfile": "Candidate Profile",
   "candidateDetails": "Candidate Details",
+  "candidate": "Candidate",
+  "contact": "Contact",
+  "currentRole": "Current Role",
+  "viewProfile": "View Profile",
+  "applyToJob": "Apply to Job",
+  "applyCandidateToJob": "Apply Candidate to Job",
+  "applyToJobDescription": "Select a job to create an application for this candidate.",
+  "selectJob": "Select Job",
+  "selectJobPosition": "Select a job position",
+  "noPublishedJobs": "No published jobs available",
+  "publishJobFirst": "Publish a job first to apply candidates",
+  "createApplication": "Create Application",
+  "noTitle": "No title",
+  "searchPlaceholder": "Search by name, email, job title...",
+  "selectEducation": "Select education",
+  "skillsCommaSeparated": "Skills (comma separated)",
+  "resumePdfOrWord": "Resume (PDF or Word)",
+  "parseWithAI": "Parse with AI",
+  "parseWithAIHintPrefix": "Click",
+  "parseWithAIHintSuffix": "to auto-fill candidate details from this resume",
+  "uploadResumeHint": "Click or drag to upload resume (PDF, DOC, DOCX - Max 10MB)",
+  "allStatus": "All Status",
+  "yearsCount": "{count} years",
+  "yearsExperience": "{count} years experience",
+  "addedOnDate": "Added on {date}",
+  "viaSource": "via {source}",
+  "atCompany": "at {company}",
   "fields": {
     "firstName": "First Name",
     "lastName": "Last Name",
@@ -52,12 +83,14 @@
     "linkedin": "LinkedIn",
     "indeed": "Indeed",
     "glassdoor": "Glassdoor",
-    "referral": "Referral",
+    "referral": "Employee Referral",
     "agency": "Recruitment Agency",
     "jobFair": "Job Fair",
     "directApplication": "Direct Application",
     "socialMedia": "Social Media",
-    "other": "Other"
+    "other": "Other",
+    "direct": "Direct Application",
+    "career_page": "Career Page"
   },
   "tabs": {
     "overview": "Overview",
@@ -96,7 +129,24 @@
     "hired": "Hired",
     "rejected": "Rejected",
     "withdrawn": "Withdrawn",
-    "onHold": "On Hold"
+    "onHold": "On Hold",
+    "screening": "Screening",
+    "interviewing": "Interviewing",
+    "offered": "Offered"
+  },
+  "stats": {
+    "total": "Total",
+    "new": "New",
+    "screening": "Screening",
+    "interviewing": "Interviewing",
+    "hired": "Hired"
+  },
+  "educationLevels": {
+    "high_school": "High School",
+    "diploma": "Diploma",
+    "bachelors": "Bachelor's Degree",
+    "masters": "Master's Degree",
+    "phd": "PhD / Doctorate"
   },
   "education": {
     "degree": "Degree",
@@ -121,21 +171,34 @@
   "messages": {
     "created": "Candidate added successfully",
     "updated": "Candidate updated successfully",
-    "deleted": "Candidate deleted",
+    "deleted": "Candidate deleted successfully",
     "imported": "{count} candidates imported successfully",
     "exported": "Candidates exported successfully",
     "emailSent": "Email sent to candidate",
     "noteAdded": "Note added",
-    "merged": "Candidates merged successfully"
+    "merged": "Candidates merged successfully",
+    "fillRequired": "Please fill in required fields",
+    "selectJob": "Please select a job",
+    "appliedToJob": "Candidate applied to job successfully",
+    "statusUpdated": "Status updated to {status}",
+    "resumeNotAvailable": "Resume URL not available",
+    "uploadResumeFirst": "Please upload a resume first",
+    "invalidResumeType": "Please upload a PDF or Word document",
+    "fileTooLarge": "File size must be less than 10MB",
+    "resumeParsed": "Resume parsed successfully! Form has been auto-filled.",
+    "cannotReadResume": "Could not read resume file. Please try a different format.",
+    "cannotExtractText": "Could not extract text from resume",
+    "alreadyApplied": "This candidate has already applied to this job"
   },
   "confirmations": {
-    "delete": "Are you sure you want to delete this candidate? This will also delete all their applications.",
+    "delete": "Are you sure you want to delete this candidate? This action cannot be undone.",
     "merge": "Are you sure you want to merge these candidates? This action cannot be undone."
   },
   "emptyState": {
     "title": "No candidates found",
     "description": "Add candidates manually or wait for applications",
-    "filterDescription": "Try adjusting your filters or search criteria"
+    "filterDescription": "Try adjusting your filters or search criteria",
+    "addFirst": "Add your first candidate"
   },
   "import": {
     "title": "Import Candidates",

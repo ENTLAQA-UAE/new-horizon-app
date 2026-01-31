@@ -53,6 +53,7 @@ import {
   Briefcase,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface Criteria {
   id: string
@@ -87,16 +88,16 @@ interface ScorecardTemplatesClientProps {
 }
 
 const templateTypes = [
-  { value: "technical", label: "Technical", icon: Code, color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  { value: "behavioral", label: "Behavioral", icon: Users, color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
-  { value: "cultural", label: "Cultural Fit", icon: Star, color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
-  { value: "general", label: "General", icon: FileText, color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
-  { value: "custom", label: "Custom", icon: Briefcase, color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  { value: "technical", labelKey: "scorecards.templates.types.technical", icon: Code, color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+  { value: "behavioral", labelKey: "scorecards.templates.types.behavioral", icon: Users, color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
+  { value: "cultural", labelKey: "scorecards.templates.types.culturalFit", icon: Star, color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+  { value: "general", labelKey: "scorecards.templates.types.general", icon: FileText, color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
+  { value: "custom", labelKey: "scorecards.templates.types.custom", icon: Briefcase, color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
 ]
 
 const ratingScales = [
-  { value: "1-5", label: "1-5 Scale", max: 5 },
-  { value: "1-10", label: "1-10 Scale", max: 10 },
+  { value: "1-5", labelKey: "scorecards.templates.ratingScales.scale1to5", max: 5 },
+  { value: "1-10", labelKey: "scorecards.templates.ratingScales.scale1to10", max: 10 },
 ]
 
 const defaultRatingLabels: Record<string, Record<string, string>> = {
@@ -123,6 +124,7 @@ const defaultRatingLabels: Record<string, Record<string, string>> = {
 
 export function ScorecardTemplatesClient({ templates: initialTemplates, organizationId }: ScorecardTemplatesClientProps) {
   const router = useRouter()
+  const { t, language, isRTL } = useI18n()
   const supabase = createClient()
 
   const [templates, setTemplates] = useState(initialTemplates)
@@ -196,7 +198,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
 
   const addCriteria = () => {
     if (!newCriteria.name) {
-      toast.error("Please enter criteria name")
+      toast.error(t("scorecards.templates.errors.criteriaNameRequired"))
       return
     }
 
@@ -240,12 +242,12 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
   // CREATE
   const handleCreate = async () => {
     if (!formData.name) {
-      toast.error("Please enter template name")
+      toast.error(t("scorecards.templates.errors.templateNameRequired"))
       return
     }
 
     if (formData.criteria.length === 0) {
-      toast.error("Please add at least one criteria")
+      toast.error(t("scorecards.templates.errors.criteriaRequired"))
       return
     }
 
@@ -361,7 +363,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       }
 
       if (!accessToken) {
-        toast.error("No active session. Please refresh the page and try again.")
+        toast.error(t("scorecards.templates.errors.noSession"))
         return
       }
 
@@ -397,12 +399,12 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       setTemplates([createdTemplate as ScorecardTemplate, ...templates])
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success("Scorecard template created successfully")
+      toast.success(t("scorecards.templates.messages.created"))
       router.refresh()
     } catch (err) {
       console.error("Unexpected error creating scorecard:", err)
-      const errorMessage = err instanceof Error ? err.message : "An unexpected error occurred"
-      toast.error(`Failed to create template: ${errorMessage}`)
+      const errorMessage = err instanceof Error ? err.message : t("scorecards.templates.errors.unexpected")
+      toast.error(t("scorecards.templates.messages.createFailed", { error: errorMessage }))
     } finally {
       setIsLoading(false)
     }
@@ -413,12 +415,12 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
     if (!selectedTemplate) return
 
     if (!formData.name) {
-      toast.error("Please enter template name")
+      toast.error(t("scorecards.templates.errors.templateNameRequired"))
       return
     }
 
     if (formData.criteria.length === 0) {
-      toast.error("Please add at least one criteria")
+      toast.error(t("scorecards.templates.errors.criteriaRequired"))
       return
     }
 
@@ -456,7 +458,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       }
 
       if (!accessToken) {
-        toast.error("No active session. Please refresh the page and try again.")
+        toast.error(t("scorecards.templates.errors.noSession"))
         return
       }
 
@@ -501,11 +503,11 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       setIsEditDialogOpen(false)
       setSelectedTemplate(null)
       resetForm()
-      toast.success("Scorecard template updated successfully")
+      toast.success(t("scorecards.templates.messages.updated"))
       router.refresh()
     } catch (err) {
       console.error("Error updating scorecard:", err)
-      toast.error("An unexpected error occurred")
+      toast.error(t("scorecards.templates.errors.unexpected"))
     } finally {
       setIsLoading(false)
     }
@@ -549,7 +551,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       }
 
       if (!accessToken) {
-        toast.error("No active session. Please refresh the page and try again.")
+        toast.error(t("scorecards.templates.errors.noSession"))
         return
       }
 
@@ -574,11 +576,11 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       setTemplates(templates.filter((t) => t.id !== selectedTemplate.id))
       setIsDeleteDialogOpen(false)
       setSelectedTemplate(null)
-      toast.success("Scorecard template deleted successfully")
+      toast.success(t("scorecards.templates.messages.deleted"))
       router.refresh()
     } catch (err) {
       console.error("Error deleting scorecard:", err)
-      toast.error("An unexpected error occurred")
+      toast.error(t("scorecards.templates.errors.unexpected"))
     } finally {
       setIsLoading(false)
     }
@@ -620,13 +622,13 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       }
 
       if (!accessToken) {
-        toast.error("No active session. Please refresh the page and try again.")
+        toast.error(t("scorecards.templates.errors.noSession"))
         return
       }
 
       const insertData = {
         org_id: organizationId,
-        name: `${template.name} (Copy)`,
+        name: t("scorecards.templates.copyName", { name: template.name }),
         name_ar: template.name_ar,
         description: template.description,
         description_ar: template.description_ar,
@@ -660,11 +662,11 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       const createdTemplate = Array.isArray(data) ? data[0] : data
 
       setTemplates([createdTemplate as ScorecardTemplate, ...templates])
-      toast.success("Scorecard template duplicated")
+      toast.success(t("scorecards.templates.messages.duplicated"))
       router.refresh()
     } catch (err) {
       console.error("Error duplicating scorecard:", err)
-      toast.error("An unexpected error occurred")
+      toast.error(t("scorecards.templates.errors.unexpected"))
     } finally {
       setIsLoading(false)
     }
@@ -723,12 +725,12 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => openEditDialog(template)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
+                  <Pencil className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4")} />
+                  {t("common.edit")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleDuplicate(template)}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
+                  <Copy className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4")} />
+                  {t("scorecards.templates.duplicate")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -738,8 +740,8 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
                   }}
                   className="text-red-600"
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  <Trash2 className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4")} />
+                  {t("common.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -748,17 +750,17 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         <CardContent>
           <div className="flex flex-wrap gap-2 mb-3">
             <Badge variant="outline" className={typeConfig.color}>
-              {typeConfig.label}
+              {t(typeConfig.labelKey)}
             </Badge>
             {template.is_default && (
-              <Badge variant="secondary">Default</Badge>
+              <Badge variant="secondary">{t("scorecards.templates.default")}</Badge>
             )}
             <Badge variant="outline">
               {template.rating_scale_type}
             </Badge>
           </div>
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium">{template.criteria?.length || 0}</span> criteria
+            <span className="font-medium">{template.criteria?.length || 0}</span> {t("scorecards.templates.criteria")}
           </div>
         </CardContent>
       </Card>
@@ -768,40 +770,40 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
   // Criteria form JSX - inlined to prevent focus loss on re-render
   const criteriaFormJSX = (
     <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-      <h4 className="font-medium text-sm">Add Criteria</h4>
+      <h4 className="font-medium text-sm">{t("scorecards.templates.addCriteria")}</h4>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="criteria_name">Name (English) *</Label>
+          <Label htmlFor="criteria_name">{t("scorecards.templates.nameEn")}</Label>
           <Input
             id="criteria_name"
             value={newCriteria.name}
             onChange={(e) => setNewCriteria(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="e.g., Technical Knowledge"
+            placeholder={t("scorecards.templates.placeholders.criteriaNameEn")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="criteria_name_ar">Name (Arabic)</Label>
+          <Label htmlFor="criteria_name_ar">{t("scorecards.templates.nameAr")}</Label>
           <Input
             id="criteria_name_ar"
             value={newCriteria.name_ar}
             onChange={(e) => setNewCriteria(prev => ({ ...prev, name_ar: e.target.value }))}
-            placeholder="المعرفة التقنية"
+            placeholder={t("scorecards.templates.placeholders.criteriaNameAr")}
             dir="rtl"
           />
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="criteria_description">Description</Label>
+        <Label htmlFor="criteria_description">{t("scorecards.templates.descriptionLabel")}</Label>
         <Input
           id="criteria_description"
           value={newCriteria.description}
           onChange={(e) => setNewCriteria(prev => ({ ...prev, description: e.target.value }))}
-          placeholder="What should the interviewer evaluate?"
+          placeholder={t("scorecards.templates.criteriaDescPlaceholder")}
         />
       </div>
       <div className="space-y-2">
         <div className="flex justify-between">
-          <Label>Weight</Label>
+          <Label>{t("scorecards.templates.weight")}</Label>
           <span className="text-sm text-muted-foreground">{newCriteria.weight}%</span>
         </div>
         <Slider
@@ -813,8 +815,8 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         />
       </div>
       <Button type="button" onClick={addCriteria} className="w-full">
-        <Plus className="mr-2 h-4 w-4" />
-        Add Criteria
+        <Plus className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4")} />
+        {t("scorecards.templates.addCriteria")}
       </Button>
     </div>
   )
@@ -823,17 +825,17 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
   const criteriaListJSX = (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <Label>Criteria ({formData.criteria.length})</Label>
+        <Label>{t("scorecards.templates.criteria")} ({formData.criteria.length})</Label>
         <span className={cn(
           "text-sm",
           getTotalWeight() === 100 ? "text-green-600" : "text-amber-600"
         )}>
-          Total Weight: {getTotalWeight()}%
+          {t("scorecards.templates.totalWeight")}: {getTotalWeight()}%
         </span>
       </div>
       {formData.criteria.length === 0 ? (
         <div className="text-center py-4 text-muted-foreground text-sm border rounded-lg">
-          No criteria added yet
+          {t("scorecards.templates.noCriteriaAdded")}
         </div>
       ) : (
         <div className="space-y-2">
@@ -875,14 +877,14 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Scorecard Templates</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("scorecards.templates.title")}</h2>
           <p className="text-muted-foreground">
-            Create and manage interview scorecard templates
+            {t("scorecards.templates.description")}
           </p>
         </div>
         <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Template
+          <Plus className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4")} />
+          {t("scorecards.templates.createTemplate")}
         </Button>
       </div>
 
@@ -890,7 +892,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Templates</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("scorecards.templates.totalTemplates")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -898,7 +900,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("scorecards.templates.active")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.active}</div>
@@ -906,7 +908,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Technical</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("scorecards.templates.types.technical")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.technical}</div>
@@ -914,7 +916,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Behavioral</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("scorecards.templates.types.behavioral")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.behavioral}</div>
@@ -927,7 +929,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search templates..."
+            placeholder={t("scorecards.templates.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -935,13 +937,13 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Type" />
+            <SelectValue placeholder={t("scorecards.templates.type")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">{t("scorecards.templates.allTypes")}</SelectItem>
             {templateTypes.map((type) => (
               <SelectItem key={type.value} value={type.value}>
-                {type.label}
+                {t(type.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -953,13 +955,13 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         <Card>
           <CardContent className="py-12 text-center">
             <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">No scorecard templates found</p>
+            <p className="text-muted-foreground">{t("scorecards.templates.noTemplates")}</p>
             <Button
               variant="link"
               onClick={() => setIsCreateDialogOpen(true)}
               className="mt-2"
             >
-              Create your first template
+              {t("scorecards.templates.createFirst")}
             </Button>
           </CardContent>
         </Card>
@@ -986,12 +988,12 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {isEditDialogOpen ? "Edit Scorecard Template" : "Create Scorecard Template"}
+              {isEditDialogOpen ? t("scorecards.templates.editScorecardTemplate") : t("scorecards.templates.createScorecardTemplate")}
             </DialogTitle>
             <DialogDescription>
               {isEditDialogOpen
-                ? "Update the scorecard template criteria and settings"
-                : "Create a new interview scorecard template with custom criteria"}
+                ? t("scorecards.templates.editDescription")
+                : t("scorecards.templates.createDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -999,40 +1001,40 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Template Name (English) *</Label>
+                <Label htmlFor="name">{t("scorecards.templates.templateNameEn")}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Technical Interview"
+                  placeholder={t("scorecards.templates.placeholders.templateNameEn")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name_ar">Template Name (Arabic)</Label>
+                <Label htmlFor="name_ar">{t("scorecards.templates.templateNameAr")}</Label>
                 <Input
                   id="name_ar"
                   value={formData.name_ar}
                   onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                  placeholder="المقابلة التقنية"
+                  placeholder={t("scorecards.templates.placeholders.templateNameAr")}
                   dir="rtl"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("scorecards.templates.descriptionLabel")}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe when to use this template..."
+                placeholder={t("scorecards.templates.descriptionPlaceholder")}
                 rows={2}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Template Type</Label>
+                <Label>{t("scorecards.templates.templateType")}</Label>
                 <Select
                   value={formData.template_type}
                   onValueChange={(value) => setFormData({ ...formData, template_type: value })}
@@ -1043,14 +1045,14 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
                   <SelectContent>
                     {templateTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                        {t(type.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Rating Scale</Label>
+                <Label>{t("scorecards.templates.ratingScale")}</Label>
                 <Select
                   value={formData.rating_scale_type}
                   onValueChange={(value) => setFormData({ ...formData, rating_scale_type: value })}
@@ -1061,7 +1063,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
                   <SelectContent>
                     {ratingScales.map((scale) => (
                       <SelectItem key={scale.value} value={scale.value}>
-                        {scale.label}
+                        {t(scale.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1071,9 +1073,9 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Set as Default</Label>
+                <Label>{t("scorecards.templates.setAsDefault")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Use this template by default for new interviews
+                  {t("scorecards.templates.setAsDefaultDescription")}
                 </p>
               </div>
               <Switch
@@ -1084,9 +1086,9 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Require Notes per Criteria</Label>
+                <Label>{t("scorecards.templates.requireNotes")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Interviewers must add notes for each criteria
+                  {t("scorecards.templates.requireNotesDescription")}
                 </p>
               </div>
               <Switch
@@ -1097,7 +1099,7 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
 
             {/* Criteria Section */}
             <div className="border-t pt-6 space-y-4">
-              <h3 className="font-semibold">Evaluation Criteria</h3>
+              <h3 className="font-semibold">{t("scorecards.templates.evaluationCriteria")}</h3>
               {criteriaFormJSX}
               {criteriaListJSX}
             </div>
@@ -1113,14 +1115,14 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
                 resetForm()
               }}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={isEditDialogOpen ? handleUpdate : handleCreate}
               disabled={isLoading}
             >
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditDialogOpen ? "Update Template" : "Create Template"}
+              {isLoading && <Loader2 className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4 animate-spin")} />}
+              {isEditDialogOpen ? t("scorecards.templates.updateTemplate") : t("scorecards.templates.createTemplate")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1130,18 +1132,18 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Scorecard Template</DialogTitle>
+            <DialogTitle>{t("scorecards.templates.deleteScorecardTemplate")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{selectedTemplate?.name}&quot;? This action cannot be undone.
+              {t("scorecards.templates.deleteConfirmation", { name: selectedTemplate?.name || "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              {isLoading && <Loader2 className={cn(isRTL ? "ml-2" : "mr-2", "h-4 w-4 animate-spin")} />}
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

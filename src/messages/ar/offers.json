@@ -5,6 +5,12 @@
   "viewOffer": "عرض العرض",
   "sendOffer": "إرسال العرض",
   "offerDetails": "تفاصيل العرض",
+  "deleteOffer": "حذف العرض",
+  "description": "إنشاء وإدارة عروض العمل للمتقدمين",
+  "createDescription": "إنشاء عرض عمل جديد لمتقدم",
+  "searchPlaceholder": "البحث بالمتقدم أو الوظيفة...",
+  "allStatus": "جميع الحالات",
+  "employmentDetails": "تفاصيل التوظيف",
   "fields": {
     "candidate": "المتقدم",
     "job": "الوظيفة",
@@ -18,7 +24,32 @@
     "expirationDate": "تاريخ انتهاء الصلاحية",
     "status": "الحالة",
     "benefits": "المميزات",
-    "additionalTerms": "شروط إضافية"
+    "additionalTerms": "شروط إضافية",
+    "selectCandidate": "اختيار المتقدم",
+    "offerTemplate": "قالب العرض (اختياري)",
+    "jobTitle": "المسمى الوظيفي",
+    "jobTitleAr": "المسمى الوظيفي (عربي)",
+    "department": "القسم",
+    "location": "الموقع",
+    "salaryAmount": "مبلغ الراتب",
+    "annualBonus": "المكافأة السنوية %",
+    "employmentType": "نوع التوظيف",
+    "probationPeriod": "فترة التجربة (أشهر)",
+    "position": "المنصب"
+  },
+  "placeholders": {
+    "selectApplication": "اختيار طلب المتقدم",
+    "selectTemplate": "اختيار القالب",
+    "jobTitle": "مثال: مهندس برمجيات أول",
+    "department": "مثال: الهندسة",
+    "location": "مثال: الرياض",
+    "salaryAmount": "15000"
+  },
+  "stats": {
+    "totalOffers": "إجمالي العروض",
+    "pending": "قيد الانتظار",
+    "accepted": "مقبولة",
+    "declined": "مرفوضة"
   },
   "status": {
     "draft": "مسودة",
@@ -30,7 +61,14 @@
     "declined": "مرفوض",
     "expired": "منتهي الصلاحية",
     "withdrawn": "تم السحب",
-    "negotiating": "قيد التفاوض"
+    "negotiating": "قيد التفاوض",
+    "counterOffered": "عرض مضاد"
+  },
+  "employmentTypes": {
+    "fullTime": "دوام كامل",
+    "partTime": "دوام جزئي",
+    "contract": "عقد",
+    "temporary": "مؤقت"
   },
   "payPeriods": {
     "hourly": "بالساعة",
@@ -38,7 +76,40 @@
     "weekly": "أسبوعياً",
     "biweekly": "كل أسبوعين",
     "monthly": "شهرياً",
-    "annual": "سنوياً"
+    "yearly": "سنوياً",
+    "annual": "سنوياً",
+    "monthlyShort": "شهر",
+    "yearlyShort": "سنة",
+    "hourlyShort": "ساعة"
+  },
+  "currencies": {
+    "SAR": "SAR - ريال سعودي",
+    "AED": "AED - درهم إماراتي",
+    "USD": "USD - دولار أمريكي",
+    "EUR": "EUR - يورو",
+    "GBP": "GBP - جنيه إسترليني",
+    "QAR": "QAR - ريال قطري",
+    "KWD": "KWD - دينار كويتي",
+    "BHD": "BHD - دينار بحريني",
+    "OMR": "OMR - ريال عماني",
+    "EGP": "EGP - جنيه مصري",
+    "JOD": "JOD - دينار أردني",
+    "INR": "INR - روبية هندية",
+    "PKR": "PKR - روبية باكستانية",
+    "PHP": "PHP - بيزو فلبيني",
+    "CAD": "CAD - دولار كندي",
+    "AUD": "AUD - دولار أسترالي",
+    "CHF": "CHF - فرنك سويسري",
+    "JPY": "JPY - ين ياباني",
+    "CNY": "CNY - يوان صيني"
+  },
+  "dateShortcuts": {
+    "nextWeek": "الأسبوع القادم",
+    "firstNextMonth": "أول الشهر القادم",
+    "threeDays": "3 أيام",
+    "oneWeek": "أسبوع واحد",
+    "twoWeeks": "أسبوعين",
+    "thirtyDays": "30 يوم"
   },
   "compensation": {
     "title": "التعويضات",
@@ -98,28 +169,45 @@
     "withdraw": "سحب العرض",
     "extend": "تمديد الصلاحية",
     "resend": "إعادة إرسال العرض",
-    "viewHistory": "عرض السجل"
+    "viewHistory": "عرض السجل",
+    "approve": "موافقة",
+    "reject": "رفض"
   },
   "messages": {
     "created": "تم إنشاء العرض بنجاح",
     "updated": "تم تحديث العرض",
     "sent": "تم إرسال العرض للمتقدم",
+    "sentSuccess": "تم إرسال العرض بنجاح",
     "accepted": "تم قبول العرض",
     "declined": "تم رفض العرض",
     "withdrawn": "تم سحب العرض",
     "expired": "انتهت صلاحية هذا العرض",
     "approvalRequested": "تم إرسال طلب الموافقة",
     "approved": "تمت الموافقة على العرض",
-    "rejected": "تم رفض العرض"
+    "rejected": "تم رفض العرض",
+    "selectCandidate": "يرجى اختيار متقدم",
+    "fillRequired": "يرجى ملء الحقول المطلوبة",
+    "createdForApproval": "تم إنشاء العرض وإرساله للموافقة",
+    "sendFailed": "فشل إرسال العرض",
+    "approvedSendable": "تمت الموافقة على العرض. يمكنك الآن إرساله للمتقدم.",
+    "approveFailed": "فشل الموافقة على العرض",
+    "rejectedToDraft": "تم رفض العرض وإعادته كمسودة",
+    "rejectFailed": "فشل رفض العرض",
+    "deleted": "تم حذف العرض بنجاح",
+    "deleteFailed": "فشل حذف العرض",
+    "unexpectedError": "حدث خطأ غير متوقع"
   },
   "confirmations": {
     "send": "هل أنت متأكد من إرسال هذا العرض للمتقدم؟",
     "withdraw": "هل أنت متأكد من سحب هذا العرض؟",
-    "delete": "هل أنت متأكد من حذف هذا العرض؟"
+    "delete": "هل أنت متأكد من حذف هذا العرض؟",
+    "deleteDescription": "هل أنت متأكد من حذف هذا العرض؟ لا يمكن التراجع عن هذا الإجراء."
   },
   "emptyState": {
     "title": "لا توجد عروض بعد",
-    "description": "أنشئ عرضاً لمتقدم للبدء"
+    "description": "أنشئ عرضاً لمتقدم للبدء",
+    "noResults": "لم يتم العثور على عروض",
+    "createFirst": "أنشئ عرضك الأول"
   },
   "timeline": {
     "created": "تم إنشاء العرض",
