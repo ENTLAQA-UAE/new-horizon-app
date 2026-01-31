@@ -395,6 +395,27 @@ export async function POST(request: NextRequest) {
             .eq("id", data.offerId)
             .single()
 
+          // Generate fresh response token for accept/decline email buttons
+          let offerResponseUrls: { acceptUrl: string; declineUrl: string } | undefined
+          if (offerRecord) {
+            const responseToken = crypto.randomUUID()
+            const tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+            await serviceClient
+              .from("offers")
+              .update({
+                response_token: responseToken,
+                response_token_expires_at: tokenExpiresAt,
+              })
+              .eq("id", data.offerId)
+
+            const offerBaseUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || ""
+            offerResponseUrls = {
+              acceptUrl: `${offerBaseUrl}/offers/respond?token=${responseToken}&action=accept`,
+              declineUrl: `${offerBaseUrl}/offers/respond?token=${responseToken}&action=decline`,
+            }
+          }
+
           if (offerRecord?.template_id) {
             const { data: offerTemplate } = await serviceClient
               .from("offer_templates")
@@ -438,7 +459,8 @@ export async function POST(request: NextRequest) {
                 {
                   org_name: orgInfo?.name || "Organization",
                   logo_url: orgInfo?.logo_url,
-                }
+                },
+                offerResponseUrls
               )
 
               // Use offer template subject if available
@@ -455,6 +477,37 @@ export async function POST(request: NextRequest) {
                 .update({ offer_letter_html: emailHtmlOverride })
                 .eq("id", data.offerId)
             }
+          }
+
+          // Fallback: if no custom template, create a basic offer email with accept/decline buttons
+          if (!emailHtmlOverride && offerRecord && offerResponseUrls) {
+            const { data: fallbackOrg } = await serviceClient
+              .from("organizations")
+              .select("name, logo_url")
+              .eq("id", orgId)
+              .single()
+
+            const fallbackName = data.candidateName ||
+              `${offerRecord.applications?.candidates?.first_name || ""} ${offerRecord.applications?.candidates?.last_name || ""}`.trim() || "Candidate"
+
+            emailHtmlOverride = processOfferTemplate(
+              `<p style="margin: 0 0 8px; color: #4b5563; font-size: 16px; line-height: 1.6;">Dear ${fallbackName},</p>
+<p style="margin: 0 0 8px; color: #4b5563; font-size: 16px; line-height: 1.6;">We are pleased to extend an offer for the position of <strong>${offerRecord.job_title || data.jobTitle || ""}</strong>.</p>
+<p style="margin: 0 0 8px; color: #4b5563; font-size: 16px; line-height: 1.6;">Please respond to this offer using the buttons below.</p>`,
+              {
+                candidate_name: fallbackName,
+                position_title: offerRecord.job_title || data.jobTitle || "",
+                salary_amount: "",
+                salary_currency: "",
+                start_date: "",
+                company_name: fallbackOrg?.name || "",
+              },
+              {
+                org_name: fallbackOrg?.name || "Organization",
+                logo_url: fallbackOrg?.logo_url,
+              },
+              offerResponseUrls
+            )
           }
         }
 

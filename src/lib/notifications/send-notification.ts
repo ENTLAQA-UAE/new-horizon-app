@@ -1632,7 +1632,8 @@ export function processOfferTemplate(
   orgBranding: {
     org_name: string
     logo_url?: string | null
-  }
+  },
+  responseUrls?: { acceptUrl: string; declineUrl: string }
 ): string {
   // Map offer template merge fields to values
   const mergeFieldMap: Record<string, string> = {
@@ -1691,6 +1692,21 @@ export function processOfferTemplate(
               ${processedHtml}
             </td>
           </tr>
+          ${responseUrls ? `<tr>
+            <td style="padding: 0 40px 32px; text-align: center;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; font-weight: 500;">Please respond to this offer:</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+                <tr>
+                  <td style="padding: 0 8px;">
+                    <a href="${responseUrls.acceptUrl}" style="display: inline-block; padding: 14px 32px; background-color: #16a34a; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Accept Offer</a>
+                  </td>
+                  <td style="padding: 0 8px;">
+                    <a href="${responseUrls.declineUrl}" style="display: inline-block; padding: 14px 32px; background-color: #dc2626; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Decline Offer</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>` : ''}
           <tr>
             <td style="padding: 24px 40px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #6b7280; font-size: 13px;">&copy; ${orgName}</p>

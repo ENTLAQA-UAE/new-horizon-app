@@ -30,6 +30,9 @@ import {
   ExternalLink,
   Trash2,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from "lucide-react"
 
 interface Integration {
@@ -63,6 +66,16 @@ const PROVIDER_CONFIG = {
     ],
     helpUrl: "https://marketplace.zoom.us/develop/create",
     helpText: "Create an OAuth App at Zoom Marketplace",
+    setupGuide: [
+      "Go to the Zoom App Marketplace (marketplace.zoom.us) and sign in with your Zoom account.",
+      "Click \"Develop\" in the top menu, then select \"Build App\".",
+      "Choose \"Server-to-Server OAuth\" as the app type and click \"Create\".",
+      "Give your app a name (e.g., \"Jadarat Interviews\") and click \"Create\".",
+      "On the App Credentials page, copy the \"Account ID\", \"Client ID\" and \"Client Secret\".",
+      "Go to the \"Scopes\" tab and add these scopes: meeting:write:admin, meeting:read:admin, user:read:admin.",
+      "Click \"Continue\" and then \"Activate your app\".",
+      "Paste the Client ID and Client Secret in the fields above.",
+    ],
   },
   microsoft: {
     name: "Microsoft 365",
@@ -73,10 +86,21 @@ const PROVIDER_CONFIG = {
     fields: [
       { key: "client_id", label: "Application (Client) ID", type: "text", placeholder: "Azure AD App Client ID" },
       { key: "client_secret", label: "Client Secret", type: "password", placeholder: "Azure AD App Client Secret" },
-      { key: "tenant_id", label: "Tenant ID", type: "text", placeholder: "common (for multi-tenant) or your tenant ID" },
+      { key: "tenant_id", label: "Tenant ID", type: "text", placeholder: "Your Azure AD tenant ID" },
     ],
     helpUrl: "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade",
     helpText: "Create an App Registration in Azure Portal",
+    setupGuide: [
+      "Go to the Azure Portal (portal.azure.com) and sign in with your Microsoft 365 admin account.",
+      "Navigate to \"Azure Active Directory\" > \"App registrations\" > \"New registration\".",
+      "Enter a name (e.g., \"Jadarat Interviews\"), select \"Accounts in this organizational directory only\", and click \"Register\".",
+      "On the Overview page, copy the \"Application (client) ID\" and \"Directory (tenant) ID\".",
+      "Go to \"Certificates & secrets\" > \"New client secret\", add a description, choose an expiry, and click \"Add\". Copy the secret value immediately (it won't be shown again).",
+      "Go to \"API permissions\" > \"Add a permission\" > \"Microsoft Graph\" > \"Application permissions\".",
+      "Add these permissions: OnlineMeetings.ReadWrite.All, Calendars.ReadWrite, User.Read.All.",
+      "Click \"Grant admin consent for [your org]\" to authorize the permissions.",
+      "Paste the Application ID, Client Secret, and Tenant ID in the fields above.",
+    ],
   },
   google: {
     name: "Google Workspace",
@@ -90,6 +114,17 @@ const PROVIDER_CONFIG = {
     ],
     helpUrl: "https://console.cloud.google.com/apis/credentials",
     helpText: "Create OAuth credentials in Google Cloud Console",
+    setupGuide: [
+      "Go to the Google Cloud Console (console.cloud.google.com) and sign in with your Google Workspace admin account.",
+      "Create a new project or select an existing one from the project dropdown at the top.",
+      "Go to \"APIs & Services\" > \"Library\". Search for and enable: \"Google Calendar API\" and \"Google Meet REST API\".",
+      "Go to \"APIs & Services\" > \"OAuth consent screen\". Select \"Internal\" (for Workspace) or \"External\", fill in the app name, and save.",
+      "Go to \"APIs & Services\" > \"Credentials\" > \"Create Credentials\" > \"OAuth 2.0 Client IDs\".",
+      "Select \"Web application\" as the application type.",
+      "Under \"Authorized redirect URIs\", add your app's callback URL (e.g., https://your-domain.com/api/google/callback).",
+      "Click \"Create\" and copy the \"Client ID\" and \"Client Secret\".",
+      "Paste the Client ID and Client Secret in the fields above.",
+    ],
   },
 }
 
@@ -107,6 +142,7 @@ export function IntegrationsSettingsClient({
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showSetupGuide, setShowSetupGuide] = useState(false)
 
   const getIntegration = (provider: string) =>
     integrations.find((i) => i.provider === provider)
@@ -115,6 +151,7 @@ export function IntegrationsSettingsClient({
     setSelectedProvider(provider)
     setCredentials({})
     setShowSecrets({})
+    setShowSetupGuide(false)
     setConfigDialogOpen(true)
   }
 
@@ -402,7 +439,7 @@ export function IntegrationsSettingsClient({
 
       {/* Configure Credentials Dialog */}
       <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Configure {providerConfig?.name}</DialogTitle>
             <DialogDescription>
@@ -445,18 +482,45 @@ export function IntegrationsSettingsClient({
               </div>
             ))}
 
-            {providerConfig?.helpUrl && (
-              <p className="text-sm text-muted-foreground">
-                {providerConfig.helpText}:{" "}
-                <a
-                  href={providerConfig.helpUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary underline"
+            {/* Setup Guide */}
+            {providerConfig?.setupGuide && (
+              <div className="border rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium bg-muted/50 hover:bg-muted transition-colors"
+                  onClick={() => setShowSetupGuide(!showSetupGuide)}
                 >
-                  Open {providerConfig.name}
-                </a>
-              </p>
+                  <span className="flex items-center gap-2">
+                    <Info className="h-4 w-4 text-blue-500" />
+                    Step-by-step setup guide
+                  </span>
+                  {showSetupGuide ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+                {showSetupGuide && (
+                  <div className="px-3 py-3 space-y-2 bg-muted/20">
+                    <ol className="list-decimal list-outside space-y-2 text-sm text-muted-foreground ml-4">
+                      {providerConfig.setupGuide.map((step: string, i: number) => (
+                        <li key={i} className="leading-relaxed">{step}</li>
+                      ))}
+                    </ol>
+                    {providerConfig.helpUrl && (
+                      <a
+                        href={providerConfig.helpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Open {providerConfig.name} Console
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
