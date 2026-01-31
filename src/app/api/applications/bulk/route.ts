@@ -59,12 +59,17 @@ export async function POST(request: NextRequest) {
           .in("id", applicationIds)
 
         for (const app of applications || []) {
+          const statusUpdate: Record<string, unknown> = {
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          }
+          if (newStatus === "hired") {
+            statusUpdate.hired_at = new Date().toISOString()
+          }
+
           const { error } = await supabase
             .from("applications")
-            .update({
-              status: newStatus,
-              updated_at: new Date().toISOString(),
-            })
+            .update(statusUpdate)
             .eq("id", app.id)
 
           if (error) {
@@ -93,12 +98,37 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "Stage ID is required" }, { status: 400 })
         }
 
+        // Look up the stage to determine the corresponding status
+        const { data: stageData } = await supabase
+          .from("pipeline_stages")
+          .select("stage_type")
+          .eq("id", stageId)
+          .single()
+
+        const stageTypeStatusMap: Record<string, string> = {
+          applied: "new",
+          screening: "screening",
+          interview: "interview",
+          assessment: "assessment",
+          offer: "offer",
+          hired: "hired",
+          rejected: "rejected",
+        }
+
+        const updatePayload: Record<string, unknown> = {
+          stage_id: stageId,
+          updated_at: new Date().toISOString(),
+        }
+        if (stageData?.stage_type && stageTypeStatusMap[stageData.stage_type]) {
+          updatePayload.status = stageTypeStatusMap[stageData.stage_type]
+        }
+        if (stageData?.stage_type === "hired") {
+          updatePayload.hired_at = new Date().toISOString()
+        }
+
         const { error } = await supabase
           .from("applications")
-          .update({
-            stage: stageId,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updatePayload)
           .in("id", applicationIds)
 
         if (error) {
