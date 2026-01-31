@@ -16,13 +16,8 @@ BEGIN
   WHERE
     status = 'open'
     AND (auto_deactivated IS NULL OR auto_deactivated = false)
-    AND (
-      -- Check the DATE column used by the job form
-      (closing_date IS NOT NULL AND closing_date < CURRENT_DATE)
-      OR
-      -- Also check the TIMESTAMPTZ column as a fallback
-      (closes_at IS NOT NULL AND closes_at < NOW())
-    );
+    AND closing_date IS NOT NULL
+    AND closing_date < CURRENT_DATE;
 
   GET DIAGNOSTICS deactivated_count = ROW_COUNT;
   RETURN deactivated_count;
@@ -30,7 +25,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION auto_deactivate_expired_jobs() IS
-  'Auto-closes open jobs whose application deadline (closing_date or closes_at) has passed. Called daily via pg_cron.';
+  'Auto-closes open jobs whose application deadline (closing_date) has passed. Called daily via pg_cron.';
 
 
 -- 2. Fix the status-change trigger to reference 'open' instead of 'published'
@@ -73,7 +68,6 @@ SELECT
   j.salary_max,
   j.salary_currency,
   j.published_at,
-  j.closes_at,
   j.closing_date,
   j.thumbnail_url,
   j.org_id,
@@ -85,7 +79,6 @@ SELECT
   j.slug,
   CASE
     WHEN j.closing_date IS NOT NULL THEN (j.closing_date - CURRENT_DATE)
-    WHEN j.closes_at IS NOT NULL THEN EXTRACT(DAY FROM (j.closes_at - NOW()))::INTEGER
     ELSE NULL
   END AS days_until_close
 FROM jobs j
@@ -93,9 +86,8 @@ WHERE j.status = 'open';
 
 
 -- 4. Schedule the auto-close to run every day at midnight UTC via pg_cron
--- pg_cron is enabled by default on Supabase
 SELECT cron.schedule(
-  'auto-close-expired-jobs',       -- unique job name
-  '0 0 * * *',                     -- every day at 00:00 UTC
+  'auto-close-expired-jobs',
+  '0 0 * * *',
   $$SELECT auto_deactivate_expired_jobs()$$
 );
