@@ -62,21 +62,52 @@ function ResetPasswordContent() {
   useEffect(() => {
     setMounted(true)
 
-    // Handle the auth session from URL hash (access_token)
+    // Handle the auth session from OTP query params, hash tokens, or existing session
     const handleAuthSession = async () => {
       const supabase = createClient()
 
-      // Check if there's a hash fragment with tokens
+      // Method 1: OTP token in query params (from admin-generated invite links)
+      const params = new URLSearchParams(window.location.search)
+      const otpToken = params.get('token')
+      const otpEmail = params.get('email')
+      const otpType = params.get('type')
+
+      if (otpToken && otpEmail) {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: otpToken,
+            type: (otpType as 'recovery' | 'email') || 'recovery',
+          })
+
+          if (error) {
+            console.error('OTP verification error:', error)
+            setSessionError(error.message)
+            return
+          }
+
+          if (data.session) {
+            setSessionReady(true)
+            // Clean URL
+            window.history.replaceState(null, '', window.location.pathname)
+          } else {
+            setSessionError('Invite link has expired. Please request a new one.')
+          }
+        } catch (err: any) {
+          console.error('Failed to verify invite link:', err)
+          setSessionError(err.message || 'Failed to verify invite link')
+        }
+        return
+      }
+
+      // Method 2: Hash fragment with tokens (from Supabase email redirects)
       const hash = window.location.hash
       if (hash && hash.includes('access_token')) {
-        // Parse the hash parameters
         const hashParams = new URLSearchParams(hash.substring(1))
         const accessToken = hashParams.get('access_token')
         const refreshToken = hashParams.get('refresh_token')
 
         if (accessToken) {
           try {
-            // Set the session using the tokens from the URL
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || '',
@@ -90,7 +121,6 @@ function ResetPasswordContent() {
 
             if (data.session) {
               setSessionReady(true)
-              // Clear the hash from URL for cleaner look
               window.history.replaceState(null, '', window.location.pathname)
             } else {
               setSessionError('Reset link has expired. Please request a new one.')
@@ -102,14 +132,15 @@ function ResetPasswordContent() {
         } else {
           setSessionError('Invalid or expired reset link')
         }
+        return
+      }
+
+      // Method 3: Check for existing active session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setSessionReady(true)
       } else {
-        // No hash, check if there's already an active session
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          setSessionReady(true)
-        } else {
-          setSessionError('No valid reset session found. Please request a new password reset link.')
-        }
+        setSessionError('No valid reset session found. Please request a new password reset link.')
       }
     }
 

@@ -157,9 +157,6 @@ async function handleCreateUserForOrg(
   const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: {
-      redirectTo: `${productionUrl}/reset-password`,
-    },
   })
 
   if (linkError) {
@@ -172,13 +169,11 @@ async function handleCreateUserForOrg(
     })
   }
 
-  let inviteLink = linkData.properties?.action_link || null
-
-  // Fix localhost URLs
-  if (inviteLink && (inviteLink.includes("localhost") || inviteLink.includes("127.0.0.1"))) {
-    inviteLink = inviteLink.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
-    inviteLink = inviteLink.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
-  }
+  // Build a clean invite link on our own domain using the OTP token
+  const otp = linkData.properties?.email_otp
+  const inviteLink = otp
+    ? `${productionUrl}/reset-password?token=${encodeURIComponent(otp)}&email=${encodeURIComponent(email)}&type=recovery`
+    : null
 
   return NextResponse.json({
     success: true,
@@ -207,9 +202,6 @@ async function handleGenerateMagicLink(
   const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
     type: "recovery",
     email,
-    options: {
-      redirectTo: `${productionUrl}/reset-password`,
-    },
   })
 
   if (linkError) {
@@ -220,13 +212,11 @@ async function handleGenerateMagicLink(
     )
   }
 
-  let inviteLink = linkData.properties?.action_link || null
-
-  // Fix localhost URLs
-  if (inviteLink && (inviteLink.includes("localhost") || inviteLink.includes("127.0.0.1"))) {
-    inviteLink = inviteLink.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
-    inviteLink = inviteLink.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
-  }
+  // Build a clean invite link on our own domain using the OTP token
+  const otp = linkData.properties?.email_otp
+  const inviteLink = otp
+    ? `${productionUrl}/reset-password?token=${encodeURIComponent(otp)}&email=${encodeURIComponent(email)}&type=recovery`
+    : null
 
   return NextResponse.json({
     success: true,
