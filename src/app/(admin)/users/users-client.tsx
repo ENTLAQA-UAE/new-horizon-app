@@ -48,6 +48,9 @@ import {
   UserCog,
   Trash2,
   Download,
+  Link2,
+  Copy,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -115,6 +118,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
   const [isOrgDialogOpen, setIsOrgDialogOpen] = useState(false)
+  const [isMagicLinkDialogOpen, setIsMagicLinkDialogOpen] = useState(false)
+  const [generatedMagicLink, setGeneratedMagicLink] = useState<string | null>(null)
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
   const [newRole, setNewRole] = useState<string>("")
   const [selectedOrgId, setSelectedOrgId] = useState<string>("")
 
@@ -246,6 +252,38 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       setSelectedOrgId("")
     }
     setIsLoading(false)
+  }
+
+  const generateMagicLink = async (user: User) => {
+    setSelectedUser(user)
+    setMagicLinkLoading(true)
+    setGeneratedMagicLink(null)
+    setIsMagicLinkDialogOpen(true)
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generate_magic_link",
+          email: user.email,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.magicLink) {
+        setGeneratedMagicLink(result.magicLink)
+      } else {
+        toast.error(result.error || "Failed to generate magic link")
+        setIsMagicLinkDialogOpen(false)
+      }
+    } catch {
+      toast.error("Failed to generate magic link")
+      setIsMagicLinkDialogOpen(false)
+    } finally {
+      setMagicLinkLoading(false)
+    }
   }
 
   const exportUsers = () => {
@@ -529,6 +567,10 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                             <Building2 className="mr-2 h-4 w-4" />
                             Assign Organization
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => generateMagicLink(user)}>
+                            <Link2 className="mr-2 h-4 w-4" />
+                            Generate Magic Link
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => toggleUserStatus(user)}>
                             {user.is_active ? (
@@ -681,6 +723,66 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
             </Button>
             <Button onClick={assignOrganization} disabled={isLoading}>
               {isLoading ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Magic Link Dialog */}
+      <Dialog open={isMagicLinkDialogOpen} onOpenChange={setIsMagicLinkDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-indigo-500" />
+              Magic Link for {selectedUser?.first_name} {selectedUser?.last_name}
+            </DialogTitle>
+            <DialogDescription>
+              Generate a one-time login link for <strong>{selectedUser?.email}</strong>.
+              Share this link with the user so they can access the platform without a password.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {magicLinkLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Generating magic link...</span>
+              </div>
+            ) : generatedMagicLink ? (
+              <div className="space-y-2">
+                <Label>Magic Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={generatedMagicLink}
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedMagicLink)
+                      toast.success("Magic link copied to clipboard!")
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This link expires after one use. The user will be logged in directly.
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setIsMagicLinkDialogOpen(false)
+                setGeneratedMagicLink(null)
+              }}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

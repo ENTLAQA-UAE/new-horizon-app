@@ -57,6 +57,9 @@ import {
   ArrowUpDown,
   Calendar,
   Globe,
+  Copy,
+  Link2,
+  CheckCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Tables } from "@/lib/supabase/types"
@@ -95,7 +98,13 @@ export function OrganizationsClient({
   const [isChangeTierDialogOpen, setIsChangeTierDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isMagicLinkDialogOpen, setIsMagicLinkDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Magic link state
+  const [generatedMagicLink, setGeneratedMagicLink] = useState<string | null>(null)
+  const [magicLinkOrgName, setMagicLinkOrgName] = useState("")
+  const [magicLinkEmail, setMagicLinkEmail] = useState("")
 
   // Selected organization for operations
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
@@ -204,6 +213,39 @@ export function OrganizationsClient({
           } : null,
         }
         setOrganizations([orgWithTier as Organization, ...organizations])
+
+        // If admin email provided, create user + assign org_admin + generate magic link
+        if (newOrg.admin_email.trim()) {
+          try {
+            const adminResponse = await fetch("/api/admin/users", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "create_user_for_org",
+                email: newOrg.admin_email.trim(),
+                orgId: data.id,
+              }),
+            })
+
+            const adminResult = await adminResponse.json()
+
+            if (adminResult.success && adminResult.magicLink) {
+              setGeneratedMagicLink(adminResult.magicLink)
+              setMagicLinkOrgName(newOrg.name)
+              setMagicLinkEmail(newOrg.admin_email.trim())
+              setIsMagicLinkDialogOpen(true)
+              toast.success("Organization created and admin assigned!")
+            } else if (adminResult.success) {
+              toast.success("Organization created and admin assigned (magic link generation failed)")
+            } else {
+              toast.warning(`Organization created but admin setup failed: ${adminResult.error}`)
+            }
+          } catch {
+            toast.warning("Organization created but admin setup failed. Assign admin manually from Users page.")
+          }
+        } else {
+          toast.success("Organization created successfully")
+        }
       }
       setIsCreateDialogOpen(false)
       setNewOrg({
@@ -213,7 +255,6 @@ export function OrganizationsClient({
         tier_id: "",
         data_residency: "mena",
       })
-      toast.success("Organization created successfully")
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -1140,6 +1181,77 @@ export function OrganizationsClient({
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete Organization
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Magic Link Dialog */}
+      <Dialog open={isMagicLinkDialogOpen} onOpenChange={setIsMagicLinkDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-green-500" />
+              Admin Magic Link Generated
+            </DialogTitle>
+            <DialogDescription>
+              Organization <strong>{magicLinkOrgName}</strong> has been created and{" "}
+              <strong>{magicLinkEmail}</strong> has been assigned as Org Admin.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>User created with email auto-confirmed</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>Assigned as Org Admin</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>Magic link generated</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Magic Link (share with the admin)</Label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={generatedMagicLink || ""}
+                  className="font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    if (generatedMagicLink) {
+                      navigator.clipboard.writeText(generatedMagicLink)
+                      toast.success("Magic link copied to clipboard!")
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This link allows the admin to login without a password. It expires after one use.
+                After first login, they should set a password from their profile settings.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setIsMagicLinkDialogOpen(false)
+                setGeneratedMagicLink(null)
+              }}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
