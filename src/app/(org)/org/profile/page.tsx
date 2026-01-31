@@ -2,8 +2,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { getAccessToken } from "@/lib/supabase/auth-fetch"
+import { getAccessToken, supabaseSelect, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,13 +43,18 @@ export default function ProfilePage() {
 
   const loadProfile = async (userId: string) => {
     try {
-      const supabase = createClient()
+      // Use direct REST API call to bypass Supabase client's getSession() which hangs
+      const { data: profileData, error } = await supabaseSelect<Profile>("profiles", {
+        select: "id,first_name,last_name,email,phone,avatar_url",
+        filter: [{ column: "id", operator: "eq", value: userId }],
+        single: true,
+      })
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, email, phone, avatar_url")
-        .eq("id", userId)
-        .single()
+      if (error) {
+        console.error("Error loading profile:", error.message)
+        toast.error("Failed to load profile")
+        return
+      }
 
       if (profileData) {
         setProfile(profileData)
@@ -69,18 +73,19 @@ export default function ProfilePage() {
 
     setIsSaving(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+      // Use direct REST API call to bypass Supabase client's getSession() which hangs
+      const { error } = await supabaseUpdate(
+        "profiles",
+        {
           first_name: formData.first_name,
           last_name: formData.last_name,
           phone: formData.phone,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", profile.id)
+        },
+        { column: "id", value: profile.id }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       toast.success(language === "ar" ? "تم تحديث الملف الشخصي بنجاح" : "Profile updated successfully")
       setProfile({ ...profile, ...formData })
@@ -143,17 +148,17 @@ export default function ProfilePage() {
       // Get public URL
       const avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/${filePath}`
 
-      // Update profile with new avatar URL
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("profiles")
-        .update({
+      // Update profile with new avatar URL (using direct REST API)
+      const { error } = await supabaseUpdate(
+        "profiles",
+        {
           avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", profile.id)
+        },
+        { column: "id", value: profile.id }
+      )
 
-      if (error) throw error
+      if (error) throw new Error(error.message)
 
       setProfile({ ...profile, avatar_url: avatarUrl })
       setFormData({ ...formData, avatar_url: avatarUrl })
