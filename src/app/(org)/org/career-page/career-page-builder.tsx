@@ -466,7 +466,6 @@ export function CareerPageBuilder({
                         >
                           <Icon className="h-6 w-6 mb-2 text-primary" />
                           <div className="font-medium text-sm">{blockLabels[type].en}</div>
-                          <div className="text-xs text-muted-foreground">{blockLabels[type].ar}</div>
                         </button>
                       )
                     })}
