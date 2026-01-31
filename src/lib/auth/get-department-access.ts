@@ -34,25 +34,23 @@ export async function getDepartmentAccess(): Promise<DepartmentAccess | null> {
 
   if (!user) return null
 
-  // Get user's org_id
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("org_id")
-    .eq("id", user.id)
-    .single()
+  // Fetch profile and role in parallel (saves ~1 round-trip)
+  const [{ data: profile }, { data: userRole }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single(),
+  ])
 
   if (!profile?.org_id) return null
 
   const orgId = profile.org_id
-
-  // Get user's role in this org
-  const { data: userRole } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .eq("org_id", orgId)
-    .single()
-
   const role = userRole?.role || null
 
   // Only hiring_manager needs department scoping
