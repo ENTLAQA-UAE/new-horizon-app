@@ -135,8 +135,9 @@ export default function ProfilePage() {
       const filePath = `avatars/${fileName}`
 
       // Upload using direct REST API (bypasses getSession hang)
+      // Note: Upload endpoint uses /object/{bucket}/{path}, NOT /object/public/
       const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/public/${filePath}`,
+        `${SUPABASE_URL}/storage/v1/object/${filePath}`,
         {
           method: "POST",
           headers: {
