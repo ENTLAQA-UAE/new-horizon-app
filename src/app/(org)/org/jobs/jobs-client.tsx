@@ -928,16 +928,6 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
     window.open(linkedInUrl, '_blank', 'width=600,height=600')
   }
 
-  const handleShareTwitter = (job: Job) => {
-    const url = getJobUrl(job)
-    if (!url) {
-      toast.error(t("errors.general.unexpectedError"))
-      return
-    }
-    const text = `Check out this job opportunity: ${job.title}`
-    const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`
-    window.open(twitterUrl, '_blank', 'width=600,height=600')
-  }
 
   const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
     if (!min && !max) return t("jobs.fields.salaryRange")
@@ -1467,11 +1457,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleShareLinkedIn(job)}>
                               <Share2 className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
-                              {t("common.share")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleShareTwitter(job)}>
-                              <ExternalLink className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
-                              {t("common.share")}
+                              {t("jobs.actions.shareLinkedIn")}
                             </DropdownMenuItem>
                           </>
                         )}

@@ -106,6 +106,7 @@
   "actions": {
     "preview": "Preview Job",
     "copyLink": "Copy Job Link",
+    "shareLinkedIn": "Share on LinkedIn",
     "viewOnCareerPage": "View on Career Page",
     "exportApplications": "Export Applications"
   },

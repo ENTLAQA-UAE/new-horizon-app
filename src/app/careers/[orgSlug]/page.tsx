@@ -3,9 +3,38 @@
 import { notFound } from "next/navigation"
 import { createServiceClient } from "@/lib/supabase/service"
 import { CareerPageClient } from "./career-page-client"
+import type { Metadata } from "next"
 
 interface CareerPageProps {
   params: Promise<{ orgSlug: string }>
+}
+
+export async function generateMetadata({ params }: CareerPageProps): Promise<Metadata> {
+  const { orgSlug } = await params
+  const supabase = createServiceClient()
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("name, logo_url")
+    .eq("slug", orgSlug)
+    .single()
+
+  if (!organization) return {}
+
+  const title = `Careers at ${organization.name}`
+  const description = `Explore open positions and join the team at ${organization.name}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: organization.name,
+      ...(organization.logo_url && { images: [{ url: organization.logo_url }] }),
+    },
+  }
 }
 
 export default async function CareerPage({ params }: CareerPageProps) {
