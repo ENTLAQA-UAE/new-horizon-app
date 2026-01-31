@@ -115,32 +115,21 @@ export async function updateSession(request: NextRequest) {
   )
 
   // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // the auth check. A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  // Use getUser() with timeout to prevent hanging
+  // Use getSession() for fast route protection (reads from cookies, no network call).
+  // This is a UX-level guard — actual security is enforced by Supabase RLS policies
+  // which validate the JWT on every database query.
   let user = null
   let userError = null as Error | null
 
   try {
-    const getUserPromise = supabase.auth.getUser()
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Auth check timeout")), 5000)
-    )
-
-    const result = await Promise.race([getUserPromise, timeoutPromise])
-    user = result.data.user
-    userError = result.error
-  } catch (error) {
-    console.warn("Middleware: getUser() timed out or failed:", error)
-    // On timeout, try to get session instead (faster, cached)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      user = session?.user ?? null
-    } catch {
-      // Complete failure - treat as no user
-      user = null
-    }
+    const { data: { session }, error } = await supabase.auth.getSession()
+    user = session?.user ?? null
+    userError = error
+  } catch {
+    user = null
   }
 
   // Define public routes that don't require authentication
@@ -157,6 +146,8 @@ export async function updateSession(request: NextRequest) {
     '/api/careers',
     '/api/auth/forgot-password', // Password reset API endpoint
     '/api/auth/reset-password',  // Password reset confirmation endpoint
+    '/api/offers/respond',       // Offer accept/decline API (token-based, no auth)
+    '/offers/respond',           // Offer accept/decline landing page
     '/onboarding', // Allow onboarding for authenticated users without org
   ]
 

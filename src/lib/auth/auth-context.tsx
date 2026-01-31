@@ -593,11 +593,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const supabase = createClient()
 
-      // Sign out with scope: 'global' to call the Supabase logout API
-      // This invalidates the session on the server, not just locally
-      const signOutPromise = supabase.auth.signOut({ scope: 'global' })
+      // Sign out with scope: 'local' — clears local session without a slow server roundtrip
+      // The JWT will expire naturally on the server (short-lived tokens)
+      const signOutPromise = supabase.auth.signOut({ scope: 'local' })
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Sign out timeout")), 5000)
+        setTimeout(() => reject(new Error("Sign out timeout")), 2000)
       )
 
       await Promise.race([signOutPromise, timeoutPromise]).catch((e) => {
@@ -686,7 +686,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
               needsOnboarding: false,
             })
           }
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+        } else if (event === "TOKEN_REFRESHED") {
+          // Token refreshed — just update the session without refetching profile/roles/org
+          // User data hasn't changed, only the JWT was renewed
+          if (session && mountedRef.current) {
+            console.log("AuthProvider: Token refreshed, updating session only")
+            setState(prev => ({
+              ...prev,
+              session,
+              user: session.user,
+            }))
+            try {
+              localStorage.setItem('jadarat_pending_session', JSON.stringify(session))
+            } catch {}
+          }
+        } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
           // Use the session from the auth state change event directly
           // This avoids the getSession() call which can hang
           console.log("AuthProvider: Auth event with session, loadingRef:", loadingRef.current, "session:", session ? "exists" : "null")

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createClient, resetSupabaseClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -153,29 +153,12 @@ function LoginPageContent() {
 
     const attemptLogin = async (retryCount: number): Promise<boolean> => {
       try {
-        // CRITICAL: Clear ALL auth-related storage first to ensure completely clean state
-        // This fixes the issue where re-login after signout fails
+        // Clear pending session from previous login attempt
         try {
-          // Clear pending session
           localStorage.removeItem('jadarat_pending_session')
-
-          // Clear all Supabase storage
-          const localKeysToRemove = Object.keys(localStorage).filter(k =>
-            k.startsWith("sb-") || k.startsWith("jadarat_") || k.includes("supabase")
-          )
-          localKeysToRemove.forEach(k => localStorage.removeItem(k))
-
-          // Clear session storage
-          const sessionKeysToRemove = Object.keys(sessionStorage).filter(k =>
-            k.startsWith("sb-") || k.startsWith("jadarat_") || k.includes("supabase")
-          )
-          sessionKeysToRemove.forEach(k => sessionStorage.removeItem(k))
         } catch (e) {
           console.warn("Could not clear storage:", e)
         }
-
-        // Reset the Supabase client singleton to ensure fresh state
-        resetSupabaseClient()
 
         const supabase = createClient()
 
@@ -220,23 +203,11 @@ function LoginPageContent() {
 
         console.log("Login successful for user:", data.user.id)
 
-        // Store session explicitly before redirect to prevent race condition
-        // This ensures the new page can access the session even if Supabase
-        // hasn't finished persisting to localStorage yet
-        try {
-          localStorage.setItem('jadarat_pending_session', JSON.stringify(data.session))
-        } catch (e) {
-          console.warn("Could not store pending session:", e)
-        }
-
         toast.success("Welcome back!")
 
-        // Wait a moment for Supabase to persist the session to localStorage
-        // This helps prevent race conditions where the redirect happens before persistence
-        await new Promise(resolve => setTimeout(resolve, 100))
-
-        // Use full page reload to ensure completely fresh state
-        window.location.href = "/"
+        // Use client-side navigation to avoid full page reload
+        // The AuthProvider will pick up the session via onAuthStateChange
+        router.push("/")
         return true
       } catch (err) {
         console.error("Login error:", err)
