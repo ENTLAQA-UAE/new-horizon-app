@@ -7,17 +7,22 @@ RETURNS INTEGER AS $$
 DECLARE
   deactivated_count INTEGER;
 BEGIN
-  UPDATE jobs
+  -- Join with organizations to get each org's timezone.
+  -- closing_date is compared against the current date in the ORG's local time,
+  -- so a Dubai org (GMT+4) closes jobs at Dubai midnight, not UTC midnight.
+  UPDATE jobs j
   SET
     status = 'closed',
     deactivated_at = NOW(),
     auto_deactivated = true,
     updated_at = NOW()
+  FROM organizations o
   WHERE
-    status = 'open'
-    AND (auto_deactivated IS NULL OR auto_deactivated = false)
-    AND closing_date IS NOT NULL
-    AND closing_date <= CURRENT_DATE;
+    j.org_id = o.id
+    AND j.status = 'open'
+    AND (j.auto_deactivated IS NULL OR j.auto_deactivated = false)
+    AND j.closing_date IS NOT NULL
+    AND j.closing_date <= (NOW() AT TIME ZONE COALESCE(o.timezone, 'Asia/Dubai'))::date;
 
   GET DIAGNOSTICS deactivated_count = ROW_COUNT;
   RETURN deactivated_count;
@@ -25,7 +30,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION auto_deactivate_expired_jobs() IS
-  'Auto-closes open jobs whose application deadline (closing_date) has passed. Called daily via pg_cron.';
+  'Auto-closes open jobs whose closing_date has been reached in the organization timezone. Called daily via pg_cron.';
 
 
 -- 2. Fix the status-change trigger to reference 'open' instead of 'published'
@@ -90,7 +95,7 @@ WHERE j.status = 'open';
 --
 --    SELECT cron.schedule(
 --      'auto-close-expired-jobs',
---      '0 0 * * *',
+--      '0 * * * *',
 --      $$SELECT auto_deactivate_expired_jobs()$$
 --    );
 --
