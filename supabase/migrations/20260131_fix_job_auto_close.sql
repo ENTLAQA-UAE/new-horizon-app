@@ -17,7 +17,7 @@ BEGIN
     status = 'open'
     AND (auto_deactivated IS NULL OR auto_deactivated = false)
     AND closing_date IS NOT NULL
-    AND closing_date < CURRENT_DATE;
+    AND closing_date <= CURRENT_DATE;
 
   GET DIAGNOSTICS deactivated_count = ROW_COUNT;
   RETURN deactivated_count;
