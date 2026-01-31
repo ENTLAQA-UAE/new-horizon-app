@@ -85,9 +85,13 @@ FROM jobs j
 WHERE j.status = 'open';
 
 
--- 4. Schedule the auto-close to run every day at midnight UTC via pg_cron
-SELECT cron.schedule(
-  'auto-close-expired-jobs',
-  '0 0 * * *',
-  $$SELECT auto_deactivate_expired_jobs()$$
-);
+-- 4. To schedule daily auto-close, enable the pg_cron extension in Supabase Dashboard
+--    (Database → Extensions → pg_cron), then run:
+--
+--    SELECT cron.schedule(
+--      'auto-close-expired-jobs',
+--      '0 0 * * *',
+--      $$SELECT auto_deactivate_expired_jobs()$$
+--    );
+--
+--    Or call the function via the existing edge function (supabase/functions/auto-deactivate-jobs).
