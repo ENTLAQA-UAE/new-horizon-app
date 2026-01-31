@@ -75,7 +75,8 @@ function ResetPasswordContent() {
       if (otpToken && otpEmail) {
         try {
           const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: otpToken,
+            email: otpEmail,
+            token: otpToken,
             type: (otpType as 'recovery' | 'email') || 'recovery',
           })
 
