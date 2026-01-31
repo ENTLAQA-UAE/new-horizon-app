@@ -90,20 +90,20 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
 function applyBrandingToDOM(branding: BrandingConfig) {
   const root = document.documentElement
 
-  // Convert hex to HSL for better color manipulation
-  const primaryHSL = hexToHSL(branding.primaryColor)
-  const secondaryHSL = hexToHSL(branding.secondaryColor)
-
-  // Set CSS custom properties
+  // Set brand CSS custom properties (hex format for direct use)
   root.style.setProperty("--brand-primary", branding.primaryColor)
   root.style.setProperty("--brand-secondary", branding.secondaryColor)
   root.style.setProperty("--brand-accent", branding.accentColor)
 
-  // Set HSL values for Tailwind
-  if (primaryHSL) {
-    root.style.setProperty("--primary", `${primaryHSL.h} ${primaryHSL.s}% ${primaryHSL.l}%`)
-    root.style.setProperty("--primary-foreground", primaryHSL.l > 50 ? "0 0% 0%" : "0 0% 100%")
-  }
+  // Set --primary and --primary-foreground in hex format
+  // Tailwind v4 uses var(--primary) directly as a CSS color value,
+  // so it must be a valid color (hex), not raw HSL numbers.
+  root.style.setProperty("--primary", branding.primaryColor)
+  const primaryHSL = hexToHSL(branding.primaryColor)
+  root.style.setProperty("--primary-foreground", primaryHSL && primaryHSL.l > 50 ? "#000000" : "#ffffff")
+
+  // Also set the ring color to match primary
+  root.style.setProperty("--ring", branding.primaryColor)
 
   // Create gradient variations
   root.style.setProperty("--brand-gradient", `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`)
