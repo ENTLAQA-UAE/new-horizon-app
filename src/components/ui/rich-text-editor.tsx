@@ -239,8 +239,8 @@ function ToolbarButton({
       className={cn(
         "p-1.5 rounded-md transition-colors",
         active
-          ? "bg-primary text-primary-foreground"
-          : "hover:bg-muted text-muted-foreground hover:text-foreground",
+          ? "!bg-primary !text-primary-foreground"
+          : "hover:!bg-muted text-muted-foreground hover:text-foreground",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
