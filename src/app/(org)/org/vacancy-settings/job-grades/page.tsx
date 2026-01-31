@@ -242,7 +242,6 @@ export default function JobGradesPage() {
             <TableRow>
               <TableHead>Level</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Arabic Name</TableHead>
               <TableHead>Active</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -250,7 +249,7 @@ export default function JobGradesPage() {
           <TableBody>
             {grades.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   No job grades found. Add your first job grade.
                 </TableCell>
               </TableRow>
@@ -259,7 +258,6 @@ export default function JobGradesPage() {
                 <TableRow key={grade.id}>
                   <TableCell className="font-medium">{grade.level}</TableCell>
                   <TableCell>{grade.name}</TableCell>
-                  <TableCell dir="rtl">{grade.name_ar || "—"}</TableCell>
                   <TableCell>
                     <Switch
                       checked={grade.is_active}

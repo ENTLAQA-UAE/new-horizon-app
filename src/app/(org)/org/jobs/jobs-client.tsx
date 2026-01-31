@@ -1614,11 +1614,6 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
             <div className="space-y-4">
               <div>
                 <h3 className="text-xl font-semibold">{selectedJob.title}</h3>
-                {selectedJob.title_ar && (
-                  <p className="text-muted-foreground" dir="rtl">
-                    {selectedJob.title_ar}
-                  </p>
-                )}
                 <Badge className={cn("capitalize mt-2", statusStyles[selectedJob.status || "draft"])}>
                   {statusLabels[selectedJob.status || "draft"] || selectedJob.status}
                 </Badge>

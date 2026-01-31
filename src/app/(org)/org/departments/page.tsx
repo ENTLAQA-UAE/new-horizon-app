@@ -318,7 +318,6 @@ export default function DepartmentsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Department</TableHead>
-              <TableHead>Arabic Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -327,7 +326,7 @@ export default function DepartmentsPage() {
           <TableBody>
             {departments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
+                <TableCell colSpan={4} className="text-center py-12">
                   <FolderTree className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="text-muted-foreground">No departments yet</p>
                   <Button
@@ -349,11 +348,6 @@ export default function DepartmentsPage() {
                       </div>
                       <span className="font-medium">{dept.name}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground" dir="rtl">
-                      {dept.name_ar || "—"}
-                    </span>
                   </TableCell>
                   <TableCell>
                     <span className="text-muted-foreground">
@@ -520,11 +514,6 @@ export default function DepartmentsPage() {
             <div className="py-4">
               <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                 <p className="font-medium text-destructive">{selectedDepartment.name}</p>
-                {selectedDepartment.name_ar && (
-                  <p className="text-sm text-muted-foreground" dir="rtl">
-                    {selectedDepartment.name_ar}
-                  </p>
-                )}
               </div>
             </div>
           )}

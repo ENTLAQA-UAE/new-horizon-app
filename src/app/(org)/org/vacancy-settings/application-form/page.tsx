@@ -674,11 +674,6 @@ export default function ApplicationFormPage() {
                           {section.fields.length} field{section.fields.length !== 1 ? 's' : ''}
                         </Badge>
                       </CardTitle>
-                      {section.name_ar && (
-                        <p className="text-sm text-muted-foreground" dir="rtl">
-                          {section.name_ar}
-                        </p>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">

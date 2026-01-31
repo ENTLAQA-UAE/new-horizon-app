@@ -517,11 +517,6 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                     <TableCell>
                       <div>
                         <p className="font-medium">{job.title}</p>
-                        {job.title_ar && (
-                          <p className="text-sm text-muted-foreground" dir="rtl">
-                            {job.title_ar}
-                          </p>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>

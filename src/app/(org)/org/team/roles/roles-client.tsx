@@ -310,9 +310,6 @@ export function RolesManagementClient({
                       )}
                       <div>
                         <p className="font-medium">{role.name}</p>
-                        {role.name_ar && (
-                          <p className="text-sm text-muted-foreground">{role.name_ar}</p>
-                        )}
                       </div>
                     </div>
                   </TableCell>
