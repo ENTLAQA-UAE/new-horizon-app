@@ -24,6 +24,7 @@ interface Profile {
   email: string
   phone: string | null
   avatar_url: string | null
+  org_id: string | null
 }
 
 export default function ProfilePage() {
@@ -53,7 +54,7 @@ export default function ProfilePage() {
     try {
       // Use direct REST API call to bypass Supabase client's getSession() which hangs
       const { data: profileData, error } = await supabaseSelect<Profile>("profiles", {
-        select: "id,first_name,last_name,email,phone,avatar_url",
+        select: "id,first_name,last_name,email,phone,avatar_url,org_id",
         filter: [{ column: "id", operator: "eq", value: userId }],
         single: true,
       })
@@ -132,12 +133,17 @@ export default function ProfilePage() {
 
       const fileExt = file.name.split(".").pop()
       const fileName = `${profile.id}-${Date.now()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
+      // Use organization-assets bucket with org_id prefix to satisfy RLS policy
+      const orgId = profile.org_id
+      if (!orgId) {
+        throw new Error("Organization not found")
+      }
+      const storagePath = `${orgId}/avatars/${fileName}`
 
       // Upload using direct REST API (bypasses getSession hang)
-      // Note: Upload endpoint uses /object/{bucket}/{path}, NOT /object/public/
+      // URL format: /storage/v1/object/{bucket}/{path}
       const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/${filePath}`,
+        `${SUPABASE_URL}/storage/v1/object/organization-assets/${storagePath}`,
         {
           method: "POST",
           headers: {
@@ -155,7 +161,7 @@ export default function ProfilePage() {
       }
 
       // Get public URL
-      const avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/${filePath}`
+      const avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${storagePath}`
 
       // Update profile with new avatar URL (using direct REST API)
       const { error } = await supabaseUpdate(
