@@ -28,8 +28,8 @@ const routeRoleMap: { path: string; roles: string[] }[] = [
   { path: '/org/screening-questions', roles: ['hr_manager'] },
   { path: '/org/vacancy-settings', roles: ['hr_manager'] },
 
-  // Analytics (shared: org_admin + hr_manager)
-  { path: '/org/analytics', roles: ['org_admin', 'hr_manager'] },
+  // Analytics (all org roles except hiring_manager)
+  { path: '/org/analytics', roles: ['org_admin', 'hr_manager', 'recruiter', 'interviewer'] },
 
   // ATS core routes
   { path: '/org/jobs', roles: ['hr_manager', 'recruiter', 'hiring_manager'] },

@@ -66,16 +66,19 @@ import {
   LabelList,
 } from "recharts"
 import type { DashboardStats, DateRange } from "@/lib/analytics/dashboard-stats"
+import type { CandidateListStats } from "@/lib/analytics/candidates-list-stats"
+import { CandidatesList } from "./candidates-list"
 
 interface AnalyticsDashboardProps {
   stats: DashboardStats
+  candidateListData?: CandidateListStats | null
 }
 
 const CHART_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6"]
 const FUNNEL_COLORS = ["#6366f1", "#8b5cf6", "#06b6d4", "#22c55e", "#10b981"]
 const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"]
 
-export function AnalyticsDashboard({ stats }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ stats, candidateListData }: AnalyticsDashboardProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -401,6 +404,7 @@ export function AnalyticsDashboard({ stats }: AnalyticsDashboardProps) {
             { value: "leaderboard", label: "Leaderboard", icon: Trophy },
             { value: "sources", label: "Sources", icon: PieChart },
             { value: "departments", label: "Departments", icon: Building2 },
+            ...(candidateListData ? [{ value: "candidates", label: "Candidates", icon: Users }] : []),
           ].map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <tab.icon className="h-4 w-4" />
@@ -946,6 +950,13 @@ export function AnalyticsDashboard({ stats }: AnalyticsDashboardProps) {
             )}
           </div>
         </TabsContent>
+
+        {/* Candidates Tab (HR Manager only) */}
+        {candidateListData && (
+          <TabsContent value="candidates" className="space-y-6">
+            <CandidatesList data={candidateListData} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Print-only full report */}

@@ -159,6 +159,7 @@ const recruiterSections: NavSection[] = [
   {
     links: [
       { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+      { href: "/org/analytics", label: "Analytics", labelAr: "التحليلات", icon: BarChart3 },
     ],
   },
   {
@@ -208,6 +209,7 @@ const interviewerSections: NavSection[] = [
   {
     links: [
       { href: "/org", label: "Dashboard", labelAr: "لوحة التحكم", icon: LayoutDashboard },
+      { href: "/org/analytics", label: "Analytics", labelAr: "التحليلات", icon: BarChart3 },
     ],
   },
   {
