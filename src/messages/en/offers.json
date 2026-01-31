@@ -5,6 +5,12 @@
   "viewOffer": "View Offer",
   "sendOffer": "Send Offer",
   "offerDetails": "Offer Details",
+  "deleteOffer": "Delete Offer",
+  "description": "Create and manage job offers for candidates",
+  "createDescription": "Create a new job offer for a candidate",
+  "searchPlaceholder": "Search by candidate or job...",
+  "allStatus": "All Status",
+  "employmentDetails": "Employment Details",
   "fields": {
     "candidate": "Candidate",
     "job": "Job",
@@ -18,7 +24,32 @@
     "expirationDate": "Expiration Date",
     "status": "Status",
     "benefits": "Benefits",
-    "additionalTerms": "Additional Terms"
+    "additionalTerms": "Additional Terms",
+    "selectCandidate": "Select Candidate",
+    "offerTemplate": "Offer Template (Optional)",
+    "jobTitle": "Job Title",
+    "jobTitleAr": "Job Title (Arabic)",
+    "department": "Department",
+    "location": "Location",
+    "salaryAmount": "Salary Amount",
+    "annualBonus": "Annual Bonus %",
+    "employmentType": "Employment Type",
+    "probationPeriod": "Probation Period (months)",
+    "position": "Position"
+  },
+  "placeholders": {
+    "selectApplication": "Select candidate application",
+    "selectTemplate": "Select template",
+    "jobTitle": "e.g., Senior Software Engineer",
+    "department": "e.g., Engineering",
+    "location": "e.g., Riyadh",
+    "salaryAmount": "15000"
+  },
+  "stats": {
+    "totalOffers": "Total Offers",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "declined": "Declined"
   },
   "status": {
     "draft": "Draft",
@@ -30,7 +61,14 @@
     "declined": "Declined",
     "expired": "Expired",
     "withdrawn": "Withdrawn",
-    "negotiating": "Negotiating"
+    "negotiating": "Negotiating",
+    "counterOffered": "Counter Offered"
+  },
+  "employmentTypes": {
+    "fullTime": "Full Time",
+    "partTime": "Part Time",
+    "contract": "Contract",
+    "temporary": "Temporary"
   },
   "payPeriods": {
     "hourly": "Hourly",
@@ -38,7 +76,40 @@
     "weekly": "Weekly",
     "biweekly": "Bi-weekly",
     "monthly": "Monthly",
-    "annual": "Annual"
+    "yearly": "Yearly",
+    "annual": "Annual",
+    "monthlyShort": "mo",
+    "yearlyShort": "yr",
+    "hourlyShort": "hr"
+  },
+  "currencies": {
+    "SAR": "SAR - Saudi Riyal",
+    "AED": "AED - UAE Dirham",
+    "USD": "USD - US Dollar",
+    "EUR": "EUR - Euro",
+    "GBP": "GBP - British Pound",
+    "QAR": "QAR - Qatari Riyal",
+    "KWD": "KWD - Kuwaiti Dinar",
+    "BHD": "BHD - Bahraini Dinar",
+    "OMR": "OMR - Omani Rial",
+    "EGP": "EGP - Egyptian Pound",
+    "JOD": "JOD - Jordanian Dinar",
+    "INR": "INR - Indian Rupee",
+    "PKR": "PKR - Pakistani Rupee",
+    "PHP": "PHP - Philippine Peso",
+    "CAD": "CAD - Canadian Dollar",
+    "AUD": "AUD - Australian Dollar",
+    "CHF": "CHF - Swiss Franc",
+    "JPY": "JPY - Japanese Yen",
+    "CNY": "CNY - Chinese Yuan"
+  },
+  "dateShortcuts": {
+    "nextWeek": "Next Week",
+    "firstNextMonth": "1st Next Month",
+    "threeDays": "3 Days",
+    "oneWeek": "1 Week",
+    "twoWeeks": "2 Weeks",
+    "thirtyDays": "30 Days"
   },
   "compensation": {
     "title": "Compensation",
@@ -98,28 +169,45 @@
     "withdraw": "Withdraw Offer",
     "extend": "Extend Expiration",
     "resend": "Resend Offer",
-    "viewHistory": "View History"
+    "viewHistory": "View History",
+    "approve": "Approve",
+    "reject": "Reject"
   },
   "messages": {
     "created": "Offer created successfully",
     "updated": "Offer updated",
     "sent": "Offer sent to candidate",
+    "sentSuccess": "Offer sent successfully",
     "accepted": "Offer has been accepted",
     "declined": "Offer was declined",
     "withdrawn": "Offer withdrawn",
     "expired": "This offer has expired",
     "approvalRequested": "Approval request sent",
     "approved": "Offer approved",
-    "rejected": "Offer rejected"
+    "rejected": "Offer rejected",
+    "selectCandidate": "Please select a candidate",
+    "fillRequired": "Please fill in required fields",
+    "createdForApproval": "Offer created and submitted for approval",
+    "sendFailed": "Failed to send offer",
+    "approvedSendable": "Offer approved. You can now send it to the candidate.",
+    "approveFailed": "Failed to approve offer",
+    "rejectedToDraft": "Offer rejected and returned to draft",
+    "rejectFailed": "Failed to reject offer",
+    "deleted": "Offer deleted successfully",
+    "deleteFailed": "Failed to delete offer",
+    "unexpectedError": "An unexpected error occurred"
   },
   "confirmations": {
     "send": "Are you sure you want to send this offer to the candidate?",
     "withdraw": "Are you sure you want to withdraw this offer?",
-    "delete": "Are you sure you want to delete this offer?"
+    "delete": "Are you sure you want to delete this offer?",
+    "deleteDescription": "Are you sure you want to delete this offer? This action cannot be undone."
   },
   "emptyState": {
     "title": "No offers yet",
-    "description": "Create an offer for a candidate to get started"
+    "description": "Create an offer for a candidate to get started",
+    "noResults": "No offers found",
+    "createFirst": "Create your first offer"
   },
   "timeline": {
     "created": "Offer created",

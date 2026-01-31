@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Note: Type instantiation is excessively deep error with Supabase typed client
 import { createClient } from "@/lib/supabase/server"
+import { getServerTranslation } from "@/lib/i18n/server"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
@@ -95,6 +96,7 @@ export async function InterviewerDashboard({
   userId,
 }: InterviewerDashboardProps) {
   const stats = await getInterviewerStats(orgId, userId)
+  const { t } = await getServerTranslation()
 
   return (
     <div className="space-y-6">
@@ -115,30 +117,30 @@ export async function InterviewerDashboard({
                   <Calendar className="h-6 w-6" />
                 </div>
                 <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                  Interviewer
+                  {t("dashboard.roles.interviewer")}
                 </Badge>
               </div>
 
               <div className="flex-1 flex flex-col justify-center">
                 <p className="text-white/70 text-sm font-medium mb-2">
-                  My Interviews
+                  {t("dashboard.interviewer.myInterviews")}
                 </p>
                 <div className="flex items-end gap-3">
                   <span className="text-6xl font-bold">
                     {stats.upcomingInterviews.length}
                   </span>
-                  <span className="text-white/60 text-lg mb-2">upcoming</span>
+                  <span className="text-white/60 text-lg mb-2">{t("dashboard.interviewer.upcoming")}</span>
                 </div>
               </div>
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/70 text-sm">Completed</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.interviewer.completed")}</span>
                   <span className="font-semibold">{stats.completedCount}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-white/70 text-sm">
-                    Scorecards Submitted
+                    {t("dashboard.stats.scorecardsSubmitted")}
                   </span>
                   <span className="font-semibold">
                     {stats.scorecardsSubmitted}
@@ -164,7 +166,7 @@ export async function InterviewerDashboard({
               </div>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Upcoming Interviews
+              {t("dashboard.upcomingInterviews")}
             </p>
             <p className="text-3xl font-bold mt-1">
               {stats.upcomingInterviews.length}
@@ -174,7 +176,7 @@ export async function InterviewerDashboard({
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -193,11 +195,11 @@ export async function InterviewerDashboard({
               </div>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Completed Interviews
+              {t("dashboard.stats.completedInterviews")}
             </p>
             <p className="text-3xl font-bold mt-1">{stats.completedCount}</p>
             <p className="text-sm text-muted-foreground mt-3">
-              of {stats.totalCount} total
+              {t("dashboard.interviewer.ofTotal", { total: String(stats.totalCount) })}
             </p>
           </div>
         </div>
@@ -216,7 +218,7 @@ export async function InterviewerDashboard({
               </div>
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Scorecards Submitted
+              {t("dashboard.stats.scorecardsSubmitted")}
             </p>
             <p className="text-3xl font-bold mt-1">
               {stats.scorecardsSubmitted}
@@ -226,7 +228,7 @@ export async function InterviewerDashboard({
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -261,12 +263,12 @@ export async function InterviewerDashboard({
               </div>
               {stats.pendingScorecards > 0 && (
                 <Badge className="bg-amber-500/10 text-amber-600 border-amber-200">
-                  Action needed
+                  {t("dashboard.interviewer.actionNeeded")}
                 </Badge>
               )}
             </div>
             <p className="text-sm text-muted-foreground font-medium">
-              Pending Scorecards
+              {t("dashboard.stats.pendingScorecards")}
             </p>
             <p
               className={`text-3xl font-bold mt-1 ${
@@ -280,11 +282,11 @@ export async function InterviewerDashboard({
                 href="/org/scorecards"
                 className="inline-flex items-center gap-1 text-sm font-medium mt-3 text-amber-600 hover:gap-2 transition-all"
               >
-                Submit now <ChevronRight className="h-4 w-4" />
+                {t("dashboard.actions.submitNow")} <ChevronRight className="h-4 w-4" />
               </Link>
             ) : (
               <p className="text-sm text-muted-foreground mt-3">
-                All caught up
+                {t("dashboard.interviewer.allCaughtUp")}
               </p>
             )}
           </div>
@@ -300,22 +302,17 @@ export async function InterviewerDashboard({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-amber-800 dark:text-amber-400">
-                    You have {stats.pendingScorecards} pending{" "}
-                    {stats.pendingScorecards === 1
-                      ? "scorecard"
-                      : "scorecards"}{" "}
-                    to submit
+                    {t("dashboard.interviewer.pendingScorecardsToSubmit", { count: String(stats.pendingScorecards), scorecards: stats.pendingScorecards === 1 ? t("dashboard.interviewer.scorecard") : t("dashboard.interviewer.scorecards") })}
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-                    Please complete your scorecards promptly so the hiring team
-                    can proceed.
+                    {t("dashboard.interviewer.pendingScorecardsPrompt")}
                   </p>
                 </div>
                 <Link
                   href="/org/scorecards"
                   className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 dark:text-amber-400 hover:gap-2 transition-all shrink-0"
                 >
-                  Go to Scorecards <ChevronRight className="h-4 w-4" />
+                  {t("dashboard.interviewer.goToScorecards")} <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -327,9 +324,9 @@ export async function InterviewerDashboard({
           <div className="bento-card p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-lg font-semibold">Upcoming Interviews</h3>
+                <h3 className="text-lg font-semibold">{t("dashboard.upcomingInterviews")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Your next scheduled interviews
+                  {t("dashboard.interviewer.yourNextScheduledInterviews")}
                 </p>
               </div>
               <Link
@@ -337,7 +334,7 @@ export async function InterviewerDashboard({
                 className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                 style={{ color: "var(--brand-primary)" }}
               >
-                View all <ChevronRight className="h-4 w-4" />
+                {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -361,7 +358,7 @@ export async function InterviewerDashboard({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">
-                          {interview.jobs?.title || "Untitled Position"}
+                          {interview.jobs?.title || t("dashboard.recruiter.untitledPosition")}
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <Clock className="h-3 w-3 text-muted-foreground" />
@@ -405,10 +402,10 @@ export async function InterviewerDashboard({
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  No upcoming interviews
+                  {t("dashboard.emptyStates.noInterviews")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Interviews assigned to you will appear here
+                  {t("dashboard.emptyStates.interviewsWillAppear")}
                 </p>
               </div>
             )}
@@ -419,7 +416,7 @@ export async function InterviewerDashboard({
         <div className="col-span-12 lg:col-span-4">
           <div className="bento-card p-6 h-full">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold">Quick Actions</h3>
+              <h3 className="text-lg font-semibold">{t("dashboard.quickActions")}</h3>
               <Zap className="h-5 w-5 text-muted-foreground" />
             </div>
 
@@ -438,9 +435,9 @@ export async function InterviewerDashboard({
                   />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">My Interviews</p>
+                  <p className="font-medium text-sm">{t("dashboard.interviewer.myInterviews")}</p>
                   <p className="text-xs text-muted-foreground">
-                    View your interview schedule
+                    {t("dashboard.interviewer.viewYourInterviewSchedule")}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -460,9 +457,9 @@ export async function InterviewerDashboard({
                   />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">My Scorecards</p>
+                  <p className="font-medium text-sm">{t("dashboard.hiringManager.myScorecards")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Submit and review scorecards
+                    {t("dashboard.interviewer.submitAndReviewScorecards")}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />

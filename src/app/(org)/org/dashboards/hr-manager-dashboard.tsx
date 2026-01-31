@@ -1,6 +1,7 @@
 // @ts-nocheck
 // Note: Type instantiation is excessively deep error with Supabase typed client
 import { createClient } from "@/lib/supabase/server"
+import { getServerTranslation } from "@/lib/i18n/server"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
@@ -67,6 +68,7 @@ async function getHrManagerStats(orgId: string) {
 
 export async function HrManagerDashboard({ orgId }: HrManagerDashboardProps) {
   const stats = await getHrManagerStats(orgId)
+  const { t } = await getServerTranslation()
 
   return (
     <div className="space-y-6">
@@ -86,25 +88,25 @@ export async function HrManagerDashboard({ orgId }: HrManagerDashboardProps) {
                   <Target className="h-6 w-6" />
                 </div>
                 <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                  This Month
+                  {t("dashboard.hrManager.thisMonth")}
                 </Badge>
               </div>
 
               <div className="flex-1 flex flex-col justify-center">
-                <p className="text-white/70 text-sm font-medium mb-2">Total Applications</p>
+                <p className="text-white/70 text-sm font-medium mb-2">{t("dashboard.stats.totalApplications")}</p>
                 <div className="flex items-end gap-3">
                   <span className="text-6xl font-bold">{stats.applications}</span>
                 </div>
-                <p className="text-white/60 text-sm mt-2">Across all jobs</p>
+                <p className="text-white/60 text-sm mt-2">{t("dashboard.hrManager.acrossAllJobs")}</p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/70 text-sm">Active Jobs</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.stats.activeJobs")}</span>
                   <span className="font-semibold">{stats.jobs}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-white/70 text-sm">Candidates</span>
+                  <span className="text-white/70 text-sm">{t("dashboard.stats.candidates")}</span>
                   <span className="font-semibold">{stats.candidates}</span>
                 </div>
               </div>
@@ -123,14 +125,14 @@ export async function HrManagerDashboard({ orgId }: HrManagerDashboardProps) {
                 <Briefcase className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Active Jobs</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.activeJobs")}</p>
             <p className="text-3xl font-bold mt-1">{stats.jobs}</p>
             <Link
               href="/org/jobs"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -145,14 +147,14 @@ export async function HrManagerDashboard({ orgId }: HrManagerDashboardProps) {
                 <UserSearch className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Candidates</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.candidates")}</p>
             <p className="text-3xl font-bold mt-1">{stats.candidates}</p>
             <Link
               href="/org/candidates"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              View all <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.viewAll")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -167,16 +169,16 @@ export async function HrManagerDashboard({ orgId }: HrManagerDashboardProps) {
               >
                 <Calendar className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
-              <Badge variant="secondary" className="text-xs">Today</Badge>
+              <Badge variant="secondary" className="text-xs">{t("common.time.today")}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Interviews</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.interviews")}</p>
             <p className="text-3xl font-bold mt-1">{stats.interviews.length}</p>
             <Link
               href="/org/interviews"
               className="inline-flex items-center gap-1 text-sm font-medium mt-3 hover:gap-2 transition-all"
               style={{ color: "var(--brand-primary)" }}
             >
-              Schedule <ChevronRight className="h-4 w-4" />
+              {t("dashboard.actions.schedule")} <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -191,9 +193,9 @@ export async function HrManagerDashboard({ orgId }: HrManagerDashboardProps) {
                 <CheckCircle className="h-5 w-5" style={{ color: "var(--brand-primary)" }} />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground font-medium">Hired</p>
+            <p className="text-sm text-muted-foreground font-medium">{t("dashboard.stats.hired")}</p>
             <p className="text-3xl font-bold mt-1">{stats.hired}</p>
-            <p className="text-sm text-muted-foreground mt-3">Total placements</p>
+            <p className="text-sm text-muted-foreground mt-3">{t("dashboard.hrManager.totalPlacements")}</p>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useI18n } from "@/lib/i18n"
 import { supabaseInsert, supabaseUpdate } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -223,6 +224,7 @@ export function InterviewsClient({
 }: InterviewsClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, language, isRTL } = useI18n()
   const { generateInterviewQuestions, isLoading: isAILoading } = useAI()
 
   const [interviews, setInterviews] = useState(initialInterviews)
@@ -347,13 +349,13 @@ export function InterviewsClient({
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address")
+      toast.error(t("interviews.errors.invalidEmail"))
       return
     }
 
     // Check for duplicates
     if (formData.external_guests.includes(email)) {
-      toast.error("This email is already added")
+      toast.error(t("interviews.errors.emailDuplicate"))
       return
     }
 
@@ -485,12 +487,12 @@ export function InterviewsClient({
   // Generate meeting link manually (button click)
   const handleGenerateMeetingLink = async () => {
     if (!formData.meeting_provider || formData.meeting_provider === "manual") {
-      toast.error("Please select a meeting provider")
+      toast.error(t("interviews.errors.selectProvider"))
       return
     }
 
     if (!formData.application_id) {
-      toast.error("Please select a candidate application first")
+      toast.error(t("interviews.errors.selectApplication"))
       return
     }
 
@@ -513,13 +515,13 @@ export function InterviewsClient({
 
       if (meetingResult?.url) {
         setFormData({ ...formData, meeting_link: meetingResult.url })
-        toast.success(`${meetingProviderInfo[formData.meeting_provider]?.name || formData.meeting_provider} meeting created!`)
+        toast.success(t("interviews.messages.meetingCreated"))
       } else {
-        toast.error(`Failed to create meeting. Please check your ${meetingProviderInfo[formData.meeting_provider]?.name || formData.meeting_provider} integration in Settings → Integrations.`)
+        toast.error(t("interviews.errors.meetingFailed"))
       }
     } catch (error) {
       console.error("Error generating meeting link:", error)
-      toast.error("Failed to generate meeting link")
+      toast.error(t("interviews.errors.generateLinkFailed"))
     } finally {
       setIsCreatingMeeting(false)
     }
@@ -528,7 +530,7 @@ export function InterviewsClient({
   // CREATE
   const handleCreate = async () => {
     if (!formData.application_id || !formData.title) {
-      toast.error("Please fill in required fields")
+      toast.error(t("interviews.errors.requiredFields"))
       return
     }
 
@@ -554,7 +556,7 @@ export function InterviewsClient({
         setIsCreatingMeeting(false)
         if (meetingResult?.url) {
           meetingLink = meetingResult.url
-          toast.success(`Meeting created via ${meetingProviderInfo[formData.meeting_provider]?.name || formData.meeting_provider}`)
+          toast.success(t("interviews.messages.meetingCreatedVia"))
         }
       }
 
@@ -645,16 +647,16 @@ export function InterviewsClient({
             if (calendarData.event?.hangoutLink) {
               data.meeting_link = calendarData.event.hangoutLink
             }
-            toast.success("Interview scheduled and synced to Google Calendar")
+            toast.success(t("interviews.messages.calendarSynced"))
           } else {
-            toast.success("Interview scheduled (Calendar sync failed)")
+            toast.success(t("interviews.messages.calendarSyncFailed"))
           }
         } catch (calendarError) {
           console.error("Calendar sync error:", calendarError)
-          toast.success("Interview scheduled (Calendar sync failed)")
+          toast.success(t("interviews.messages.calendarSyncFailed"))
         }
       } else {
-        toast.success("Interview scheduled successfully")
+        toast.success(t("interviews.messages.scheduled"))
       }
 
       // Send notification to candidate and interviewers
@@ -704,7 +706,7 @@ export function InterviewsClient({
       resetForm()
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("interviews.errors.unexpected"))
     } finally {
       setIsLoading(false)
     }
@@ -780,10 +782,10 @@ export function InterviewsClient({
         })
       }
 
-      toast.success(`Interview marked as ${newStatus}`)
+      toast.success(t("interviews.messages.statusChanged"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("interviews.errors.unexpected"))
     }
   }
 
@@ -839,7 +841,7 @@ export function InterviewsClient({
             </div>
             <div className="flex items-center gap-2">
               <Badge className={cn("capitalize", statusStyles[interview.status])}>
-                {interview.status.replace("_", " ")}
+                {interview.status === "no_show" ? t("interviews.status.noShow") : t(`interviews.status.${interview.status}`)}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -852,17 +854,17 @@ export function InterviewsClient({
                     onSelect={() => handleGenerateQuestions(interview)}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    AI Questions
+                    {t("interviews.actions.aiQuestions")}
                   </DropdownMenuItem>
                   {interview.meeting_link && (
                     <DropdownMenuItem
                       onSelect={() => {
                         navigator.clipboard.writeText(interview.meeting_link!)
-                        toast.success("Meeting link copied")
+                        toast.success(t("interviews.videoMeeting.linkCopied"))
                       }}
                     >
                       <Copy className="mr-2 h-4 w-4" />
-                      Copy Meeting Link
+                      {t("interviews.videoMeeting.copyLink")}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -872,28 +874,28 @@ export function InterviewsClient({
                         onSelect={() => handleStatusChange(interview.id, "confirmed")}
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Mark Confirmed
+                        {t("interviews.actions.markConfirmed")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => handleStatusChange(interview.id, "completed")}
                         className="text-green-600"
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Mark Completed
+                        {t("interviews.actions.markComplete")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => handleStatusChange(interview.id, "no_show")}
                         className="text-orange-600"
                       >
                         <XCircle className="mr-2 h-4 w-4" />
-                        No Show
+                        {t("interviews.actions.markNoShow")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => handleStatusChange(interview.id, "cancelled")}
                         className="text-red-600"
                       >
                         <XCircle className="mr-2 h-4 w-4" />
-                        Cancel
+                        {t("common.cancel")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -907,7 +909,7 @@ export function InterviewsClient({
                         }}
                       >
                         <ClipboardList className="mr-2 h-4 w-4" />
-                        Fill Scorecard
+                        {t("interviews.actions.fillScorecard")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -926,14 +928,14 @@ export function InterviewsClient({
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              <span>{interview.duration_minutes} min</span>
+              <span>{interview.duration_minutes} {t("interviews.minutesShort")}</span>
             </div>
           </div>
           {interview.interviewer_ids && interview.interviewer_ids.length > 0 && (
             <div className="mt-2 flex items-center gap-1">
               <Users className="h-3 w-3 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">
-                {interview.interviewer_ids.length} interviewer(s)
+                {interview.interviewer_ids.length} {interview.interviewer_ids.length === 1 ? t("interviews.fields.interviewer") : t("interviews.fields.interviewers")}
               </span>
             </div>
           )}
@@ -947,14 +949,14 @@ export function InterviewsClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Interviews</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("interviews.title")}</h2>
           <p className="text-muted-foreground">
-            Schedule and manage candidate interviews
+            {t("interviews.subtitle")}
           </p>
         </div>
         <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
-          Schedule Interview
+          {t("interviews.schedule")}
         </Button>
       </div>
 
@@ -962,7 +964,7 @@ export function InterviewsClient({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("interviews.stats.total")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -970,7 +972,7 @@ export function InterviewsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Upcoming</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("interviews.stats.upcoming")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.upcoming}</div>
@@ -978,7 +980,7 @@ export function InterviewsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Today</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("interviews.stats.today")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{stats.today}</div>
@@ -986,7 +988,7 @@ export function InterviewsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("interviews.stats.completed")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">{stats.completed}</div>
@@ -999,7 +1001,7 @@ export function InterviewsClient({
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by candidate, job, or title..."
+            placeholder={t("interviews.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -1007,22 +1009,22 @@ export function InterviewsClient({
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("interviews.fields.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="scheduled">Scheduled</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-            <SelectItem value="no_show">No Show</SelectItem>
+            <SelectItem value="all">{t("interviews.allStatus")}</SelectItem>
+            <SelectItem value="scheduled">{t("interviews.status.scheduled")}</SelectItem>
+            <SelectItem value="confirmed">{t("interviews.status.confirmed")}</SelectItem>
+            <SelectItem value="completed">{t("interviews.status.completed")}</SelectItem>
+            <SelectItem value="cancelled">{t("interviews.status.cancelled")}</SelectItem>
+            <SelectItem value="no_show">{t("interviews.status.noShow")}</SelectItem>
           </SelectContent>
         </Select>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className="w-[200px] justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "PPP") : "Filter by date"}
+              {selectedDate ? format(selectedDate, "PPP") : t("interviews.filterByDate")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -1040,7 +1042,7 @@ export function InterviewsClient({
                   className="w-full"
                   onClick={() => setSelectedDate(undefined)}
                 >
-                  Clear filter
+                  {t("interviews.clearFilter")}
                 </Button>
               </div>
             )}
@@ -1052,10 +1054,10 @@ export function InterviewsClient({
       <Tabs defaultValue="upcoming" className="space-y-4">
         <TabsList>
           <TabsTrigger value="upcoming">
-            Upcoming ({upcomingInterviews.length})
+            {t("interviews.upcoming")} ({upcomingInterviews.length})
           </TabsTrigger>
           <TabsTrigger value="past">
-            Past ({pastInterviews.length})
+            {t("interviews.past")} ({pastInterviews.length})
           </TabsTrigger>
         </TabsList>
 
@@ -1064,13 +1066,13 @@ export function InterviewsClient({
             <Card>
               <CardContent className="py-12 text-center">
                 <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No upcoming interviews</p>
+                <p className="text-muted-foreground">{t("interviews.emptyState.upcoming")}</p>
                 <Button
                   variant="link"
                   onClick={() => setIsCreateDialogOpen(true)}
                   className="mt-2"
                 >
-                  Schedule your first interview
+                  {t("interviews.emptyState.scheduleFirst")}
                 </Button>
               </CardContent>
             </Card>
@@ -1088,7 +1090,7 @@ export function InterviewsClient({
             <Card>
               <CardContent className="py-12 text-center">
                 <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No past interviews</p>
+                <p className="text-muted-foreground">{t("interviews.emptyState.past")}</p>
               </CardContent>
             </Card>
           ) : (
@@ -1105,14 +1107,14 @@ export function InterviewsClient({
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
+            <DialogTitle>{t("interviews.schedule")}</DialogTitle>
             <DialogDescription>
-              Schedule a new interview with a candidate
+              {t("interviews.form.scheduleNewDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
             <div className="space-y-2">
-              <Label htmlFor="application_id">Candidate Application *</Label>
+              <Label htmlFor="application_id">{t("interviews.form.candidateApplication")} *</Label>
               <Select
                 value={formData.application_id}
                 onValueChange={(value) => {
@@ -1127,7 +1129,7 @@ export function InterviewsClient({
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select candidate" />
+                  <SelectValue placeholder={t("interviews.form.selectCandidate")} />
                 </SelectTrigger>
                 <SelectContent>
                   {applications.map((app) => (
@@ -1140,18 +1142,18 @@ export function InterviewsClient({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Interview Title *</Label>
+              <Label htmlFor="title">{t("interviews.form.interviewTitle")} *</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Technical Interview - Round 1"
+                placeholder={t("interviews.form.titlePlaceholder")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Interview Type</Label>
+                <Label>{t("interviews.fields.type")}</Label>
                 <Select
                   value={formData.interview_type}
                   onValueChange={(value) => setFormData({ ...formData, interview_type: value })}
@@ -1162,14 +1164,14 @@ export function InterviewsClient({
                   <SelectContent>
                     {interviewTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                        {t(`interviews.types.${type.value === "in_person" ? "onsite" : type.value}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Duration</Label>
+                <Label>{t("interviews.fields.duration")}</Label>
                 <Select
                   value={formData.duration_minutes.toString()}
                   onValueChange={(value) =>
@@ -1182,7 +1184,7 @@ export function InterviewsClient({
                   <SelectContent>
                     {durationOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value.toString()}>
-                        {opt.label}
+                        {t(`interviews.durations.${({15:"15min",30:"30min",45:"45min",60:"1hour",90:"1.5hours",120:"2hours"} as Record<number,string>)[opt.value]}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1192,7 +1194,7 @@ export function InterviewsClient({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Date *</Label>
+                <Label>{t("interviews.fields.date")} *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1217,7 +1219,7 @@ export function InterviewsClient({
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Time *</Label>
+                <Label htmlFor="time">{t("interviews.fields.time")} *</Label>
                 <Input
                   id="time"
                   type="time"
@@ -1233,14 +1235,14 @@ export function InterviewsClient({
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                Timezone
+                {t("interviews.scheduling.timezone")}
               </Label>
               <Select
                 value={formData.timezone}
                 onValueChange={(value) => setFormData({ ...formData, timezone: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select timezone" />
+                  <SelectValue placeholder={t("interviews.form.selectTimezone")} />
                 </SelectTrigger>
                 <SelectContent>
                   {timezones.map((tz) => (
@@ -1256,10 +1258,10 @@ export function InterviewsClient({
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Assign Interviewers
+                {t("interviews.form.assignInterviewers")}
               </Label>
               <p className="text-xs text-muted-foreground mb-2">
-                Select team members to conduct this interview. They will receive notifications and calendar invites.
+                {t("interviews.form.assignInterviewersDesc")}
               </p>
               <Popover>
                 <PopoverTrigger asChild>
@@ -1271,10 +1273,10 @@ export function InterviewsClient({
                     {formData.interviewer_ids.length > 0 ? (
                       <span className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        {formData.interviewer_ids.length} interviewer{formData.interviewer_ids.length > 1 ? "s" : ""} selected
+                        {formData.interviewer_ids.length} {formData.interviewer_ids.length === 1 ? t("interviews.fields.interviewer") : t("interviews.fields.interviewers")} {t("interviews.form.selected")}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">Select interviewers...</span>
+                      <span className="text-muted-foreground">{t("interviews.form.selectInterviewers")}</span>
                     )}
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
@@ -1316,7 +1318,7 @@ export function InterviewsClient({
                       </div>
                     ) : (
                       <div className="p-4 text-center text-muted-foreground text-sm">
-                        No team members with interviewer roles found
+                        {t("interviews.form.noInterviewers")}
                       </div>
                     )}
                   </div>
@@ -1355,10 +1357,10 @@ export function InterviewsClient({
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                Invite External Guests (Optional)
+                {t("interviews.form.externalGuests")}
               </Label>
               <p className="text-xs text-muted-foreground mb-2">
-                Add email addresses of external participants. They will receive calendar invites from the video provider.
+                {t("interviews.form.externalGuestsDesc")}
               </p>
               <div className="flex gap-2">
                 <Input
@@ -1405,14 +1407,14 @@ export function InterviewsClient({
                 {/* Meeting Provider Selection with Generate Button */}
                 {hasVideoProviders ? (
                   <div className="space-y-3">
-                    <Label>Meeting Provider</Label>
+                    <Label>{t("interviews.form.meetingProvider")}</Label>
                     <div className="flex gap-2">
                       <Select
                         value={formData.meeting_provider}
                         onValueChange={(value) => setFormData({ ...formData, meeting_provider: value, meeting_link: "" })}
                       >
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select a provider" />
+                          <SelectValue placeholder={t("interviews.form.selectProvider")} />
                         </SelectTrigger>
                         <SelectContent>
                           {availableProviders.map((provider) => (
@@ -1421,7 +1423,7 @@ export function InterviewsClient({
                                 <span>{meetingProviderInfo[provider.provider]?.icon}</span>
                                 <span>{meetingProviderInfo[provider.provider]?.name || provider.provider}</span>
                                 {provider.is_default_meeting_provider && (
-                                  <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+                                  <Badge variant="secondary" className="ml-2 text-xs">{t("interviews.form.default")}</Badge>
                                 )}
                               </div>
                             </SelectItem>
@@ -1429,7 +1431,7 @@ export function InterviewsClient({
                           <SelectItem value="manual">
                             <div className="flex items-center gap-2">
                               <span>🔗</span>
-                              <span>Enter link manually</span>
+                              <span>{t("interviews.form.enterLinkManually")}</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -1447,22 +1449,22 @@ export function InterviewsClient({
                           ) : (
                             <Link2 className="h-4 w-4 mr-2" />
                           )}
-                          Generate Link
+                          {t("interviews.form.generateLink")}
                         </Button>
                       )}
                     </div>
 
                     {/* Meeting Link Display/Input */}
                     <div className="space-y-2">
-                      <Label htmlFor="meeting_link">Meeting Link</Label>
+                      <Label htmlFor="meeting_link">{t("interviews.fields.meetingLink")}</Label>
                       <div className="flex gap-2">
                         <Input
                           id="meeting_link"
                           value={formData.meeting_link}
                           onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
                           placeholder={formData.meeting_provider === "manual"
-                            ? "https://zoom.us/... or https://meet.google.com/..."
-                            : "Click 'Generate Link' to create a meeting"}
+                            ? t("interviews.form.meetingLinkPlaceholder")
+                            : t("interviews.form.meetingLinkAutoPlaceholder")}
                           readOnly={formData.meeting_provider !== "manual" && !!formData.meeting_link}
                           className={formData.meeting_link ? "bg-green-50 dark:bg-green-950/20 border-green-300" : ""}
                         />
@@ -1473,7 +1475,7 @@ export function InterviewsClient({
                             size="icon"
                             onClick={() => {
                               navigator.clipboard.writeText(formData.meeting_link)
-                              toast.success("Meeting link copied!")
+                              toast.success(t("interviews.videoMeeting.linkCopied"))
                             }}
                           >
                             <Copy className="h-4 w-4" />
@@ -1483,22 +1485,22 @@ export function InterviewsClient({
                       {formData.meeting_link && (
                         <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
-                          Meeting link generated successfully
+                          {t("interviews.form.meetingLinkGenerated")}
                         </p>
                       )}
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Label htmlFor="meeting_link">Meeting Link</Label>
+                    <Label htmlFor="meeting_link">{t("interviews.fields.meetingLink")}</Label>
                     <Input
                       id="meeting_link"
                       value={formData.meeting_link}
                       onChange={(e) => setFormData({ ...formData, meeting_link: e.target.value })}
-                      placeholder="https://zoom.us/... or https://meet.google.com/..."
+                      placeholder={t("interviews.form.meetingLinkPlaceholder")}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Configure meeting integrations in Settings → Integrations to auto-generate links
+                      {t("interviews.form.configureIntegrations")}
                     </p>
                   </div>
                 )}
@@ -1519,10 +1521,10 @@ export function InterviewsClient({
                     htmlFor="syncToCalendar"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    Sync to Google Calendar
+                    {t("interviews.form.syncToCalendar")}
                   </label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Creates a calendar event and sends invites to attendees
+                    {t("interviews.form.syncToCalendarDesc")}
                   </p>
                 </div>
                 <CalendarIcon className="h-5 w-5 text-blue-600" />
@@ -1531,34 +1533,34 @@ export function InterviewsClient({
 
             {formData.interview_type === "in_person" && (
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">{t("interviews.fields.location")}</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Office address or room"
+                  placeholder={t("interviews.form.locationPlaceholder")}
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="internal_notes">Internal Notes</Label>
+              <Label htmlFor="internal_notes">{t("interviews.form.internalNotes")}</Label>
               <Textarea
                 id="internal_notes"
                 value={formData.internal_notes}
                 onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
-                placeholder="Notes for the interview team..."
+                placeholder={t("interviews.form.notesPlaceholder")}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Schedule Interview
+              {t("interviews.schedule")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1570,17 +1572,17 @@ export function InterviewsClient({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              AI Interview Questions
+              {t("interviews.ai.title")}
             </DialogTitle>
             <DialogDescription>
-              AI-generated questions for this interview
+              {t("interviews.ai.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             {isAILoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-muted-foreground">Generating questions...</span>
+                <span className="ml-2 text-muted-foreground">{t("interviews.ai.generating")}</span>
               </div>
             ) : generatedQuestions.length > 0 ? (
               <div className="space-y-3">
@@ -1593,7 +1595,7 @@ export function InterviewsClient({
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                No questions generated yet
+                {t("interviews.ai.noQuestions")}
               </p>
             )}
           </div>
@@ -1602,15 +1604,15 @@ export function InterviewsClient({
               variant="outline"
               onClick={() => {
                 navigator.clipboard.writeText(generatedQuestions.join("\n\n"))
-                toast.success("Questions copied to clipboard")
+                toast.success(t("interviews.ai.questionsCopied"))
               }}
               disabled={generatedQuestions.length === 0}
             >
               <Copy className="mr-2 h-4 w-4" />
-              Copy All
+              {t("interviews.ai.copyAll")}
             </Button>
             <Button onClick={() => setIsQuestionsDialogOpen(false)}>
-              Close
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1622,13 +1624,12 @@ export function InterviewsClient({
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-primary" />
-              Interview Scorecard
+              {t("interviews.scorecard.title")}
             </DialogTitle>
             {selectedInterview && (
               <DialogDescription>
-                Evaluate {selectedInterview.applications?.candidates?.first_name}{" "}
-                {selectedInterview.applications?.candidates?.last_name} for{" "}
-                {selectedInterview.applications?.jobs?.title}
+                {t("interviews.scorecard.evaluate")} {selectedInterview.applications?.candidates?.first_name}{" "}
+                {selectedInterview.applications?.candidates?.last_name} - {selectedInterview.applications?.jobs?.title}
               </DialogDescription>
             )}
           </DialogHeader>
@@ -1640,19 +1641,19 @@ export function InterviewsClient({
                 templates={scorecardTemplates}
                 onSubmit={() => {
                   setIsScorecardDialogOpen(false)
-                  toast.success("Scorecard submitted successfully")
+                  toast.success(t("interviews.scorecard.submitted"))
                   router.refresh()
                 }}
                 onSave={() => {
-                  toast.success("Scorecard saved as draft")
+                  toast.success(t("interviews.scorecard.savedDraft"))
                 }}
               />
             ) : (
               <div className="text-center py-8">
                 <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No scorecard templates available</p>
+                <p className="text-muted-foreground">{t("interviews.scorecard.noTemplates")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Create scorecard templates in Settings &gt; Scorecards
+                  {t("interviews.scorecard.noTemplatesDesc")}
                 </p>
               </div>
             )}

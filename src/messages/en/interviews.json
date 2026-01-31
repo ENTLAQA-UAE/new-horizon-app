@@ -1,5 +1,6 @@
 {
   "title": "Interviews",
+  "subtitle": "Schedule and manage candidate interviews",
   "schedule": "Schedule Interview",
   "reschedule": "Reschedule Interview",
   "cancel": "Cancel Interview",
@@ -7,6 +8,11 @@
   "past": "Past Interviews",
   "today": "Today's Interviews",
   "calendar": "Interview Calendar",
+  "searchPlaceholder": "Search by candidate, job, or title...",
+  "allStatus": "All Status",
+  "filterByDate": "Filter by date",
+  "clearFilter": "Clear filter",
+  "minutesShort": "min",
   "fields": {
     "candidate": "Candidate",
     "job": "Job",
@@ -26,6 +32,7 @@
     "phone": "Phone Interview",
     "video": "Video Interview",
     "onsite": "On-site Interview",
+    "in_person": "Physical Interview",
     "technical": "Technical Interview",
     "behavioral": "Behavioral Interview",
     "panel": "Panel Interview",
@@ -39,6 +46,12 @@
     "cancelled": "Cancelled",
     "noShow": "No Show",
     "rescheduled": "Rescheduled"
+  },
+  "stats": {
+    "total": "Total",
+    "upcoming": "Upcoming",
+    "today": "Today",
+    "completed": "Completed"
   },
   "durations": {
     "15min": "15 minutes",
@@ -60,6 +73,35 @@
     "sendInvite": "Send calendar invite",
     "reminderEmail": "Send reminder email",
     "addToCalendar": "Add to Calendar"
+  },
+  "form": {
+    "scheduleNewDesc": "Schedule a new interview with a candidate",
+    "candidateApplication": "Candidate Application",
+    "selectCandidate": "Select candidate",
+    "interviewTitle": "Interview Title",
+    "titlePlaceholder": "e.g., Technical Interview - Round 1",
+    "assignInterviewers": "Assign Interviewers",
+    "assignInterviewersDesc": "Select team members to conduct this interview. They will receive notifications and calendar invites.",
+    "selected": "selected",
+    "selectInterviewers": "Select interviewers...",
+    "noInterviewers": "No team members with interviewer roles found",
+    "externalGuests": "Invite External Guests (Optional)",
+    "externalGuestsDesc": "Add email addresses of external participants. They will receive calendar invites from the video provider.",
+    "meetingProvider": "Meeting Provider",
+    "selectProvider": "Select a provider",
+    "default": "Default",
+    "enterLinkManually": "Enter link manually",
+    "generateLink": "Generate Link",
+    "meetingLinkPlaceholder": "https://zoom.us/... or https://meet.google.com/...",
+    "meetingLinkAutoPlaceholder": "Click 'Generate Link' to create a meeting",
+    "meetingLinkGenerated": "Meeting link generated successfully",
+    "configureIntegrations": "Configure meeting integrations in Settings → Integrations to auto-generate links",
+    "syncToCalendar": "Sync to Google Calendar",
+    "syncToCalendarDesc": "Creates a calendar event and sends invites to attendees",
+    "locationPlaceholder": "Office address or room",
+    "internalNotes": "Internal Notes",
+    "notesPlaceholder": "Notes for the interview team...",
+    "selectTimezone": "Select timezone"
   },
   "feedback": {
     "title": "Interview Feedback",
@@ -98,9 +140,12 @@
     "editInterview": "Edit Interview",
     "sendReminder": "Send Reminder",
     "markComplete": "Mark as Completed",
+    "markConfirmed": "Mark as Confirmed",
     "markNoShow": "Mark as No Show",
     "addFeedback": "Add Feedback",
-    "viewFeedback": "View Feedback"
+    "viewFeedback": "View Feedback",
+    "aiQuestions": "AI Questions",
+    "fillScorecard": "Fill Scorecard"
   },
   "messages": {
     "scheduled": "Interview scheduled successfully",
@@ -108,7 +153,12 @@
     "cancelled": "Interview cancelled",
     "feedbackSubmitted": "Feedback submitted",
     "reminderSent": "Reminder sent",
-    "inviteSent": "Calendar invite sent"
+    "inviteSent": "Calendar invite sent",
+    "meetingCreated": "Meeting created successfully",
+    "meetingCreatedVia": "Meeting created via provider",
+    "calendarSynced": "Interview scheduled and synced to Google Calendar",
+    "calendarSyncFailed": "Interview scheduled (Calendar sync failed)",
+    "statusChanged": "Interview status updated"
   },
   "confirmations": {
     "cancel": "Are you sure you want to cancel this interview?",
@@ -118,11 +168,36 @@
     "title": "No interviews scheduled",
     "description": "Schedule interviews with candidates to see them here",
     "upcoming": "No upcoming interviews",
-    "past": "No past interviews"
+    "past": "No past interviews",
+    "scheduleFirst": "Schedule your first interview"
   },
   "errors": {
     "scheduleFailed": "Failed to schedule interview",
     "conflictDetected": "Time conflict detected with another interview",
-    "interviewerUnavailable": "Interviewer is not available at this time"
+    "interviewerUnavailable": "Interviewer is not available at this time",
+    "invalidEmail": "Please enter a valid email address",
+    "emailDuplicate": "This email is already added",
+    "selectProvider": "Please select a meeting provider",
+    "selectApplication": "Please select a candidate application first",
+    "meetingFailed": "Failed to create meeting. Please check your integration settings.",
+    "generateLinkFailed": "Failed to generate meeting link",
+    "requiredFields": "Please fill in required fields",
+    "unexpected": "An unexpected error occurred"
+  },
+  "ai": {
+    "title": "AI Interview Questions",
+    "description": "AI-generated questions for this interview",
+    "generating": "Generating questions...",
+    "noQuestions": "No questions generated yet",
+    "questionsCopied": "Questions copied to clipboard",
+    "copyAll": "Copy All"
+  },
+  "scorecard": {
+    "title": "Interview Scorecard",
+    "evaluate": "Evaluate",
+    "submitted": "Scorecard submitted successfully",
+    "savedDraft": "Scorecard saved as draft",
+    "noTemplates": "No scorecard templates available",
+    "noTemplatesDesc": "Create scorecard templates in Settings > Scorecards"
   }
 }

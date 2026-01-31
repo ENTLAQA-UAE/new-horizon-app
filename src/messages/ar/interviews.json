@@ -1,5 +1,6 @@
 {
   "title": "المقابلات",
+  "subtitle": "جدولة وإدارة مقابلات المتقدمين",
   "schedule": "جدولة مقابلة",
   "reschedule": "إعادة جدولة المقابلة",
   "cancel": "إلغاء المقابلة",
@@ -7,6 +8,11 @@
   "past": "المقابلات السابقة",
   "today": "مقابلات اليوم",
   "calendar": "تقويم المقابلات",
+  "searchPlaceholder": "البحث بالمتقدم أو الوظيفة أو العنوان...",
+  "allStatus": "جميع الحالات",
+  "filterByDate": "تصفية حسب التاريخ",
+  "clearFilter": "مسح التصفية",
+  "minutesShort": "د",
   "fields": {
     "candidate": "المتقدم",
     "job": "الوظيفة",
@@ -26,6 +32,7 @@
     "phone": "مقابلة هاتفية",
     "video": "مقابلة فيديو",
     "onsite": "مقابلة حضورية",
+    "in_person": "مقابلة حضورية",
     "technical": "مقابلة تقنية",
     "behavioral": "مقابلة سلوكية",
     "panel": "مقابلة لجنة",
@@ -39,6 +46,12 @@
     "cancelled": "ملغاة",
     "noShow": "لم يحضر",
     "rescheduled": "أعيدت جدولتها"
+  },
+  "stats": {
+    "total": "الإجمالي",
+    "upcoming": "القادمة",
+    "today": "اليوم",
+    "completed": "المكتملة"
   },
   "durations": {
     "15min": "15 دقيقة",
@@ -60,6 +73,35 @@
     "sendInvite": "إرسال دعوة التقويم",
     "reminderEmail": "إرسال بريد تذكير",
     "addToCalendar": "إضافة إلى التقويم"
+  },
+  "form": {
+    "scheduleNewDesc": "جدولة مقابلة جديدة مع متقدم",
+    "candidateApplication": "طلب المتقدم",
+    "selectCandidate": "اختر المتقدم",
+    "interviewTitle": "عنوان المقابلة",
+    "titlePlaceholder": "مثال: مقابلة تقنية - الجولة الأولى",
+    "assignInterviewers": "تعيين المحاورين",
+    "assignInterviewersDesc": "اختر أعضاء الفريق لإجراء هذه المقابلة. سيتلقون إشعارات ودعوات تقويم.",
+    "selected": "محدد",
+    "selectInterviewers": "اختر المحاورين...",
+    "noInterviewers": "لم يتم العثور على أعضاء فريق بأدوار المحاور",
+    "externalGuests": "دعوة ضيوف خارجيين (اختياري)",
+    "externalGuestsDesc": "أضف عناوين البريد الإلكتروني للمشاركين الخارجيين. سيتلقون دعوات تقويم من مزود الفيديو.",
+    "meetingProvider": "مزود الاجتماع",
+    "selectProvider": "اختر مزود",
+    "default": "افتراضي",
+    "enterLinkManually": "إدخال الرابط يدوياً",
+    "generateLink": "إنشاء رابط",
+    "meetingLinkPlaceholder": "https://zoom.us/... أو https://meet.google.com/...",
+    "meetingLinkAutoPlaceholder": "انقر على 'إنشاء رابط' لإنشاء اجتماع",
+    "meetingLinkGenerated": "تم إنشاء رابط الاجتماع بنجاح",
+    "configureIntegrations": "قم بتكوين تكاملات الاجتماعات في الإعدادات ← التكاملات لإنشاء الروابط تلقائياً",
+    "syncToCalendar": "مزامنة مع تقويم Google",
+    "syncToCalendarDesc": "إنشاء حدث تقويم وإرسال دعوات للحضور",
+    "locationPlaceholder": "عنوان المكتب أو الغرفة",
+    "internalNotes": "ملاحظات داخلية",
+    "notesPlaceholder": "ملاحظات لفريق المقابلة...",
+    "selectTimezone": "اختر المنطقة الزمنية"
   },
   "feedback": {
     "title": "تقييم المقابلة",
@@ -98,9 +140,12 @@
     "editInterview": "تعديل المقابلة",
     "sendReminder": "إرسال تذكير",
     "markComplete": "تحديد كمكتملة",
+    "markConfirmed": "تحديد كمؤكدة",
     "markNoShow": "تحديد كلم يحضر",
     "addFeedback": "إضافة تقييم",
-    "viewFeedback": "عرض التقييم"
+    "viewFeedback": "عرض التقييم",
+    "aiQuestions": "أسئلة الذكاء الاصطناعي",
+    "fillScorecard": "ملء بطاقة التقييم"
   },
   "messages": {
     "scheduled": "تم جدولة المقابلة بنجاح",
@@ -108,7 +153,12 @@
     "cancelled": "تم إلغاء المقابلة",
     "feedbackSubmitted": "تم إرسال التقييم",
     "reminderSent": "تم إرسال التذكير",
-    "inviteSent": "تم إرسال دعوة التقويم"
+    "inviteSent": "تم إرسال دعوة التقويم",
+    "meetingCreated": "تم إنشاء الاجتماع بنجاح",
+    "meetingCreatedVia": "تم إنشاء الاجتماع عبر المزود",
+    "calendarSynced": "تم جدولة المقابلة ومزامنتها مع تقويم Google",
+    "calendarSyncFailed": "تم جدولة المقابلة (فشلت مزامنة التقويم)",
+    "statusChanged": "تم تحديث حالة المقابلة"
   },
   "confirmations": {
     "cancel": "هل أنت متأكد من إلغاء هذه المقابلة؟",
@@ -118,11 +168,36 @@
     "title": "لا توجد مقابلات مجدولة",
     "description": "جدول مقابلات مع المتقدمين لتظهر هنا",
     "upcoming": "لا توجد مقابلات قادمة",
-    "past": "لا توجد مقابلات سابقة"
+    "past": "لا توجد مقابلات سابقة",
+    "scheduleFirst": "جدول أول مقابلة لك"
   },
   "errors": {
     "scheduleFailed": "فشل في جدولة المقابلة",
     "conflictDetected": "يوجد تعارض في الوقت مع مقابلة أخرى",
-    "interviewerUnavailable": "المحاور غير متاح في هذا الوقت"
+    "interviewerUnavailable": "المحاور غير متاح في هذا الوقت",
+    "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+    "emailDuplicate": "هذا البريد الإلكتروني مضاف بالفعل",
+    "selectProvider": "يرجى اختيار مزود اجتماع",
+    "selectApplication": "يرجى اختيار طلب المتقدم أولاً",
+    "meetingFailed": "فشل في إنشاء الاجتماع. يرجى التحقق من إعدادات التكامل.",
+    "generateLinkFailed": "فشل في إنشاء رابط الاجتماع",
+    "requiredFields": "يرجى ملء الحقول المطلوبة",
+    "unexpected": "حدث خطأ غير متوقع"
+  },
+  "ai": {
+    "title": "أسئلة المقابلة بالذكاء الاصطناعي",
+    "description": "أسئلة مولدة بالذكاء الاصطناعي لهذه المقابلة",
+    "generating": "جاري إنشاء الأسئلة...",
+    "noQuestions": "لم يتم إنشاء أسئلة بعد",
+    "questionsCopied": "تم نسخ الأسئلة إلى الحافظة",
+    "copyAll": "نسخ الكل"
+  },
+  "scorecard": {
+    "title": "بطاقة تقييم المقابلة",
+    "evaluate": "تقييم",
+    "submitted": "تم إرسال بطاقة التقييم بنجاح",
+    "savedDraft": "تم حفظ بطاقة التقييم كمسودة",
+    "noTemplates": "لا تتوفر قوالب بطاقة تقييم",
+    "noTemplatesDesc": "أنشئ قوالب بطاقة تقييم في الإعدادات > بطاقات التقييم"
   }
 }

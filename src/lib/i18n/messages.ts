@@ -15,6 +15,11 @@ import offersEn from '@/messages/en/offers.json'
 import settingsEn from '@/messages/en/settings.json'
 import errorsEn from '@/messages/en/errors.json'
 import navEn from '@/messages/en/nav.json'
+import documentsEn from '@/messages/en/documents.json'
+import pipelinesEn from '@/messages/en/pipelines.json'
+import screeningQuestionsEn from '@/messages/en/screeningQuestions.json'
+import requisitionsEn from '@/messages/en/requisitions.json'
+import scorecardsEn from '@/messages/en/scorecards.json'
 
 // Arabic translations
 import commonAr from '@/messages/ar/common.json'
@@ -28,6 +33,11 @@ import offersAr from '@/messages/ar/offers.json'
 import settingsAr from '@/messages/ar/settings.json'
 import errorsAr from '@/messages/ar/errors.json'
 import navAr from '@/messages/ar/nav.json'
+import documentsAr from '@/messages/ar/documents.json'
+import pipelinesAr from '@/messages/ar/pipelines.json'
+import screeningQuestionsAr from '@/messages/ar/screeningQuestions.json'
+import requisitionsAr from '@/messages/ar/requisitions.json'
+import scorecardsAr from '@/messages/ar/scorecards.json'
 
 export const messages = {
   en: {
@@ -42,6 +52,11 @@ export const messages = {
     settings: settingsEn,
     errors: errorsEn,
     nav: navEn,
+    documents: documentsEn,
+    pipelines: pipelinesEn,
+    screeningQuestions: screeningQuestionsEn,
+    requisitions: requisitionsEn,
+    scorecards: scorecardsEn,
   },
   ar: {
     common: commonAr,
@@ -55,6 +70,11 @@ export const messages = {
     settings: settingsAr,
     errors: errorsAr,
     nav: navAr,
+    documents: documentsAr,
+    pipelines: pipelinesAr,
+    screeningQuestions: screeningQuestionsAr,
+    requisitions: requisitionsAr,
+    scorecards: scorecardsAr,
   },
 } as const
 

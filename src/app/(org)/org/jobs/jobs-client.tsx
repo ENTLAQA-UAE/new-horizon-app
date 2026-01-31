@@ -73,6 +73,7 @@ import {
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface Job {
   id: string
@@ -152,13 +153,13 @@ const statusStyles: Record<string, string> = {
   filled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
 }
 
-const statusLabels: Record<string, string> = {
-  draft: "Draft",
-  pending_approval: "Pending Approval",
-  open: "Published",
-  paused: "Paused",
-  closed: "Closed",
-  filled: "Filled",
+const statusLabelKeys: Record<string, string> = {
+  draft: "jobs.status.draft",
+  pending_approval: "common.status.pending",
+  open: "jobs.status.published",
+  paused: "jobs.status.onHold",
+  closed: "jobs.status.closed",
+  filled: "common.status.completed",
 }
 
 // Helper to calculate days until deadline
@@ -191,21 +192,21 @@ const generateSlug = (title: string): string => {
   return `${base}-${Date.now()}`
 }
 
-const employmentTypes = [
-  { value: "full_time", label: "Full Time" },
-  { value: "part_time", label: "Part Time" },
-  { value: "contract", label: "Contract" },
-  { value: "internship", label: "Internship" },
-  { value: "temporary", label: "Temporary" },
+const employmentTypeKeys = [
+  { value: "full_time", labelKey: "jobs.employmentTypes.fullTime" },
+  { value: "part_time", labelKey: "jobs.employmentTypes.partTime" },
+  { value: "contract", labelKey: "jobs.employmentTypes.contract" },
+  { value: "internship", labelKey: "jobs.employmentTypes.internship" },
+  { value: "temporary", labelKey: "jobs.employmentTypes.temporary" },
 ]
 
-const experienceLevels = [
-  { value: "entry", label: "Entry Level" },
-  { value: "junior", label: "Junior (1-2 years)" },
-  { value: "mid", label: "Mid Level (3-5 years)" },
-  { value: "senior", label: "Senior (5+ years)" },
-  { value: "lead", label: "Lead / Manager" },
-  { value: "executive", label: "Executive" },
+const experienceLevelKeys = [
+  { value: "entry", labelKey: "jobs.experienceLevels.entry" },
+  { value: "junior", labelKey: "jobs.experienceLevels.junior" },
+  { value: "mid", labelKey: "jobs.experienceLevels.mid" },
+  { value: "senior", labelKey: "jobs.experienceLevels.senior" },
+  { value: "lead", labelKey: "jobs.experienceLevels.lead" },
+  { value: "executive", labelKey: "jobs.experienceLevels.executive" },
 ]
 
 // Available currencies (same as org settings and requisitions)
@@ -237,6 +238,7 @@ export function JobsClient({
   const router = useRouter()
   const supabase = createClient()
   const { profile, primaryRole } = useAuth()
+  const { t, language, isRTL } = useI18n()
   const [jobs, setJobs] = useState(initialJobs)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -317,9 +319,9 @@ export function JobsClient({
   }
 
   const getDepartmentName = (deptId: string | null) => {
-    if (!deptId) return "No Department"
+    if (!deptId) return t("jobs.filters.department")
     const dept = departments.find((d) => d.id === deptId)
-    return dept?.name || "Unknown"
+    return dept?.name || t("jobs.filters.department")
   }
 
   const resetForm = () => {
@@ -348,7 +350,7 @@ export function JobsClient({
   // AI GENERATION
   const handleGenerateWithAI = async () => {
     if (!formData.title) {
-      toast.error("Please enter a job title first")
+      toast.error(t("errors.validation.required"))
       return
     }
 
@@ -381,14 +383,14 @@ export function JobsClient({
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to generate job description")
+        throw new Error(result.error || t("errors.general.unexpectedError"))
       }
 
       setGeneratedData(result.data)
       setIsAIDialogOpen(true)
-      toast.success(`Generated with ${result.provider} (${result.model})`)
+      toast.success(t("jobs.messages.created"))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate job description")
+      toast.error(error instanceof Error ? error.message : t("errors.general.unexpectedError"))
     } finally {
       setIsGenerating(false)
     }
@@ -444,18 +446,18 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
     })
 
     setIsAIDialogOpen(false)
-    toast.success("AI-generated content applied to form")
+    toast.success(t("jobs.messages.updated"))
   }
 
   // CREATE
   const handleCreate = async () => {
     if (!formData.title) {
-      toast.error("Please enter a job title")
+      toast.error(t("errors.validation.required"))
       return
     }
 
     if (!profile?.org_id) {
-      toast.error("Organization not found. Please refresh the page.")
+      toast.error(t("errors.general.unexpectedError"))
       return
     }
 
@@ -494,10 +496,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         setJobs([data, ...jobs])
         setIsCreateDialogOpen(false)
         resetForm()
-        toast.success("Job created as draft. Use the menu to configure settings or publish.")
+        toast.success(t("jobs.messages.created"))
       }
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -530,7 +532,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
 
   const handleEdit = async () => {
     if (!selectedJob || !formData.title) {
-      toast.error("Please enter a job title")
+      toast.error(t("errors.validation.required"))
       return
     }
 
@@ -576,10 +578,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       setIsEditDialogOpen(false)
       setSelectedJob(null)
       resetForm()
-      toast.success("Job updated successfully")
+      toast.success(t("jobs.messages.updated"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -613,10 +615,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       setJobs(jobs.filter((j) => j.id !== selectedJob.id))
       setIsDeleteDialogOpen(false)
       setSelectedJob(null)
-      toast.success("Job deleted successfully")
+      toast.success(t("jobs.messages.deleted"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -669,10 +671,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         })
       }
 
-      toast.success(`Job ${newStatus === "open" ? "published" : newStatus}`)
+      toast.success(newStatus === "open" ? t("jobs.messages.published") : t("jobs.messages.updated"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     }
   }
 
@@ -731,10 +733,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       setJobs(jobs.map((j) =>
         j.id === jobId ? { ...j, status: "pending_approval" } : j
       ))
-      toast.success("Job submitted for approval")
+      toast.success(t("jobs.messages.updated"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     }
   }
 
@@ -799,10 +801,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         }).catch(console.error)
       }
 
-      toast.success("Job approved and published")
+      toast.success(t("jobs.messages.published"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     }
   }
 
@@ -839,17 +841,17 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       setJobs(jobs.map((j) =>
         j.id === jobId ? { ...j, status: "draft" } : j
       ))
-      toast.success("Job rejected and returned to draft")
+      toast.success(t("jobs.messages.updated"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     }
   }
 
   // DUPLICATE
   const handleDuplicate = async (job: Job) => {
     if (!profile?.org_id) {
-      toast.error("Organization not found. Please refresh the page.")
+      toast.error(t("errors.general.unexpectedError"))
       return
     }
 
@@ -885,11 +887,11 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
 
       if (data) {
         setJobs([data, ...jobs])
-        toast.success("Job duplicated successfully")
+        toast.success(t("jobs.messages.duplicated"))
         router.refresh()
       }
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("errors.general.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -905,21 +907,21 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
   const handleCopyLink = async (job: Job) => {
     const url = getJobUrl(job)
     if (!url) {
-      toast.error("Could not generate job link")
+      toast.error(t("errors.general.unexpectedError"))
       return
     }
     try {
       await navigator.clipboard.writeText(url)
-      toast.success("Job link copied to clipboard!")
+      toast.success(t("jobs.messages.linkCopied"))
     } catch {
-      toast.error("Failed to copy link")
+      toast.error(t("errors.general.unexpectedError"))
     }
   }
 
   const handleShareLinkedIn = (job: Job) => {
     const url = getJobUrl(job)
     if (!url) {
-      toast.error("Could not generate job link")
+      toast.error(t("errors.general.unexpectedError"))
       return
     }
     const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
@@ -929,7 +931,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
   const handleShareTwitter = (job: Job) => {
     const url = getJobUrl(job)
     if (!url) {
-      toast.error("Could not generate job link")
+      toast.error(t("errors.general.unexpectedError"))
       return
     }
     const text = `Check out this job opportunity: ${job.title}`
@@ -938,11 +940,11 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
   }
 
   const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
-    if (!min && !max) return "Not specified"
+    if (!min && !max) return t("jobs.fields.salaryRange")
     const cur = currency || "SAR"
     if (min && max) return `${cur} ${min.toLocaleString()} - ${max.toLocaleString()}`
     if (min) return `${cur} ${min.toLocaleString()}+`
-    return `Up to ${cur} ${max?.toLocaleString()}`
+    return `${cur} ${max?.toLocaleString()}`
   }
 
   // Render form fields inline to prevent focus loss on state change
@@ -951,16 +953,16 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       {/* Basic Info */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-title`}>Job Title (English) *</Label>
+          <Label htmlFor={`${idPrefix}-title`}>{t("jobs.fields.title")} *</Label>
           <Input
             id={`${idPrefix}-title`}
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Software Engineer"
+            placeholder={t("jobs.fields.title")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-title_ar`}>Job Title (Arabic)</Label>
+          <Label htmlFor={`${idPrefix}-title_ar`}>{t("jobs.fields.titleAr")}</Label>
           <Input
             id={`${idPrefix}-title_ar`}
             value={formData.title_ar}
@@ -976,8 +978,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-600" />
           <div>
-            <p className="text-sm font-medium">Generate with AI</p>
-            <p className="text-xs text-muted-foreground">Auto-generate description, requirements & skills</p>
+            <p className="text-sm font-medium">{t("jobs.jobDescription")}</p>
+            <p className="text-xs text-muted-foreground">{t("jobs.fields.description")}</p>
           </div>
         </div>
         <Button
@@ -990,36 +992,36 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         >
           {isGenerating ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
+              <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />
+              {t("common.loading")}
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-4 w-4" />
-              Generate
+              <Sparkles className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+              {t("common.create")}
             </>
           )}
         </Button>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-description`}>Description (English)</Label>
+        <Label htmlFor={`${idPrefix}-description`}>{t("jobs.fields.description")}</Label>
         <Textarea
           id={`${idPrefix}-description`}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Job responsibilities and requirements..."
+          placeholder={t("jobs.fields.description")}
           rows={4}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-description_ar`}>Description (Arabic)</Label>
+        <Label htmlFor={`${idPrefix}-description_ar`}>{t("jobs.fields.descriptionAr")}</Label>
         <Textarea
           id={`${idPrefix}-description_ar`}
           value={formData.description_ar}
           onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-          placeholder="المسؤوليات والمتطلبات..."
+          placeholder={t("jobs.fields.descriptionAr")}
           dir="rtl"
           rows={4}
         />
@@ -1030,13 +1032,13 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       {/* Location & Department */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-department_id`}>Department</Label>
+          <Label htmlFor={`${idPrefix}-department_id`}>{t("jobs.fields.department")}</Label>
           <Select
             value={formData.department_id}
             onValueChange={(value) => setFormData({ ...formData, department_id: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select department" />
+              <SelectValue placeholder={t("jobs.fields.department")} />
             </SelectTrigger>
             <SelectContent>
               {departments.map((dept) => (
@@ -1048,7 +1050,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-location_id`}>Location</Label>
+          <Label htmlFor={`${idPrefix}-location_id`}>{t("jobs.fields.location")}</Label>
           {locations.length > 0 ? (
             <Select
               value={formData.location_id}
@@ -1063,7 +1065,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select location" />
+                <SelectValue placeholder={t("jobs.fields.location")} />
               </SelectTrigger>
               <SelectContent>
                 {locations.map((loc) => (
@@ -1078,7 +1080,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               id={`${idPrefix}-location`}
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="Riyadh, Saudi Arabia"
+              placeholder={t("jobs.fields.location")}
             />
           )}
         </div>
@@ -1087,7 +1089,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       <div className="grid grid-cols-2 gap-4">
         {locations.length === 0 && (
           <div className="space-y-2">
-            <Label htmlFor={`${idPrefix}-location_ar`}>Location (Arabic)</Label>
+            <Label htmlFor={`${idPrefix}-location_ar`}>{t("jobs.fields.location")}</Label>
             <Input
               id={`${idPrefix}-location_ar`}
               value={formData.location_ar}
@@ -1107,7 +1109,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               className="h-4 w-4"
             />
             <Label htmlFor={`${idPrefix}-is_remote`} className="font-normal">
-              Remote work available
+              {t("jobs.fields.remoteAllowed")}
             </Label>
           </div>
         </div>
@@ -1118,13 +1120,13 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       {/* Employment Details */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-job_type_id`}>Job Type</Label>
+          <Label htmlFor={`${idPrefix}-job_type_id`}>{t("jobs.fields.employmentType")}</Label>
           <Select
             value={formData.job_type_id}
             onValueChange={(value) => setFormData({ ...formData, job_type_id: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select job type" />
+              <SelectValue placeholder={t("jobs.fields.employmentType")} />
             </SelectTrigger>
             <SelectContent>
               {jobTypes.length > 0 ? (
@@ -1134,9 +1136,9 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                   </SelectItem>
                 ))
               ) : (
-                employmentTypes.map((type) => (
+                employmentTypeKeys.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
-                    {type.label}
+                    {t(type.labelKey)}
                   </SelectItem>
                 ))
               )}
@@ -1144,25 +1146,25 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-job_grade_id`}>Job Grade</Label>
+          <Label htmlFor={`${idPrefix}-job_grade_id`}>{t("jobs.fields.experienceLevel")}</Label>
           <Select
             value={formData.job_grade_id}
             onValueChange={(value) => setFormData({ ...formData, job_grade_id: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select job grade" />
+              <SelectValue placeholder={t("jobs.fields.experienceLevel")} />
             </SelectTrigger>
             <SelectContent>
               {jobGrades.length > 0 ? (
                 jobGrades.map((grade) => (
                   <SelectItem key={grade.id} value={grade.id}>
-                    {grade.name} (Level {grade.level})
+                    {grade.name} ({grade.level})
                   </SelectItem>
                 ))
               ) : (
-                experienceLevels.map((level) => (
+                experienceLevelKeys.map((level) => (
                   <SelectItem key={level.value} value={level.value}>
-                    {level.label}
+                    {t(level.labelKey)}
                   </SelectItem>
                 ))
               )}
@@ -1176,7 +1178,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       {/* Salary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-salary_min`}>Min Salary</Label>
+          <Label htmlFor={`${idPrefix}-salary_min`}>{t("jobs.fields.salaryMin")}</Label>
           <Input
             id={`${idPrefix}-salary_min`}
             type="number"
@@ -1186,7 +1188,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-salary_max`}>Max Salary</Label>
+          <Label htmlFor={`${idPrefix}-salary_max`}>{t("jobs.fields.salaryMax")}</Label>
           <Input
             id={`${idPrefix}-salary_max`}
             type="number"
@@ -1196,7 +1198,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-salary_currency`}>Currency</Label>
+          <Label htmlFor={`${idPrefix}-salary_currency`}>{t("jobs.fields.currency")}</Label>
           <Select
             value={formData.salary_currency}
             onValueChange={(value) => setFormData({ ...formData, salary_currency: value })}
@@ -1217,7 +1219,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
 
       {/* Closing Date */}
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-closing_date`}>Application Deadline</Label>
+        <Label htmlFor={`${idPrefix}-closing_date`}>{t("jobs.fields.applicationDeadline")}</Label>
         <Input
           id={`${idPrefix}-closing_date`}
           type="date"
@@ -1233,14 +1235,14 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Jobs</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("jobs.title")}</h2>
           <p className="text-muted-foreground">
-            Manage job postings and applications
+            {t("jobs.jobDescription")}
           </p>
         </div>
         <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Job
+          <Plus className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+          {t("jobs.createJob")}
         </Button>
       </div>
 
@@ -1248,7 +1250,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Jobs</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("jobs.allJobs")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -1256,7 +1258,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Published</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("jobs.status.published")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.open}</div>
@@ -1264,7 +1266,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Draft</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("jobs.status.draft")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">{stats.draft}</div>
@@ -1272,7 +1274,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Closed</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("jobs.status.closed")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.closed}</div>
@@ -1285,32 +1287,32 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by title, location..."
+            placeholder={t("common.search")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className={isRTL ? "pr-9" : "pl-9"}
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
-            <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Status" />
+            <Filter className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+            <SelectValue placeholder={t("jobs.filters.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="pending_approval">Pending Approval</SelectItem>
-            <SelectItem value="open">Published</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="draft">{t("jobs.status.draft")}</SelectItem>
+            <SelectItem value="pending_approval">{t("common.status.pending")}</SelectItem>
+            <SelectItem value="open">{t("jobs.status.published")}</SelectItem>
+            <SelectItem value="paused">{t("jobs.status.onHold")}</SelectItem>
+            <SelectItem value="closed">{t("jobs.status.closed")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Department" />
+            <SelectValue placeholder={t("jobs.filters.department")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={dept.id}>
                 {dept.name}
@@ -1325,13 +1327,13 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Job</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Salary</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("jobs.fields.title")}</TableHead>
+              <TableHead>{t("jobs.fields.department")}</TableHead>
+              <TableHead>{t("jobs.fields.location")}</TableHead>
+              <TableHead>{t("jobs.fields.employmentType")}</TableHead>
+              <TableHead>{t("jobs.fields.salaryRange")}</TableHead>
+              <TableHead>{t("jobs.filters.status")}</TableHead>
+              <TableHead className={isRTL ? "text-left" : "text-right"}>{t("common.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1339,13 +1341,13 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12">
                   <Briefcase className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No jobs found</p>
+                  <p className="text-muted-foreground">{t("jobs.emptyState.title")}</p>
                   <Button
                     variant="link"
                     onClick={() => setIsCreateDialogOpen(true)}
                     className="mt-2"
                   >
-                    Create your first job
+                    {t("jobs.emptyState.description")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -1375,10 +1377,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <MapPin className="h-3 w-3 text-muted-foreground" />
-                      <span>{getLocationName(job.location_id) || "Not specified"}</span>
+                      <span>{getLocationName(job.location_id) || t("jobs.fields.location")}</span>
                       {job.is_remote && (
-                        <Badge variant="outline" className="ml-1 text-xs">
-                          Remote
+                        <Badge variant="outline" className={isRTL ? "mr-1 text-xs" : "ml-1 text-xs"}>
+                          {t("jobs.locationTypes.remote")}
                         </Badge>
                       )}
                     </div>
@@ -1396,7 +1398,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <Badge className={cn("capitalize w-fit", statusStyles[job.status || "draft"])}>
-                        {statusLabels[job.status || "draft"] || job.status}
+                        {t(statusLabelKeys[job.status || "draft"]) || job.status}
                       </Badge>
                       {job.status === "open" && job.closing_date && (() => {
                         const daysLeft = getDaysUntilDeadline(job.closing_date)
@@ -1405,18 +1407,16 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                         return (
                           <Badge variant="outline" className={cn("text-xs w-fit", badgeStyle)}>
                             {daysLeft < 0
-                              ? "Expired"
+                              ? t("common.status.expired")
                               : daysLeft === 0
-                              ? "Closes today"
-                              : daysLeft === 1
-                              ? "1 day left"
-                              : `${daysLeft} days left`}
+                              ? t("common.time.today")
+                              : `${daysLeft} ${t("common.time.days")}`}
                           </Badge>
                         )
                       })()}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className={isRTL ? "text-left" : "text-right"}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -1430,8 +1430,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             openViewDialog(job)
                           }}
                         >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          <Eye className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                          {t("common.viewDetails")}
                         </DropdownMenuItem>
                         {job.status === "draft" && (
                           <DropdownMenuItem
@@ -1440,38 +1440,38 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                               openEditDialog(job)
                             }}
                           >
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
+                            <Pencil className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("common.edit")}
                           </DropdownMenuItem>
                         )}
                         {job.status === "draft" && (
                           <DropdownMenuItem
                             onSelect={() => router.push(`/org/jobs/${job.id}/settings`)}
                           >
-                            <Settings className="mr-2 h-4 w-4" />
-                            Settings
+                            <Settings className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("common.user.settings")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
                           onSelect={() => handleDuplicate(job)}
                         >
-                          <Copy className="mr-2 h-4 w-4" />
-                          Duplicate
+                          <Copy className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                          {t("jobs.duplicateJob")}
                         </DropdownMenuItem>
                         {job.status === "open" && (
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => handleCopyLink(job)}>
-                              <Link className="mr-2 h-4 w-4" />
-                              Copy Link
+                              <Link className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                              {t("jobs.actions.copyLink")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleShareLinkedIn(job)}>
-                              <Share2 className="mr-2 h-4 w-4" />
-                              Share on LinkedIn
+                              <Share2 className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                              {t("common.share")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleShareTwitter(job)}>
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              Share on X (Twitter)
+                              <ExternalLink className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                              {t("common.share")}
                             </DropdownMenuItem>
                           </>
                         )}
@@ -1482,8 +1482,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
                           >
-                            <Globe className="mr-2 h-4 w-4" />
-                            Publish
+                            <Globe className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("jobs.publishJob")}
                           </DropdownMenuItem>
                         )}
                         {job.status === "draft" && primaryRole === "recruiter" && (
@@ -1491,8 +1491,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             onSelect={() => handleSubmitForApproval(job.id)}
                             className="text-amber-600"
                           >
-                            <Clock className="mr-2 h-4 w-4" />
-                            Submit for Approval
+                            <Clock className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("common.submit")}
                           </DropdownMenuItem>
                         )}
                         {job.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
@@ -1501,15 +1501,15 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                               onSelect={() => handleApproveJob(job.id)}
                               className="text-green-600"
                             >
-                              <Globe className="mr-2 h-4 w-4" />
-                              Approve & Publish
+                              <Globe className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                              {t("jobs.publishJob")}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onSelect={() => handleRejectJob(job.id)}
                               className="text-red-600"
                             >
-                              <EyeOff className="mr-2 h-4 w-4" />
-                              Reject
+                              <EyeOff className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                              {t("common.status.rejected")}
                             </DropdownMenuItem>
                           </>
                         )}
@@ -1517,8 +1517,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                           <DropdownMenuItem
                             onSelect={() => handleStatusChange(job.id, "paused")}
                           >
-                            <EyeOff className="mr-2 h-4 w-4" />
-                            Pause
+                            <EyeOff className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("jobs.status.onHold")}
                           </DropdownMenuItem>
                         )}
                         {job.status === "paused" && (
@@ -1526,8 +1526,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
                           >
-                            <Globe className="mr-2 h-4 w-4" />
-                            Resume
+                            <Globe className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("jobs.reopenJob")}
                           </DropdownMenuItem>
                         )}
                         {(job.status === "open" || job.status === "paused") && (
@@ -1535,8 +1535,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             onSelect={() => handleStatusChange(job.id, "closed")}
                             className="text-red-600"
                           >
-                            <EyeOff className="mr-2 h-4 w-4" />
-                            Close
+                            <EyeOff className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                            {t("jobs.closeJob")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
@@ -1547,8 +1547,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             openDeleteDialog(job)
                           }}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          <Trash2 className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                          {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1564,19 +1564,19 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create New Job</DialogTitle>
+            <DialogTitle>{t("jobs.createJob")}</DialogTitle>
             <DialogDescription>
-              Create a new job posting for your organization
+              {t("jobs.jobDescription")}
             </DialogDescription>
           </DialogHeader>
           {renderJobFormFields("create")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Job
+              {isLoading && <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />}
+              {t("jobs.createJob")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1586,19 +1586,19 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Job</DialogTitle>
+            <DialogTitle>{t("jobs.editJob")}</DialogTitle>
             <DialogDescription>
-              Update job posting details
+              {t("jobs.jobDescription")}
             </DialogDescription>
           </DialogHeader>
           {renderJobFormFields("edit")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {isLoading && <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />}
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1608,14 +1608,14 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Job Details</DialogTitle>
+            <DialogTitle>{t("jobs.jobDetails")}</DialogTitle>
           </DialogHeader>
           {selectedJob && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-xl font-semibold">{selectedJob.title}</h3>
                 <Badge className={cn("capitalize mt-2", statusStyles[selectedJob.status || "draft"])}>
-                  {statusLabels[selectedJob.status || "draft"] || selectedJob.status}
+                  {t(statusLabelKeys[selectedJob.status || "draft"]) || selectedJob.status}
                 </Badge>
               </div>
 
@@ -1624,7 +1624,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{getLocationName(selectedJob.location_id) || "Not specified"}</span>
+                  <span>{getLocationName(selectedJob.location_id) || t("jobs.fields.location")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
@@ -1641,7 +1641,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                 {selectedJob.closing_date && (
                   <div className="flex items-center gap-2 col-span-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>Closes: {new Date(selectedJob.closing_date).toLocaleDateString()}</span>
+                    <span>{t("jobs.fields.applicationDeadline")}: {new Date(selectedJob.closing_date).toLocaleDateString()}</span>
                   </div>
                 )}
               </div>
@@ -1650,7 +1650,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                 <>
                   <Separator />
                   <div>
-                    <h4 className="font-medium mb-2">Description</h4>
+                    <h4 className="font-medium mb-2">{t("jobs.fields.description")}</h4>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {selectedJob.description}
                     </p>
@@ -1661,28 +1661,28 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               <Separator />
 
               <div className="text-xs text-muted-foreground">
-                Created on {selectedJob.created_at ? new Date(selectedJob.created_at).toLocaleDateString() : "N/A"}
-                {selectedJob.published_at && ` | Published on ${new Date(selectedJob.published_at).toLocaleDateString()}`}
+                {selectedJob.created_at ? new Date(selectedJob.created_at).toLocaleDateString() : ""}
+                {selectedJob.published_at && ` | ${t("jobs.status.published")} ${new Date(selectedJob.published_at).toLocaleDateString()}`}
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
+              {t("common.close")}
             </Button>
             {selectedJob?.status === "draft" && (
               <Button onClick={() => {
                 setIsViewDialogOpen(false)
                 if (selectedJob) openEditDialog(selectedJob)
               }}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
+                <Pencil className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                {t("common.edit")}
               </Button>
             )}
             {selectedJob?.status === "open" && (
               <Button variant="outline" onClick={() => selectedJob && handleCopyLink(selectedJob)}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
+                <Share2 className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+                {t("common.share")}
               </Button>
             )}
           </DialogFooter>
@@ -1693,9 +1693,9 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Job</DialogTitle>
+            <DialogTitle>{t("jobs.deleteJob")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this job? This action cannot be undone.
+              {t("jobs.confirmations.delete")}
             </DialogDescription>
           </DialogHeader>
           {selectedJob && (
@@ -1710,11 +1710,11 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Job
+              {isLoading && <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />}
+              {t("jobs.deleteJob")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1726,10 +1726,10 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-purple-600" />
-              AI Generated Job Description
+              {t("jobs.jobDescription")}
             </DialogTitle>
             <DialogDescription>
-              Review and edit the generated content, then apply it to your job posting
+              {t("jobs.fields.description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -1738,7 +1738,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               {/* Title */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Title (English)</Label>
+                  <Label className="text-xs text-muted-foreground">{t("jobs.fields.title")}</Label>
                   <Input
                     value={generatedData.title}
                     onChange={(e) => setGeneratedData({ ...generatedData, title: e.target.value })}
@@ -1746,7 +1746,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Title (Arabic)</Label>
+                  <Label className="text-xs text-muted-foreground">{t("jobs.fields.titleAr")}</Label>
                   <Input
                     value={generatedData.titleAr}
                     onChange={(e) => setGeneratedData({ ...generatedData, titleAr: e.target.value })}
@@ -1760,7 +1760,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
 
               {/* Description */}
               <div>
-                <Label className="text-xs text-muted-foreground">Description (English)</Label>
+                <Label className="text-xs text-muted-foreground">{t("jobs.fields.description")}</Label>
                 <Textarea
                   value={generatedData.description}
                   onChange={(e) => setGeneratedData({ ...generatedData, description: e.target.value })}
@@ -1770,7 +1770,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               </div>
 
               <div>
-                <Label className="text-xs text-muted-foreground">Description (Arabic)</Label>
+                <Label className="text-xs text-muted-foreground">{t("jobs.fields.descriptionAr")}</Label>
                 <Textarea
                   value={generatedData.descriptionAr}
                   onChange={(e) => setGeneratedData({ ...generatedData, descriptionAr: e.target.value })}
@@ -1785,7 +1785,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               {/* Requirements & Responsibilities */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Requirements</Label>
+                  <Label className="text-xs text-muted-foreground mb-2 block">{t("jobs.requirements")}</Label>
                   <ul className="text-sm space-y-1.5">
                     {generatedData.requirements.map((req, i) => (
                       <li key={i} className="flex items-center gap-1.5">
@@ -1821,11 +1821,11 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                     className="mt-2 text-xs text-muted-foreground"
                     onClick={() => setGeneratedData({ ...generatedData, requirements: [...generatedData.requirements, ""] })}
                   >
-                    <Plus className="h-3 w-3 mr-1" /> Add requirement
+                    <Plus className={isRTL ? "h-3 w-3 ml-1" : "h-3 w-3 mr-1"} /> {t("common.add")}
                   </Button>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Responsibilities</Label>
+                  <Label className="text-xs text-muted-foreground mb-2 block">{t("jobs.responsibilities")}</Label>
                   <ul className="text-sm space-y-1.5">
                     {generatedData.responsibilities.map((resp, i) => (
                       <li key={i} className="flex items-center gap-1.5">
@@ -1861,7 +1861,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                     className="mt-2 text-xs text-muted-foreground"
                     onClick={() => setGeneratedData({ ...generatedData, responsibilities: [...generatedData.responsibilities, ""] })}
                   >
-                    <Plus className="h-3 w-3 mr-1" /> Add responsibility
+                    <Plus className={isRTL ? "h-3 w-3 ml-1" : "h-3 w-3 mr-1"} /> {t("common.add")}
                   </Button>
                 </div>
               </div>
@@ -1870,7 +1870,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
 
               {/* Benefits */}
               <div>
-                <Label className="text-xs text-muted-foreground mb-2 block">Benefits</Label>
+                <Label className="text-xs text-muted-foreground mb-2 block">{t("jobs.benefits")}</Label>
                 <ul className="text-sm grid grid-cols-2 gap-1.5">
                   {generatedData.benefits.map((benefit, i) => (
                     <li key={i} className="flex items-center gap-1.5">
@@ -1906,13 +1906,13 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                   className="mt-2 text-xs text-muted-foreground"
                   onClick={() => setGeneratedData({ ...generatedData, benefits: [...generatedData.benefits, ""] })}
                 >
-                  <Plus className="h-3 w-3 mr-1" /> Add benefit
+                  <Plus className={isRTL ? "h-3 w-3 ml-1" : "h-3 w-3 mr-1"} /> {t("common.add")}
                 </Button>
               </div>
 
               {/* Skills */}
               <div>
-                <Label className="text-xs text-muted-foreground mb-2 block">Skills</Label>
+                <Label className="text-xs text-muted-foreground mb-2 block">{t("jobs.fields.skills")}</Label>
                 <div className="flex flex-wrap gap-2">
                   {generatedData.skills.map((skill, i) => (
                     <Badge key={i} variant="secondary" className="flex items-center gap-1 pr-1">
@@ -1928,7 +1928,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                       />
                       <button
                         type="button"
-                        className="ml-0.5 rounded-full hover:bg-muted p-0.5"
+                        className={isRTL ? "mr-0.5 rounded-full hover:bg-muted p-0.5" : "ml-0.5 rounded-full hover:bg-muted p-0.5"}
                         onClick={() => {
                           const updated = generatedData.skills.filter((_, idx) => idx !== i)
                           setGeneratedData({ ...generatedData, skills: updated })
@@ -1945,7 +1945,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                     className="h-6 text-xs"
                     onClick={() => setGeneratedData({ ...generatedData, skills: [...generatedData.skills, ""] })}
                   >
-                    <Plus className="h-3 w-3 mr-1" /> Add
+                    <Plus className={isRTL ? "h-3 w-3 ml-1" : "h-3 w-3 mr-1"} /> {t("common.add")}
                   </Button>
                 </div>
               </div>
@@ -1959,18 +1959,18 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
               disabled={isGenerating}
             >
               {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className={isRTL ? "ml-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4 animate-spin"} />
               ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
+                <RefreshCw className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
               )}
-              Regenerate
+              {t("common.refresh")}
             </Button>
             <Button variant="outline" onClick={() => setIsAIDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleApplyGeneratedContent}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Apply to Form
+              <CheckCircle className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+              {t("common.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

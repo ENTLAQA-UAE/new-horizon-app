@@ -34,6 +34,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { useI18n } from "@/lib/i18n"
 
 interface Document {
   id: string
@@ -94,6 +95,7 @@ export function DocumentsClient({
   documents,
   jobs,
 }: DocumentsClientProps) {
+  const { t, language, isRTL } = useI18n()
   const [searchQuery, setSearchQuery] = useState("")
   const [jobFilter, setJobFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
@@ -127,7 +129,7 @@ export function DocumentsClient({
   // Open document in new tab for viewing (like Google Drive)
   const handleOpenDocument = (doc: Document) => {
     if (!doc.file_url) {
-      toast.error("File URL not available")
+      toast.error(t("documents.fileNotAvailable"))
       return
     }
     // Open the file directly in a new tab - user can view and download from there
@@ -145,9 +147,9 @@ export function DocumentsClient({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Documents</h1>
+        <h1 className="text-2xl font-bold">{t("nav.documents")}</h1>
         <p className="text-muted-foreground">
-          All candidate attachments organized by job position
+          {t("documents.description")}
         </p>
       </div>
 
@@ -155,7 +157,7 @@ export function DocumentsClient({
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("documents.totalDocuments")}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -164,7 +166,7 @@ export function DocumentsClient({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resumes</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("documents.resumes")}</CardTitle>
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -173,7 +175,7 @@ export function DocumentsClient({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Other Attachments</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("documents.otherAttachments")}</CardTitle>
             <File className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
@@ -182,7 +184,7 @@ export function DocumentsClient({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Job Positions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("documents.jobPositions")}</CardTitle>
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -198,7 +200,7 @@ export function DocumentsClient({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search documents, candidates, or jobs..."
+                placeholder={t("documents.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -208,10 +210,10 @@ export function DocumentsClient({
               <Select value={jobFilter} onValueChange={setJobFilter}>
                 <SelectTrigger className="w-[200px]">
                   <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filter by job" />
+                  <SelectValue placeholder={t("documents.filterByJob")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Jobs</SelectItem>
+                  <SelectItem value="all">{t("documents.allJobs")}</SelectItem>
                   {jobs.map((job) => (
                     <SelectItem key={job.id} value={job.id}>
                       {job.title}
@@ -221,10 +223,10 @@ export function DocumentsClient({
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by type" />
+                  <SelectValue placeholder={t("documents.filterByType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="all">{t("documents.allTypes")}</SelectItem>
                   {documentTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -242,9 +244,9 @@ export function DocumentsClient({
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FolderOpen className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold">No documents found</h3>
+            <h3 className="text-lg font-semibold">{t("documents.noDocumentsFound")}</h3>
             <p className="text-muted-foreground text-center mt-2">
-              Documents will appear here when candidates apply with attachments.
+              {t("documents.noDocumentsDescription")}
             </p>
           </CardContent>
         </Card>
@@ -256,7 +258,7 @@ export function DocumentsClient({
                 <Briefcase className="h-5 w-5" />
                 {job_title}
                 <Badge variant="secondary" className="ml-2">
-                  {jobDocs.length} document{jobDocs.length !== 1 ? "s" : ""}
+                  {jobDocs.length} {jobDocs.length !== 1 ? t("documents.documentPlural") : t("documents.documentSingular")}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -264,12 +266,12 @@ export function DocumentsClient({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Candidate</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Uploaded</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead>{t("documents.table.document")}</TableHead>
+                    <TableHead>{t("documents.table.candidate")}</TableHead>
+                    <TableHead>{t("documents.table.type")}</TableHead>
+                    <TableHead>{t("documents.table.size")}</TableHead>
+                    <TableHead>{t("documents.table.uploaded")}</TableHead>
+                    <TableHead className="text-right">{t("common.table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -309,7 +311,7 @@ export function DocumentsClient({
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenDocument(doc)}
-                          title="Open in new tab"
+                          title={t("documents.openInNewTab")}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>

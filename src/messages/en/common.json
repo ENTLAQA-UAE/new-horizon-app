@@ -1,5 +1,6 @@
 {
   "save": "Save",
+  "saveChanges": "Save Changes",
   "cancel": "Cancel",
   "delete": "Delete",
   "edit": "Edit",
@@ -45,6 +46,7 @@
   "all": "All",
   "none": "None",
   "other": "Other",
+  "unknown": "Unknown",
   "more": "More",
   "less": "Less",
   "showMore": "Show More",

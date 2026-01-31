@@ -1,0 +1,25 @@
+{
+  "description": "جميع مرفقات المرشحين منظمة حسب الوظيفة",
+  "totalDocuments": "إجمالي المستندات",
+  "resumes": "السير الذاتية",
+  "otherAttachments": "مرفقات أخرى",
+  "jobPositions": "الوظائف",
+  "searchPlaceholder": "البحث في المستندات أو المرشحين أو الوظائف...",
+  "filterByJob": "تصفية حسب الوظيفة",
+  "allJobs": "جميع الوظائف",
+  "filterByType": "تصفية حسب النوع",
+  "allTypes": "جميع الأنواع",
+  "noDocumentsFound": "لا توجد مستندات",
+  "noDocumentsDescription": "ستظهر المستندات هنا عندما يتقدم المرشحون بمرفقات.",
+  "documentSingular": "مستند",
+  "documentPlural": "مستندات",
+  "fileNotAvailable": "رابط الملف غير متاح",
+  "openInNewTab": "فتح في علامة تبويب جديدة",
+  "table": {
+    "document": "المستند",
+    "candidate": "المرشح",
+    "type": "النوع",
+    "size": "الحجم",
+    "uploaded": "تاريخ الرفع"
+  }
+}

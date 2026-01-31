@@ -155,15 +155,15 @@ export function Header({ title, titleAr }: HeaderProps) {
               <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
                 <DropdownMenuRadioItem value="light" className="gap-2 cursor-pointer">
                   <Sun className="h-4 w-4" />
-                  {language === "ar" ? "فاتح" : "Light"}
+                  {t("common.theme.light")}
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="dark" className="gap-2 cursor-pointer">
                   <Moon className="h-4 w-4" />
-                  {language === "ar" ? "داكن" : "Dark"}
+                  {t("common.theme.dark")}
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="system" className="gap-2 cursor-pointer">
                   <Monitor className="h-4 w-4" />
-                  {language === "ar" ? "النظام" : "System"}
+                  {t("common.theme.system")}
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
@@ -247,7 +247,7 @@ export function Header({ title, titleAr }: HeaderProps) {
                 className="gap-3 cursor-pointer py-2.5"
               >
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>{language === "ar" ? "الملف الشخصي" : "Profile"}</span>
+                <span>{t("common.user.profile")}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -269,7 +269,7 @@ export function Header({ title, titleAr }: HeaderProps) {
         <div className="flex items-center border-b px-4 gap-2">
           <Search className="h-4 w-4 text-muted-foreground" />
           <CommandInput
-            placeholder={language === "ar" ? "ابحث أو اكتب أمر..." : "Search or type a command..."}
+            placeholder={t("common.search") + "..."}
             className="border-0 focus:ring-0"
           />
         </div>
@@ -277,11 +277,11 @@ export function Header({ title, titleAr }: HeaderProps) {
           <CommandEmpty className="py-12 text-center">
             <div className="flex flex-col items-center gap-2">
               <Search className="h-10 w-10 text-muted-foreground/50" />
-              <p className="text-muted-foreground">{language === "ar" ? "لا توجد نتائج" : "No results found"}</p>
+              <p className="text-muted-foreground">{t("common.table.noResults")}</p>
             </div>
           </CommandEmpty>
 
-          <CommandGroup heading={language === "ar" ? "تنقل سريع" : "Quick Navigation"}>
+          <CommandGroup heading={t("nav.dashboard")}>
             <CommandItem
               onSelect={() => { router.push("/org"); setCommandOpen(false) }}
               className="gap-3 py-3"
@@ -290,8 +290,8 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <BarChart3 className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "لوحة التحكم" : "Dashboard"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "عرض التحليلات والإحصائيات" : "View analytics and statistics"}</span>
+                <span className="font-medium">{t("nav.dashboard")}</span>
+                <span className="text-xs text-muted-foreground">{t("nav.analytics")}</span>
               </div>
             </CommandItem>
             <CommandItem
@@ -302,8 +302,8 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <Briefcase className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "الوظائف" : "Jobs"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "إدارة الوظائف المفتوحة" : "Manage open positions"}</span>
+                <span className="font-medium">{t("nav.jobs")}</span>
+                <span className="text-xs text-muted-foreground">{t("jobs.allJobs")}</span>
               </div>
             </CommandItem>
             <CommandItem
@@ -314,8 +314,8 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <Users className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "المرشحين" : "Candidates"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "عرض وإدارة المرشحين" : "View and manage candidates"}</span>
+                <span className="font-medium">{t("nav.candidates")}</span>
+                <span className="text-xs text-muted-foreground">{t("candidates.allCandidates")}</span>
               </div>
             </CommandItem>
             <CommandItem
@@ -326,8 +326,8 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <CalendarDays className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "المقابلات" : "Interviews"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "جدولة المقابلات" : "Schedule and manage interviews"}</span>
+                <span className="font-medium">{t("nav.interviews")}</span>
+                <span className="text-xs text-muted-foreground">{t("interviews.upcoming")}</span>
               </div>
             </CommandItem>
             <CommandItem
@@ -338,15 +338,15 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <FileText className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "الطلبات" : "Applications"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "مراجعة طلبات التوظيف" : "Review job applications"}</span>
+                <span className="font-medium">{t("nav.applications")}</span>
+                <span className="text-xs text-muted-foreground">{t("applications.allApplications")}</span>
               </div>
             </CommandItem>
           </CommandGroup>
 
           <CommandSeparator />
 
-          <CommandGroup heading={language === "ar" ? "الإعدادات" : "Settings"}>
+          <CommandGroup heading={t("nav.settings")}>
             <CommandItem
               onSelect={() => { router.push("/org/settings"); setCommandOpen(false) }}
               className="gap-3 py-3"
@@ -355,8 +355,8 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <Settings className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "الإعدادات العامة" : "General Settings"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "تخصيص إعدادات المؤسسة" : "Customize organization settings"}</span>
+                <span className="font-medium">{t("settings.general.title")}</span>
+                <span className="text-xs text-muted-foreground">{t("nav.settings")}</span>
               </div>
             </CommandItem>
             <CommandItem
@@ -367,8 +367,8 @@ export function Header({ title, titleAr }: HeaderProps) {
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium">{language === "ar" ? "الهوية البصرية" : "Branding"}</span>
-                <span className="text-xs text-muted-foreground">{language === "ar" ? "تخصيص المظهر والألوان" : "Customize appearance and colors"}</span>
+                <span className="font-medium">{t("nav.branding")}</span>
+                <span className="text-xs text-muted-foreground">{t("settings.branding.title")}</span>
               </div>
             </CommandItem>
           </CommandGroup>
