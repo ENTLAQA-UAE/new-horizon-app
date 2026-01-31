@@ -52,6 +52,7 @@ async function getHrManagerStats(orgId: string) {
     supabase
       .from("interviews")
       .select("id, scheduled_at")
+      .eq("org_id", orgId)
       .gte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(3),

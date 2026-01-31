@@ -158,7 +158,8 @@ function getDateRangeBoundaries(dateRange: DateRange): { start: Date; end: Date;
 
 export async function getDashboardStats(
   supabase: SupabaseClient,
-  dateRange: DateRange = "30d"
+  dateRange: DateRange = "30d",
+  orgId: string
 ): Promise<DashboardStats> {
   const now = new Date()
   const { start, previousStart, previousEnd, trendDays, label } = getDateRangeBoundaries(dateRange)
@@ -166,7 +167,7 @@ export async function getDashboardStats(
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const trendStartDate = new Date(now.getTime() - trendDays * 24 * 60 * 60 * 1000)
 
-  // Fetch all data in parallel
+  // Fetch all data in parallel — every query is scoped to the current org
   const [
     jobsResult,
     candidatesResult,
@@ -182,64 +183,70 @@ export async function getDashboardStats(
     previousPeriodAppsResult,
     previousPeriodHiredResult,
   ] = await Promise.all([
-    // Total and active jobs
-    supabase.from("jobs").select("id, status, department_id, title, created_at", { count: "exact" }),
+    // Total and active jobs (org-scoped)
+    supabase.from("jobs").select("id, status, department_id, title, created_at", { count: "exact" }).eq("org_id", orgId),
 
-    // Total candidates
-    supabase.from("candidates").select("id", { count: "exact" }),
+    // Total candidates (org-scoped)
+    supabase.from("candidates").select("id", { count: "exact" }).eq("org_id", orgId),
 
-    // Total applications with details
-    supabase.from("applications").select("id, status, source, job_id, created_at, updated_at", { count: "exact" }),
+    // Total applications with details (org-scoped)
+    supabase.from("applications").select("id, status, source, job_id, created_at, updated_at", { count: "exact" }).eq("org_id", orgId),
 
-    // Hired this month
+    // Hired this month (org-scoped)
     supabase
       .from("applications")
       .select("id, job_id, created_at, updated_at", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("status", "hired")
       .gte("updated_at", startOfMonth.toISOString()),
 
-    // Scheduled interviews with interviewer info
+    // Scheduled interviews with interviewer info (org-scoped)
     supabase
       .from("interviews")
       .select("id, interviewer_id, status, scheduled_at, application_id")
+      .eq("org_id", orgId)
       .in("status", ["scheduled", "confirmed", "completed"]),
 
-    // Applications by stage for funnel
-    supabase.from("applications").select("status, source, job_id, created_at, updated_at"),
+    // Applications by stage for funnel (org-scoped)
+    supabase.from("applications").select("status, source, job_id, created_at, updated_at").eq("org_id", orgId),
 
-    // Applications by source with details
-    supabase.from("applications").select("source, status, job_id"),
+    // Applications by source with details (org-scoped)
+    supabase.from("applications").select("source, status, job_id").eq("org_id", orgId),
 
-    // Recent applications for trend (based on date range)
+    // Recent applications for trend (org-scoped, based on date range)
     supabase
       .from("applications")
       .select("created_at, status")
+      .eq("org_id", orgId)
       .gte("created_at", trendStartDate.toISOString())
       .order("created_at", { ascending: true }),
 
-    // Offers data
+    // Offers data (org-scoped)
     supabase
       .from("applications")
       .select("id, status")
+      .eq("org_id", orgId)
       .in("status", ["offered", "hired", "rejected"]),
 
-    // Departments
-    supabase.from("departments").select("id, name"),
+    // Departments (org-scoped)
+    supabase.from("departments").select("id, name").eq("org_id", orgId),
 
-    // Get interviewers' profiles
-    supabase.from("profiles").select("id, first_name, last_name, email"),
+    // Get interviewers' profiles (org-scoped)
+    supabase.from("profiles").select("id, first_name, last_name, email").eq("org_id", orgId),
 
-    // Previous period applications (for comparison based on date range)
+    // Previous period applications (org-scoped, for comparison based on date range)
     supabase
       .from("applications")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .gte("created_at", previousStart.toISOString())
       .lt("created_at", previousEnd.toISOString()),
 
-    // Previous period hired
+    // Previous period hired (org-scoped)
     supabase
       .from("applications")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("status", "hired")
       .gte("updated_at", startOfLastMonth.toISOString())
       .lt("updated_at", startOfMonth.toISOString()),

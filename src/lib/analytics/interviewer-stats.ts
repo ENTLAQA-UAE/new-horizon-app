@@ -26,11 +26,12 @@ export interface InterviewerStats {
 
 export async function getInterviewerStats(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  orgId: string
 ): Promise<InterviewerStats> {
   const now = new Date().toISOString()
 
-  // Fetch all data in parallel
+  // Fetch all data in parallel — every query is scoped to the current org
   const [
     upcomingResult,
     completedResult,
@@ -38,37 +39,42 @@ export async function getInterviewerStats(
     scorecardsResult,
     recentResult,
   ] = await Promise.all([
-    // Upcoming interviews (scheduled or confirmed, in the future)
+    // Upcoming interviews (org-scoped, scheduled or confirmed, in the future)
     supabase
       .from("interviews")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId)
       .in("status", ["scheduled", "confirmed"])
       .gte("scheduled_at", now),
 
-    // Completed interviews
+    // Completed interviews (org-scoped)
     supabase
       .from("interviews")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId)
       .eq("status", "completed"),
 
-    // All interviews for this interviewer (to calculate pending scorecards)
+    // All interviews for this interviewer (org-scoped, to calculate pending scorecards)
     supabase
       .from("interviews")
       .select("id, status")
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId),
 
-    // Scorecards submitted by this interviewer
+    // Scorecards submitted by this interviewer (org-scoped)
     supabase
       .from("interview_scorecards")
       .select("id, interview_id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId),
 
-    // Recent interviews (last 10) with details
+    // Recent interviews (org-scoped, last 10) with details
     supabase
       .from("interviews")
       .select("id, scheduled_at, status, application_id, title")
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId)
       .order("scheduled_at", { ascending: false })
       .limit(10),
