@@ -21,28 +21,34 @@ export interface CandidateListStats {
 }
 
 export async function getCandidateListStats(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  orgId: string
 ): Promise<CandidateListStats> {
   // Fetch applications, candidates, jobs, and departments in parallel
   // Using separate queries and joining in JS to avoid complex nested join issues
+  // Every query is scoped to the current org
   const [applicationsResult, candidatesResult, jobsResult, departmentsResult] =
     await Promise.all([
       supabase
         .from("applications")
         .select("id, status, source, candidate_id, job_id, created_at, updated_at")
+        .eq("org_id", orgId)
         .order("created_at", { ascending: false }),
 
       supabase
         .from("candidates")
-        .select("id, first_name, last_name, email, phone"),
+        .select("id, first_name, last_name, email, phone")
+        .eq("org_id", orgId),
 
       supabase
         .from("jobs")
-        .select("id, title, department_id"),
+        .select("id, title, department_id")
+        .eq("org_id", orgId),
 
       supabase
         .from("departments")
-        .select("id, name"),
+        .select("id, name")
+        .eq("org_id", orgId),
     ])
 
   const applications = applicationsResult.data || []

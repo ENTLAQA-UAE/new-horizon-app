@@ -71,12 +71,13 @@ async function getHiringManagerStats(orgId: string, departmentIds: string[]) {
       .order("created_at", { ascending: false })
       .limit(5),
 
-    // Upcoming 5 interviews
+    // Upcoming 5 interviews (org-scoped)
     supabase
       .from("interviews")
       .select(
         "id, scheduled_at, candidates(first_name, last_name), jobs!inner(title, department_id)"
       )
+      .eq("org_id", orgId)
       .in("jobs.department_id", safeDeptIds)
       .gte("scheduled_at", new Date().toISOString())
       .order("scheduled_at", { ascending: true })

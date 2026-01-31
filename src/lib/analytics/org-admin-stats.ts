@@ -45,11 +45,12 @@ const ROLE_LABELS: Record<string, string> = {
 const TRACKED_ROLES = ["hr_manager", "recruiter", "hiring_manager", "interviewer"] as const
 
 export async function getOrgAdminStats(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  orgId: string
 ): Promise<OrgAdminStats> {
   const now = new Date()
 
-  // Fetch all data in parallel
+  // Fetch all data in parallel — every query is scoped to the current org
   const [
     profilesResult,
     userRolesResult,
@@ -60,50 +61,57 @@ export async function getOrgAdminStats(
     recentMembersResult,
     departmentMembersResult,
   ] = await Promise.all([
-    // All team member profiles
+    // All team member profiles (org-scoped)
     supabase
       .from("profiles")
-      .select("id, is_active", { count: "exact" }),
+      .select("id, is_active", { count: "exact" })
+      .eq("org_id", orgId),
 
-    // All user role assignments
+    // All user role assignments (user_roles has no org_id — filtered in JS below)
     supabase
       .from("user_roles")
       .select("user_id, role"),
 
-    // All departments
+    // All departments (org-scoped)
     supabase
       .from("departments")
-      .select("id, name, is_active"),
+      .select("id, name, is_active")
+      .eq("org_id", orgId),
 
-    // Pending invites
+    // Pending invites (org-scoped)
     supabase
       .from("team_invites")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("status", "pending"),
 
-    // Accepted invites
+    // Accepted invites (org-scoped)
     supabase
       .from("team_invites")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("status", "accepted"),
 
-    // Expired invites — status explicitly set OR past expires_at while still pending
+    // Expired invites (org-scoped)
     supabase
       .from("team_invites")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .eq("status", "expired"),
 
-    // Last 10 members who joined (most recent first)
+    // Last 10 members who joined (org-scoped, most recent first)
     supabase
       .from("profiles")
       .select("id, first_name, last_name, email, created_at")
+      .eq("org_id", orgId)
       .order("created_at", { ascending: false })
       .limit(10),
 
-    // Department-to-member mapping through user_role_departments
+    // Department-to-member mapping (org-scoped)
     supabase
       .from("user_role_departments")
-      .select("user_id, department_id"),
+      .select("user_id, department_id")
+      .eq("org_id", orgId),
   ])
 
   // ---------- Team overview ----------
@@ -112,7 +120,9 @@ export async function getOrgAdminStats(
   const activeMembers = profiles.filter((p) => p.is_active !== false).length
 
   // ---------- Role distribution ----------
-  const userRoles = userRolesResult.data || []
+  // user_roles table has no org_id — filter to only include members of this org
+  const orgMemberIds = new Set(profiles.map((p) => p.id))
+  const userRoles = (userRolesResult.data || []).filter((ur) => orgMemberIds.has(ur.user_id))
   const roleCounts = new Map<string, number>()
   TRACKED_ROLES.forEach((r) => roleCounts.set(r, 0))
 

@@ -31,46 +31,52 @@ async function getInterviewerStats(orgId: string, userId: string) {
     { data: completedInterviews },
     { data: scorecardRecords },
   ] = await Promise.all([
-    // Upcoming interviews: scheduled or confirmed, in the future, limit 5
+    // Upcoming interviews (org-scoped): scheduled or confirmed, in the future, limit 5
     supabase
       .from("interviews")
       .select("id, scheduled_at, status, jobs(title)")
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId)
       .gte("scheduled_at", new Date().toISOString())
       .in("status", ["scheduled", "confirmed"])
       .order("scheduled_at", { ascending: true })
       .limit(5),
 
-    // Completed interviews count
+    // Completed interviews count (org-scoped)
     supabase
       .from("interviews")
       .select("*", { count: "exact", head: true })
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId)
       .eq("status", "completed"),
 
-    // Total interviews count
+    // Total interviews count (org-scoped)
     supabase
       .from("interviews")
       .select("*", { count: "exact", head: true })
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId),
 
-    // Scorecards submitted count
+    // Scorecards submitted count (org-scoped)
     supabase
       .from("interview_scorecards")
       .select("*", { count: "exact", head: true })
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId),
 
-    // Completed interviews (to calculate pending scorecards)
+    // Completed interviews (org-scoped, to calculate pending scorecards)
     supabase
       .from("interviews")
       .select("id")
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId)
       .eq("status", "completed"),
 
-    // Scorecard records (to build set of interview IDs with scorecards)
+    // Scorecard records (org-scoped, to build set of interview IDs with scorecards)
     supabase
       .from("interview_scorecards")
       .select("interview_id")
+      .eq("org_id", orgId)
       .eq("interviewer_id", userId),
   ])
 

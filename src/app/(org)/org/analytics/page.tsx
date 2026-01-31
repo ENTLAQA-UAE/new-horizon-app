@@ -26,19 +26,31 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     redirect("/login")
   }
 
-  // Determine user's role
-  const { data: roleData } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .single()
+  // Get user's role and org_id
+  const [{ data: roleData }, { data: profileData }] = await Promise.all([
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("org_id")
+      .eq("id", user.id)
+      .single(),
+  ])
 
   const role = roleData?.role || null
+  const orgId = profileData?.org_id
 
-  // Route by role
+  if (!orgId) {
+    redirect("/org")
+  }
+
+  // Route by role — all analytics queries are scoped to orgId
   switch (role) {
     case "org_admin": {
-      const stats = await getOrgAdminStats(supabase)
+      const stats = await getOrgAdminStats(supabase, orgId)
       return <OrgAdminAnalytics stats={stats} />
     }
 
@@ -51,20 +63,20 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
       // Fetch HR stats and candidate list in parallel
       const [stats, candidateListData] = await Promise.all([
-        getDashboardStats(supabase, dateRange),
-        getCandidateListStats(supabase),
+        getDashboardStats(supabase, dateRange, orgId),
+        getCandidateListStats(supabase, orgId),
       ])
 
       return <AnalyticsDashboard stats={stats} candidateListData={candidateListData} />
     }
 
     case "recruiter": {
-      const stats = await getRecruiterStats(supabase, user.id)
+      const stats = await getRecruiterStats(supabase, user.id, orgId)
       return <RecruiterAnalytics stats={stats} />
     }
 
     case "interviewer": {
-      const stats = await getInterviewerStats(supabase, user.id)
+      const stats = await getInterviewerStats(supabase, user.id, orgId)
       return <InterviewerAnalytics stats={stats} />
     }
 

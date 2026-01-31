@@ -34,12 +34,13 @@ export interface RecruiterStats {
 
 export async function getRecruiterStats(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  orgId: string
 ): Promise<RecruiterStats> {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  // Fetch all data in parallel
+  // Fetch all data in parallel — every query is scoped to the current org
   const [
     jobsResult,
     applicationsResult,
@@ -48,39 +49,45 @@ export async function getRecruiterStats(
     hiredApplicationsResult,
     recentApplicationsResult,
   ] = await Promise.all([
-    // All jobs the recruiter can see
+    // All jobs the recruiter can see (org-scoped)
     supabase
       .from("jobs")
-      .select("id, status, title"),
+      .select("id, status, title")
+      .eq("org_id", orgId),
 
-    // All applications the recruiter can see (pipeline + activity)
+    // All applications the recruiter can see (org-scoped)
     supabase
       .from("applications")
-      .select("id, status, candidate_id, job_id, created_at, updated_at, hired_at"),
+      .select("id, status, candidate_id, job_id, created_at, updated_at, hired_at")
+      .eq("org_id", orgId),
 
-    // Interviews scheduled this month
+    // Interviews scheduled this month (org-scoped)
     supabase
       .from("interviews")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .gte("scheduled_at", startOfMonth.toISOString())
       .in("status", ["scheduled", "confirmed", "completed"]),
 
-    // Offers created this month
+    // Offers created this month (org-scoped)
     supabase
       .from("offers")
       .select("id", { count: "exact" })
+      .eq("org_id", orgId)
       .gte("created_at", startOfMonth.toISOString()),
 
-    // All hired applications (for avg time to hire calculation)
+    // All hired applications (org-scoped, for avg time to hire calculation)
     supabase
       .from("applications")
       .select("id, created_at, updated_at, hired_at")
+      .eq("org_id", orgId)
       .eq("status", "hired"),
 
-    // Recent 10 applications with candidate and job info
+    // Recent 10 applications with candidate and job info (org-scoped)
     supabase
       .from("applications")
       .select("id, status, candidate_id, job_id, created_at, candidates(first_name, last_name), jobs(title)")
+      .eq("org_id", orgId)
       .order("created_at", { ascending: false })
       .limit(10),
   ])

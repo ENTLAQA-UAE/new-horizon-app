@@ -60,10 +60,10 @@ async function getOrgAdminDashboardData(orgId: string) {
     recentMembersResult,
     orgResult,
   ] = await Promise.all([
-    // Total team members
+    // Total team members (also fetch IDs to filter user_roles by org)
     supabase
       .from("profiles")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact" })
       .eq("org_id", orgId),
 
     // Active team members
@@ -115,7 +115,9 @@ async function getOrgAdminDashboardData(orgId: string) {
   ])
 
   // Build role distribution from user_roles
-  const userRoles = userRolesResult.data || []
+  // user_roles has no org_id — filter to only include members of this org
+  const orgMemberIds = new Set((profilesResult.data || []).map((p: any) => p.id))
+  const userRoles = (userRolesResult.data || []).filter((ur: any) => orgMemberIds.has(ur.user_id))
   const roleCounts = new Map<string, number>()
   TRACKED_ROLES.forEach((r) => roleCounts.set(r, 0))
 

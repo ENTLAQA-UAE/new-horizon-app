@@ -64,10 +64,11 @@ async function getRecruiterStats(orgId: string) {
       .order("created_at", { ascending: false })
       .limit(5),
 
-    // Upcoming 5 interviews
+    // Upcoming 5 interviews (org-scoped)
     supabase
       .from("interviews")
       .select("id, scheduled_at, candidate:candidates(first_name, last_name), job:jobs(title)")
+      .eq("org_id", orgId)
       .gte("scheduled_at", now)
       .order("scheduled_at", { ascending: true })
       .limit(5),
