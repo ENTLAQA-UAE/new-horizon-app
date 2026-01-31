@@ -218,20 +218,28 @@ export default function ProfilePage() {
 
     setIsChangingPassword(true)
     try {
-      const supabase = createClient()
-
-      // Verify current password by attempting to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: profile?.email || "",
-        password: currentPassword,
+      // Verify current password via direct REST call to avoid triggering
+      // auth state changes (signInWithPassword fires SIGNED_IN event which
+      // causes a full AuthProvider reload and UI disruption)
+      const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: profile?.email || "",
+          password: currentPassword,
+        }),
       })
 
-      if (signInError) {
+      if (!verifyResponse.ok) {
         toast.error(language === "ar" ? "كلمة المرور الحالية غير صحيحة" : "Current password is incorrect")
         return
       }
 
       // Update to new password
+      const supabase = createClient()
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       })
