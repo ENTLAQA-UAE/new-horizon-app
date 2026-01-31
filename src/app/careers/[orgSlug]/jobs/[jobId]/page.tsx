@@ -3,9 +3,50 @@
 import { notFound } from "next/navigation"
 import { createServiceClient } from "@/lib/supabase/service"
 import { JobDetailClient } from "./job-detail-client"
+import type { Metadata } from "next"
 
 interface JobDetailPageProps {
   params: Promise<{ orgSlug: string; jobId: string }>
+}
+
+export async function generateMetadata({ params }: JobDetailPageProps): Promise<Metadata> {
+  const { orgSlug, jobId } = await params
+  const supabase = createServiceClient()
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id, name, logo_url")
+    .eq("slug", orgSlug)
+    .single()
+
+  if (!organization) return {}
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("title, description")
+    .eq("id", jobId)
+    .eq("org_id", organization.id)
+    .eq("status", "open")
+    .single()
+
+  if (!job) return {}
+
+  const title = `${job.title} - ${organization.name}`
+  const description = job.description
+    ? job.description.replace(/<[^>]*>/g, "").slice(0, 200)
+    : `${job.title} at ${organization.name}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: organization.name,
+      ...(organization.logo_url && { images: [{ url: organization.logo_url }] }),
+    },
+  }
 }
 
 export default async function JobDetailPage({ params }: JobDetailPageProps) {

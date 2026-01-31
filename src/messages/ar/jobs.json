@@ -106,6 +106,7 @@
   "actions": {
     "preview": "معاينة الوظيفة",
     "copyLink": "نسخ رابط الوظيفة",
+    "shareLinkedIn": "مشاركة على لينكد إن",
     "viewOnCareerPage": "عرض في صفحة الوظائف",
     "exportApplications": "تصدير الطلبات"
   },
