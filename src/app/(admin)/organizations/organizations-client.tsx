@@ -101,10 +101,10 @@ export function OrganizationsClient({
   const [isMagicLinkDialogOpen, setIsMagicLinkDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Magic link state
-  const [generatedMagicLink, setGeneratedMagicLink] = useState<string | null>(null)
-  const [magicLinkOrgName, setMagicLinkOrgName] = useState("")
-  const [magicLinkEmail, setMagicLinkEmail] = useState("")
+  // Invite link state
+  const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null)
+  const [inviteLinkOrgName, setInviteLinkOrgName] = useState("")
+  const [inviteLinkEmail, setInviteLinkEmail] = useState("")
 
   // Selected organization for operations
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
@@ -229,14 +229,14 @@ export function OrganizationsClient({
 
             const adminResult = await adminResponse.json()
 
-            if (adminResult.success && adminResult.magicLink) {
-              setGeneratedMagicLink(adminResult.magicLink)
-              setMagicLinkOrgName(newOrg.name)
-              setMagicLinkEmail(newOrg.admin_email.trim())
+            if (adminResult.success && adminResult.inviteLink) {
+              setGeneratedInviteLink(adminResult.inviteLink)
+              setInviteLinkOrgName(newOrg.name)
+              setInviteLinkEmail(newOrg.admin_email.trim())
               setIsMagicLinkDialogOpen(true)
               toast.success("Organization created and admin assigned!")
             } else if (adminResult.success) {
-              toast.success("Organization created and admin assigned (magic link generation failed)")
+              toast.success("Organization created and admin assigned (invite link generation failed)")
             } else {
               toast.warning(`Organization created but admin setup failed: ${adminResult.error}`)
             }
@@ -1186,17 +1186,17 @@ export function OrganizationsClient({
         </DialogContent>
       </Dialog>
 
-      {/* Magic Link Dialog */}
+      {/* Invite Link Dialog */}
       <Dialog open={isMagicLinkDialogOpen} onOpenChange={setIsMagicLinkDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-green-500" />
-              Admin Magic Link Generated
+              Admin Invite Link Generated
             </DialogTitle>
             <DialogDescription>
-              Organization <strong>{magicLinkOrgName}</strong> has been created and{" "}
-              <strong>{magicLinkEmail}</strong> has been assigned as Org Admin.
+              Organization <strong>{inviteLinkOrgName}</strong> has been created and{" "}
+              <strong>{inviteLinkEmail}</strong> has been assigned as Org Admin.
             </DialogDescription>
           </DialogHeader>
 
@@ -1212,25 +1212,25 @@ export function OrganizationsClient({
               </div>
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <CheckCircle className="h-4 w-4" />
-                <span>Magic link generated</span>
+                <span>Invite link generated</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Magic Link (share with the admin)</Label>
+              <Label>Invite Link (share with the admin)</Label>
               <div className="flex gap-2">
                 <Input
                   readOnly
-                  value={generatedMagicLink || ""}
+                  value={generatedInviteLink || ""}
                   className="font-mono text-xs"
                 />
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => {
-                    if (generatedMagicLink) {
-                      navigator.clipboard.writeText(generatedMagicLink)
-                      toast.success("Magic link copied to clipboard!")
+                    if (generatedInviteLink) {
+                      navigator.clipboard.writeText(generatedInviteLink)
+                      toast.success("Invite link copied to clipboard!")
                     }
                   }}
                 >
@@ -1238,8 +1238,7 @@ export function OrganizationsClient({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                This link allows the admin to login without a password. It expires after one use.
-                After first login, they should set a password from their profile settings.
+                This link directs the admin to create their password. It expires after one use.
               </p>
             </div>
           </div>
@@ -1248,7 +1247,7 @@ export function OrganizationsClient({
             <Button
               onClick={() => {
                 setIsMagicLinkDialogOpen(false)
-                setGeneratedMagicLink(null)
+                setGeneratedInviteLink(null)
               }}
             >
               Done

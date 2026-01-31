@@ -32,21 +32,48 @@ export default function RootRedirectPage() {
       const supabase = createClient()
 
       try {
-        // First try to get session from pending storage (set by login page)
+        // First check if we have magic link tokens in the URL hash
+        // Supabase redirects magic links with tokens in the hash fragment:
+        // /#access_token=...&refresh_token=...&type=magiclink
         let session = null
-        try {
-          const pendingSession = localStorage.getItem('jadarat_pending_session')
-          if (pendingSession) {
-            const parsed = JSON.parse(pendingSession)
-            if (parsed?.access_token && parsed?.user) {
-              console.log("RootRedirect: Found pending session from login")
-              session = parsed
-              // DO NOT remove pending session here - let AuthProvider handle it
-              // This ensures the session is available when the destination page loads
+        const hash = window.location.hash
+        if (hash && hash.includes('access_token')) {
+          const hashParams = new URLSearchParams(hash.substring(1))
+          const accessToken = hashParams.get('access_token')
+          const refreshToken = hashParams.get('refresh_token')
+
+          if (accessToken && refreshToken) {
+            console.log("RootRedirect: Found tokens in URL hash, establishing session")
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            })
+
+            if (data.session && !error) {
+              session = data.session
+              // Clean up the hash from the URL
+              window.history.replaceState(null, '', window.location.pathname)
+              console.log("RootRedirect: Session established from magic link")
+            } else {
+              console.warn("RootRedirect: Failed to set session from hash:", error)
             }
           }
-        } catch (e) {
-          console.warn("RootRedirect: Could not read pending session:", e)
+        }
+
+        // Then try to get session from pending storage (set by login page)
+        if (!session) {
+          try {
+            const pendingSession = localStorage.getItem('jadarat_pending_session')
+            if (pendingSession) {
+              const parsed = JSON.parse(pendingSession)
+              if (parsed?.access_token && parsed?.user) {
+                console.log("RootRedirect: Found pending session from login")
+                session = parsed
+              }
+            }
+          } catch (e) {
+            console.warn("RootRedirect: Could not read pending session:", e)
+          }
         }
 
         // If no pending session, try getSession with timeout
