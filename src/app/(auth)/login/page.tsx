@@ -479,24 +479,6 @@ function LoginPageContent() {
             </div>
           </form>
 
-          {/* Sign Up Link */}
-          <p
-            className={cn(
-              "text-center text-sm text-gray-500 mt-8",
-              mounted && "animate-fade-in-up"
-            )}
-            style={{ animationDelay: "500ms" }}
-          >
-            Don&apos;t have an account?{" "}
-            <Link
-              href={orgSlug ? `/signup?org=${orgSlug}` : "/signup"}
-              className="font-semibold transition-colors hover:opacity-80"
-              style={{ color: primaryColor }}
-            >
-              Create an account
-            </Link>
-          </p>
-
           {/* Trust badges */}
           <div
             className={cn(
