@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, User, Mail, Phone, Camera, Save, Upload, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth"
 import { useI18n } from "@/lib/i18n"
@@ -238,13 +237,31 @@ export default function ProfilePage() {
         return
       }
 
-      // Update to new password
-      const supabase = createClient()
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
+      // Get the access token from the verify response to use for the update call
+      const verifyData = await verifyResponse.json()
+      const accessToken = verifyData?.access_token
+
+      if (!accessToken) {
+        throw new Error("Failed to obtain access token")
+      }
+
+      // Update to new password via direct REST call to avoid triggering
+      // auth state changes (updateUser fires USER_UPDATED event which
+      // can cause AuthProvider disruption)
+      const updateResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: "PUT",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: newPassword }),
       })
 
-      if (updateError) throw updateError
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json().catch(() => ({}))
+        throw new Error(errorData?.msg || errorData?.message || "Failed to update password")
+      }
 
       toast.success(language === "ar" ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully")
       setCurrentPassword("")
