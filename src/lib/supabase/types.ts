@@ -3036,6 +3036,82 @@ export type Database = {
           }
         ]
       }
+      onboarding_guide_progress: {
+        Row: {
+          id: string
+          user_id: string
+          org_id: string
+          role: string
+          step_key: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          org_id: string
+          role: string
+          step_key: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          org_id?: string
+          role?: string
+          step_key?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_guide_progress_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      onboarding_guide_dismissals: {
+        Row: {
+          id: string
+          user_id: string
+          org_id: string
+          dismissed: boolean
+          dismissed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          org_id: string
+          dismissed?: boolean
+          dismissed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          org_id?: string
+          dismissed?: boolean
+          dismissed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_guide_dismissals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
