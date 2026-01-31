@@ -54,15 +54,15 @@
   --primary-foreground: #ffffff;
 
   /* Secondary */
-  --secondary: #f1f5f9;
-  --secondary-foreground: #475569;
+  --secondary: #eef2f7;
+  --secondary-foreground: #3e4c5e;
 
   /* Muted */
-  --muted: #f8fafc;
+  --muted: #f1f5f9;
   --muted-foreground: #64748b;
 
   /* Accent */
-  --accent: #f1f5f9;
+  --accent: #e9eef6;
   --accent-foreground: #0f172a;
 
   /* Destructive */
@@ -75,8 +75,8 @@
   --info: #3b82f6;
 
   /* Borders & inputs */
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --border: #d8dfe9;
+  --input: #d0d8e4;
   --ring: #6366f1;
 
   /* Radius */
@@ -87,9 +87,9 @@
   --sidebar-foreground: #0f172a;
   --sidebar-primary: #6366f1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
+  --sidebar-accent: #e9eef6;
   --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  --sidebar-border: #d8dfe9;
   --sidebar-ring: #6366f1;
 
   /* Branding - dynamically set by BrandingProvider */
