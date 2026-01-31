@@ -118,9 +118,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
   const [isOrgDialogOpen, setIsOrgDialogOpen] = useState(false)
-  const [isMagicLinkDialogOpen, setIsMagicLinkDialogOpen] = useState(false)
-  const [generatedMagicLink, setGeneratedMagicLink] = useState<string | null>(null)
-  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
+  const [isInviteLinkDialogOpen, setIsInviteLinkDialogOpen] = useState(false)
+  const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null)
+  const [inviteLinkLoading, setInviteLinkLoading] = useState(false)
   const [newRole, setNewRole] = useState<string>("")
   const [selectedOrgId, setSelectedOrgId] = useState<string>("")
 
@@ -254,11 +254,11 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     setIsLoading(false)
   }
 
-  const generateMagicLink = async (user: User) => {
+  const generateInviteLink = async (user: User) => {
     setSelectedUser(user)
-    setMagicLinkLoading(true)
-    setGeneratedMagicLink(null)
-    setIsMagicLinkDialogOpen(true)
+    setInviteLinkLoading(true)
+    setGeneratedInviteLink(null)
+    setIsInviteLinkDialogOpen(true)
 
     try {
       const response = await fetch("/api/admin/users", {
@@ -272,17 +272,17 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
       const result = await response.json()
 
-      if (result.success && result.magicLink) {
-        setGeneratedMagicLink(result.magicLink)
+      if (result.success && result.inviteLink) {
+        setGeneratedInviteLink(result.inviteLink)
       } else {
-        toast.error(result.error || "Failed to generate magic link")
-        setIsMagicLinkDialogOpen(false)
+        toast.error(result.error || "Failed to generate invite link")
+        setIsInviteLinkDialogOpen(false)
       }
     } catch {
-      toast.error("Failed to generate magic link")
-      setIsMagicLinkDialogOpen(false)
+      toast.error("Failed to generate invite link")
+      setIsInviteLinkDialogOpen(false)
     } finally {
-      setMagicLinkLoading(false)
+      setInviteLinkLoading(false)
     }
   }
 
@@ -567,9 +567,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                             <Building2 className="mr-2 h-4 w-4" />
                             Assign Organization
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => generateMagicLink(user)}>
+                          <DropdownMenuItem onClick={() => generateInviteLink(user)}>
                             <Link2 className="mr-2 h-4 w-4" />
-                            Generate Magic Link
+                            Generate Invite Link
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => toggleUserStatus(user)}>
@@ -728,48 +728,48 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Magic Link Dialog */}
-      <Dialog open={isMagicLinkDialogOpen} onOpenChange={setIsMagicLinkDialogOpen}>
+      {/* Invite Link Dialog */}
+      <Dialog open={isInviteLinkDialogOpen} onOpenChange={setIsInviteLinkDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-indigo-500" />
-              Magic Link for {selectedUser?.first_name} {selectedUser?.last_name}
+              Invite Link for {selectedUser?.first_name} {selectedUser?.last_name}
             </DialogTitle>
             <DialogDescription>
-              Generate a one-time login link for <strong>{selectedUser?.email}</strong>.
-              Share this link with the user so they can access the platform without a password.
+              Share this link with <strong>{selectedUser?.email}</strong> so they can
+              set up their password and access the platform.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {magicLinkLoading ? (
+            {inviteLinkLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Generating magic link...</span>
+                <span className="ml-2 text-sm text-muted-foreground">Generating invite link...</span>
               </div>
-            ) : generatedMagicLink ? (
+            ) : generatedInviteLink ? (
               <div className="space-y-2">
-                <Label>Magic Link</Label>
+                <Label>Invite Link</Label>
                 <div className="flex gap-2">
                   <Input
                     readOnly
-                    value={generatedMagicLink}
+                    value={generatedInviteLink}
                     className="font-mono text-xs"
                   />
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      navigator.clipboard.writeText(generatedMagicLink)
-                      toast.success("Magic link copied to clipboard!")
+                      navigator.clipboard.writeText(generatedInviteLink)
+                      toast.success("Invite link copied to clipboard!")
                     }}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  This link expires after one use. The user will be logged in directly.
+                  This link expires after one use. The user will be directed to create their password.
                 </p>
               </div>
             ) : null}
@@ -778,8 +778,8 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
           <DialogFooter>
             <Button
               onClick={() => {
-                setIsMagicLinkDialogOpen(false)
-                setGeneratedMagicLink(null)
+                setIsInviteLinkDialogOpen(false)
+                setGeneratedInviteLink(null)
               }}
             >
               Done

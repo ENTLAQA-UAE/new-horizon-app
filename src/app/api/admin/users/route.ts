@@ -153,12 +153,12 @@ async function handleCreateUserForOrg(
     })
   }
 
-  // Generate magic link for the user to set their password
+  // Generate a password setup link (recovery type) so the user can create their password
   const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
-    type: "magiclink",
+    type: "recovery",
     email,
     options: {
-      redirectTo: `${productionUrl}/`,
+      redirectTo: `${productionUrl}/reset-password`,
     },
   })
 
@@ -167,29 +167,29 @@ async function handleCreateUserForOrg(
     return NextResponse.json({
       success: true,
       userId,
-      magicLink: null,
-      warning: "User created and assigned, but magic link generation failed: " + linkError.message,
+      inviteLink: null,
+      warning: "User created and assigned, but invite link generation failed: " + linkError.message,
     })
   }
 
-  let magicLink = linkData.properties?.action_link || null
+  let inviteLink = linkData.properties?.action_link || null
 
   // Fix localhost URLs
-  if (magicLink && (magicLink.includes("localhost") || magicLink.includes("127.0.0.1"))) {
-    magicLink = magicLink.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
-    magicLink = magicLink.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
+  if (inviteLink && (inviteLink.includes("localhost") || inviteLink.includes("127.0.0.1"))) {
+    inviteLink = inviteLink.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
+    inviteLink = inviteLink.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
   }
 
   return NextResponse.json({
     success: true,
     userId,
-    magicLink,
+    inviteLink,
     isExistingUser: !!existingUser,
   })
 }
 
 /**
- * Generate a magic link for any existing user.
+ * Generate an invite link (password setup) for any existing user.
  */
 async function handleGenerateMagicLink(
   body: { email: string },
@@ -205,10 +205,10 @@ async function handleGenerateMagicLink(
   const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
 
   const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
-    type: "magiclink",
+    type: "recovery",
     email,
     options: {
-      redirectTo: `${productionUrl}/`,
+      redirectTo: `${productionUrl}/reset-password`,
     },
   })
 
@@ -220,17 +220,17 @@ async function handleGenerateMagicLink(
     )
   }
 
-  let magicLink = linkData.properties?.action_link || null
+  let inviteLink = linkData.properties?.action_link || null
 
   // Fix localhost URLs
-  if (magicLink && (magicLink.includes("localhost") || magicLink.includes("127.0.0.1"))) {
-    magicLink = magicLink.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
-    magicLink = magicLink.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
+  if (inviteLink && (inviteLink.includes("localhost") || inviteLink.includes("127.0.0.1"))) {
+    inviteLink = inviteLink.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
+    inviteLink = inviteLink.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
   }
 
   return NextResponse.json({
     success: true,
-    magicLink,
+    inviteLink,
   })
 }
 
