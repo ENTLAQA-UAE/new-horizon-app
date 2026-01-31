@@ -1,5 +1,4 @@
 // @ts-nocheck
-// Note: refreshProfile method not in AuthState type
 "use client"
 
 import { useEffect, useState, useRef } from "react"
@@ -28,7 +27,7 @@ interface Profile {
 }
 
 export default function ProfilePage() {
-  const { refreshProfile } = useAuth()
+  const { user, refreshAuth } = useAuth()
   const { language } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -38,20 +37,19 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    loadProfile()
-  }, [])
+    if (user) {
+      loadProfile(user.id)
+    }
+  }, [user])
 
-  const loadProfile = async () => {
+  const loadProfile = async (userId: string) => {
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (!user) return
 
       const { data: profileData } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, email, phone, avatar_url")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single()
 
       if (profileData) {
@@ -60,7 +58,7 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("Error loading profile:", error)
-      toast.error(language === "ar" ? "فشل تحميل الملف الشخصي" : "Failed to load profile")
+      toast.error("Failed to load profile")
     } finally {
       setIsLoading(false)
     }
@@ -87,7 +85,7 @@ export default function ProfilePage() {
       toast.success(language === "ar" ? "تم تحديث الملف الشخصي بنجاح" : "Profile updated successfully")
       setProfile({ ...profile, ...formData })
       // Refresh the auth context to update header
-      refreshProfile?.()
+      refreshAuth()
     } catch (error) {
       console.error("Error saving profile:", error)
       toast.error(language === "ar" ? "فشل تحديث الملف الشخصي" : "Failed to update profile")
@@ -161,7 +159,7 @@ export default function ProfilePage() {
       setFormData({ ...formData, avatar_url: avatarUrl })
       toast.success(language === "ar" ? "تم تحديث الصورة الشخصية" : "Profile photo updated")
       // Refresh auth context to update header avatar
-      refreshProfile?.()
+      refreshAuth()
     } catch (error) {
       console.error("Error uploading avatar:", error)
       toast.error(language === "ar" ? "فشل تحميل الصورة" : "Failed to upload photo")
