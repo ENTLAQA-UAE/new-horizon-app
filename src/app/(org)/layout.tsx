@@ -7,6 +7,7 @@ import { I18nProvider } from "@/lib/i18n"
 import { BrandingProvider } from "@/lib/branding/branding-context"
 import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
 import { AuthErrorDisplay } from "@/components/auth/auth-error"
+import { OnboardingGuideProvider, OnboardingGuideWidget } from "@/components/onboarding-guide"
 import { Loader2, Sparkles } from "lucide-react"
 import { useState, useEffect } from "react"
 
@@ -110,21 +111,24 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <BrandingProvider>
       <I18nProvider>
-        <div className="flex h-screen overflow-hidden bg-background">
-          <Sidebar
-            collapsed={sidebarCollapsed}
-            onCollapse={setSidebarCollapsed}
-            userRole={sidebarRole}
-          />
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <Header />
-            <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
-              <div className="animate-fade-in-up">
-                {children}
-              </div>
-            </main>
+        <OnboardingGuideProvider>
+          <div className="flex h-screen overflow-hidden bg-background">
+            <Sidebar
+              collapsed={sidebarCollapsed}
+              onCollapse={setSidebarCollapsed}
+              userRole={sidebarRole}
+            />
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <Header />
+              <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
+                <div className="animate-fade-in-up">
+                  {children}
+                </div>
+              </main>
+            </div>
+            <OnboardingGuideWidget />
           </div>
-        </div>
+        </OnboardingGuideProvider>
       </I18nProvider>
     </BrandingProvider>
   )
