@@ -15,6 +15,7 @@ import {
   Star,
   FileUp,
   Eye,
+  SlidersHorizontal,
 } from "lucide-react"
 import type { UserRole } from "@/lib/auth"
 import type { LucideIcon } from "lucide-react"
@@ -112,6 +113,14 @@ const hrManagerSteps: OnboardingStep[] = [
     actionLabel: "Screening Questions",
     actionPath: "/org/screening-questions",
     icon: MessageSquareMore,
+  },
+  {
+    key: "configure_vacancy_settings",
+    title: "Configure vacancy settings",
+    description: "Set up job grades, job types, and office locations before posting jobs.",
+    actionLabel: "Vacancy Settings",
+    actionPath: "/org/vacancy-settings",
+    icon: SlidersHorizontal,
   },
   {
     key: "post_first_job",
