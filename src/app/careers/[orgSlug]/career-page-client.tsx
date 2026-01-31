@@ -480,7 +480,7 @@ function BlockRenderer({
             className="absolute inset-0"
             style={{
               background: block.content.backgroundImage
-                ? `linear-gradient(135deg, ${styles.primaryColor}cc 0%, rgba(0,0,0,0.6) 100%)`
+                ? `linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%)`
                 : `linear-gradient(135deg, ${styles.primaryColor} 0%, ${styles.secondaryColor || styles.primaryColor}dd 100%)`,
             }}
           />
