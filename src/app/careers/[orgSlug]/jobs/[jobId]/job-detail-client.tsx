@@ -82,6 +82,7 @@ interface Organization {
   id: string
   name: string
   slug: string
+  logo_url: string | null
 }
 
 interface Branding {
@@ -1064,95 +1065,108 @@ export function JobDetailClient({
     )
   }
 
+  const logoUrl = branding?.logo_url || organization.logo_url
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            {branding?.logo_url ? (
-              <img
-                src={branding.logo_url}
-                alt={organization.name}
-                className="h-10 w-10 rounded-lg object-contain"
-              />
-            ) : (
-              <div
-                className="h-10 w-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: `${primaryColor}20` }}
-              >
-                <Building2 className="h-5 w-5" style={{ color: primaryColor }} />
-              </div>
-            )}
-            <div>
-              <p className="font-medium">{organization.name}</p>
-              <Link
-                href={`/careers/${organization.slug}`}
-                className="text-sm text-muted-foreground hover:underline"
-              >
-                View all jobs
-              </Link>
-            </div>
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href={`/careers/${organization.slug}`} className="flex items-center gap-3 group">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={organization.name}
+                  className="h-9 object-contain"
+                />
+              ) : (
+                <div
+                  className="h-9 w-9 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${primaryColor}15` }}
+                >
+                  <Building2 className="h-5 w-5" style={{ color: primaryColor }} />
+                </div>
+              )}
+            </Link>
+            <Link
+              href={`/careers/${organization.slug}`}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all jobs
+              <ArrowRight className="inline ml-1 h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Back Link */}
-          <Link
-            href={`/careers/${organization.slug}`}
-            className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to all jobs
-          </Link>
-
-          {/* Job Header */}
-          <div className="mb-8">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                  {job.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {job.location}
-                    </span>
-                  )}
-                  {job.department && (
-                    <span className="flex items-center gap-1">
-                      <Building2 className="h-4 w-4" />
-                      {job.department}
-                    </span>
-                  )}
-                  {job.remote_allowed && (
-                    <Badge variant="outline">
-                      <Globe className="mr-1 h-3 w-3" />
-                      Remote Available
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <Button
-                size="lg"
-                onClick={() => setIsApplyDialogOpen(true)}
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Apply Now
-              </Button>
+      {/* Hero Banner */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
+        }}
+      >
+        {/* Decorative pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/20" />
+          <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-white/10" />
+        </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14 relative">
+          <div className="max-w-4xl">
+            <Link
+              href={`/careers/${organization.slug}`}
+              className="inline-flex items-center text-white/80 hover:text-white text-sm mb-4 transition-colors"
+            >
+              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+              All positions
+            </Link>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+              {job.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {job.location && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm backdrop-blur-sm">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {job.location}
+                </span>
+              )}
+              {job.department && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm backdrop-blur-sm">
+                  <Building2 className="h-3.5 w-3.5" />
+                  {job.department}
+                </span>
+              )}
+              {job.employment_type && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm backdrop-blur-sm">
+                  <Briefcase className="h-3.5 w-3.5" />
+                  {employmentTypeLabels[job.employment_type] || job.employment_type}
+                </span>
+              )}
+              {job.remote_allowed && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm backdrop-blur-sm">
+                  <Globe className="h-3.5 w-3.5" />
+                  Remote
+                </span>
+              )}
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {/* Main Content */}
-            <div className="md:col-span-2 space-y-8">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Main Content - Left */}
+            <div className="lg:col-span-2 space-y-8">
               {/* Job Description */}
               {job.description && (
-                <section>
-                  <h2 className="text-xl font-semibold mb-4">About the Role</h2>
+                <section className="bg-white rounded-xl border p-6 md:p-8">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <div className="h-1 w-1 rounded-full" style={{ backgroundColor: primaryColor }} />
+                    About the Role
+                  </h2>
                   <div
                     className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-600 prose-strong:text-gray-900 prose-hr:border-gray-200"
                     dangerouslySetInnerHTML={{ __html: formatJobDescription(job.description) }}
@@ -1162,8 +1176,11 @@ export function JobDetailClient({
 
               {/* Requirements */}
               {job.requirements && (
-                <section>
-                  <h2 className="text-xl font-semibold mb-4">Requirements</h2>
+                <section className="bg-white rounded-xl border p-6 md:p-8">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <div className="h-1 w-1 rounded-full" style={{ backgroundColor: primaryColor }} />
+                    Requirements
+                  </h2>
                   <div
                     className="prose prose-sm max-w-none prose-ul:list-disc prose-li:text-gray-600"
                     dangerouslySetInnerHTML={{ __html: formatJobDescription(job.requirements) }}
@@ -1173,8 +1190,11 @@ export function JobDetailClient({
 
               {/* Benefits */}
               {job.benefits && (
-                <section>
-                  <h2 className="text-xl font-semibold mb-4">Benefits</h2>
+                <section className="bg-white rounded-xl border p-6 md:p-8">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <div className="h-1 w-1 rounded-full" style={{ backgroundColor: primaryColor }} />
+                    Benefits
+                  </h2>
                   <div
                     className="prose prose-sm max-w-none prose-ul:list-disc prose-li:text-gray-600"
                     dangerouslySetInnerHTML={{ __html: formatJobDescription(job.benefits) }}
@@ -1183,98 +1203,127 @@ export function JobDetailClient({
               )}
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Job Details Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Job Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {job.employment_type && (
-                    <div className="flex items-center gap-3">
-                      <Briefcase className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Employment Type</p>
-                        <p className="font-medium">
-                          {employmentTypeLabels[job.employment_type] || job.employment_type}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+            {/* Sidebar - Right */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-20 space-y-5">
+                {/* Unified Job Details + Apply Card */}
+                <div className="bg-white rounded-xl border overflow-hidden">
+                  {/* Accent bar */}
+                  <div className="h-1" style={{ backgroundColor: primaryColor }} />
 
-                  {job.experience_level && (
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Experience Level</p>
-                        <p className="font-medium">
-                          {experienceLevelLabels[job.experience_level] || job.experience_level}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <div className="p-5 space-y-4">
+                    <h3 className="font-semibold text-base">Job Details</h3>
 
-                  {job.education_level && (
-                    <div className="flex items-center gap-3">
-                      <GraduationCap className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Education</p>
-                        <p className="font-medium">
-                          {educationLabels[job.education_level] || job.education_level}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    <div className="space-y-3.5">
+                      {job.experience_level && (
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${primaryColor}10` }}>
+                            <Clock className="h-4 w-4" style={{ color: primaryColor }} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Experience</p>
+                            <p className="text-sm font-medium">
+                              {experienceLevelLabels[job.experience_level] || job.experience_level}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                  {job.closing_date && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Application Deadline</p>
-                        <p className="font-medium">
-                          {new Date(job.closing_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      {job.employment_type && (
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${primaryColor}10` }}>
+                            <Briefcase className="h-4 w-4" style={{ color: primaryColor }} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Employment Type</p>
+                            <p className="text-sm font-medium">
+                              {employmentTypeLabels[job.employment_type] || job.employment_type}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-              {/* Skills */}
-              {job.skills_required && job.skills_required.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Required Skills</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {job.skills_required.map((skill) => (
-                        <Badge key={skill} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                      {job.education_level && (
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${primaryColor}10` }}>
+                            <GraduationCap className="h-4 w-4" style={{ color: primaryColor }} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Education</p>
+                            <p className="text-sm font-medium">
+                              {educationLabels[job.education_level] || job.education_level}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-              {/* Apply CTA */}
-              <Card style={{ borderColor: primaryColor }}>
-                <CardContent className="pt-6 text-center">
-                  <h3 className="font-semibold mb-2">Interested in this role?</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Submit your application today
+                      {job.closing_date && (
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${primaryColor}10` }}>
+                            <Calendar className="h-4 w-4" style={{ color: primaryColor }} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Deadline</p>
+                            <p className="text-sm font-medium">
+                              {new Date(job.closing_date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Skills inside card */}
+                    {job.skills_required && job.skills_required.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2.5">Required Skills</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {job.skills_required.map((skill) => (
+                              <span
+                                key={skill}
+                                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium"
+                                style={{
+                                  backgroundColor: `${primaryColor}10`,
+                                  color: primaryColor,
+                                }}
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Apply Button */}
+                    <Separator />
+                    <Button
+                      className="w-full h-11 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                      onClick={() => setIsApplyDialogOpen(true)}
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Apply Now
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Published date */}
+                {job.published_at && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Posted {new Date(job.published_at).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
                   </p>
-                  <Button
-                    className="w-full"
-                    onClick={() => setIsApplyDialogOpen(true)}
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    Apply Now
-                  </Button>
-                </CardContent>
-              </Card>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1686,9 +1735,10 @@ export function JobDetailClient({
       </Dialog>
 
       {/* Footer */}
-      <footer className="border-t mt-12 py-8">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
+      <footer className="border-t bg-white mt-12 py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} {organization.name}. All rights reserved.</p>
+          <p className="text-xs mt-1 text-muted-foreground/60">Powered by Jadarat</p>
         </div>
       </footer>
     </div>
