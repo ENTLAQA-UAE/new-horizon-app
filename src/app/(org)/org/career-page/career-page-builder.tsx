@@ -466,7 +466,6 @@ export function CareerPageBuilder({
                         >
                           <Icon className="h-6 w-6 mb-2 text-primary" />
                           <div className="font-medium text-sm">{blockLabels[type].en}</div>
-                          <div className="text-xs text-muted-foreground">{blockLabels[type].ar}</div>
                         </button>
                       )
                     })}
@@ -651,6 +650,7 @@ export function CareerPageBuilder({
                           <SelectItem value="Rubik">Rubik</SelectItem>
                           <SelectItem value="Cairo">Cairo (Arabic)</SelectItem>
                           <SelectItem value="Tajawal">Tajawal (Arabic)</SelectItem>
+                          <SelectItem value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

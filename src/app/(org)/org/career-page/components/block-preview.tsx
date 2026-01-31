@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -89,6 +90,27 @@ const alignmentMap = {
   right: "text-right",
 }
 
+const googleFontMap: Record<string, string> = {
+  Inter: "Inter:wght@400;500;600;700;800",
+  Poppins: "Poppins:wght@400;500;600;700;800",
+  "DM Sans": "DM+Sans:wght@400;500;600;700",
+  Montserrat: "Montserrat:wght@400;500;600;700;800",
+  Raleway: "Raleway:wght@400;500;600;700;800",
+  "Plus Jakarta Sans": "Plus+Jakarta+Sans:wght@400;500;600;700;800",
+  Outfit: "Outfit:wght@400;500;600;700;800",
+  Manrope: "Manrope:wght@400;500;600;700;800",
+  Rubik: "Rubik:wght@400;500;600;700",
+  Cairo: "Cairo:wght@400;500;600;700;800",
+  Tajawal: "Tajawal:wght@400;500;700",
+  "IBM Plex Sans Arabic": "IBM+Plex+Sans+Arabic:wght@400;500;600;700",
+}
+
+const fontSizeMap: Record<string, { headingHero: string; headingSection: string; body: string; small: string }> = {
+  small: { headingHero: "text-3xl", headingSection: "text-xl", body: "text-sm", small: "text-xs" },
+  medium: { headingHero: "text-5xl", headingSection: "text-2xl", body: "text-base", small: "text-sm" },
+  large: { headingHero: "text-6xl", headingSection: "text-3xl", body: "text-lg", small: "text-base" },
+}
+
 export function BlockPreview({
   blocks,
   styles,
@@ -98,6 +120,24 @@ export function BlockPreview({
   previewMode,
 }: BlockPreviewProps) {
   const isMobile = previewMode === "mobile"
+  const fs = fontSizeMap[styles.fontSize || "medium"]
+
+  // Load Google Fonts dynamically
+  useEffect(() => {
+    const fontFamily = styles.fontFamily || "Inter"
+    const fontParam = googleFontMap[fontFamily]
+    if (fontParam) {
+      const linkId = "career-preview-google-font"
+      let link = document.getElementById(linkId) as HTMLLinkElement | null
+      if (!link) {
+        link = document.createElement("link")
+        link.id = linkId
+        link.rel = "stylesheet"
+        document.head.appendChild(link)
+      }
+      link.href = `https://fonts.googleapis.com/css2?family=${fontParam}&display=swap`
+    }
+  }, [styles.fontFamily])
 
   return (
     <div
@@ -162,6 +202,7 @@ export function BlockPreview({
           organization={organization}
           jobsCount={jobsCount}
           isMobile={isMobile}
+          fs={fs}
         />
       ))}
 
@@ -207,6 +248,7 @@ function BlockRenderer({
   organization,
   jobsCount,
   isMobile,
+  fs,
 }: {
   block: CareerPageBlock
   styles: CareerPageStyles
@@ -214,6 +256,7 @@ function BlockRenderer({
   organization: Organization
   jobsCount: number
   isMobile: boolean
+  fs: { headingHero: string; headingSection: string; body: string; small: string }
 }) {
   const padding = paddingMap[block.styles.padding || "medium"]
   const alignment = alignmentMap[block.styles.alignment || "left"]
@@ -268,13 +311,13 @@ function BlockRenderer({
             <h1
               className={`
                 font-extrabold text-white mb-4 tracking-tight leading-tight
-                ${isMobile ? "text-3xl" : "text-5xl"}
+                ${isMobile ? "text-3xl" : fs.headingHero}
               `}
             >
               {block.content.title}
             </h1>
             {block.content.subtitle && (
-              <p className={`text-white/80 mb-8 ${isMobile ? "text-base" : "text-xl"}`}>
+              <p className={`text-white/80 mb-8 ${isMobile ? "text-base" : fs.body}`}>
                 {block.content.subtitle}
               </p>
             )}
@@ -308,11 +351,11 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-4 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-4 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
             {block.content.description && (
-              <p className={`text-muted-foreground leading-relaxed ${alignment} ${isMobile ? "text-sm" : ""}`}>
+              <p className={`text-muted-foreground leading-relaxed ${alignment} ${isMobile ? "text-sm" : fs.body}`}>
                 {block.content.description}
               </p>
             )}
@@ -332,7 +375,7 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
             <div
@@ -367,7 +410,7 @@ function BlockRenderer({
                       <Icon className="h-6 w-6" style={{ color: styles.primaryColor }} />
                     </div>
                     <h3 className="font-semibold mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                    <p className={`${fs.small} text-muted-foreground leading-relaxed`}>{item.description}</p>
                   </div>
                 )
               })}
@@ -388,7 +431,7 @@ function BlockRenderer({
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
             {block.content.title && (
-              <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+              <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
                 {block.content.title}
               </h2>
             )}
@@ -411,7 +454,7 @@ function BlockRenderer({
                   >
                     {item.value}
                   </div>
-                  <div className="text-muted-foreground font-medium text-sm">{item.label}</div>
+                  <div className={`text-muted-foreground font-medium ${fs.small}`}>{item.label}</div>
                 </div>
               ))}
             </div>
@@ -430,7 +473,7 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
             <div
@@ -462,7 +505,7 @@ function BlockRenderer({
                   )}
                   <h3 className="font-semibold">{item.title}</h3>
                   {item.role && (
-                    <p className="text-sm text-muted-foreground mt-1">{item.role}</p>
+                    <p className={`${fs.small} text-muted-foreground mt-1`}>{item.role}</p>
                   )}
                 </div>
               ))}
@@ -481,7 +524,7 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-10 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
             <div className={`grid gap-6 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}>
@@ -531,7 +574,7 @@ function BlockRenderer({
       return (
         <section id="jobs" className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
 
@@ -553,7 +596,7 @@ function BlockRenderer({
               </div>
             )}
 
-            <p className="text-muted-foreground mb-6 text-sm">
+            <p className={`text-muted-foreground mb-6 ${fs.small}`}>
               {jobsCount} {jobsCount === 1 ? "position" : "positions"} available
             </p>
 
@@ -625,7 +668,7 @@ function BlockRenderer({
             <div className="absolute bottom-5 left-5 w-24 h-24 rounded-full blur-3xl bg-white" />
           </div>
           <div className={`${containerClass} relative z-10`}>
-            <h2 className={`font-bold text-white mb-3 ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold text-white mb-3 ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
             {block.content.subtitle && (
@@ -649,7 +692,7 @@ function BlockRenderer({
       return (
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
-            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+            <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
               {block.content.title}
             </h2>
             <div className={`space-y-5 ${block.styles.alignment === "center" ? "max-w-md mx-auto" : ""}`}>
@@ -712,7 +755,7 @@ function BlockRenderer({
         <section className={padding} style={{ backgroundColor: bgColor, color: textColor }}>
           <div className={containerClass}>
             {block.content.title && (
-              <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : "text-2xl"}`}>
+              <h2 className={`font-bold mb-8 ${alignment} ${isMobile ? "text-xl" : fs.headingSection}`}>
                 {block.content.title}
               </h2>
             )}

@@ -53,7 +53,9 @@ const iconOptions = [
 export function BlockEditor({ block, onUpdate, pageStyles, organizationId }: BlockEditorProps) {
   const [activeTab, setActiveTab] = useState("content")
   const [isUploadingBanner, setIsUploadingBanner] = useState(false)
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false)
   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const updateContent = (updates: any) => {
     onUpdate({ content: { ...block.content, ...updates } })
@@ -143,6 +145,78 @@ export function BlockEditor({ block, onUpdate, pageStyles, organizationId }: Blo
   const removeItem = (itemId: string) => {
     const items = (block.content.items || []).filter((item) => item.id !== itemId)
     updateContent({ items })
+  }
+
+  const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !organizationId) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (JPG, PNG, or WebP)")
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB")
+      return
+    }
+
+    setIsUploadingGallery(true)
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        toast.error("Session expired. Please refresh.")
+        return
+      }
+
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${organizationId}/career-gallery-${crypto.randomUUID()}.${fileExt}`
+
+      const uploadFormData = new FormData()
+      uploadFormData.append("", file)
+      const uploadResponse = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            apikey: SUPABASE_ANON_KEY || "",
+            "x-upsert": "true",
+          },
+          body: uploadFormData,
+        }
+      )
+
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
+      }
+
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      const images = block.content.images || []
+      updateContent({
+        images: [...images, { id: crypto.randomUUID(), url: publicUrl, alt: file.name.replace(/\.[^.]+$/, "") }],
+      })
+      toast.success("Image uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading gallery image:", error)
+      toast.error("Failed to upload image")
+    } finally {
+      setIsUploadingGallery(false)
+      if (galleryInputRef.current) galleryInputRef.current.value = ""
+    }
+  }
+
+  const removeGalleryImage = (imageId: string) => {
+    const images = (block.content.images || []).filter((img: any) => img.id !== imageId)
+    updateContent({ images })
+  }
+
+  const updateGalleryImage = (imageId: string, updates: any) => {
+    const images = (block.content.images || []).map((img: any) =>
+      img.id === imageId ? { ...img, ...updates } : img
+    )
+    updateContent({ images })
   }
 
   return (
@@ -470,6 +544,81 @@ export function BlockEditor({ block, onUpdate, pageStyles, organizationId }: Blo
                   className="font-mono text-sm"
                   dir="rtl"
                 />
+              </div>
+            </>
+          )}
+
+          {/* Gallery images */}
+          {block.type === "gallery" && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Images</Label>
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleGalleryUpload}
+                />
+                <Button
+                  size="sm"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isUploadingGallery}
+                >
+                  {isUploadingGallery ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-1" />
+                  )}
+                  Upload Image
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Max file size: 5MB. JPG, PNG, or WebP.
+              </p>
+              <div className="space-y-3 mt-3">
+                {(block.content.images || []).map((image: any, index: number) => (
+                  <Card key={image.id}>
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={image.url}
+                          alt={image.alt || ""}
+                          className="w-20 h-14 object-cover rounded border"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Alt Text</Label>
+                            <Input
+                              value={image.alt || ""}
+                              onChange={(e) =>
+                                updateGalleryImage(image.id, { alt: e.target.value })
+                              }
+                              placeholder="Image description"
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-destructive shrink-0"
+                          onClick={() => removeGalleryImage(image.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {(block.content.images || []).length === 0 && (
+                  <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No images yet</p>
+                    <p className="text-xs">Click &quot;Upload Image&quot; to add photos</p>
+                  </div>
+                )}
               </div>
             </>
           )}
