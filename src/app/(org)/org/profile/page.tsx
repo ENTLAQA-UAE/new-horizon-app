@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, User, Mail, Phone, Camera, Save, Upload } from "lucide-react"
+import { Loader2, User, Mail, Phone, Camera, Save, Upload, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth"
 import { useI18n } from "@/lib/i18n"
@@ -34,6 +35,13 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [formData, setFormData] = useState<Partial<Profile>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -127,8 +135,9 @@ export default function ProfilePage() {
       const filePath = `avatars/${fileName}`
 
       // Upload using direct REST API (bypasses getSession hang)
+      // Note: Upload endpoint uses /object/{bucket}/{path}, NOT /object/public/
       const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/public/${filePath}`,
+        `${SUPABASE_URL}/storage/v1/object/${filePath}`,
         {
           method: "POST",
           headers: {
@@ -181,6 +190,58 @@ export default function ProfilePage() {
     const first = formData.first_name?.[0] || ""
     const last = formData.last_name?.[0] || ""
     return (first + last).toUpperCase() || "U"
+  }
+
+  const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast.error(language === "ar" ? "يرجى إدخال كلمة المرور الحالية" : "Please enter your current password")
+      return
+    }
+    if (!newPassword) {
+      toast.error(language === "ar" ? "يرجى إدخال كلمة المرور الجديدة" : "Please enter a new password")
+      return
+    }
+    if (newPassword.length < 8) {
+      toast.error(language === "ar" ? "كلمة المرور يجب أن تكون 8 أحرف على الأقل" : "Password must be at least 8 characters")
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error(language === "ar" ? "كلمات المرور غير متطابقة" : "Passwords do not match")
+      return
+    }
+
+    setIsChangingPassword(true)
+    try {
+      const supabase = createClient()
+
+      // Verify current password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile?.email || "",
+        password: currentPassword,
+      })
+
+      if (signInError) {
+        toast.error(language === "ar" ? "كلمة المرور الحالية غير صحيحة" : "Current password is incorrect")
+        return
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (updateError) throw updateError
+
+      toast.success(language === "ar" ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully")
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (error: any) {
+      console.error("Error changing password:", error)
+      toast.error(error.message || (language === "ar" ? "فشل تغيير كلمة المرور" : "Failed to change password"))
+    } finally {
+      setIsChangingPassword(false)
+    }
   }
 
   if (isLoading) {
@@ -347,6 +408,119 @@ export default function ProfilePage() {
           {language === "ar" ? "حفظ التغييرات" : "Save Changes"}
         </Button>
       </div>
+
+      {/* Change Password */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            {language === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+          </CardTitle>
+          <CardDescription>
+            {language === "ar" ? "قم بتحديث كلمة المرور الخاصة بحسابك" : "Update your account password"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current_password">
+              {language === "ar" ? "كلمة المرور الحالية" : "Current Password"}
+            </Label>
+            <div className="relative">
+              <Input
+                id="current_password"
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder={language === "ar" ? "أدخل كلمة المرور الحالية" : "Enter current password"}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new_password">
+              {language === "ar" ? "كلمة المرور الجديدة" : "New Password"}
+            </Label>
+            <div className="relative">
+              <Input
+                id="new_password"
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={language === "ar" ? "أدخل كلمة المرور الجديدة" : "Enter new password"}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm_password">
+              {language === "ar" ? "تأكيد كلمة المرور الجديدة" : "Confirm New Password"}
+            </Label>
+            <div className="relative">
+              <Input
+                id="confirm_password"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder={language === "ar" ? "أعد إدخال كلمة المرور الجديدة" : "Re-enter new password"}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Password requirements */}
+          {newPassword && (
+            <div className="space-y-1.5 text-sm">
+              <p className="text-muted-foreground font-medium">
+                {language === "ar" ? "متطلبات كلمة المرور:" : "Password requirements:"}
+              </p>
+              <div className={`flex items-center gap-2 ${newPassword.length >= 8 ? "text-green-600" : "text-muted-foreground"}`}>
+                <CheckCircle2 className="h-4 w-4" />
+                {language === "ar" ? "8 أحرف على الأقل" : "At least 8 characters"}
+              </div>
+              {confirmPassword && (
+                <div className={`flex items-center gap-2 ${newPassword === confirmPassword ? "text-green-600" : "text-destructive"}`}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  {language === "ar" ? "كلمات المرور متطابقة" : "Passwords match"}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+              {isChangingPassword ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Lock className="mr-2 h-4 w-4" />
+              )}
+              {language === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
