@@ -954,6 +954,7 @@ export async function POST(request: NextRequest) {
             candidate_name: `${candidate?.first_name || ""} ${candidate?.last_name || ""}`.trim() || "A candidate",
             job_title: job?.title || "the position",
             disqualification_reason: data.reason || "Not specified",
+            reason: data.reason || "Not specified",
             disqualified_by: getFullName(disqualifier) || "A team member",
             org_name: org?.name || "the organization",
             application_url: `/org/applications?id=${data.applicationId}`,

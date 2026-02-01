@@ -973,27 +973,54 @@ export function ApplicationsClient({
     }
   }
 
+  // Map stage_type to application status
+  const stageTypeToStatus = (stageType: string | undefined): string | null => {
+    const mapping: Record<string, string> = {
+      applied: "new",
+      screening: "screening",
+      interview: "interview",
+      assessment: "assessment",
+      offer: "offer",
+      hired: "hired",
+      rejected: "rejected",
+    }
+    return stageType ? mapping[stageType] || null : null
+  }
+
   // STAGE CHANGE
   const handleStageChange = async (applicationId: string, newStageId: string) => {
     // Find the stage for the toast message
     const stage = selectedJobStages.find(s => s.id === newStageId) ||
                   allStages.find(s => s.id === newStageId)
 
+    // Map stage_type to application status for analytics sync
+    const newStatus = stageTypeToStatus(stage?.stage_type)
+
     // Optimistically update UI
     const previousApplications = [...applications]
     setApplications(
       applications.map((a) =>
-        a.id === applicationId ? { ...a, stage_id: newStageId } : a
+        a.id === applicationId ? { ...a, stage_id: newStageId, ...(newStatus ? { status: newStatus } : {}) } : a
       )
     )
 
     try {
+      // Build update payload — always sync status with stage_type
+      const updatePayload: Record<string, unknown> = {
+        stage_id: newStageId,
+        updated_at: new Date().toISOString(),
+      }
+      if (newStatus) {
+        updatePayload.status = newStatus
+      }
+      // Set hired_at timestamp when moving to hired
+      if (newStatus === "hired") {
+        updatePayload.hired_at = new Date().toISOString()
+      }
+
       const { error } = await supabaseUpdate(
         "applications",
-        {
-          stage_id: newStageId,
-          updated_at: new Date().toISOString(),
-        },
+        updatePayload,
         { column: "id", value: applicationId }
       )
 
