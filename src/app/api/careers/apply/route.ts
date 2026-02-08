@@ -4,10 +4,34 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { notify } from "@/lib/notifications/send-notification"
 
+// Ensure this runs on Node.js runtime (not Edge) for file uploads
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient()
-    const formData = await request.formData()
+    // Create service client early to catch config errors
+    let supabase
+    try {
+      supabase = createServiceClient()
+    } catch (configError) {
+      console.error("Service client configuration error:", configError)
+      return NextResponse.json(
+        { error: "Server configuration error. Please try again later." },
+        { status: 500 }
+      )
+    }
+
+    let formData
+    try {
+      formData = await request.formData()
+    } catch (parseError) {
+      console.error("Form data parsing error:", parseError)
+      return NextResponse.json(
+        { error: "Failed to parse form data. Please try again." },
+        { status: 400 }
+      )
+    }
 
     const jobId = formData.get("jobId") as string
     const organizationId = formData.get("organizationId") as string
