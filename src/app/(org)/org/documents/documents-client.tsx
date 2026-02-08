@@ -46,7 +46,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useI18n } from "@/lib/i18n"
-import { supabaseSelect } from "@/lib/supabase/rest-client"
+import { createClient } from "@/lib/supabase/client"
 
 interface Document {
   id: string
@@ -154,13 +154,13 @@ export function DocumentsClient({
     if (selectedJobId) {
       setLoadingApplications(true)
       setSelectedApplicationId("")
-      supabaseSelect<Application>(
-        "applications",
-        "id, job_id, candidate_id, candidates(id, first_name, last_name)",
-        { column: "job_id", value: selectedJobId }
-      )
+      const supabase = createClient()
+      supabase
+        .from("applications")
+        .select("id, job_id, candidate_id, candidates(id, first_name, last_name)")
+        .eq("job_id", selectedJobId)
         .then(({ data }) => {
-          setApplications(data || [])
+          setApplications((data as Application[]) || [])
         })
         .finally(() => setLoadingApplications(false))
     } else {
