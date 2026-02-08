@@ -160,7 +160,14 @@ export function DocumentsClient({
         .select("id, job_id, candidate_id, candidates(id, first_name, last_name)")
         .eq("job_id", selectedJobId)
         .then(({ data }) => {
-          setApplications((data as Application[]) || [])
+          // Transform the data to match our interface (Supabase returns candidates as object, not array)
+          const apps = (data || []).map((item) => ({
+            id: item.id,
+            job_id: item.job_id,
+            candidate_id: item.candidate_id,
+            candidates: item.candidates as unknown as Application["candidates"],
+          }))
+          setApplications(apps)
         })
         .finally(() => setLoadingApplications(false))
     } else {
