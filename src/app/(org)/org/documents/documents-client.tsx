@@ -154,12 +154,13 @@ export function DocumentsClient({
     if (selectedJobId) {
       setLoadingApplications(true)
       setSelectedApplicationId("")
-      const supabase = createClient()
-      supabase
-        .from("applications")
-        .select("id, job_id, candidate_id, candidates(id, first_name, last_name)")
-        .eq("job_id", selectedJobId)
-        .then(({ data }) => {
+      const loadApps = async () => {
+        try {
+          const supabase = createClient()
+          const { data } = await supabase
+            .from("applications")
+            .select("id, job_id, candidate_id, candidates(id, first_name, last_name)")
+            .eq("job_id", selectedJobId)
           // Transform the data to match our interface (Supabase returns candidates as object, not array)
           const apps = (data || []).map((item) => ({
             id: item.id,
@@ -168,8 +169,11 @@ export function DocumentsClient({
             candidates: item.candidates as unknown as Application["candidates"],
           }))
           setApplications(apps)
-        })
-        .finally(() => setLoadingApplications(false))
+        } finally {
+          setLoadingApplications(false)
+        }
+      }
+      loadApps()
     } else {
       setApplications([])
     }
