@@ -200,7 +200,7 @@ export default function BrandingPage() {
         throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
       }
 
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}?t=${Date.now()}`
       setSettings({ ...settings, logo_url: publicUrl })
       toast.success("Logo uploaded successfully")
     } catch (error) {
@@ -254,7 +254,7 @@ export default function BrandingPage() {
         throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
       }
 
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}?t=${Date.now()}`
       setSettings({ ...settings, favicon_url: publicUrl })
       toast.success("Favicon uploaded successfully")
     } catch (error) {
@@ -319,7 +319,7 @@ export default function BrandingPage() {
         return
       }
 
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}?t=${Date.now()}`
       setSettings({ ...settings, login_image_url: publicUrl })
       setLoginImageError(false) // Reset error state on successful upload
       toast.success("Login image uploaded successfully")
