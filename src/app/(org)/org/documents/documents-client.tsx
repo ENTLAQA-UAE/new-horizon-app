@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -20,11 +21,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { toast } from "sonner"
 import {
   FileText,
   Search,
-  Download,
   Filter,
   File,
   Image,
@@ -32,9 +40,13 @@ import {
   User,
   Briefcase,
   ExternalLink,
+  Upload,
+  Plus,
+  Loader2,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useI18n } from "@/lib/i18n"
+import { supabaseSelect } from "@/lib/supabase/rest-client"
 
 interface Document {
   id: string
@@ -56,11 +68,34 @@ interface Job {
   title: string
 }
 
+interface Application {
+  id: string
+  job_id: string
+  candidate_id: string
+  candidates: {
+    id: string
+    first_name: string
+    last_name: string
+  }
+}
+
 interface DocumentsClientProps {
   documents: Document[]
   jobs: Job[]
   organizationId: string
 }
+
+const documentTypes = [
+  { value: "english_test", label: "English Test" },
+  { value: "assessment", label: "Assessment Report" },
+  { value: "certificate", label: "Certificate" },
+  { value: "id_document", label: "ID Document" },
+  { value: "reference", label: "Reference Letter" },
+  { value: "background_check", label: "Background Check" },
+  { value: "medical", label: "Medical Report" },
+  { value: "contract", label: "Contract" },
+  { value: "other", label: "Other" },
+]
 
 const documentTypeColors: Record<string, string> = {
   resume: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -92,16 +127,122 @@ function getFileIcon(fileType: string) {
 }
 
 export function DocumentsClient({
-  documents,
+  documents: initialDocuments,
   jobs,
+  organizationId,
 }: DocumentsClientProps) {
   const { t, language, isRTL } = useI18n()
+  const [documents, setDocuments] = useState(initialDocuments)
   const [searchQuery, setSearchQuery] = useState("")
   const [jobFilter, setJobFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
 
-  // Get unique document types
-  const documentTypes = Array.from(new Set(documents.map(d => d.document_type)))
+  // Upload dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [documentName, setDocumentName] = useState("")
+  const [selectedJobId, setSelectedJobId] = useState<string>("")
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string>("")
+  const [selectedDocType, setSelectedDocType] = useState<string>("")
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loadingApplications, setLoadingApplications] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load applications when job is selected
+  useEffect(() => {
+    if (selectedJobId) {
+      setLoadingApplications(true)
+      setSelectedApplicationId("")
+      supabaseSelect<Application>(
+        "applications",
+        "id, job_id, candidate_id, candidates(id, first_name, last_name)",
+        { column: "job_id", value: selectedJobId }
+      )
+        .then(({ data }) => {
+          setApplications(data || [])
+        })
+        .finally(() => setLoadingApplications(false))
+    } else {
+      setApplications([])
+    }
+  }, [selectedJobId])
+
+  // Handle file upload
+  const handleUpload = async () => {
+    if (!selectedFile || !documentName || !selectedJobId || !selectedApplicationId || !selectedDocType) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", selectedFile)
+      formData.append("name", documentName)
+      formData.append("applicationId", selectedApplicationId)
+      formData.append("documentType", selectedDocType)
+      formData.append("organizationId", organizationId)
+
+      const response = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Upload failed")
+      }
+
+      const result = await response.json()
+
+      // Add the new document to the list
+      const application = applications.find(a => a.id === selectedApplicationId)
+      const job = jobs.find(j => j.id === selectedJobId)
+
+      if (application && job) {
+        const newDoc: Document = {
+          id: result.id,
+          name: documentName,
+          file_url: result.file_url,
+          file_type: selectedFile.type.split("/")[1] || "file",
+          file_size: selectedFile.size,
+          document_type: selectedDocType,
+          candidate_id: application.candidate_id,
+          candidate_name: `${application.candidates.first_name} ${application.candidates.last_name}`,
+          application_id: selectedApplicationId,
+          job_id: selectedJobId,
+          job_title: job.title,
+          created_at: new Date().toISOString(),
+        }
+        setDocuments([newDoc, ...documents])
+      }
+
+      toast.success("Document uploaded successfully")
+      resetUploadForm()
+      setUploadDialogOpen(false)
+    } catch (error) {
+      console.error("Upload error:", error)
+      toast.error(error instanceof Error ? error.message : "Failed to upload document")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const resetUploadForm = () => {
+    setSelectedFile(null)
+    setDocumentName("")
+    setSelectedJobId("")
+    setSelectedApplicationId("")
+    setSelectedDocType("")
+    setApplications([])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  // Get unique document types from existing documents
+  const existingDocTypes = Array.from(new Set(documents.map(d => d.document_type)))
 
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
@@ -146,11 +287,17 @@ export function DocumentsClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">{t("nav.documents")}</h1>
-        <p className="text-muted-foreground">
-          {t("documents.description")}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{t("nav.documents")}</h1>
+          <p className="text-muted-foreground">
+            {t("documents.description")}
+          </p>
+        </div>
+        <Button onClick={() => setUploadDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Upload Document
+        </Button>
       </div>
 
       {/* Stats */}
@@ -227,9 +374,9 @@ export function DocumentsClient({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("documents.allTypes")}</SelectItem>
-                  {documentTypes.map((type) => (
+                  {existingDocTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -324,6 +471,155 @@ export function DocumentsClient({
           </Card>
         ))
       )}
+
+      {/* Upload Document Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+        setUploadDialogOpen(open)
+        if (!open) resetUploadForm()
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Upload Document
+            </DialogTitle>
+            <DialogDescription>
+              Upload a document and link it to a candidate and job position.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* File Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="file">File *</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  ref={fileInputRef}
+                  id="file"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setSelectedFile(file)
+                      if (!documentName) {
+                        setDocumentName(file.name.replace(/\.[^/.]+$/, ""))
+                      }
+                    }
+                  }}
+                  className="flex-1"
+                />
+              </div>
+              {selectedFile && (
+                <p className="text-sm text-muted-foreground">
+                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                </p>
+              )}
+            </div>
+
+            {/* Document Name */}
+            <div className="space-y-2">
+              <Label htmlFor="docName">Document Name *</Label>
+              <Input
+                id="docName"
+                value={documentName}
+                onChange={(e) => setDocumentName(e.target.value)}
+                placeholder="e.g., English Test Report"
+              />
+            </div>
+
+            {/* Document Type */}
+            <div className="space-y-2">
+              <Label>Document Type *</Label>
+              <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Job Selection */}
+            <div className="space-y-2">
+              <Label>Job Position *</Label>
+              <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select job position" />
+                </SelectTrigger>
+                <SelectContent>
+                  {jobs.map((job) => (
+                    <SelectItem key={job.id} value={job.id}>
+                      {job.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Candidate Selection */}
+            <div className="space-y-2">
+              <Label>Candidate *</Label>
+              <Select
+                value={selectedApplicationId}
+                onValueChange={setSelectedApplicationId}
+                disabled={!selectedJobId || loadingApplications}
+              >
+                <SelectTrigger>
+                  {loadingApplications ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading candidates...
+                    </div>
+                  ) : (
+                    <SelectValue placeholder={selectedJobId ? "Select candidate" : "Select a job first"} />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {applications.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      No candidates found for this job
+                    </div>
+                  ) : (
+                    applications.map((app) => (
+                      <SelectItem key={app.id} value={app.id}>
+                        {app.candidates.first_name} {app.candidates.last_name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpload}
+              disabled={uploading || !selectedFile || !documentName || !selectedJobId || !selectedApplicationId || !selectedDocType}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
