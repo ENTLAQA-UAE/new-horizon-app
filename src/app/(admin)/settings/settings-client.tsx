@@ -102,10 +102,11 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
       const now = new Date().toISOString()
 
       // Batch all settings into a single upsert call to avoid
-      // AbortError from flooding the Supabase client with parallel requests
+      // AbortError from flooding the Supabase client with parallel requests.
+      // Pass raw values directly — the JSONB column handles serialization.
       const rows = Object.entries(settings).map(([key, value]) => ({
         key,
-        value: JSON.stringify(value),
+        value: value as any,
         updated_at: now,
       }))
 
@@ -175,7 +176,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
         await supabase
           .from("platform_settings")
           .upsert(
-            { key: settingKey, value: JSON.stringify(result.publicUrl), updated_at: new Date().toISOString() },
+            { key: settingKey, value: result.publicUrl, updated_at: new Date().toISOString() },
             { onConflict: 'key' }
           )
       } catch (saveErr) {
@@ -204,7 +205,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
       await supabase
         .from("platform_settings")
         .upsert(
-          { key: settingKey, value: JSON.stringify(''), updated_at: new Date().toISOString() },
+          { key: settingKey, value: '', updated_at: new Date().toISOString() },
           { onConflict: 'key' }
         )
     } catch (saveErr) {

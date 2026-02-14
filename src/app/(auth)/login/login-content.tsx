@@ -158,11 +158,16 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             platform_logo_dark: null,
           }
           data.forEach((row) => {
-            if (row.key === "platform_logo" && row.value) {
-              settings.platform_logo = JSON.parse(row.value as string)
+            let val = row.value as string | null
+            // Strip extra quotes from previously double-encoded values
+            if (typeof val === 'string' && val.length >= 2 && val.startsWith('"') && val.endsWith('"')) {
+              try { val = JSON.parse(val) } catch { /* keep as-is */ }
             }
-            if (row.key === "platform_logo_dark" && row.value) {
-              settings.platform_logo_dark = JSON.parse(row.value as string)
+            if (row.key === "platform_logo" && val) {
+              settings.platform_logo = val
+            }
+            if (row.key === "platform_logo_dark" && val) {
+              settings.platform_logo_dark = val
             }
           })
           if (settings.platform_logo || settings.platform_logo_dark) {
@@ -397,11 +402,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             mounted && "animate-fade-in-up"
           )}>
             {orgBranding?.logo_url ? (
-              <div className="flex items-center">
+              <div className="flex justify-center">
                 <img
                   src={orgBranding.logo_url}
                   alt={orgBranding.name}
-                  className="h-14 object-contain"
+                  className="max-w-[280px] max-h-[160px] object-contain"
                 />
               </div>
             ) : (
@@ -639,23 +644,8 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
         {/* Content */}
         {orgBranding ? (
-          /* Org-branded: centered logo only, no text overlay */
-          <div className="relative z-10 flex items-center justify-center w-full h-full">
-            {orgBranding.logo_url && (
-              <div
-                className={cn(
-                  "flex items-center justify-center",
-                  mounted && "animate-fade-in-up"
-                )}
-              >
-                <img
-                  src={orgBranding.logo_url}
-                  alt={orgBranding.name}
-                  className="max-w-[280px] max-h-[160px] object-contain drop-shadow-2xl"
-                />
-              </div>
-            )}
-          </div>
+          /* Org-branded: just the login image background, no overlay content */
+          <div className="relative z-10" />
         ) : (
           /* Default Kawadir: full marketing content */
           <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white w-full">
