@@ -8,6 +8,7 @@ import {
   LandingPageConfig,
   LandingBlockType,
   LandingContentItem,
+  LandingPageSettings,
   defaultLandingConfig,
   defaultLandingBlocks,
 } from "@/lib/landing-page/types"
@@ -69,14 +70,38 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [platformLogo, setPlatformLogo] = useState<string | null>(null)
   const [lang, setLang] = useState<Lang>("en")
+  const [langInit, setLangInit] = useState(false)
 
+  // Load Google Fonts dynamically
   useEffect(() => {
-    // Restore saved language preference
-    try {
-      const saved = localStorage.getItem("kawadir_landing_lang")
-      if (saved === "ar" || saved === "en") setLang(saved)
-    } catch { /* ignore */ }
-  }, [])
+    const fontFamily = config.styles.fontFamily || "Inter"
+    const googleFontMap: Record<string, string> = {
+      Inter: "Inter:wght@400;500;600;700;800",
+      Poppins: "Poppins:wght@400;500;600;700;800",
+      "DM Sans": "DM+Sans:wght@400;500;600;700",
+      Montserrat: "Montserrat:wght@400;500;600;700;800",
+      Raleway: "Raleway:wght@400;500;600;700;800",
+      "Plus Jakarta Sans": "Plus+Jakarta+Sans:wght@400;500;600;700;800",
+      Outfit: "Outfit:wght@400;500;600;700;800",
+      Manrope: "Manrope:wght@400;500;600;700;800",
+      Rubik: "Rubik:wght@400;500;600;700",
+      Cairo: "Cairo:wght@400;500;600;700;800",
+      Tajawal: "Tajawal:wght@400;500;700",
+      "IBM Plex Sans Arabic": "IBM+Plex+Sans+Arabic:wght@400;500;600;700",
+    }
+    const fontParam = googleFontMap[fontFamily]
+    if (fontParam) {
+      const linkId = "landing-google-font"
+      let link = document.getElementById(linkId) as HTMLLinkElement | null
+      if (!link) {
+        link = document.createElement("link")
+        link.id = linkId
+        link.rel = "stylesheet"
+        document.head.appendChild(link)
+      }
+      link.href = `https://fonts.googleapis.com/css2?family=${fontParam}&display=swap`
+    }
+  }, [config.styles.fontFamily])
 
   const toggleLang = () => {
     const next = lang === "en" ? "ar" : "en"
@@ -144,7 +169,31 @@ export default function LandingPage() {
               try {
                 // Value may be a raw object (JSONB) or a JSON-encoded string (legacy)
                 const parsed = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
-                setConfig({ ...defaultLandingConfig, ...parsed })
+                const merged = { ...defaultLandingConfig, ...parsed, settings: { ...defaultLandingConfig.settings, ...parsed?.settings }, styles: { ...defaultLandingConfig.styles, ...parsed?.styles } }
+                setConfig(merged)
+                // Set initial language from settings
+                if (!langInit) {
+                  const s = merged.settings
+                  // If only one language, force that language
+                  if (s.language === "ar") {
+                    setLang("ar")
+                  } else if (s.language === "en") {
+                    setLang("en")
+                  } else {
+                    // Both: check localStorage, or use default
+                    try {
+                      const saved = localStorage.getItem("kawadir_landing_lang")
+                      if (saved === "ar" || saved === "en") {
+                        setLang(saved)
+                      } else {
+                        setLang(s.defaultLanguage || "en")
+                      }
+                    } catch {
+                      setLang(s.defaultLanguage || "en")
+                    }
+                  }
+                  setLangInit(true)
+                }
               } catch { /* use defaults */ }
             }
             if (row.key === "platform_logo" && row.value) {
@@ -176,10 +225,12 @@ export default function LandingPage() {
   }
 
   const { styles, navbar, footer } = config
+  const settings = config.settings || defaultLandingConfig.settings
   const gradient = `linear-gradient(135deg, ${styles.primaryColor} 0%, ${styles.secondaryColor} 100%)`
   const logoUrl = navbar.logoUrl || platformLogo
   const isRtl = lang === "ar"
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight
+  const showLangToggle = settings.language === "both"
 
   return (
     <div
@@ -187,7 +238,17 @@ export default function LandingPage() {
       style={{ backgroundColor: styles.backgroundColor, color: styles.textColor, fontFamily: styles.fontFamily }}
     >
       {/* ── Navbar ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/80 border-b border-gray-100">
+      {settings.showHeader && (
+      <nav
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b border-gray-100",
+          styles.headerStyle === "bold" ? "shadow-lg" : ""
+        )}
+        style={{
+          backgroundColor: styles.headerStyle === "bold" ? styles.primaryColor + "ee" : "rgba(255,255,255,0.8)",
+          color: styles.headerStyle === "bold" ? "white" : styles.textColor,
+        }}
+      >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             {/* Logo */}
@@ -225,14 +286,16 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Language Toggle */}
-            <button
-              onClick={toggleLang}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
-              aria-label="Toggle language"
-            >
-              <Languages className="h-4 w-4" />
-              {lang === "en" ? "العربية" : "English"}
-            </button>
+            {showLangToggle && (
+              <button
+                onClick={toggleLang}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Toggle language"
+              >
+                <Languages className="h-4 w-4" />
+                {lang === "en" ? "العربية" : "English"}
+              </button>
+            )}
             <Link
               href="/login"
               className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
@@ -251,9 +314,10 @@ export default function LandingPage() {
           </div>
         </div>
       </nav>
+      )}
 
       {/* Spacer for fixed navbar */}
-      <div className="h-16" />
+      {settings.showHeader && <div className="h-16" />}
 
       {/* ── Blocks ── */}
       {blocks.map((block) => (
@@ -263,6 +327,7 @@ export default function LandingPage() {
       ))}
 
       {/* ── Footer ── */}
+      {settings.showFooter && (
       <footer className="bg-gray-950 text-white">
         <div className="max-w-7xl mx-auto px-6 py-16">
           <div className="grid md:grid-cols-3 gap-12">
@@ -335,6 +400,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      )}
     </div>
   )
 }
