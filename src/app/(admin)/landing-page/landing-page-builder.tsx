@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -53,7 +53,9 @@ import {
   Code,
   type LucideIcon,
 } from "lucide-react"
+import { Upload } from "lucide-react"
 import { toast } from "sonner"
+import { getAccessToken } from "@/lib/supabase/auth-fetch"
 import {
   LandingPageBlock,
   LandingPageConfig,
@@ -128,8 +130,69 @@ export function LandingPageBuilder({
   const [editingBlock, setEditingBlock] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("blocks")
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop")
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   const settings = config.settings || defaultLandingConfig.settings
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (JPG, PNG, or WebP)")
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB")
+      return
+    }
+
+    setIsUploadingLogo(true)
+    try {
+      const accessToken = await getAccessToken()
+      if (!accessToken) {
+        toast.error("Session expired. Please refresh.")
+        return
+      }
+
+      const fileExt = file.name.split(".").pop()
+      const fileName = `landing-page/navbar-logo-${crypto.randomUUID()}.${fileExt}`
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      const uploadFormData = new FormData()
+      uploadFormData.append("", file)
+      const uploadResponse = await fetch(
+        `${supabaseUrl}/storage/v1/object/organization-assets/${fileName}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            apikey: supabaseKey || "",
+            "x-upsert": "true",
+          },
+          body: uploadFormData,
+        }
+      )
+
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text()
+        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
+      }
+
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/organization-assets/${fileName}`
+      updateConfig({ navbar: { ...config.navbar, logoUrl: publicUrl } })
+      toast.success("Logo uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading logo:", error)
+      toast.error("Failed to upload logo")
+    } finally {
+      setIsUploadingLogo(false)
+      if (logoInputRef.current) logoInputRef.current.value = ""
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -711,13 +774,64 @@ export function LandingPageBuilder({
                 </Label>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Logo URL</Label>
-                    <Input
-                      value={config.navbar.logoUrl || ""}
-                      onChange={(e) => updateConfig({ navbar: { ...config.navbar, logoUrl: e.target.value } })}
-                      className="h-9 text-xs"
-                      placeholder="https://... (leave empty for platform logo)"
+                    <Label className="text-xs">Logo</Label>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={handleLogoUpload}
                     />
+                    {config.navbar.logoUrl ? (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={config.navbar.logoUrl}
+                          alt="Navbar logo"
+                          className="h-9 max-w-[120px] object-contain border rounded bg-white p-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={isUploadingLogo}
+                          onClick={() => logoInputRef.current?.click()}
+                        >
+                          {isUploadingLogo ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <Upload className="h-3 w-3 mr-1" />
+                          )}
+                          Replace
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => updateConfig({ navbar: { ...config.navbar, logoUrl: "" } })}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isUploadingLogo}
+                        onClick={() => logoInputRef.current?.click()}
+                        className="w-full h-10 border border-dashed rounded-md flex items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer disabled:opacity-50 text-xs"
+                      >
+                        {isUploadingLogo ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-3 w-3" />
+                            Upload logo (or leave empty for platform default)
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
