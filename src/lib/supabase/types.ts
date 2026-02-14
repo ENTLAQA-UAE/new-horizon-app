@@ -3112,6 +3112,39 @@ export type Database = {
           }
         ]
       }
+      landing_page_blocks: {
+        Row: {
+          id: string
+          block_type: string
+          block_order: number
+          enabled: boolean
+          content: Json
+          styles: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          block_type: string
+          block_order?: number
+          enabled?: boolean
+          content?: Json
+          styles?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          block_type?: string
+          block_order?: number
+          enabled?: boolean
+          content?: Json
+          styles?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
