@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   },
   description: "AI-Powered Applicant Tracking System for MENA Region",
   keywords: ["ATS", "Recruitment", "HR", "MENA", "Saudi Arabia", "UAE", "Hiring"],
+  icons: {
+    icon: "/icon.svg",
+  },
 }
 
 export default function RootLayout({
