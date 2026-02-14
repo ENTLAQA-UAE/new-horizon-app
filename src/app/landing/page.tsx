@@ -117,14 +117,18 @@ export default function LandingPage() {
           configData.forEach((row) => {
             if (row.key === "landing_page_config") {
               try {
-                const parsed = JSON.parse(row.value as string)
+                // Value may be a raw object (JSONB) or a JSON-encoded string (legacy)
+                const parsed = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
                 setConfig({ ...defaultLandingConfig, ...parsed })
               } catch { /* use defaults */ }
             }
             if (row.key === "platform_logo" && row.value) {
-              try {
-                setPlatformLogo(JSON.parse(row.value as string))
-              } catch { /* ignore */ }
+              // Value may be a plain string URL (JSONB) or JSON-encoded (legacy)
+              let logoVal = row.value as string
+              if (typeof logoVal === 'string' && logoVal.startsWith('"') && logoVal.endsWith('"')) {
+                try { logoVal = JSON.parse(logoVal) } catch { /* keep as-is */ }
+              }
+              setPlatformLogo(logoVal)
             }
           })
         }

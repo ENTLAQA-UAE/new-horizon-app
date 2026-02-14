@@ -104,7 +104,6 @@ export async function POST(request: NextRequest) {
         if (api_key) {
           updateData.api_key_encrypted = encryptCredentials({ api_key })
           updateData.is_verified = false
-          updateData.is_configured = true
         }
         break
 
@@ -112,7 +111,6 @@ export async function POST(request: NextRequest) {
         if (sendgrid_api_key) {
           updateData.sendgrid_api_key_encrypted = encryptCredentials({ api_key: sendgrid_api_key })
           updateData.is_verified = false
-          updateData.is_configured = true
         }
         break
 
@@ -120,7 +118,6 @@ export async function POST(request: NextRequest) {
         if (mailgun_api_key) {
           updateData.mailgun_api_key_encrypted = encryptCredentials({ api_key: mailgun_api_key })
           updateData.is_verified = false
-          updateData.is_configured = true
         }
         if (mailgun_domain) {
           updateData.mailgun_domain = mailgun_domain
@@ -133,7 +130,6 @@ export async function POST(request: NextRequest) {
       case 'smtp':
         if (smtp_host) {
           updateData.smtp_host = smtp_host
-          updateData.is_configured = true
         }
         if (smtp_port) {
           updateData.smtp_port = smtp_port
