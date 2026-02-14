@@ -4,15 +4,6 @@ import { withSentryConfig } from "@sentry/nextjs"
 const nextConfig: NextConfig = {
   // Optimize for production
   reactStrictMode: true,
-  async redirects() {
-    return [
-      {
-        source: '/landing',
-        destination: 'https://kawadir.io',
-        permanent: true,
-      },
-    ]
-  },
 }
 
 // Sentry configuration options
