@@ -286,7 +286,7 @@ export async function updateSession(request: NextRequest) {
   // API routes handle their own auth separately.
   // =====================================================
   const pathname = request.nextUrl.pathname
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : request.nextUrl.protocol
+  const protocol = process.env.NODE_ENV === 'production' ? 'https:' : request.nextUrl.protocol
 
   // Helper: build a redirect response that preserves Supabase auth cookies
   function redirectWithCookies(url: string | URL) {
