@@ -120,7 +120,14 @@ function LoginPageContent() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const orgSlug = searchParams.get("org")
+
+  // Read org slug from query param (?org=slug) or from middleware cookie (subdomain/custom domain)
+  const orgSlugParam = searchParams.get("org")
+  const orgSlug = orgSlugParam || (() => {
+    if (typeof document === 'undefined') return null
+    const match = document.cookie.match(/(?:^|;\s*)x-org-slug=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+  })()
 
   // Validate email on blur
   const validateEmail = (emailValue: string) => {
@@ -191,7 +198,7 @@ function LoginPageContent() {
         // Race between fetch and timeout
         const fetchPromise = supabase
           .from("organizations")
-          .select("name, logo_url, primary_color, secondary_color")
+          .select("name, logo_url, login_image_url, primary_color, secondary_color")
           .eq("slug", orgSlug)
           .single()
 
@@ -203,7 +210,7 @@ function LoginPageContent() {
             logo_url: result.data.logo_url,
             primary_color: result.data.primary_color || "#2D4CFF",
             secondary_color: result.data.secondary_color || "#6B7FFF",
-            login_image_url: null,
+            login_image_url: result.data.login_image_url || null,
           })
         }
       } catch (error) {
