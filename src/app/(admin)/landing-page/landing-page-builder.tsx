@@ -39,6 +39,19 @@ import {
   LayoutGrid,
   Loader2,
   X,
+  Image,
+  Sparkles,
+  Building2,
+  BarChart3,
+  MessageSquare,
+  CreditCard,
+  Building,
+  ListOrdered,
+  MousePointer,
+  HelpCircle,
+  Mail,
+  Code,
+  type LucideIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -59,7 +72,23 @@ interface LandingPageBuilderProps {
   platformLogo?: string | null
 }
 
-const fontFamilies = [
+// Map icon name strings from landingBlockLabels to actual Lucide components
+const blockIconMap: Record<string, LucideIcon> = {
+  Image,
+  Sparkles,
+  Building2,
+  BarChart3,
+  MessageSquare,
+  CreditCard,
+  Building,
+  ListOrdered,
+  MousePointer,
+  HelpCircle,
+  Mail,
+  Code,
+}
+
+const fontFamiliesEn = [
   "Inter",
   "Poppins",
   "DM Sans",
@@ -69,9 +98,18 @@ const fontFamilies = [
   "Outfit",
   "Manrope",
   "Rubik",
+]
+
+const fontFamiliesAr = [
   "Cairo",
   "Tajawal",
   "IBM Plex Sans Arabic",
+  "Rubik",
+  "Noto Sans Arabic",
+  "Almarai",
+  "El Messiri",
+  "Changa",
+  "Readex Pro",
 ]
 
 export function LandingPageBuilder({
@@ -263,6 +301,14 @@ export function LandingPageBuilder({
                   onClick={() => setEditingBlock(block.id)}
                 >
                   <GripVertical className="h-4 w-4 text-muted-foreground shrink-0 cursor-grab" />
+                  {(() => {
+                    const IconComp = blockIconMap[landingBlockLabels[block.type]?.icon]
+                    return IconComp ? (
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: editingBlock === block.id ? 'rgba(var(--primary), 0.1)' : '#f3f4f6' }}>
+                        <IconComp className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    ) : null
+                  })()}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">
                       {landingBlockLabels[block.type]?.en || block.type}
@@ -327,9 +373,12 @@ export function LandingPageBuilder({
                       key={type}
                       disabled={exists}
                       onClick={() => addBlock(type)}
-                      className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-gray-200 text-xs font-medium hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 p-2.5 rounded-lg border border-dashed border-gray-200 text-xs font-medium hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      {(() => {
+                        const AddIcon = blockIconMap[landingBlockLabels[type].icon]
+                        return AddIcon ? <AddIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <Plus className="h-3.5 w-3.5 shrink-0" />
+                      })()}
                       <span className="truncate">{landingBlockLabels[type].en}</span>
                     </button>
                   )
@@ -419,7 +468,7 @@ export function LandingPageBuilder({
                 </Label>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Font Family</Label>
+                    <Label className="text-xs">English Font</Label>
                     <Select
                       value={config.styles.fontFamily || "Inter"}
                       onValueChange={(v) => updateStyles({ fontFamily: v })}
@@ -428,7 +477,25 @@ export function LandingPageBuilder({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {fontFamilies.map((font) => (
+                        {fontFamiliesEn.map((font) => (
+                          <SelectItem key={font} value={font} className="text-xs">
+                            {font}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Arabic Font</Label>
+                    <Select
+                      value={config.styles.fontFamilyAr || "Cairo"}
+                      onValueChange={(v) => updateStyles({ fontFamilyAr: v })}
+                    >
+                      <SelectTrigger className="h-9 text-xs" dir="rtl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontFamiliesAr.map((font) => (
                           <SelectItem key={font} value={font} className="text-xs">
                             {font}
                           </SelectItem>
