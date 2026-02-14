@@ -151,34 +151,29 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     }
 
     setIsUploadingLogo(true)
-    const supabase = createClient()
 
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `platform-logo-${type}-${Date.now()}.${fileExt}`
-      const filePath = `platform/${fileName}`
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', type)
 
-      const { error: uploadError } = await supabase.storage
-        .from('logos')
-        .upload(filePath, file, { upsert: true })
+      const response = await fetch('/api/admin/upload-logo', {
+        method: 'POST',
+        body: formData,
+      })
 
-      if (uploadError) throw uploadError
+      const result = await response.json()
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('logos')
-        .getPublicUrl(filePath)
+      if (!response.ok) {
+        throw new Error(result.error || `Upload failed (${response.status})`)
+      }
 
       const settingKey = type === 'light' ? 'platform_logo' : 'platform_logo_dark'
-      updateSetting(settingKey, publicUrl)
+      updateSetting(settingKey, result.publicUrl)
       toast.success("Logo uploaded successfully")
     } catch (error: any) {
       console.error("Error uploading logo:", error)
-      // Check for RLS/permission error
-      if (error?.message?.includes('policy') || error?.statusCode === '403' || error?.message?.includes('not allowed')) {
-        toast.error("Permission denied. Only super admins can upload platform logos.")
-      } else {
-        toast.error("Failed to upload logo. Please try again.")
-      }
+      toast.error(error?.message || "Failed to upload logo. Please try again.")
     } finally {
       setIsUploadingLogo(false)
       if (logoInputRef.current) {
