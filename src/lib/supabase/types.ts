@@ -2442,6 +2442,10 @@ export type Database = {
           org_id: string
           email_provider: string | null
           api_key_encrypted: string | null
+          sendgrid_api_key_encrypted: string | null
+          mailgun_api_key_encrypted: string | null
+          mailgun_domain: string | null
+          mailgun_region: string | null
           from_email: string
           from_name: string
           reply_to_email: string | null
@@ -2450,10 +2454,29 @@ export type Database = {
           smtp_username: string | null
           smtp_password_encrypted: string | null
           smtp_encryption: string | null
+          imap_enabled: boolean | null
+          imap_host: string | null
+          imap_port: number | null
+          imap_username: string | null
+          imap_password_encrypted: string | null
+          imap_encryption: string | null
+          imap_mailbox: string | null
+          imap_sync_interval_minutes: number | null
+          imap_last_sync_at: string | null
+          imap_last_uid: number | null
           track_opens: boolean | null
           track_clicks: boolean | null
           domain: string | null
           domain_verified: boolean | null
+          dkim_selector: string | null
+          dkim_public_key: string | null
+          dkim_verified: boolean | null
+          spf_record: string | null
+          spf_verified: boolean | null
+          dmarc_record: string | null
+          dmarc_verified: boolean | null
+          domain_verification_token: string | null
+          domain_verified_at: string | null
           is_enabled: boolean | null
           is_verified: boolean | null
           verified_at: string | null
@@ -2465,6 +2488,10 @@ export type Database = {
           org_id: string
           email_provider?: string | null
           api_key_encrypted?: string | null
+          sendgrid_api_key_encrypted?: string | null
+          mailgun_api_key_encrypted?: string | null
+          mailgun_domain?: string | null
+          mailgun_region?: string | null
           from_email: string
           from_name: string
           reply_to_email?: string | null
@@ -2473,10 +2500,29 @@ export type Database = {
           smtp_username?: string | null
           smtp_password_encrypted?: string | null
           smtp_encryption?: string | null
+          imap_enabled?: boolean | null
+          imap_host?: string | null
+          imap_port?: number | null
+          imap_username?: string | null
+          imap_password_encrypted?: string | null
+          imap_encryption?: string | null
+          imap_mailbox?: string | null
+          imap_sync_interval_minutes?: number | null
+          imap_last_sync_at?: string | null
+          imap_last_uid?: number | null
           track_opens?: boolean | null
           track_clicks?: boolean | null
           domain?: string | null
           domain_verified?: boolean | null
+          dkim_selector?: string | null
+          dkim_public_key?: string | null
+          dkim_verified?: boolean | null
+          spf_record?: string | null
+          spf_verified?: boolean | null
+          dmarc_record?: string | null
+          dmarc_verified?: boolean | null
+          domain_verification_token?: string | null
+          domain_verified_at?: string | null
           is_enabled?: boolean | null
           is_verified?: boolean | null
           verified_at?: string | null
@@ -2488,6 +2534,10 @@ export type Database = {
           org_id?: string
           email_provider?: string | null
           api_key_encrypted?: string | null
+          sendgrid_api_key_encrypted?: string | null
+          mailgun_api_key_encrypted?: string | null
+          mailgun_domain?: string | null
+          mailgun_region?: string | null
           from_email?: string
           from_name?: string
           reply_to_email?: string | null
@@ -2496,10 +2546,29 @@ export type Database = {
           smtp_username?: string | null
           smtp_password_encrypted?: string | null
           smtp_encryption?: string | null
+          imap_enabled?: boolean | null
+          imap_host?: string | null
+          imap_port?: number | null
+          imap_username?: string | null
+          imap_password_encrypted?: string | null
+          imap_encryption?: string | null
+          imap_mailbox?: string | null
+          imap_sync_interval_minutes?: number | null
+          imap_last_sync_at?: string | null
+          imap_last_uid?: number | null
           track_opens?: boolean | null
           track_clicks?: boolean | null
           domain?: string | null
           domain_verified?: boolean | null
+          dkim_selector?: string | null
+          dkim_public_key?: string | null
+          dkim_verified?: boolean | null
+          spf_record?: string | null
+          spf_verified?: boolean | null
+          dmarc_record?: string | null
+          dmarc_verified?: boolean | null
+          domain_verification_token?: string | null
+          domain_verified_at?: string | null
           is_enabled?: boolean | null
           is_verified?: boolean | null
           verified_at?: string | null
@@ -2536,6 +2605,12 @@ export type Database = {
           candidate_id: string | null
           application_id: string | null
           interview_id: string | null
+          tracking_token: string | null
+          open_count: number | null
+          click_count: number | null
+          bounced_at: string | null
+          bounce_type: string | null
+          body_html: string | null
           created_at: string
           sent_at: string | null
         }
@@ -2558,6 +2633,12 @@ export type Database = {
           candidate_id?: string | null
           application_id?: string | null
           interview_id?: string | null
+          tracking_token?: string | null
+          open_count?: number | null
+          click_count?: number | null
+          bounced_at?: string | null
+          bounce_type?: string | null
+          body_html?: string | null
           created_at?: string
           sent_at?: string | null
         }
@@ -2580,6 +2661,12 @@ export type Database = {
           candidate_id?: string | null
           application_id?: string | null
           interview_id?: string | null
+          tracking_token?: string | null
+          open_count?: number | null
+          click_count?: number | null
+          bounced_at?: string | null
+          bounce_type?: string | null
+          body_html?: string | null
           created_at?: string
           sent_at?: string | null
         }
@@ -3150,6 +3237,394 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          link: string | null
+          data: Json | null
+          is_read: boolean
+          created_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          link?: string | null
+          data?: Json | null
+          is_read?: boolean
+          created_at?: string
+          read_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          message?: string
+          link?: string | null
+          data?: Json | null
+          is_read?: boolean
+          created_at?: string
+          read_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      notification_events: {
+        Row: {
+          id: string
+          code: string
+          name: string
+          name_ar: string | null
+          description: string | null
+          description_ar: string | null
+          category: string
+          default_channels: string[]
+          available_variables: Json
+          is_system: boolean
+          audience: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          name: string
+          name_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          category: string
+          default_channels?: string[]
+          available_variables?: Json
+          is_system?: boolean
+          audience?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          name?: string
+          name_ar?: string | null
+          description?: string | null
+          description_ar?: string | null
+          category?: string
+          default_channels?: string[]
+          available_variables?: Json
+          is_system?: boolean
+          audience?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      org_notification_settings: {
+        Row: {
+          id: string
+          org_id: string
+          event_id: string
+          enabled: boolean
+          channels: string[]
+          audience_roles: string[]
+          audience_users: string[]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          event_id: string
+          enabled?: boolean
+          channels?: string[]
+          audience_roles?: string[]
+          audience_users?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          event_id?: string
+          enabled?: boolean
+          channels?: string[]
+          audience_roles?: string[]
+          audience_users?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_notification_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_notification_settings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      org_email_templates: {
+        Row: {
+          id: string
+          org_id: string
+          event_id: string
+          subject: string
+          subject_ar: string | null
+          body_html: string
+          body_html_ar: string | null
+          body_text: string | null
+          body_text_ar: string | null
+          include_logo: boolean
+          include_footer: boolean
+          custom_variables: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          event_id: string
+          subject: string
+          subject_ar?: string | null
+          body_html: string
+          body_html_ar?: string | null
+          body_text?: string | null
+          body_text_ar?: string | null
+          include_logo?: boolean
+          include_footer?: boolean
+          custom_variables?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          event_id?: string
+          subject?: string
+          subject_ar?: string | null
+          body_html?: string
+          body_html_ar?: string | null
+          body_text?: string | null
+          body_text_ar?: string | null
+          include_logo?: boolean
+          include_footer?: boolean
+          custom_variables?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_email_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_email_templates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      default_email_templates: {
+        Row: {
+          id: string
+          event_id: string
+          subject: string
+          subject_ar: string | null
+          body_html: string
+          body_html_ar: string | null
+          body_text: string | null
+          body_text_ar: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          event_id: string
+          subject: string
+          subject_ar?: string | null
+          body_html: string
+          body_html_ar?: string | null
+          body_text?: string | null
+          body_text_ar?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          event_id?: string
+          subject?: string
+          subject_ar?: string | null
+          body_html?: string
+          body_html_ar?: string | null
+          body_text?: string | null
+          body_text_ar?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "default_email_templates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      notification_log: {
+        Row: {
+          id: string
+          org_id: string | null
+          event_id: string | null
+          recipient_id: string | null
+          recipient_email: string | null
+          channel: string
+          status: string
+          subject: string | null
+          body_preview: string | null
+          metadata: Json
+          error_message: string | null
+          sent_at: string | null
+          opened_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          event_id?: string | null
+          recipient_id?: string | null
+          recipient_email?: string | null
+          channel: string
+          status?: string
+          subject?: string | null
+          body_preview?: string | null
+          metadata?: Json
+          error_message?: string | null
+          sent_at?: string | null
+          opened_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          event_id?: string | null
+          recipient_id?: string | null
+          recipient_email?: string | null
+          channel?: string
+          status?: string
+          subject?: string | null
+          body_preview?: string | null
+          metadata?: Json
+          error_message?: string | null
+          sent_at?: string | null
+          opened_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "notification_events"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      email_tracking_events: {
+        Row: {
+          id: string
+          org_id: string
+          email_log_id: string
+          event_type: string
+          event_data: Json
+          ip_address: string | null
+          user_agent: string | null
+          country: string | null
+          city: string | null
+          device_type: string | null
+          link_url: string | null
+          link_index: number | null
+          occurred_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          email_log_id: string
+          event_type: string
+          event_data?: Json
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          city?: string | null
+          device_type?: string | null
+          link_url?: string | null
+          link_index?: number | null
+          occurred_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          email_log_id?: string
+          event_type?: string
+          event_data?: Json
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          city?: string | null
+          device_type?: string | null
+          link_url?: string | null
+          link_index?: number | null
+          occurred_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_tracking_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_tracking_events_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "organization_email_logs"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
