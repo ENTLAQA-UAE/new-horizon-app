@@ -89,7 +89,7 @@ interface RequisitionApproval {
   approver_id: string
   approval_order: number
   status: string
-  responded_at: string | null
+  decided_at: string | null
   comments: string | null
 }
 
@@ -386,7 +386,7 @@ export function RequisitionsClient({
           'requisition_approvals',
           {
             status: approved ? "approved" : "rejected",
-            responded_at: new Date().toISOString(),
+            decided_at: new Date().toISOString(),
             comments: approvalComment || null,
           },
           { column: 'id', value: myApproval.id }
@@ -397,7 +397,7 @@ export function RequisitionsClient({
         setApprovals(
           approvals.map((a) =>
             a.id === myApproval.id
-              ? { ...a, status: approved ? "approved" : "rejected", responded_at: new Date().toISOString() }
+              ? { ...a, status: approved ? "approved" : "rejected", decided_at: new Date().toISOString() }
               : a
           )
         )
@@ -410,7 +410,7 @@ export function RequisitionsClient({
             approver_id: currentUserId,
             approval_order: 1,
             status: approved ? "approved" : "rejected",
-            responded_at: new Date().toISOString(),
+            decided_at: new Date().toISOString(),
             comments: approvalComment || null,
           }
         )
