@@ -325,6 +325,17 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
+    // Super admins should not access org subdomains — redirect to main domain admin
+    if (userRole === 'super_admin' && orgSlug) {
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : request.nextUrl.protocol
+      const mainUrl = new URL(`${protocol}//${ROOT_DOMAIN}/admin`)
+      const redirectResponse = NextResponse.redirect(mainUrl)
+      for (const cookie of supabaseResponse.cookies.getAll()) {
+        redirectResponse.cookies.set(cookie.name, cookie.value)
+      }
+      return redirectResponse
+    }
+
     // Enforce route-role map
     if (userRole && !isRouteAllowedForRole(pathname, userRole)) {
       const url = request.nextUrl.clone()
