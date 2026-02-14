@@ -828,7 +828,7 @@ function BlockEditor({ block, onUpdateContent, onUpdateItem, onAddItem, onRemove
             </div>
           </div>
 
-          {(block.type === 'about' || block.type === 'custom') && (
+          {block.type === 'about' && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Description (EN)</Label>
