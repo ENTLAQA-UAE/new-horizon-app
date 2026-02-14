@@ -36,6 +36,13 @@ export default function DomainSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [config, setConfig] = useState<DomainConfig | null>(null)
   const [customDomainInput, setCustomDomainInput] = useState("")
+  const [subdomainInput, setSubdomainInput] = useState("")
+  const [subdomainAvailability, setSubdomainAvailability] = useState<{
+    checked: boolean
+    available: boolean | null
+    error: string | null
+  }>({ checked: false, available: null, error: null })
+  const [isCheckingSubdomain, setIsCheckingSubdomain] = useState(false)
   const [isTogglingSubdomain, setIsTogglingSubdomain] = useState(false)
   const [isSavingDomain, setIsSavingDomain] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -48,6 +55,7 @@ export default function DomainSettingsPage() {
       if (!response.ok) throw new Error("Failed to load")
       const data = await response.json()
       setConfig(data)
+      setSubdomainInput(data.slug || "")
       if (data.custom_domain) {
         setCustomDomainInput(data.custom_domain)
       }
@@ -74,13 +82,52 @@ export default function DomainSettingsPage() {
     }
   }
 
+  const handleCheckSubdomain = async () => {
+    const name = subdomainInput.trim().toLowerCase()
+    if (!name) {
+      setSubdomainAvailability({ checked: true, available: false, error: "Subdomain name is required" })
+      return
+    }
+
+    setIsCheckingSubdomain(true)
+    setSubdomainAvailability({ checked: false, available: null, error: null })
+
+    try {
+      const response = await fetch("/api/org/domain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "check_subdomain", subdomain: name }),
+      })
+
+      const data = await response.json()
+
+      if (data.available) {
+        setSubdomainAvailability({ checked: true, available: true, error: null })
+      } else {
+        setSubdomainAvailability({ checked: true, available: false, error: data.error || "Not available" })
+      }
+    } catch {
+      setSubdomainAvailability({ checked: true, available: false, error: "Failed to check availability" })
+    } finally {
+      setIsCheckingSubdomain(false)
+    }
+  }
+
   const handleToggleSubdomain = async (enabled: boolean) => {
+    const subdomain = subdomainInput.trim().toLowerCase()
+
+    // When enabling with a different name, require availability check first
+    if (enabled && subdomain !== config?.slug && !subdomainAvailability.available) {
+      toast.error("Please check subdomain availability first")
+      return
+    }
+
     setIsTogglingSubdomain(true)
     try {
       const response = await fetch("/api/org/domain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggle_subdomain", enabled }),
+        body: JSON.stringify({ action: "toggle_subdomain", enabled, subdomain }),
       })
 
       const data = await response.json()
@@ -90,11 +137,16 @@ export default function DomainSettingsPage() {
         prev
           ? {
               ...prev,
+              slug: data.slug || prev.slug,
               subdomain_enabled: data.subdomain_enabled,
               subdomain_url: data.subdomain_url,
             }
           : prev
       )
+      // Reset availability state after successful enable
+      if (enabled) {
+        setSubdomainAvailability({ checked: false, available: null, error: null })
+      }
       toast.success(enabled ? "Subdomain enabled" : "Subdomain disabled")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to toggle subdomain")
@@ -219,64 +271,140 @@ export default function DomainSettingsPage() {
           </CardTitle>
           <CardDescription>
             Enable a subdomain for your organization. Your login and career pages will
-            be accessible at <strong>{config.slug}.{config.root_domain}</strong>
+            be accessible at your chosen subdomain.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable Subdomain</Label>
-              <p className="text-sm text-muted-foreground">
-                Activate <strong>{config.slug}.{config.root_domain}</strong> for your organization
-              </p>
-            </div>
-            <Switch
-              checked={config.subdomain_enabled}
-              onCheckedChange={handleToggleSubdomain}
-              disabled={isTogglingSubdomain}
-            />
-          </div>
-
-          {config.subdomain_enabled && (
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
+          {/* Subdomain name input (shown when NOT yet enabled) */}
+          {!config.subdomain_enabled && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="subdomain_name">Subdomain Name</Label>
                 <div className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Your subdomain URL</span>
+                  <div className="flex flex-1 items-center">
+                    <Input
+                      id="subdomain_name"
+                      placeholder="your-org-name"
+                      value={subdomainInput}
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                        setSubdomainInput(val)
+                        // Reset availability when input changes
+                        setSubdomainAvailability({ checked: false, available: null, error: null })
+                      }}
+                      disabled={isCheckingSubdomain || isTogglingSubdomain}
+                      className="rounded-r-none"
+                    />
+                    <span className="inline-flex items-center rounded-r-md border border-l-0 bg-muted px-3 py-2 text-sm text-muted-foreground h-10 whitespace-nowrap">
+                      .{config.root_domain}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleCheckSubdomain}
+                    disabled={isCheckingSubdomain || !subdomainInput.trim()}
+                  >
+                    {isCheckingSubdomain ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Check
+                  </Button>
                 </div>
-                <Badge variant="success" className="text-xs">Active</Badge>
+                <p className="text-xs text-muted-foreground">
+                  Lowercase letters, numbers, and hyphens only. Minimum 3 characters.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-md bg-background px-3 py-2 text-sm font-mono border">
-                  {subdomainUrl}
-                </code>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCopy(subdomainUrl, "subdomain")}
-                >
-                  {copied === "subdomain" ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+
+              {/* Availability result */}
+              {subdomainAvailability.checked && (
+                <div className={`flex items-center gap-2 text-sm rounded-md px-3 py-2 ${
+                  subdomainAvailability.available
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}>
+                  {subdomainAvailability.available ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                      <span><strong>{subdomainInput}.{config.root_domain}</strong> is available!</span>
+                    </>
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <>
+                      <XCircle className="h-4 w-4 flex-shrink-0" />
+                      <span>{subdomainAvailability.error}</span>
+                    </>
                   )}
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={subdomainUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                This subdomain is auto-configured and ready to use immediately.
-              </p>
+                </div>
+              )}
+
+              {/* Enable button */}
+              <Button
+                onClick={() => handleToggleSubdomain(true)}
+                disabled={
+                  isTogglingSubdomain ||
+                  !subdomainInput.trim() ||
+                  (subdomainInput !== config.slug && !subdomainAvailability.available)
+                }
+                className="w-full"
+              >
+                {isTogglingSubdomain ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Configuring...
+                  </>
+                ) : (
+                  "Enable Subdomain"
+                )}
+              </Button>
             </div>
           )}
 
-          {isTogglingSubdomain && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {config.subdomain_enabled ? "Disabling..." : "Configuring subdomain on Vercel..."}
+          {/* Active subdomain display (shown when enabled) */}
+          {config.subdomain_enabled && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Your subdomain URL</span>
+                  </div>
+                  <Badge variant="success" className="text-xs">Active</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-md bg-background px-3 py-2 text-sm font-mono border">
+                    {subdomainUrl}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopy(subdomainUrl, "subdomain")}
+                  >
+                    {copied === "subdomain" ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={subdomainUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  This subdomain is auto-configured and ready to use immediately.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={() => handleToggleSubdomain(false)}
+                disabled={isTogglingSubdomain}
+              >
+                {isTogglingSubdomain ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Disable Subdomain
+              </Button>
             </div>
           )}
         </CardContent>
