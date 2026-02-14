@@ -108,10 +108,10 @@ export default function BrandingPage() {
     async function loadAdditionalBrandingData() {
       try {
         // Fetch additional branding fields not in auth context using auth-fetch helper
-        const { data } = await supabaseSelect<{ login_image_url?: string; custom_domain?: string }>(
+        const { data } = await supabaseSelect<{ login_image_url?: string; favicon_url?: string; custom_domain?: string }>(
           "organizations",
           {
-            select: "login_image_url, custom_domain",
+            select: "login_image_url, favicon_url, custom_domain",
             filter: [{ column: "id", operator: "eq", value: organizationId }],
             single: true,
           }
@@ -124,7 +124,7 @@ export default function BrandingPage() {
           tagline: "",
           tagline_ar: "",
           logo_url: organization.logo_url || "",
-          favicon_url: "",
+          favicon_url: data?.favicon_url || "",
           login_image_url: data?.login_image_url || "",
           primary_color: organization.primary_color || "#6366F1",
           secondary_color: organization.secondary_color || "#8B5CF6",
@@ -356,6 +356,7 @@ export default function BrandingPage() {
         name: settings.company_name,
         name_ar: settings.company_name_ar || null,
         logo_url: settings.logo_url || null,
+        favicon_url: settings.favicon_url || null,
         login_image_url: settings.login_image_url || null,
         primary_color: settings.primary_color,
         secondary_color: settings.secondary_color,

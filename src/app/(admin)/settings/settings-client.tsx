@@ -168,7 +168,21 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
 
       const settingKey = type === 'light' ? 'platform_logo' : 'platform_logo_dark'
       updateSetting(settingKey, result.publicUrl)
-      toast.success("Logo uploaded successfully")
+
+      // Auto-save the logo URL to database immediately so it persists on refresh
+      try {
+        const supabase = createClient()
+        await supabase
+          .from("platform_settings")
+          .upsert(
+            { key: settingKey, value: JSON.stringify(result.publicUrl), updated_at: new Date().toISOString() },
+            { onConflict: 'key' }
+          )
+      } catch (saveErr) {
+        console.error("Failed to auto-save logo setting:", saveErr)
+      }
+
+      toast.success("Logo uploaded and saved")
     } catch (error: any) {
       console.error("Error uploading logo:", error)
       toast.error(error?.message || "Failed to upload logo. Please try again.")
@@ -180,9 +194,22 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     }
   }
 
-  const removeLogo = (type: 'light' | 'dark') => {
+  const removeLogo = async (type: 'light' | 'dark') => {
     const settingKey = type === 'light' ? 'platform_logo' : 'platform_logo_dark'
     updateSetting(settingKey, '')
+
+    // Auto-save removal to database
+    try {
+      const supabase = createClient()
+      await supabase
+        .from("platform_settings")
+        .upsert(
+          { key: settingKey, value: JSON.stringify(''), updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        )
+    } catch (saveErr) {
+      console.error("Failed to auto-save logo removal:", saveErr)
+    }
   }
 
   return (
