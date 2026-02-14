@@ -261,6 +261,13 @@ export async function updateSession(request: NextRequest) {
     return applyOrgSlug(supabaseResponse)
   }
 
+  // Redirect /landing to / so the landing page is only accessible at the root URL
+  if (request.nextUrl.pathname === '/landing' || request.nextUrl.pathname.startsWith('/landing/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return applyOrgSlug(NextResponse.redirect(url))
+  }
+
   if (!user && !isPublicRoute) {
     // Org subdomain/custom domain → always redirect to login
     if (orgSlug) {
