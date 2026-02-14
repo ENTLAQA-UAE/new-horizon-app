@@ -117,6 +117,7 @@ export interface LandingPageStyles {
   backgroundColor: string
   textColor: string
   fontFamily: string
+  fontFamilyAr: string
   fontSize: 'small' | 'medium' | 'large'
   borderRadius: string
   headerStyle: 'minimal' | 'standard' | 'bold'
@@ -396,6 +397,7 @@ export const defaultLandingConfig: LandingPageConfig = {
     backgroundColor: '#FFFFFF',
     textColor: '#1A1A2E',
     fontFamily: 'Inter',
+    fontFamilyAr: 'Cairo',
     fontSize: 'medium',
     borderRadius: '12px',
     headerStyle: 'standard',

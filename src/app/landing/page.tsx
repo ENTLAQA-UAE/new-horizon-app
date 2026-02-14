@@ -72,9 +72,10 @@ export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("en")
   const [langInit, setLangInit] = useState(false)
 
-  // Load Google Fonts dynamically
+  // Load Google Fonts dynamically (both EN and AR fonts)
   useEffect(() => {
     const fontFamily = config.styles.fontFamily || "Inter"
+    const fontFamilyAr = config.styles.fontFamilyAr || "Cairo"
     const googleFontMap: Record<string, string> = {
       Inter: "Inter:wght@400;500;600;700;800",
       Poppins: "Poppins:wght@400;500;600;700;800",
@@ -88,9 +89,20 @@ export default function LandingPage() {
       Cairo: "Cairo:wght@400;500;600;700;800",
       Tajawal: "Tajawal:wght@400;500;700",
       "IBM Plex Sans Arabic": "IBM+Plex+Sans+Arabic:wght@400;500;600;700",
+      "Noto Sans Arabic": "Noto+Sans+Arabic:wght@400;500;600;700;800",
+      Almarai: "Almarai:wght@300;400;700;800",
+      "El Messiri": "El+Messiri:wght@400;500;600;700",
+      Changa: "Changa:wght@300;400;500;600;700;800",
+      "Readex Pro": "Readex+Pro:wght@300;400;500;600;700",
     }
+    const families: string[] = []
     const fontParam = googleFontMap[fontFamily]
-    if (fontParam) {
+    if (fontParam) families.push(`family=${fontParam}`)
+    if (fontFamilyAr !== fontFamily) {
+      const arParam = googleFontMap[fontFamilyAr]
+      if (arParam) families.push(`family=${arParam}`)
+    }
+    if (families.length > 0) {
       const linkId = "landing-google-font"
       let link = document.getElementById(linkId) as HTMLLinkElement | null
       if (!link) {
@@ -99,9 +111,9 @@ export default function LandingPage() {
         link.rel = "stylesheet"
         document.head.appendChild(link)
       }
-      link.href = `https://fonts.googleapis.com/css2?family=${fontParam}&display=swap`
+      link.href = `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap`
     }
-  }, [config.styles.fontFamily])
+  }, [config.styles.fontFamily, config.styles.fontFamilyAr])
 
   const toggleLang = () => {
     const next = lang === "en" ? "ar" : "en"
@@ -232,10 +244,12 @@ export default function LandingPage() {
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight
   const showLangToggle = settings.language === "both"
 
+  const activeFont = isRtl ? (styles.fontFamilyAr || "Cairo") : (styles.fontFamily || "Inter")
+
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      style={{ backgroundColor: styles.backgroundColor, color: styles.textColor, fontFamily: styles.fontFamily }}
+      style={{ backgroundColor: styles.backgroundColor, color: styles.textColor, fontFamily: `"${activeFont}", sans-serif` }}
     >
       {/* ── Navbar ── */}
       {settings.showHeader && (

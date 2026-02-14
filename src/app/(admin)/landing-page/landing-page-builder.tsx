@@ -88,7 +88,7 @@ const blockIconMap: Record<string, LucideIcon> = {
   Code,
 }
 
-const fontFamilies = [
+const fontFamiliesEn = [
   "Inter",
   "Poppins",
   "DM Sans",
@@ -98,9 +98,18 @@ const fontFamilies = [
   "Outfit",
   "Manrope",
   "Rubik",
+]
+
+const fontFamiliesAr = [
   "Cairo",
   "Tajawal",
   "IBM Plex Sans Arabic",
+  "Rubik",
+  "Noto Sans Arabic",
+  "Almarai",
+  "El Messiri",
+  "Changa",
+  "Readex Pro",
 ]
 
 export function LandingPageBuilder({
@@ -459,7 +468,7 @@ export function LandingPageBuilder({
                 </Label>
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Font Family</Label>
+                    <Label className="text-xs">English Font</Label>
                     <Select
                       value={config.styles.fontFamily || "Inter"}
                       onValueChange={(v) => updateStyles({ fontFamily: v })}
@@ -468,7 +477,25 @@ export function LandingPageBuilder({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {fontFamilies.map((font) => (
+                        {fontFamiliesEn.map((font) => (
+                          <SelectItem key={font} value={font} className="text-xs">
+                            {font}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Arabic Font</Label>
+                    <Select
+                      value={config.styles.fontFamilyAr || "Cairo"}
+                      onValueChange={(v) => updateStyles({ fontFamilyAr: v })}
+                    >
+                      <SelectTrigger className="h-9 text-xs" dir="rtl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontFamiliesAr.map((font) => (
                           <SelectItem key={font} value={font} className="text-xs">
                             {font}
                           </SelectItem>

@@ -83,6 +83,11 @@ const googleFontMap: Record<string, string> = {
   Cairo: "Cairo:wght@400;500;600;700;800",
   Tajawal: "Tajawal:wght@400;500;700",
   "IBM Plex Sans Arabic": "IBM+Plex+Sans+Arabic:wght@400;500;600;700",
+  "Noto Sans Arabic": "Noto+Sans+Arabic:wght@400;500;600;700;800",
+  Almarai: "Almarai:wght@300;400;700;800",
+  "El Messiri": "El+Messiri:wght@400;500;600;700",
+  Changa: "Changa:wght@300;400;500;600;700;800",
+  "Readex Pro": "Readex+Pro:wght@300;400;500;600;700",
 }
 
 const fontSizeMap: Record<string, { headingHero: string; headingSection: string; body: string; small: string }> = {
@@ -104,11 +109,19 @@ export function BlockPreview({
   const fs = fontSizeMap[styles.fontSize || "medium"]
   const gradient = `linear-gradient(135deg, ${styles.primaryColor} 0%, ${styles.secondaryColor} 100%)`
   const logoUrl = navbar.logoUrl || platformLogo
+  const fontFamilyAr = styles.fontFamilyAr || "Cairo"
 
   useEffect(() => {
     const fontFamily = styles.fontFamily || "Inter"
+    const fontFamilyAr = styles.fontFamilyAr || "Cairo"
+    const families: string[] = []
     const fontParam = googleFontMap[fontFamily]
-    if (fontParam) {
+    if (fontParam) families.push(`family=${fontParam}`)
+    if (fontFamilyAr !== fontFamily) {
+      const arParam = googleFontMap[fontFamilyAr]
+      if (arParam) families.push(`family=${arParam}`)
+    }
+    if (families.length > 0) {
       const linkId = "landing-preview-google-font"
       let link = document.getElementById(linkId) as HTMLLinkElement | null
       if (!link) {
@@ -117,18 +130,20 @@ export function BlockPreview({
         link.rel = "stylesheet"
         document.head.appendChild(link)
       }
-      link.href = `https://fonts.googleapis.com/css2?family=${fontParam}&display=swap`
+      link.href = `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap`
     }
-  }, [styles.fontFamily])
+  }, [styles.fontFamily, styles.fontFamilyAr])
 
   return (
     <div
       className="min-h-[600px]"
       style={{
-        fontFamily: styles.fontFamily,
+        fontFamily: `${styles.fontFamily}, ${fontFamilyAr}, sans-serif`,
         color: styles.textColor,
         backgroundColor: styles.backgroundColor,
-      }}
+        // @ts-ignore -- CSS custom property
+        '--font-ar': `"${fontFamilyAr}", sans-serif`,
+      } as React.CSSProperties}
     >
       {/* Header */}
       {settings.showHeader && (
