@@ -10,13 +10,11 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import {
   Loader2,
-  Sparkles,
   ArrowRight,
   Eye,
   EyeOff,
   CheckCircle2,
   Users,
-  Briefcase,
   BarChart3,
   Zap,
   Shield,
@@ -399,15 +397,12 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             mounted && "animate-fade-in-up"
           )}>
             {orgBranding?.logo_url ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center">
                 <img
                   src={orgBranding.logo_url}
                   alt={orgBranding.name}
-                  className="h-12 object-contain"
+                  className="h-14 object-contain"
                 />
-                <div>
-                  <h1 className="text-2xl font-bold text-[#1A1A2E]">{orgBranding.name}</h1>
-                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -619,7 +614,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             />
             <div
               className="absolute inset-0"
-              style={{ background: `${gradient}`, opacity: 0.85 }}
+              style={{ background: `${gradient}`, opacity: 0.35 }}
             />
           </>
         )}
@@ -643,42 +638,49 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         )}
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white w-full">
-          <div className="max-w-xl">
-            {/* Main heading */}
-            <h2
-              className={cn(
-                "text-5xl xl:text-6xl font-bold leading-[1.1] mb-8",
-                mounted && "animate-fade-in-up"
-              )}
-            >
-              {orgBranding
-                ? `Welcome to ${orgBranding.name}`
-                : (
-                  <>
-                    Hire the best
-                    <br />
-                    <span className="text-white/90">talent, faster.</span>
-                  </>
-                )
-              }
-            </h2>
+        {orgBranding ? (
+          /* Org-branded: centered logo only, no text overlay */
+          <div className="relative z-10 flex items-center justify-center w-full h-full">
+            {orgBranding.logo_url && (
+              <div
+                className={cn(
+                  "flex items-center justify-center",
+                  mounted && "animate-fade-in-up"
+                )}
+              >
+                <img
+                  src={orgBranding.logo_url}
+                  alt={orgBranding.name}
+                  className="max-w-[280px] max-h-[160px] object-contain drop-shadow-2xl"
+                />
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Default Kawadir: full marketing content */
+          <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white w-full">
+            <div className="max-w-xl">
+              <h2
+                className={cn(
+                  "text-5xl xl:text-6xl font-bold leading-[1.1] mb-8",
+                  mounted && "animate-fade-in-up"
+                )}
+              >
+                Hire the best
+                <br />
+                <span className="text-white/90">talent, faster.</span>
+              </h2>
 
-            <p
-              className={cn(
-                "text-xl text-white/80 mb-12 leading-relaxed",
-                mounted && "animate-fade-in-up"
-              )}
-              style={{ animationDelay: "100ms" }}
-            >
-              {orgBranding
-                ? "Access your recruitment dashboard and streamline your hiring process with AI-powered tools."
-                : "Streamline your recruitment with intelligent automation, collaborative tools, and data-driven insights."
-              }
-            </p>
+              <p
+                className={cn(
+                  "text-xl text-white/80 mb-12 leading-relaxed",
+                  mounted && "animate-fade-in-up"
+                )}
+                style={{ animationDelay: "100ms" }}
+              >
+                Streamline your recruitment with intelligent automation, collaborative tools, and data-driven insights.
+              </p>
 
-            {/* Features (only when no org branding) */}
-            {!orgBranding && (
               <div className="space-y-4">
                 {features.map((feature, index) => (
                   <div
@@ -697,10 +699,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                   </div>
                 ))}
               </div>
-            )}
 
-            {/* Stats */}
-            {!orgBranding && (
               <div
                 className={cn(
                   "grid grid-cols-3 gap-8 mt-16 pt-8 border-t border-white/20",
@@ -721,28 +720,9 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                   <div className="text-sm text-white/70 mt-1">Satisfaction</div>
                 </div>
               </div>
-            )}
-
-            {/* Org-specific branding badge */}
-            {orgBranding && (
-              <div
-                className={cn(
-                  "mt-12 flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-5",
-                  mounted && "animate-fade-in-up"
-                )}
-                style={{ animationDelay: "200ms" }}
-              >
-                <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Sparkles className="h-7 w-7" />
-                </div>
-                <div>
-                  <div className="font-semibold text-lg">Powered by Kawadir</div>
-                  <div className="text-sm text-white/70">AI-Powered Recruitment Platform</div>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
