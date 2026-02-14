@@ -158,11 +158,16 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             platform_logo_dark: null,
           }
           data.forEach((row) => {
-            if (row.key === "platform_logo" && row.value) {
-              settings.platform_logo = JSON.parse(row.value as string)
+            let val = row.value as string | null
+            // Strip extra quotes from previously double-encoded values
+            if (typeof val === 'string' && val.length >= 2 && val.startsWith('"') && val.endsWith('"')) {
+              try { val = JSON.parse(val) } catch { /* keep as-is */ }
             }
-            if (row.key === "platform_logo_dark" && row.value) {
-              settings.platform_logo_dark = JSON.parse(row.value as string)
+            if (row.key === "platform_logo" && val) {
+              settings.platform_logo = val
+            }
+            if (row.key === "platform_logo_dark" && val) {
+              settings.platform_logo_dark = val
             }
           })
           if (settings.platform_logo || settings.platform_logo_dark) {
