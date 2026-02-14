@@ -105,8 +105,8 @@ export default function RootRedirectPage() {
         }
 
         if (!session?.user) {
-          console.log("RootRedirect: No session found, redirecting to login")
-          router.replace("/login")
+          console.log("RootRedirect: No session found, redirecting to kawadir.io")
+          window.location.href = "https://kawadir.io"
           return
         }
 
@@ -204,13 +204,13 @@ export default function RootRedirectPage() {
           console.warn("RootRedirect: Could not check session storage:", storageErr)
         }
 
-        // Only show error and redirect to login if no session exists
+        // Only show error and redirect to main domain if no session exists
         const errorMessage = isTimeout
           ? "Connection timed out. Please check your internet and try again."
-          : "Something went wrong. Please try logging in again."
+          : "Something went wrong. Please try again."
         setError(errorMessage)
-        // Fallback to login after a delay
-        setTimeout(() => router.replace("/login"), 2000)
+        // Fallback to main domain after a delay
+        setTimeout(() => { window.location.href = "https://kawadir.io" }, 2000)
       }
     }
 
