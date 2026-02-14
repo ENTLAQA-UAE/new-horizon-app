@@ -106,7 +106,7 @@ export default function RootRedirectPage() {
 
         if (!session?.user) {
           console.log("RootRedirect: No session found, redirecting to landing page")
-          router.replace("/landing")
+          router.replace("/")
           return
         }
 
@@ -210,7 +210,7 @@ export default function RootRedirectPage() {
           : "Something went wrong. Please try again."
         setError(errorMessage)
         // Fallback to landing page after a delay
-        setTimeout(() => { router.replace("/landing") }, 2000)
+        setTimeout(() => { router.replace("/") }, 2000)
       }
     }
 
