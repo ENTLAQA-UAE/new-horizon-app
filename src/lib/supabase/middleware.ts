@@ -226,6 +226,29 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // =====================================================
+  // SUBDOMAIN / CUSTOM DOMAIN RESOLUTION
+  // Resolve org slug from hostname BEFORE any redirects
+  // so the cookie is set on every response (including redirects).
+  // =====================================================
+  const hostname = request.headers.get('host') || ''
+  const orgSlug = await resolveOrgSlug(hostname)
+
+  // Helper: copy the x-org-slug cookie onto any response we create
+  function applyOrgSlug(response: NextResponse) {
+    if (orgSlug) {
+      response.headers.set('x-org-slug', orgSlug)
+      response.cookies.set('x-org-slug', orgSlug, {
+        path: '/',
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 4,
+      })
+    }
+    return response
+  }
+
   // Handle auth errors gracefully
   if (userError) {
     console.error('Middleware: Auth error:', userError.message)
@@ -233,22 +256,28 @@ export async function updateSession(request: NextRequest) {
     if (!isPublicRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
-      return NextResponse.redirect(url)
+      return applyOrgSlug(NextResponse.redirect(url))
     }
-    return supabaseResponse
+    return applyOrgSlug(supabaseResponse)
   }
 
   if (!user && !isPublicRoute) {
-    // Unauthenticated users on root → serve the landing page
+    // Org subdomain/custom domain → always redirect to login
+    if (orgSlug) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return applyOrgSlug(NextResponse.redirect(url))
+    }
+    // Unauthenticated users on root (main domain) → serve the landing page
     if (request.nextUrl.pathname === '/') {
       const url = request.nextUrl.clone()
       url.pathname = '/landing'
-      return NextResponse.rewrite(url)
+      return applyOrgSlug(NextResponse.rewrite(url))
     }
     // No user, redirect to login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return applyOrgSlug(NextResponse.redirect(url))
   }
 
   // =====================================================
@@ -257,21 +286,35 @@ export async function updateSession(request: NextRequest) {
   // API routes handle their own auth separately.
   // =====================================================
   const pathname = request.nextUrl.pathname
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : request.nextUrl.protocol
+
+  // Helper: build a redirect response that preserves Supabase auth cookies
+  function redirectWithCookies(url: string | URL) {
+    const redirectResponse = NextResponse.redirect(url)
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    }
+    return redirectResponse
+  }
 
   if (user && !pathname.startsWith('/api/') && !isPublicRoute) {
-    // Read role from HTTP-only cookie (zero-latency on subsequent requests)
-    // Cookie format: "userId:role" — validates user matches to prevent stale cookies after logout
+    // -------------------------------------------------
+    // Resolve user role + org slug (from cookies or DB)
+    // Cookie format: "userId:role:orgSlug"
+    // -------------------------------------------------
     let userRole: string | null = null
+    let userOrgSlug: string | null = null
+
     const roleCookie = request.cookies.get('x-user-role')?.value || null
-    if (roleCookie && roleCookie.includes(':')) {
-      const [cookieUserId, cookieRole] = roleCookie.split(':')
-      if (cookieUserId === user.id) {
-        userRole = cookieRole
+    if (roleCookie) {
+      const parts = roleCookie.split(':')
+      if (parts.length >= 2 && parts[0] === user.id) {
+        userRole = parts[1]
+        userOrgSlug = parts[2] || null
       }
-      // If userId doesn't match, cookie is stale — will be refreshed below
     }
 
-    // If no valid role cookie, query DB once and set cookie for future requests
+    // If no valid cookie, query DB once and set cookie for future requests
     if (!userRole) {
       try {
         const { data: roleData } = await supabase
@@ -281,18 +324,68 @@ export async function updateSession(request: NextRequest) {
           .single()
 
         userRole = roleData?.role || null
-
-        if (userRole) {
-          supabaseResponse.cookies.set('x-user-role', `${user.id}:${userRole}`, {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 4, // 4 hours
-          })
-        }
       } catch {
-        // DB query failed — skip role enforcement, page-level checks will handle
+        // DB query failed — skip role enforcement
+      }
+
+      // Also resolve the user's org slug from profiles → organizations
+      if (userRole && userRole !== 'super_admin') {
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('org_id, organizations(slug)')
+            .eq('id', user.id)
+            .single()
+
+          if (profileData?.organizations) {
+            const org = profileData.organizations as unknown as { slug: string }
+            userOrgSlug = org.slug || null
+          }
+        } catch {
+          // DB query failed — continue without org slug
+        }
+      }
+
+      // Cache role + org slug in a single cookie
+      if (userRole) {
+        const cookieValue = userOrgSlug
+          ? `${user.id}:${userRole}:${userOrgSlug}`
+          : `${user.id}:${userRole}`
+        supabaseResponse.cookies.set('x-user-role', cookieValue, {
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 4, // 4 hours
+        })
+      }
+    }
+
+    // -------------------------------------------------
+    // Super admins: redirect away from org subdomains
+    // -------------------------------------------------
+    if (userRole === 'super_admin' && orgSlug) {
+      const mainUrl = new URL(`${protocol}//${ROOT_DOMAIN}/admin`)
+      return redirectWithCookies(mainUrl)
+    }
+
+    // -------------------------------------------------
+    // Org members: enforce subdomain boundaries
+    // -------------------------------------------------
+    const isOrgRole = userRole && !['super_admin', 'candidate'].includes(userRole)
+
+    if (isOrgRole && userOrgSlug) {
+      // On the main domain → redirect to their org subdomain
+      if (!orgSlug) {
+        const orgUrl = new URL(`${protocol}//${userOrgSlug}.${ROOT_DOMAIN}${pathname}`)
+        orgUrl.search = request.nextUrl.search
+        return redirectWithCookies(orgUrl)
+      }
+
+      // On the WRONG org subdomain → redirect to their own
+      if (orgSlug !== userOrgSlug) {
+        const orgUrl = new URL(`${protocol}//${userOrgSlug}.${ROOT_DOMAIN}/org`)
+        return redirectWithCookies(orgUrl)
       }
     }
 
@@ -300,36 +393,12 @@ export async function updateSession(request: NextRequest) {
     if (userRole && !isRouteAllowedForRole(pathname, userRole)) {
       const url = request.nextUrl.clone()
       url.pathname = getHomeForRole(userRole)
-
-      // Preserve Supabase auth cookies on redirect
-      const redirectResponse = NextResponse.redirect(url)
-      for (const cookie of supabaseResponse.cookies.getAll()) {
-        redirectResponse.cookies.set(cookie.name, cookie.value)
-      }
-      return redirectResponse
+      return applyOrgSlug(redirectWithCookies(url))
     }
   }
 
-  // =====================================================
-  // SUBDOMAIN / CUSTOM DOMAIN RESOLUTION
-  // Resolve org slug from hostname and set x-org-slug header
-  // so downstream pages can read it for branded experiences.
-  // =====================================================
-  const hostname = request.headers.get('host') || ''
-  const orgSlug = await resolveOrgSlug(hostname)
-
-  if (orgSlug) {
-    // Set header on the response for server components to read
-    supabaseResponse.headers.set('x-org-slug', orgSlug)
-    // Also set a cookie so client components can read it
-    supabaseResponse.cookies.set('x-org-slug', orgSlug, {
-      path: '/',
-      httpOnly: false, // Client-readable
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 4, // 4 hours
-    })
-  }
+  // Apply org slug cookie/header to the final supabase response
+  applyOrgSlug(supabaseResponse)
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
