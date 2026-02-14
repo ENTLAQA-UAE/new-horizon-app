@@ -524,7 +524,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] font-semibold text-foreground">Powered by Jadarat</span>
+                <span className="text-[11px] font-semibold text-foreground">Powered by Kawadir</span>
                 <span className="text-[9px] text-muted-foreground">AI-Powered Recruitment</span>
               </div>
             </div>

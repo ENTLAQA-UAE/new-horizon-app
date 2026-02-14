@@ -1,7 +1,7 @@
 import { cookies } from "next/headers"
 import { t as translate, type Language } from "./messages"
 
-const STORAGE_KEY = "jadarat-lang"
+const STORAGE_KEY = "kawadir-lang"
 
 /**
  * Get the current language from cookies (for server components)

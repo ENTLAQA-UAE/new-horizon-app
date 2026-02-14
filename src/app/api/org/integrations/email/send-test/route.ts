@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     const result = await emailProvider.send({
       to: testEmail,
-      subject: "Test Email from Jadarat ATS",
+      subject: "Test Email from Kawadir ATS",
       html: `
         <!DOCTYPE html>
         <html>
@@ -191,12 +191,12 @@ export async function POST(request: NextRequest) {
               </ul>
             </div>
             <p style="color: #6b7280; font-size: 14px; margin-bottom: 0;">
-              This is a test email sent from Jadarat ATS to verify your email settings.
+              This is a test email sent from Kawadir ATS to verify your email settings.
               You can now use email features like interview invitations, application confirmations, and more.
             </p>
           </div>
           <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-            <p style="margin: 0;">Sent by Jadarat ATS</p>
+            <p style="margin: 0;">Sent by Kawadir ATS</p>
           </div>
         </body>
         </html>
@@ -211,7 +211,7 @@ Configuration Details:
 - From: ${config.from_name} <${cleanFromEmail}>
 - Sent at: ${new Date().toLocaleString()}
 
-This is a test email sent from Jadarat ATS to verify your email settings.
+This is a test email sent from Kawadir ATS to verify your email settings.
 You can now use email features like interview invitations, application confirmations, and more.
       `.trim(),
     })

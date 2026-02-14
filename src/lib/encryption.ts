@@ -14,7 +14,7 @@ const SALT_LENGTH = 32
 // Get encryption key from environment or generate from secret
 function getEncryptionKey(): Buffer {
   const secret = process.env.ENCRYPTION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "fallback-secret-key-change-me"
-  const salt = process.env.ENCRYPTION_SALT || "jadarat-ats-salt"
+  const salt = process.env.ENCRYPTION_SALT || "kawadir-ats-salt"
   return scryptSync(secret, salt, KEY_LENGTH)
 }
 

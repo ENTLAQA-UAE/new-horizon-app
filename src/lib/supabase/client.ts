@@ -48,7 +48,7 @@ function clearAuthCookies() {
         cookieName.includes("auth") ||
         cookieName.includes("token") ||
         cookieName.includes("session") ||
-        cookieName.includes("jadarat")
+        cookieName.includes("kawadir")
       ) {
         // Clear cookie for multiple paths and domains to ensure removal
         document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
@@ -73,7 +73,7 @@ export function clearSupabaseStorage() {
     const keysToRemove: string[] = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('jadarat'))) {
+      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('kawadir'))) {
         keysToRemove.push(key)
       }
     }
@@ -83,7 +83,7 @@ export function clearSupabaseStorage() {
     const sessionKeysToRemove: string[] = []
     for (let i = 0; i < sessionStorage.length; i++) {
       const key = sessionStorage.key(i)
-      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('jadarat'))) {
+      if (key && (key.includes('supabase') || key.includes('sb-') || key.includes('kawadir'))) {
         sessionKeysToRemove.push(key)
       }
     }

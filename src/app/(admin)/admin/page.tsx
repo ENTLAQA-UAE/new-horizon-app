@@ -235,7 +235,7 @@ export default async function DashboardPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Section */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Welcome to Jadarat ATS</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Welcome to Kawadir ATS</h2>
         <p className="text-muted-foreground">
           AI-Powered Applicant Tracking System for MENA Region
         </p>

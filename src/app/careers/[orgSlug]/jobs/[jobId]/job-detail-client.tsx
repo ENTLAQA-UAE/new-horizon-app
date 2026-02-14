@@ -1058,7 +1058,7 @@ export function JobDetailClient({
             </div>
           </div>
           <p className="text-center text-xs text-muted-foreground/50 mt-6">
-            Powered by Jadarat ATS
+            Powered by Kawadir ATS
           </p>
         </div>
       </div>
@@ -1738,7 +1738,7 @@ export function JobDetailClient({
       <footer className="border-t bg-white mt-12 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} {organization.name}. All rights reserved.</p>
-          <p className="text-xs mt-1 text-muted-foreground/60">Powered by Jadarat</p>
+          <p className="text-xs mt-1 text-muted-foreground/60">Powered by Kawadir</p>
         </div>
       </footer>
     </div>

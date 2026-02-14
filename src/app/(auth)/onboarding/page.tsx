@@ -283,7 +283,7 @@ export default function OnboardingPage() {
           >
             <Building2 className="w-6 h-6 text-white" />
           </div>
-          <CardTitle className="text-2xl">Welcome to Jadarat ATS</CardTitle>
+          <CardTitle className="text-2xl">Welcome to Kawadir ATS</CardTitle>
           <CardDescription>
             {step === "choice" && "Let's get you set up with an organization"}
             {step === "create" && "Create your organization"}

@@ -306,17 +306,17 @@ export function ScorecardTemplatesClient({ templates: initialTemplates, organiza
           console.warn("Could not get token from localStorage sb-* pattern:", e)
         }
 
-        // Method 2: Try jadarat_pending_session
+        // Method 2: Try kawadir_pending_session
         if (!accessToken) {
           try {
-            const pendingSession = localStorage.getItem('jadarat_pending_session')
+            const pendingSession = localStorage.getItem('kawadir_pending_session')
             if (pendingSession) {
               const parsed = JSON.parse(pendingSession)
               accessToken = parsed?.access_token || null
-              if (accessToken) console.log("Token from jadarat_pending_session: found")
+              if (accessToken) console.log("Token from kawadir_pending_session: found")
             }
           } catch (e) {
-            console.warn("Could not get token from jadarat_pending_session:", e)
+            console.warn("Could not get token from kawadir_pending_session:", e)
           }
         }
 

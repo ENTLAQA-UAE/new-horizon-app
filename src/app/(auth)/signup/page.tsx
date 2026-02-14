@@ -56,7 +56,7 @@ function SignupPageSkeleton() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
-          <CardDescription>Get started with Jadarat ATS</CardDescription>
+          <CardDescription>Get started with Kawadir ATS</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="h-10 bg-muted animate-pulse rounded-md" />
@@ -300,7 +300,7 @@ function SignupPageContent() {
           <CardDescription>
             {inviteInfo
               ? `You've been invited to join as ${roleLabels[inviteInfo.role] || inviteInfo.role}`
-              : "Get started with Jadarat ATS"
+              : "Get started with Kawadir ATS"
             }
           </CardDescription>
         </CardHeader>

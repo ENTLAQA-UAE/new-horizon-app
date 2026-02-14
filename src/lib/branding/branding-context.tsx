@@ -16,11 +16,11 @@ export interface BrandingConfig {
 
 const defaultBranding: BrandingConfig = {
   orgId: null,
-  orgName: "Jadarat",
-  orgNameAr: "جدارات",
+  orgName: "Kawadir",
+  orgNameAr: "كوادر",
   logoUrl: null,
-  primaryColor: "#6366f1", // Modern indigo
-  secondaryColor: "#8b5cf6", // Purple
+  primaryColor: "#2D4CFF",
+  secondaryColor: "#6B7FFF",
   accentColor: "#06b6d4", // Cyan
   isLoaded: false,
 }
@@ -65,11 +65,11 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
     // Build branding from organization data
     const newBranding: BrandingConfig = {
       orgId: organization.id,
-      orgName: organization.name || "Jadarat",
-      orgNameAr: organization.name_ar || "جدارات",
+      orgName: organization.name || "Kawadir",
+      orgNameAr: organization.name_ar || "كوادر",
       logoUrl: organization.logo_url,
-      primaryColor: organization.primary_color || "#6366f1",
-      secondaryColor: organization.secondary_color || "#8b5cf6",
+      primaryColor: organization.primary_color || "#2D4CFF",
+      secondaryColor: organization.secondary_color || "#6B7FFF",
       accentColor: "#06b6d4",
       isLoaded: true,
     }

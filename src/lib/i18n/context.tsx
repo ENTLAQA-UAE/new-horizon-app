@@ -14,7 +14,7 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined)
 
-const STORAGE_KEY = "jadarat-lang"
+const STORAGE_KEY = "kawadir-lang"
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en")

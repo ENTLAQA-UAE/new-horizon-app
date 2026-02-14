@@ -42,17 +42,16 @@ export default function LoginPage() {
 
 function LoginPageSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
       <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center animate-pulse"
-          style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
-        >
-          <Sparkles className="w-8 h-8 text-white" />
-        </div>
+        <img
+          src="/kawadir-logo.png"
+          alt="Kawadir"
+          className="h-12 object-contain animate-pulse"
+        />
         <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--brand-primary, #6366f1)" }} />
-          <span className="text-sm text-gray-500">Loading...</span>
+          <Loader2 className="h-5 w-5 animate-spin text-[#2D4CFF]" />
+          <span className="text-sm text-[#616161]">Loading...</span>
         </div>
       </div>
     </div>
@@ -155,7 +154,7 @@ function LoginPageContent() {
       try {
         // Clear pending session from previous login attempt
         try {
-          localStorage.removeItem('jadarat_pending_session')
+          localStorage.removeItem('kawadir_pending_session')
         } catch (e) {
           console.warn("Could not clear storage:", e)
         }
@@ -248,15 +247,15 @@ function LoginPageContent() {
   ]
 
   // Dynamic colors based on org branding
-  const primaryColor = orgBranding?.primary_color || "#6366f1"
-  const secondaryColor = orgBranding?.secondary_color || "#8b5cf6"
+  const primaryColor = orgBranding?.primary_color || "#2D4CFF"
+  const secondaryColor = orgBranding?.secondary_color || "#6B7FFF"
   const gradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
   const hasCustomImage = !!orgBranding?.login_image_url
 
   if (!mounted) return <LoginPageSkeleton />
 
   return (
-    <div className="min-h-screen flex bg-[#fafbfc]">
+    <div className="min-h-screen flex bg-[#F5F5F5]">
       {/* Left Side - Login Form */}
       <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 py-12 relative">
         {/* Background decorations */}
@@ -286,15 +285,11 @@ function LoginPageContent() {
                 />
               ) : (
                 <>
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl"
-                    style={{
-                      background: gradient,
-                      boxShadow: `0 10px 40px -10px ${primaryColor}80`
-                    }}
-                  >
-                    <Sparkles className="w-7 h-7 text-white" />
-                  </div>
+                  <img
+                    src="/kawadir-logo.png"
+                    alt="Kawadir"
+                    className="h-12 object-contain"
+                  />
                   <div>
                     <h1
                       className="text-3xl font-bold tracking-tight"
@@ -304,7 +299,7 @@ function LoginPageContent() {
                         WebkitTextFillColor: "transparent",
                       }}
                     >
-                      {orgBranding?.name || "Jadarat"}
+                      {orgBranding?.name || "Kawadir"}
                     </h1>
                     <p className="text-sm text-gray-500 font-medium">
                       AI-Powered Recruitment Platform
@@ -601,7 +596,7 @@ function LoginPageContent() {
                   <Sparkles className="h-7 w-7" />
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">Powered by Jadarat</div>
+                  <div className="font-semibold text-lg">Powered by Kawadir</div>
                   <div className="text-sm text-white/70">AI-Powered Recruitment Platform</div>
                 </div>
               </div>

@@ -29,17 +29,16 @@ export default function ResetPasswordPage() {
 
 function ResetPasswordSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
       <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center animate-pulse"
-          style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
-        >
-          <Sparkles className="w-8 h-8 text-white" />
-        </div>
+        <img
+          src="/kawadir-logo.png"
+          alt="Kawadir"
+          className="h-12 object-contain animate-pulse"
+        />
         <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--brand-primary, #6366f1)" }} />
-          <span className="text-sm text-gray-500">Loading...</span>
+          <Loader2 className="h-5 w-5 animate-spin text-[#2D4CFF]" />
+          <span className="text-sm text-[#616161]">Loading...</span>
         </div>
       </div>
     </div>
@@ -149,8 +148,8 @@ function ResetPasswordContent() {
   }, [])
 
   // Brand colors - defined early for loading/error states
-  const primaryColor = "#6366f1"
-  const secondaryColor = "#8b5cf6"
+  const primaryColor = "#2D4CFF"
+  const secondaryColor = "#6B7FFF"
   const brandGradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -205,14 +204,13 @@ function ResetPasswordContent() {
   // Show loading while establishing session
   if (!sessionReady && !sessionError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
         <div className="flex flex-col items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: brandGradient }}
-          >
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
+          <img
+            src="/kawadir-logo.png"
+            alt="Kawadir"
+            className="h-12 object-contain"
+          />
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin" style={{ color: primaryColor }} />
             <span className="text-sm text-gray-500">Verifying reset link...</span>
@@ -225,7 +223,7 @@ function ResetPasswordContent() {
   // Show error if session could not be established
   if (sessionError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fafbfc]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
         <div className="max-w-md text-center px-6">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
@@ -254,22 +252,21 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#fafbfc]">
+    <div className="min-h-screen flex bg-[#F5F5F5]">
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-24">
         <div className="w-full max-w-md mx-auto">
           {/* Logo */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: brandGradient }}
-              >
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
+              <img
+                src="/kawadir-logo.png"
+                alt="Kawadir"
+                className="h-12 object-contain"
+              />
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
-                  Jadarat
+                  Kawadir
                 </h1>
                 <p className="text-sm text-gray-500">AI-Powered Recruitment Platform</p>
               </div>
@@ -431,7 +428,7 @@ function ResetPasswordContent() {
             <p className="text-center text-sm text-gray-500">
               Powered by{" "}
               <span className="font-semibold" style={{ color: primaryColor }}>
-                Jadarat ATS
+                Kawadir ATS
               </span>
             </p>
           </div>
