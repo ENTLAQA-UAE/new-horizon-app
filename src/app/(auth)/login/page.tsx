@@ -34,6 +34,11 @@ interface OrgBranding {
   secondary_color: string
 }
 
+interface PlatformBranding {
+  platform_logo: string | null
+  platform_logo_dark: string | null
+}
+
 // Inline Kawadir logo as SVG - no external file needed
 function KawadirLogo({ size = 40, className }: { size?: number; className?: string }) {
   return (
@@ -110,6 +115,7 @@ function LoginPageContent() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [orgBranding, setOrgBranding] = useState<OrgBranding | null>(null)
+  const [platformBranding, setPlatformBranding] = useState<PlatformBranding | null>(null)
   const [mounted, setMounted] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
   const router = useRouter()
@@ -132,6 +138,41 @@ function LoginPageContent() {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Fetch platform branding (logo from super admin settings)
+  useEffect(() => {
+    async function fetchPlatformBranding() {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from("platform_settings")
+          .select("key, value")
+          .in("key", ["platform_logo", "platform_logo_dark"])
+
+        if (data && data.length > 0) {
+          const settings: PlatformBranding = {
+            platform_logo: null,
+            platform_logo_dark: null,
+          }
+          data.forEach((row) => {
+            if (row.key === "platform_logo" && row.value) {
+              settings.platform_logo = JSON.parse(row.value as string)
+            }
+            if (row.key === "platform_logo_dark" && row.value) {
+              settings.platform_logo_dark = JSON.parse(row.value as string)
+            }
+          })
+          if (settings.platform_logo || settings.platform_logo_dark) {
+            setPlatformBranding(settings)
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to fetch platform branding:", error)
+      }
+    }
+
+    fetchPlatformBranding()
   }, [])
 
   // Fetch organization branding if org slug is provided
@@ -332,19 +373,29 @@ function LoginPageContent() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <KawadirLogo size={44} />
-                <div>
-                  <h1
-                    className="text-2xl font-bold tracking-tight"
-                    style={{
-                      background: gradient,
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    Kawadir
-                  </h1>
-                </div>
+                {platformBranding?.platform_logo ? (
+                  <img
+                    src={platformBranding.platform_logo}
+                    alt="Kawadir"
+                    className="h-12 object-contain"
+                  />
+                ) : (
+                  <>
+                    <KawadirLogo size={44} />
+                    <div>
+                      <h1
+                        className="text-2xl font-bold tracking-tight"
+                        style={{
+                          background: gradient,
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                        }}
+                      >
+                        Kawadir
+                      </h1>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
