@@ -1,6 +1,6 @@
 # Multi-Tenant Subdomain & Custom Domain Implementation Plan
 
-> **Status:** Approved — awaiting wildcard DNS configuration before implementation
+> **Status:** Implemented — awaiting wildcard DNS + env vars configuration before going live
 > **Decision:** Option A — Custom root domain with wildcard DNS (e.g., `*.kawadir.io`)
 > **Priority:** Next major feature after onboarding guide
 

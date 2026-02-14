@@ -32,6 +32,8 @@ export type Database = {
           emiratization_target_percentage: number | null
           max_jobs: number | null
           max_candidates: number | null
+          subdomain_enabled: boolean | null
+          custom_domain_verified: boolean | null
           max_users: number | null
           created_at: string | null
           updated_at: string | null
@@ -58,6 +60,8 @@ export type Database = {
           emiratization_target_percentage?: number | null
           max_jobs?: number | null
           max_candidates?: number | null
+          subdomain_enabled?: boolean | null
+          custom_domain_verified?: boolean | null
           max_users?: number | null
           created_at?: string | null
           updated_at?: string | null
@@ -84,6 +88,8 @@ export type Database = {
           emiratization_target_percentage?: number | null
           max_jobs?: number | null
           max_candidates?: number | null
+          subdomain_enabled?: boolean | null
+          custom_domain_verified?: boolean | null
           max_users?: number | null
           created_at?: string | null
           updated_at?: string | null

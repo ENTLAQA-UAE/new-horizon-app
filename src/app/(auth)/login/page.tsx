@@ -120,7 +120,14 @@ function LoginPageContent() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const orgSlug = searchParams.get("org")
+
+  // Read org slug from query param (?org=slug) or from middleware cookie (subdomain/custom domain)
+  const orgSlugParam = searchParams.get("org")
+  const orgSlug = orgSlugParam || (() => {
+    if (typeof document === 'undefined') return null
+    const match = document.cookie.match(/(?:^|;\s*)x-org-slug=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+  })()
 
   // Validate email on blur
   const validateEmail = (emailValue: string) => {

@@ -1,5 +1,64 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+
+// =====================================================
+// SUBDOMAIN / CUSTOM DOMAIN RESOLUTION
+// Extracts org slug from hostname for multi-tenant routing.
+// =====================================================
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
+const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'mail', 'smtp', 'ftp', 'ns1', 'ns2']
+
+/**
+ * Extract org slug from the request hostname.
+ * Returns null if this is the root domain or a system subdomain.
+ */
+async function resolveOrgSlug(hostname: string): Promise<string | null> {
+  // Strip port for local dev (e.g., localhost:3000)
+  const host = hostname.split(':')[0]
+
+  // Check for subdomain: slug.kawadir.io
+  if (host.endsWith(`.${ROOT_DOMAIN}`)) {
+    const subdomain = host.replace(`.${ROOT_DOMAIN}`, '')
+    if (subdomain && !RESERVED_SUBDOMAINS.includes(subdomain) && !subdomain.includes('.')) {
+      return subdomain
+    }
+    return null
+  }
+
+  // Root domain or www — no org
+  if (host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}`) {
+    return null
+  }
+
+  // Localhost / dev — no org resolution
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return null
+  }
+
+  // Custom domain — lookup in DB using service client (bypasses RLS)
+  try {
+    const serviceClient = createSupabaseAdmin(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data } = await serviceClient
+      .from('organizations')
+      .select('slug, custom_domain_verified')
+      .eq('custom_domain', host)
+      .single()
+
+    if (data?.slug && data.custom_domain_verified) {
+      return data.slug
+    }
+  } catch {
+    // DB lookup failed — skip org resolution
+  }
+
+  return null
+}
 
 // =====================================================
 // ROUTE-ROLE MAP
@@ -13,6 +72,7 @@ const routeRoleMap: { path: string; roles: string[] }[] = [
   { path: '/org/settings/notifications', roles: ['hr_manager'] },
   { path: '/org/settings/integrations', roles: ['org_admin'] },
   { path: '/org/settings/email', roles: ['org_admin'] },
+  { path: '/org/settings/domain', roles: ['org_admin'] },
   { path: '/org/settings', roles: ['org_admin'] },
 
   // Org admin only
@@ -248,6 +308,27 @@ export async function updateSession(request: NextRequest) {
       }
       return redirectResponse
     }
+  }
+
+  // =====================================================
+  // SUBDOMAIN / CUSTOM DOMAIN RESOLUTION
+  // Resolve org slug from hostname and set x-org-slug header
+  // so downstream pages can read it for branded experiences.
+  // =====================================================
+  const hostname = request.headers.get('host') || ''
+  const orgSlug = await resolveOrgSlug(hostname)
+
+  if (orgSlug) {
+    // Set header on the response for server components to read
+    supabaseResponse.headers.set('x-org-slug', orgSlug)
+    // Also set a cookie so client components can read it
+    supabaseResponse.cookies.set('x-org-slug', orgSlug, {
+      path: '/',
+      httpOnly: false, // Client-readable
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 4, // 4 hours
+    })
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
