@@ -222,6 +222,46 @@ function LoginPageContent() {
     fetchOrgBranding()
   }, [orgSlug])
 
+  // Dynamic page title based on org branding
+  useEffect(() => {
+    if (orgBranding?.name) {
+      document.title = `Login | ${orgBranding.name}`
+    } else {
+      document.title = "Login | Kawadir ATS"
+    }
+    return () => {
+      document.title = "Kawadir ATS"
+    }
+  }, [orgBranding?.name])
+
+  // Dynamic favicon based on org logo
+  useEffect(() => {
+    if (!orgBranding?.logo_url) return
+
+    const existingFavicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    const previousHref = existingFavicon?.href || null
+
+    if (existingFavicon) {
+      existingFavicon.href = orgBranding.logo_url
+    } else {
+      const link = document.createElement('link')
+      link.rel = 'icon'
+      link.href = orgBranding.logo_url
+      document.head.appendChild(link)
+    }
+
+    return () => {
+      const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+      if (favicon) {
+        if (previousHref) {
+          favicon.href = previousHref
+        } else {
+          favicon.remove()
+        }
+      }
+    }
+  }, [orgBranding?.logo_url])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
