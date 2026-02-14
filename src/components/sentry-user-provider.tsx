@@ -18,12 +18,14 @@ interface SentryUserProviderProps {
 export function SentryUserProvider({ children }: SentryUserProviderProps) {
   useEffect(() => {
     const supabase = createClient()
+    let cancelled = false
 
     // Get initial user
     const initUser = async () => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser()
 
+        if (cancelled) return
         if (error || !user) {
           setSentryUser(null)
           return
@@ -36,12 +38,16 @@ export function SentryUserProvider({ children }: SentryUserProviderProps) {
           .eq("id", user.id)
           .maybeSingle()
 
+        if (cancelled) return
+
         // Get user role - use maybeSingle to avoid 400 errors
         const { data: userRole } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
           .maybeSingle()
+
+        if (cancelled) return
 
         setSentryUser({
           id: user.id,
@@ -52,6 +58,9 @@ export function SentryUserProvider({ children }: SentryUserProviderProps) {
           role: userRole?.role || undefined,
         })
       } catch (error) {
+        if (cancelled) return
+        // Ignore AbortErrors from component unmount
+        if (error instanceof Error && error.name === 'AbortError') return
         console.error("SentryUserProvider: Error initializing user:", error)
         setSentryUser(null)
       }
@@ -96,6 +105,7 @@ export function SentryUserProvider({ children }: SentryUserProviderProps) {
     )
 
     return () => {
+      cancelled = true
       subscription.unsubscribe()
     }
   }, [])
