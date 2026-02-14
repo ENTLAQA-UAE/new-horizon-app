@@ -24,7 +24,7 @@ async function getOrgBranding(): Promise<OrgBranding | null> {
 
     const { data } = await supabase
       .from("organizations")
-      .select("name, logo_url, primary_color, secondary_color, login_image_url")
+      .select("name, logo_url, favicon_url, primary_color, secondary_color, login_image_url")
       .eq("slug", orgSlug)
       .single()
 
@@ -33,6 +33,7 @@ async function getOrgBranding(): Promise<OrgBranding | null> {
     return {
       name: data.name,
       logo_url: data.logo_url,
+      favicon_url: (data as Record<string, unknown>).favicon_url as string | null ?? null,
       primary_color: data.primary_color || "#2D4CFF",
       secondary_color: data.secondary_color || "#6B7FFF",
       login_image_url: data.login_image_url || null,
@@ -48,7 +49,11 @@ export async function generateMetadata(): Promise<Metadata> {
   if (branding) {
     return {
       title: `Login | ${branding.name}`,
-      icons: branding.logo_url ? { icon: branding.logo_url } : undefined,
+      icons: branding.favicon_url
+        ? { icon: branding.favicon_url }
+        : branding.logo_url
+          ? { icon: branding.logo_url }
+          : undefined,
     }
   }
 
