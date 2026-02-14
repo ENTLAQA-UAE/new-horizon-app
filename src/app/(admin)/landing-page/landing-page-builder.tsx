@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { Json } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -92,8 +93,8 @@ export function LandingPageBuilder({ initialBlocks, initialConfig }: BuilderProp
             block_type: b.type,
             block_order: index,
             enabled: b.enabled,
-            content: b.content,
-            styles: b.styles,
+            content: b.content as unknown as Json,
+            styles: b.styles as unknown as Json,
           }))
         )
         if (error) throw error
