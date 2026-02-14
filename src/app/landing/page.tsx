@@ -422,7 +422,7 @@ function FeaturesBlock({ block, gradient, styles, paddingClass }: { block: Landi
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors"
                 style={{ background: `${styles.primaryColor}10` }}
               >
-                <Icon className="h-6 w-6" style={{ color: styles.primaryColor }} />
+                <span style={{ color: styles.primaryColor }}><Icon className="h-6 w-6" /></span>
               </div>
               <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
               <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
@@ -550,7 +550,7 @@ function PricingBlock({ block, gradient, styles, paddingClass }: { block: Landin
             <div className="space-y-3 mb-8">
               {(item.features || []).map((feature, fi) => (
                 <div key={fi} className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 shrink-0" style={{ color: styles.primaryColor }} />
+                  <span style={{ color: styles.primaryColor }}><CheckCircle className="h-4 w-4 shrink-0" /></span>
                   <span>{feature}</span>
                 </div>
               ))}
@@ -700,7 +700,7 @@ function ContactBlock({ block, gradient, styles, paddingClass }: { block: Landin
         {block.content.email && (
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: `${styles.primaryColor}10` }}>
-              <Mail className="h-6 w-6" style={{ color: styles.primaryColor }} />
+              <span style={{ color: styles.primaryColor }}><Mail className="h-6 w-6" /></span>
             </div>
             <p className="font-medium mb-1">Email</p>
             <a href={`mailto:${block.content.email}`} className="text-sm text-gray-600 hover:underline">{block.content.email}</a>
@@ -709,7 +709,7 @@ function ContactBlock({ block, gradient, styles, paddingClass }: { block: Landin
         {block.content.phone && (
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: `${styles.primaryColor}10` }}>
-              <Phone className="h-6 w-6" style={{ color: styles.primaryColor }} />
+              <span style={{ color: styles.primaryColor }}><Phone className="h-6 w-6" /></span>
             </div>
             <p className="font-medium mb-1">Phone</p>
             <a href={`tel:${block.content.phone}`} className="text-sm text-gray-600 hover:underline">{block.content.phone}</a>
@@ -718,7 +718,7 @@ function ContactBlock({ block, gradient, styles, paddingClass }: { block: Landin
         {block.content.address && (
           <div className="text-center">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: `${styles.primaryColor}10` }}>
-              <MapPin className="h-6 w-6" style={{ color: styles.primaryColor }} />
+              <span style={{ color: styles.primaryColor }}><MapPin className="h-6 w-6" /></span>
             </div>
             <p className="font-medium mb-1">Address</p>
             <p className="text-sm text-gray-600">{block.content.address}</p>
