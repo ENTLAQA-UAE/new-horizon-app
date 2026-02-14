@@ -171,9 +171,14 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
       const settingKey = type === 'light' ? 'platform_logo' : 'platform_logo_dark'
       updateSetting(settingKey, publicUrl)
       toast.success("Logo uploaded successfully")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading logo:", error)
-      toast.error("Failed to upload logo")
+      // Check for RLS/permission error
+      if (error?.message?.includes('policy') || error?.statusCode === '403' || error?.message?.includes('not allowed')) {
+        toast.error("Permission denied. Only super admins can upload platform logos.")
+      } else {
+        toast.error("Failed to upload logo. Please try again.")
+      }
     } finally {
       setIsUploadingLogo(false)
       if (logoInputRef.current) {
