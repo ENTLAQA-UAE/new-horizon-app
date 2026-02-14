@@ -131,7 +131,7 @@ export async function markNotificationAsRead(
 ): Promise<void> {
   await supabase
     .from("notifications")
-    .update({ is_read: true })
+    .update({ is_read: true, read_at: new Date().toISOString() })
     .eq("id", notificationId)
 }
 
@@ -141,7 +141,7 @@ export async function markAllNotificationsAsRead(
 ): Promise<void> {
   await supabase
     .from("notifications")
-    .update({ is_read: true })
+    .update({ is_read: true, read_at: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("is_read", false)
 }

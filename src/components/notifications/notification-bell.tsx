@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -13,7 +13,6 @@ import { Separator } from "@/components/ui/separator"
 import {
   Bell,
   BellOff,
-  Check,
   CheckCheck,
   FileText,
   Calendar,
@@ -55,25 +54,29 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await fetch("/api/notifications?limit=20")
+      if (!response.ok) {
+        console.error("Failed to fetch notifications:", response.status)
+        return
+      }
       const data = await response.json()
       if (data.notifications) {
         setNotifications(data.notifications)
-        setUnreadCount(data.notifications.filter((n: Notification) => !n.is_read).length)
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await fetch("/api/notifications?count=true")
+      if (!response.ok) return
       const data = await response.json()
       if (typeof data.count === "number") {
         setUnreadCount(data.count)
@@ -81,15 +84,19 @@ export function NotificationBell() {
     } catch (error) {
       console.error("Failed to fetch unread count:", error)
     }
-  }
+  }, [])
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await fetch("/api/notifications", {
+      const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark_read", notificationId }),
       })
+      if (!response.ok) {
+        console.error("Failed to mark notification as read:", response.status)
+        return
+      }
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, is_read: true } : n
@@ -103,11 +110,15 @@ export function NotificationBell() {
 
   const markAllAsRead = async () => {
     try {
-      await fetch("/api/notifications", {
+      const response = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "mark_all_read" }),
       })
+      if (!response.ok) {
+        console.error("Failed to mark all as read:", response.status)
+        return
+      }
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, is_read: true }))
       )
@@ -117,17 +128,20 @@ export function NotificationBell() {
     }
   }
 
+  // Poll for unread count on mount and every 30 seconds
   useEffect(() => {
     fetchUnreadCount()
-    const interval = setInterval(fetchUnreadCount, 60000) // Poll every minute
+    const interval = setInterval(fetchUnreadCount, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchUnreadCount])
 
+  // Fetch notifications and accurate count when popover opens
   useEffect(() => {
     if (isOpen) {
       fetchNotifications()
+      fetchUnreadCount()
     }
-  }, [isOpen])
+  }, [isOpen, fetchNotifications, fetchUnreadCount])
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
