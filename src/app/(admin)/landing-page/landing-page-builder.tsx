@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Json } from "@/lib/supabase/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -79,44 +77,24 @@ export function LandingPageBuilder({ initialBlocks, initialConfig }: BuilderProp
 
   const handleSave = async () => {
     setIsSaving(true)
-    const supabase = createClient()
 
     try {
-      // Delete existing blocks
-      await supabase.from("landing_page_blocks").delete().neq("id", "00000000-0000-0000-0000-000000000000")
+      const response = await fetch("/api/admin/landing-page", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocks, config }),
+      })
 
-      // Insert all blocks
-      if (blocks.length > 0) {
-        const { error } = await supabase.from("landing_page_blocks").insert(
-          blocks.map((b, index) => ({
-            id: b.id,
-            block_type: b.type,
-            block_order: index,
-            enabled: b.enabled,
-            content: b.content as unknown as Json,
-            styles: b.styles as unknown as Json,
-          }))
-        )
-        if (error) throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save")
       }
-
-      // Save config to platform_settings
-      const { error: configError } = await supabase
-        .from("platform_settings")
-        .upsert(
-          {
-            key: "landing_page_config",
-            value: JSON.stringify(config),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "key" }
-        )
-      if (configError) throw configError
 
       toast.success("Landing page saved successfully")
     } catch (error) {
       console.error("Error saving:", error)
-      toast.error("Failed to save landing page")
+      toast.error(error instanceof Error ? error.message : "Failed to save landing page")
     } finally {
       setIsSaving(false)
     }
