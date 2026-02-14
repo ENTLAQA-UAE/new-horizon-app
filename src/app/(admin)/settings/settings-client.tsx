@@ -99,23 +99,21 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     const supabase = createClient()
 
     try {
-      // Upsert each setting (insert or update)
-      const updates = Object.entries(settings).map(async ([key, value]) => {
-        const { error } = await supabase
-          .from("platform_settings")
-          .upsert(
-            {
-              key,
-              value: JSON.stringify(value),
-              updated_at: new Date().toISOString()
-            },
-            { onConflict: 'key' }
-          )
+      const now = new Date().toISOString()
 
-        if (error) throw error
-      })
+      // Batch all settings into a single upsert call to avoid
+      // AbortError from flooding the Supabase client with parallel requests
+      const rows = Object.entries(settings).map(([key, value]) => ({
+        key,
+        value: JSON.stringify(value),
+        updated_at: now,
+      }))
 
-      await Promise.all(updates)
+      const { error } = await supabase
+        .from("platform_settings")
+        .upsert(rows, { onConflict: 'key' })
+
+      if (error) throw error
 
       setIsSaved(true)
       toast.success("Settings saved successfully")
