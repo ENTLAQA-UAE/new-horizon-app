@@ -63,64 +63,76 @@ export default function LandingPage() {
     async function loadData() {
       const supabase = createClient()
 
-      // Load blocks
-      const { data: blocksData } = await supabase
-        .from("landing_page_blocks")
-        .select("*")
-        .eq("enabled", true)
-        .order("block_order")
+      try {
+        // Load blocks
+        const { data: blocksData, error: blocksError } = await supabase
+          .from("landing_page_blocks")
+          .select("*")
+          .eq("enabled", true)
+          .order("block_order")
 
-      if (blocksData && blocksData.length > 0) {
-        setBlocks(
-          blocksData.map((b) => ({
-            id: b.id,
-            type: b.block_type as LandingBlockType,
-            order: b.block_order,
-            enabled: b.enabled,
-            content: b.content as any,
-            styles: b.styles as any,
-          }))
-        )
-      } else {
-        // Show defaults
-        const defaults: LandingPageBlock[] = (
-          Object.entries(defaultLandingBlocks) as [LandingBlockType, Partial<LandingPageBlock>][]
-        )
-          .filter(([, b]) => b.enabled)
-          .map(([type, block], index) => ({
-            id: type,
-            type,
-            order: index,
-            enabled: true,
-            content: block.content ?? {},
-            styles: block.styles ?? {},
-          }))
-        setBlocks(defaults)
+        if (blocksError) {
+          console.error("Error loading landing page blocks:", blocksError)
+        }
+
+        if (blocksData && blocksData.length > 0) {
+          setBlocks(
+            blocksData.map((b) => ({
+              id: b.id,
+              type: b.block_type as LandingBlockType,
+              order: b.block_order,
+              enabled: b.enabled,
+              content: b.content as any,
+              styles: b.styles as any,
+            }))
+          )
+        } else {
+          // Show defaults
+          const defaults: LandingPageBlock[] = (
+            Object.entries(defaultLandingBlocks) as [LandingBlockType, Partial<LandingPageBlock>][]
+          )
+            .filter(([, b]) => b.enabled)
+            .map(([type, block], index) => ({
+              id: type,
+              type,
+              order: index,
+              enabled: true,
+              content: block.content ?? {},
+              styles: block.styles ?? {},
+            }))
+          setBlocks(defaults)
+        }
+
+        // Load config
+        const { data: configData, error: configError } = await supabase
+          .from("platform_settings")
+          .select("key, value")
+          .in("key", ["landing_page_config", "platform_logo"])
+
+        if (configError) {
+          console.error("Error loading landing page config:", configError)
+        }
+
+        if (configData) {
+          configData.forEach((row) => {
+            if (row.key === "landing_page_config") {
+              try {
+                const parsed = JSON.parse(row.value as string)
+                setConfig({ ...defaultLandingConfig, ...parsed })
+              } catch { /* use defaults */ }
+            }
+            if (row.key === "platform_logo" && row.value) {
+              try {
+                setPlatformLogo(JSON.parse(row.value as string))
+              } catch { /* ignore */ }
+            }
+          })
+        }
+      } catch (error) {
+        console.error("Error loading landing page data:", error)
+      } finally {
+        setIsLoading(false)
       }
-
-      // Load config
-      const { data: configData } = await supabase
-        .from("platform_settings")
-        .select("key, value")
-        .in("key", ["landing_page_config", "platform_logo"])
-
-      if (configData) {
-        configData.forEach((row) => {
-          if (row.key === "landing_page_config") {
-            try {
-              const parsed = JSON.parse(row.value as string)
-              setConfig({ ...defaultLandingConfig, ...parsed })
-            } catch { /* use defaults */ }
-          }
-          if (row.key === "platform_logo" && row.value) {
-            try {
-              setPlatformLogo(JSON.parse(row.value as string))
-            } catch { /* ignore */ }
-          }
-        })
-      }
-
-      setIsLoading(false)
     }
 
     loadData()
