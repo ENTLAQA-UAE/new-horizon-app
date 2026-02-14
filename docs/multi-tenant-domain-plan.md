@@ -1,16 +1,16 @@
 # Multi-Tenant Subdomain & Custom Domain Implementation Plan
 
-> **Status:** Approved — awaiting domain purchase before implementation
-> **Decision:** Option A — Custom root domain with wildcard DNS (e.g., `*.jadarat-ats.com`)
+> **Status:** Approved — awaiting wildcard DNS configuration before implementation
+> **Decision:** Option A — Custom root domain with wildcard DNS (e.g., `*.kawadir.io`)
 > **Priority:** Next major feature after onboarding guide
 
 ---
 
 ## 1. Context & Goal
 
-The platform is a multi-tenant ATS at `https://jadarat-ats.vercel.app/`. Each organization should be able to:
+The platform is a multi-tenant ATS at `https://kawadir.io/`. Each organization should be able to:
 
-1. **Get a subdomain** — e.g., `https://allianz.jadarat-ats.com/` (auto-generated from org slug)
+1. **Get a subdomain** — e.g., `https://allianz.kawadir.io/` (auto-generated from org slug)
 2. **Configure a custom domain** — e.g., `https://careers.allianz.com/` (manual DNS setup by org admin)
 
 When users access the platform via a subdomain or custom domain, the **login page** should display:
@@ -34,6 +34,7 @@ When users access the platform via a subdomain or custom domain, the **login pag
 | Branding management page | `/org/branding` | Exists — org_admin manages all assets |
 | Middleware | `src/lib/supabase/middleware.ts` | Exists — no subdomain routing yet |
 | Storage bucket | `organization-assets` (public) | Exists — stores logos, favicons, login images |
+| Landing page redirect | `next.config.ts` + middleware | Exists — `/landing` and unauthenticated `/` redirect to `https://kawadir.io` |
 
 ### Known Bug to Fix
 The login page defines `login_image_url` in its interface but **does not fetch it** from the database query. The branding page correctly uploads and stores it. The login page query needs to include `login_image_url` in its select statement.
@@ -45,7 +46,7 @@ The login page defines `login_image_url` in its interface but **does not fetch i
 ## 3. Architecture: How It Works
 
 ```
-Request comes in (e.g., https://allianz.jadarat-ats.com/login)
+Request comes in (e.g., https://allianz.kawadir.io/login)
      │
      ▼
 ┌─────────────────────────────────────────────┐
@@ -53,7 +54,7 @@ Request comes in (e.g., https://allianz.jadarat-ats.com/login)
 │                                              │
 │  1. Read hostname from request headers       │
 │  2. Extract subdomain:                       │
-│     "allianz.jadarat-ats.com" → "allianz"   │
+│     "allianz.kawadir.io" → "allianz"        │
 │  3. OR match custom domain:                  │
 │     "careers.allianz.com" → lookup in DB     │
 │  4. Resolve org_id from slug or domain       │
@@ -89,14 +90,14 @@ Request comes in (e.g., https://allianz.jadarat-ats.com/login)
 Vercel does NOT support wildcard subdomains on `.vercel.app` domains. A custom root domain is required.
 
 ### Setup Steps (Manual, One-Time)
-1. **Purchase domain** — e.g., `jadarat-ats.com`
+1. **Domain** — `kawadir.io` (already owned)
 2. **Add to Vercel project:**
-   - `jadarat-ats.com` (root)
-   - `*.jadarat-ats.com` (wildcard)
+   - `kawadir.io` (root)
+   - `*.kawadir.io` (wildcard)
 3. **DNS records at registrar:**
-   - `A` record for `jadarat-ats.com` → Vercel IP `76.76.21.21`
-   - `CNAME` record for `*.jadarat-ats.com` → `cname.vercel-dns.com`
-4. **Update environment variables** — set `NEXT_PUBLIC_ROOT_DOMAIN=jadarat-ats.com`
+   - `A` record for `kawadir.io` → Vercel IP `76.76.21.21`
+   - `CNAME` record for `*.kawadir.io` → `cname.vercel-dns.com`
+4. **Update environment variables** — set `NEXT_PUBLIC_ROOT_DOMAIN=kawadir.io`
 
 After this, ANY org slug automatically works as a subdomain with zero API calls.
 
@@ -136,16 +137,16 @@ Add `subdomain_enabled` and `custom_domain_verified` to the organizations Row/In
 ### Task 2: Middleware — Subdomain/Domain Resolution
 **File:** `src/lib/supabase/middleware.ts`
 - Parse `Host` header to detect subdomain or custom domain
-- Extract slug from subdomain: `{slug}.jadarat-ats.com` → `slug`
+- Extract slug from subdomain: `{slug}.kawadir.io` → `slug`
 - For custom domains: query `organizations` table by `custom_domain`
 - Set `x-org-slug` response header for downstream pages
-- Skip resolution for the root domain (`jadarat-ats.com` with no subdomain)
+- Skip resolution for the root domain (`kawadir.io` with no subdomain)
 - Skip resolution for known system subdomains (e.g., `www`, `api`)
 
 ```typescript
 // Pseudocode for middleware
 const hostname = request.headers.get("host") || ""
-const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN // "jadarat-ats.com"
+const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN // "kawadir.io"
 
 let orgSlug: string | null = null
 
@@ -174,13 +175,13 @@ if (orgSlug) {
 - When org is detected:
   - Left side: org logo, org name, branded login form (brand colors on button)
   - Right side: `login_image_url` as the full-height image
-- When no org (root domain): show default Jadarat branding (current behavior)
+- When no org (root domain): show default Kawadir branding (current behavior)
 
 ### Task 4: Settings UI — Domain Configuration
 **File:** New section in `src/app/(org)/org/settings/page.tsx` (org_admin only)
 - **Subdomain section:**
   - Toggle to enable subdomain
-  - Auto-displays: `{slug}.jadarat-ats.com` (read-only, based on org slug)
+  - Auto-displays: `{slug}.kawadir.io` (read-only, based on org slug)
   - "Copy URL" button
 - **Custom domain section:**
   - Input field for custom domain (e.g., `hire.allianz.com`)
@@ -217,7 +218,7 @@ if (orgSlug) {
 
 ```env
 # Root domain for subdomain extraction
-NEXT_PUBLIC_ROOT_DOMAIN=jadarat-ats.com
+NEXT_PUBLIC_ROOT_DOMAIN=kawadir.io
 
 # Vercel API (for custom domain management)
 VERCEL_API_TOKEN=xxx
@@ -248,8 +249,8 @@ Database:
 
 ## 9. Edge Cases to Handle
 
-- **Root domain access** (`jadarat-ats.com/login`) → Show default Jadarat branding
-- **Invalid subdomain** (`nonexistent.jadarat-ats.com`) → Redirect to root or show 404
+- **Root domain access** (`kawadir.io/login`) → Show default Kawadir branding
+- **Invalid subdomain** (`nonexistent.kawadir.io`) → Redirect to root or show 404
 - **System subdomains** (`www`, `api`, `admin`) → Skip org resolution
 - **Unverified custom domain** → Don't serve org content until DNS verified
 - **Org slug change** → Subdomain changes automatically (slug is the subdomain)
@@ -259,8 +260,8 @@ Database:
 
 ## 10. Prerequisites Before Starting
 
-- [ ] Purchase production domain (e.g., `jadarat-ats.com`)
-- [ ] Add domain + wildcard to Vercel project
+- [x] Domain owned (`kawadir.io`)
+- [ ] Add wildcard (`*.kawadir.io`) to Vercel project
 - [ ] Configure DNS (A record + wildcard CNAME)
 - [ ] Set environment variables (`NEXT_PUBLIC_ROOT_DOMAIN`, `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`)
 - [ ] Run SQL migration for new columns
