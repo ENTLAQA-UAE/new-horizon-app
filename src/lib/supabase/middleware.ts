@@ -149,6 +149,7 @@ export async function updateSession(request: NextRequest) {
     '/api/offers/respond',       // Offer accept/decline API (token-based, no auth)
     '/offers/respond',           // Offer accept/decline landing page
     '/onboarding', // Allow onboarding for authenticated users without org
+    '/landing',    // Public landing page
   ]
 
   const isPublicRoute = publicRoutes.some(route =>
@@ -178,9 +179,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user && !isPublicRoute) {
-    // Unauthenticated users on root → redirect to main domain
+    // Unauthenticated users on root → serve the landing page
     if (request.nextUrl.pathname === '/') {
-      return NextResponse.redirect(new URL('https://kawadir.io'))
+      const url = request.nextUrl.clone()
+      url.pathname = '/landing'
+      return NextResponse.rewrite(url)
     }
     // No user, redirect to login page
     const url = request.nextUrl.clone()
