@@ -63,7 +63,7 @@ export default function RootRedirectPage() {
         // Then try to get session from pending storage (set by login page)
         if (!session) {
           try {
-            const pendingSession = localStorage.getItem('jadarat_pending_session')
+            const pendingSession = localStorage.getItem('kawadir_pending_session')
             if (pendingSession) {
               const parsed = JSON.parse(pendingSession)
               if (parsed?.access_token && parsed?.user) {
@@ -187,7 +187,7 @@ export default function RootRedirectPage() {
         // default to /org instead of /login to prevent infinite redirect loop
         // The org layout will handle proper auth checking
         try {
-          const pendingSession = localStorage.getItem('jadarat_pending_session')
+          const pendingSession = localStorage.getItem('kawadir_pending_session')
           const storageKeys = Object.keys(localStorage).filter(
             k => k.startsWith("sb-") && k.endsWith("-auth-token")
           )
@@ -196,7 +196,7 @@ export default function RootRedirectPage() {
           if (hasSession) {
             console.log("RootRedirect: Fetch failed but session exists, defaulting to /org")
             // Clear the pending session since we're using it
-            localStorage.removeItem('jadarat_pending_session')
+            localStorage.removeItem('kawadir_pending_session')
             router.replace("/org")
             return
           }

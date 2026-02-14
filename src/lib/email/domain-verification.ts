@@ -34,7 +34,7 @@ export interface VerificationResult {
  */
 export function generateDKIMSelector(orgId: string): string {
   const hash = crypto.createHash('md5').update(orgId).digest('hex').slice(0, 8)
-  return `jadarat-${hash}`
+  return `kawadir-${hash}`
 }
 
 /**
@@ -60,8 +60,8 @@ export function getRequiredDNSRecords(
   // Domain verification TXT record
   records.push({
     type: 'TXT',
-    name: `_jadarat-verify.${domain}`,
-    value: `jadarat-verification=${verificationToken}`,
+    name: `_kawadir-verify.${domain}`,
+    value: `kawadir-verification=${verificationToken}`,
   })
 
   // SPF record
@@ -173,11 +173,11 @@ async function verifyDomainOwnership(
   expectedToken: string
 ): Promise<{ verified: boolean; error?: string }> {
   try {
-    const recordName = `_jadarat-verify.${domain}`
+    const recordName = `_kawadir-verify.${domain}`
     const txtRecords = await dns.resolveTxt(recordName)
     const records = txtRecords.map((r) => r.join(''))
 
-    const expectedValue = `jadarat-verification=${expectedToken}`
+    const expectedValue = `kawadir-verification=${expectedToken}`
     const found = records.some((r) => r.includes(expectedValue))
 
     if (found) {
@@ -287,9 +287,9 @@ export async function verifyDomain(
   const ownershipResult = await verifyDomainOwnership(domain, verificationToken)
   result.records.push({
     type: 'TXT',
-    name: `_jadarat-verify.${domain}`,
-    expected: `jadarat-verification=${verificationToken}`,
-    actual: ownershipResult.verified ? `jadarat-verification=${verificationToken}` : undefined,
+    name: `_kawadir-verify.${domain}`,
+    expected: `kawadir-verification=${verificationToken}`,
+    actual: ownershipResult.verified ? `kawadir-verification=${verificationToken}` : undefined,
     verified: ownershipResult.verified,
     error: ownershipResult.error,
   })

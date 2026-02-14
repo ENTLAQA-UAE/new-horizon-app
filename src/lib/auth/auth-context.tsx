@@ -102,7 +102,7 @@ export function useAuth() {
 }
 
 // Storage key for user tracking
-const AUTH_USER_KEY = "jadarat_auth_user_id"
+const AUTH_USER_KEY = "kawadir_auth_user_id"
 
 // Helper function to clear all auth-related cookies
 function clearAuthCookies() {
@@ -120,7 +120,7 @@ function clearAuthCookies() {
         cookieName.includes("auth") ||
         cookieName.includes("token") ||
         cookieName.includes("session") ||
-        cookieName.includes("jadarat")
+        cookieName.includes("kawadir")
       ) {
         // Clear cookie for current path and root path
         document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
@@ -210,10 +210,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // OPTIMIZATION: Check localStorage sources FIRST (fast) before calling getSession() (slow)
         // This avoids the 3-second timeout delay when we already have a valid session in storage
 
-        // Method 1: Try jadarat_pending_session first (set by login page before redirect)
+        // Method 1: Try kawadir_pending_session first (set by login page before redirect)
         // This handles the race condition where redirect happens before Supabase persists
         try {
-          const pendingSession = localStorage.getItem('jadarat_pending_session')
+          const pendingSession = localStorage.getItem('kawadir_pending_session')
           if (pendingSession) {
             const parsed = JSON.parse(pendingSession)
             if (parsed?.access_token && parsed?.user && !isTokenExpired(parsed.access_token)) {
@@ -221,7 +221,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               session = parsed as Session
             } else if (parsed?.access_token && isTokenExpired(parsed.access_token)) {
               console.log("AuthProvider: Pending session expired, clearing it")
-              localStorage.removeItem('jadarat_pending_session')
+              localStorage.removeItem('kawadir_pending_session')
             }
           }
         } catch (e) {
@@ -539,10 +539,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         needsOnboarding,
       })
 
-      // Save session to jadarat_pending_session as a backup for page refreshes
+      // Save session to kawadir_pending_session as a backup for page refreshes
       // This ensures we have a reliable fallback when getSession() times out
       try {
-        localStorage.setItem('jadarat_pending_session', JSON.stringify(session))
+        localStorage.setItem('kawadir_pending_session', JSON.stringify(session))
         console.log("AuthProvider: Session backed up to localStorage")
       } catch (e) {
         console.warn("AuthProvider: Could not backup session:", e)
@@ -697,7 +697,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               user: session.user,
             }))
             try {
-              localStorage.setItem('jadarat_pending_session', JSON.stringify(session))
+              localStorage.setItem('kawadir_pending_session', JSON.stringify(session))
             } catch {}
           }
         } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {

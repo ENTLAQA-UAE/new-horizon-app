@@ -53,9 +53,9 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
   const [isSaved, setIsSaved] = useState(false)
   const [settings, setSettings] = useState({
     // General
-    app_name: initialSettings.app_name || "Jadarat ATS",
+    app_name: initialSettings.app_name || "Kawadir ATS",
     app_name_ar: initialSettings.app_name_ar || "جدارات",
-    support_email: initialSettings.support_email || "support@jadarat.io",
+    support_email: initialSettings.support_email || "support@kawadir.io",
     default_language: initialSettings.default_language || "en",
     default_timezone: initialSettings.default_timezone || "Asia/Riyadh",
 
@@ -131,7 +131,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Platform Settings</h2>
           <p className="text-muted-foreground">
-            Configure global settings for the Jadarat ATS platform
+            Configure global settings for the Kawadir ATS platform
           </p>
         </div>
         <Button onClick={handleSave} disabled={isLoading}>

@@ -395,7 +395,7 @@ export function CareerPageClient({
               {isRtl && organization.nameAr ? organization.nameAr : organization.name}.{" "}
               {isRtl ? "جميع الحقوق محفوظة" : "All rights reserved"}.
             </p>
-            <p className="mt-2 text-xs opacity-50">Powered by Jadarat ATS</p>
+            <p className="mt-2 text-xs opacity-50">Powered by Kawadir ATS</p>
           </div>
         </footer>
       )}
@@ -1471,7 +1471,7 @@ function DefaultCareerPage({
           <p className="text-muted-foreground text-sm">
             &copy; {new Date().getFullYear()} {organization.name}. All rights reserved.
           </p>
-          <p className="text-xs mt-2 text-muted-foreground/50">Powered by Jadarat ATS</p>
+          <p className="text-xs mt-2 text-muted-foreground/50">Powered by Kawadir ATS</p>
         </div>
       </footer>
     </div>

@@ -31,7 +31,7 @@ export interface SendEmailResult {
   error?: string
 }
 
-const DEFAULT_FROM = process.env.EMAIL_FROM || "Jadarat ATS <noreply@jadarat.app>"
+const DEFAULT_FROM = process.env.EMAIL_FROM || "Kawadir ATS <noreply@kawadir.app>"
 
 export async function sendEmail(options: EmailOptions): Promise<SendEmailResult> {
   try {

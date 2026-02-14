@@ -9,7 +9,7 @@ import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
 import { AuthErrorDisplay } from "@/components/auth/auth-error"
 import { Loader2, Sparkles } from "lucide-react"
 
-// Apply default Jadarat branding CSS variables
+// Apply default Kawadir branding CSS variables
 function applyDefaultBranding() {
   if (typeof document !== "undefined") {
     const root = document.documentElement
@@ -24,7 +24,7 @@ function applyDefaultBranding() {
 /**
  * Admin Layout - For Super Admin routes only
  * Uses centralized AuthProvider for auth state management
- * No BrandingProvider since super admins see platform branding (Jadarat)
+ * No BrandingProvider since super admins see platform branding (Kawadir)
  */
 export default function AdminLayout({
   children,
@@ -50,7 +50,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Apply default Jadarat branding on mount
+  // Apply default Kawadir branding on mount
   useEffect(() => {
     applyDefaultBranding()
   }, [])

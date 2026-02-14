@@ -114,7 +114,7 @@ export function EmailTemplateEditor({
     <p style="color:#374151;font-size:16px;line-height:1.6;margin:30px 0 0;">Best regards,<br><strong>{{org_name}} Team</strong></p>
   </td></tr>
   <tr><td style="background-color:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; {{org_name}} &bull; Powered by Jadarat ATS</p>
+    <p style="color:#6b7280;font-size:13px;margin:0;">&copy; {{org_name}} &bull; Powered by Kawadir ATS</p>
   </td></tr>
 </table>
 </td></tr></table>

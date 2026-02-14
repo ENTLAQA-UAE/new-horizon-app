@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/server'
 import { EmailSettingsClient } from './email-settings-client'
 
 export const metadata: Metadata = {
-  title: 'Email Settings | Jadarat ATS',
+  title: 'Email Settings | Kawadir ATS',
   description: 'Configure email settings for your organization',
 }
 

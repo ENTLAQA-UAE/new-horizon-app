@@ -6,8 +6,8 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   title: {
-    default: "Jadarat ATS",
-    template: "%s | Jadarat ATS",
+    default: "Kawadir ATS",
+    template: "%s | Kawadir ATS",
   },
   description: "AI-Powered Applicant Tracking System for MENA Region",
   keywords: ["ATS", "Recruitment", "HR", "MENA", "Saudi Arabia", "UAE", "Hiring"],

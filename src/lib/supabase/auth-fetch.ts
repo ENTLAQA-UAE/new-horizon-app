@@ -77,7 +77,7 @@ export function clearTokenCache(): void {
  * Order of attempts:
  * 1. Memory cache (fastest) - only if not expired
  * 2. localStorage sb-*-auth-token pattern (fast)
- * 3. jadarat_pending_session in localStorage (fast)
+ * 3. kawadir_pending_session in localStorage (fast)
  * 4. Cookies (fast)
  * 5. Supabase client getSession() with 3s timeout (slow - last resort)
  */
@@ -116,14 +116,14 @@ export async function getAccessToken(): Promise<string | null> {
       // Silent fail, try next method
     }
 
-    // Method 3: Try jadarat_pending_session (fast)
+    // Method 3: Try kawadir_pending_session (fast)
     try {
-      const pendingSession = localStorage.getItem('jadarat_pending_session')
+      const pendingSession = localStorage.getItem('kawadir_pending_session')
       if (pendingSession) {
         const parsed = JSON.parse(pendingSession)
         accessToken = parsed?.access_token || null
         if (accessToken && !isTokenExpired(accessToken)) {
-          console.log("[auth-fetch] Token from jadarat_pending_session: found")
+          console.log("[auth-fetch] Token from kawadir_pending_session: found")
           cachedAccessToken = accessToken
           return accessToken
         }

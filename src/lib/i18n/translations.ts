@@ -37,7 +37,7 @@ export const translations = {
 
     // Dashboard
     dashboard: {
-      welcome: "Welcome to Jadarat ATS",
+      welcome: "Welcome to Kawadir ATS",
       subtitle: "AI-Powered Applicant Tracking System for MENA Region",
       totalOrganizations: "Total Organizations",
       activeUsers: "Active Users",

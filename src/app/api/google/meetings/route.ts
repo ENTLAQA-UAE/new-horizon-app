@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     // Create calendar event with Google Meet
     const event = {
       summary: body.topic,
-      description: "Interview scheduled via Jadarat ATS",
+      description: "Interview scheduled via Kawadir ATS",
       start: {
         dateTime: startTime.toISOString(),
         timeZone: body.timezone || "Asia/Riyadh",

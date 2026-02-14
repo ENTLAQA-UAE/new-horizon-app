@@ -172,7 +172,7 @@ export async function sendNotification(
     // Use platform defaults if no org found
     if (!org) {
       org = {
-        name: process.env.PLATFORM_NAME || "Jadarat ATS",
+        name: process.env.PLATFORM_NAME || "Kawadir ATS",
         logo_url: process.env.PLATFORM_LOGO_URL || null,
         primary_color: process.env.PLATFORM_PRIMARY_COLOR || "#6366f1",
         secondary_color: process.env.PLATFORM_SECONDARY_COLOR || "#8b5cf6",

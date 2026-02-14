@@ -693,7 +693,7 @@ export function OrganizationsClient({
                       <div>
                         <div className="font-medium">{org.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {org.slug}.jadarat.com
+                          {org.slug}.kawadir.com
                         </div>
                       </div>
                     </div>
@@ -1048,7 +1048,7 @@ export function OrganizationsClient({
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">{selectedOrg.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedOrg.slug}.jadarat.com</p>
+                  <p className="text-sm text-muted-foreground">{selectedOrg.slug}.kawadir.com</p>
                 </div>
               </div>
 
@@ -1160,7 +1160,7 @@ export function OrganizationsClient({
             <div className="py-4">
               <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                 <p className="font-medium text-destructive">{selectedOrg.name}</p>
-                <p className="text-sm text-muted-foreground">{selectedOrg.slug}.jadarat.com</p>
+                <p className="text-sm text-muted-foreground">{selectedOrg.slug}.kawadir.com</p>
               </div>
               <p className="text-sm text-muted-foreground mt-4">
                 All data associated with this organization including users, jobs, and candidates will be permanently deleted.

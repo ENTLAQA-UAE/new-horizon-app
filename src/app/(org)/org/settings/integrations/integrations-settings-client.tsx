@@ -70,7 +70,7 @@ const PROVIDER_CONFIG = {
       "Go to the Zoom App Marketplace (marketplace.zoom.us) and sign in with your Zoom account.",
       "Click \"Develop\" in the top menu, then select \"Build App\".",
       "Choose \"Server-to-Server OAuth\" as the app type and click \"Create\".",
-      "Give your app a name (e.g., \"Jadarat Interviews\") and click \"Create\".",
+      "Give your app a name (e.g., \"Kawadir Interviews\") and click \"Create\".",
       "On the App Credentials page, copy the \"Account ID\", \"Client ID\" and \"Client Secret\".",
       "Go to the \"Scopes\" tab and add these scopes: meeting:write:admin, meeting:read:admin, user:read:admin.",
       "Click \"Continue\" and then \"Activate your app\".",
@@ -93,7 +93,7 @@ const PROVIDER_CONFIG = {
     setupGuide: [
       "Go to the Azure Portal (portal.azure.com) and sign in with your Microsoft 365 admin account.",
       "Navigate to \"Azure Active Directory\" > \"App registrations\" > \"New registration\".",
-      "Enter a name (e.g., \"Jadarat Interviews\"), select \"Accounts in this organizational directory only\", and click \"Register\".",
+      "Enter a name (e.g., \"Kawadir Interviews\"), select \"Accounts in this organizational directory only\", and click \"Register\".",
       "On the Overview page, copy the \"Application (client) ID\" and \"Directory (tenant) ID\".",
       "Go to \"Certificates & secrets\" > \"New client secret\", add a description, choose an expiry, and click \"Add\". Copy the secret value immediately (it won't be shown again).",
       "Go to \"API permissions\" > \"Add a permission\" > \"Microsoft Graph\" > \"Application permissions\".",

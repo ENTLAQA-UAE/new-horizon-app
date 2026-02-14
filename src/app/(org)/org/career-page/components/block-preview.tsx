@@ -234,7 +234,7 @@ export function BlockPreview({
             </div>
           )}
           <p className="text-xs">&copy; {new Date().getFullYear()} {organization.name}. All rights reserved.</p>
-          <p className="mt-1 text-xs opacity-50">Powered by Jadarat ATS</p>
+          <p className="mt-1 text-xs opacity-50">Powered by Kawadir ATS</p>
         </footer>
       )}
     </div>

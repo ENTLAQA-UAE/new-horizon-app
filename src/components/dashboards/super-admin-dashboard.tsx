@@ -21,7 +21,7 @@ export function SuperAdminDashboard({ stats }: SuperAdminDashboardProps) {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Platform Dashboard</h2>
         <p className="text-muted-foreground">
-          Overview of the entire Jadarat ATS platform
+          Overview of the entire Kawadir ATS platform
         </p>
       </div>
 

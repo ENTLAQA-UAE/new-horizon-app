@@ -271,7 +271,7 @@ export function OfferTemplatesClient({ templates: initialTemplates, orgId }: Off
       "{{salary_amount}}": "25,000",
       "{{salary_currency}}": "SAR",
       "{{start_date}}": "February 1, 2024",
-      "{{company_name}}": "Jadarat Technologies",
+      "{{company_name}}": "Kawadir Technologies",
       "{{reporting_to}}": "Mohammed Hassan",
       "{{probation_period}}": "3",
       "{{benefits}}": "Health Insurance, Annual Bonus, Flexible Hours",
