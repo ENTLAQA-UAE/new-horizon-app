@@ -226,6 +226,29 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // =====================================================
+  // SUBDOMAIN / CUSTOM DOMAIN RESOLUTION
+  // Resolve org slug from hostname BEFORE any redirects
+  // so the cookie is set on every response (including redirects).
+  // =====================================================
+  const hostname = request.headers.get('host') || ''
+  const orgSlug = await resolveOrgSlug(hostname)
+
+  // Helper: copy the x-org-slug cookie onto any response we create
+  function applyOrgSlug(response: NextResponse) {
+    if (orgSlug) {
+      response.headers.set('x-org-slug', orgSlug)
+      response.cookies.set('x-org-slug', orgSlug, {
+        path: '/',
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 4,
+      })
+    }
+    return response
+  }
+
   // Handle auth errors gracefully
   if (userError) {
     console.error('Middleware: Auth error:', userError.message)
@@ -233,22 +256,28 @@ export async function updateSession(request: NextRequest) {
     if (!isPublicRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
-      return NextResponse.redirect(url)
+      return applyOrgSlug(NextResponse.redirect(url))
     }
-    return supabaseResponse
+    return applyOrgSlug(supabaseResponse)
   }
 
   if (!user && !isPublicRoute) {
-    // Unauthenticated users on root → serve the landing page
+    // Org subdomain/custom domain → always redirect to login
+    if (orgSlug) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return applyOrgSlug(NextResponse.redirect(url))
+    }
+    // Unauthenticated users on root (main domain) → serve the landing page
     if (request.nextUrl.pathname === '/') {
       const url = request.nextUrl.clone()
       url.pathname = '/landing'
-      return NextResponse.rewrite(url)
+      return applyOrgSlug(NextResponse.rewrite(url))
     }
     // No user, redirect to login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return applyOrgSlug(NextResponse.redirect(url))
   }
 
   // =====================================================
@@ -306,30 +335,12 @@ export async function updateSession(request: NextRequest) {
       for (const cookie of supabaseResponse.cookies.getAll()) {
         redirectResponse.cookies.set(cookie.name, cookie.value)
       }
-      return redirectResponse
+      return applyOrgSlug(redirectResponse)
     }
   }
 
-  // =====================================================
-  // SUBDOMAIN / CUSTOM DOMAIN RESOLUTION
-  // Resolve org slug from hostname and set x-org-slug header
-  // so downstream pages can read it for branded experiences.
-  // =====================================================
-  const hostname = request.headers.get('host') || ''
-  const orgSlug = await resolveOrgSlug(hostname)
-
-  if (orgSlug) {
-    // Set header on the response for server components to read
-    supabaseResponse.headers.set('x-org-slug', orgSlug)
-    // Also set a cookie so client components can read it
-    supabaseResponse.cookies.set('x-org-slug', orgSlug, {
-      path: '/',
-      httpOnly: false, // Client-readable
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 4, // 4 hours
-    })
-  }
+  // Apply org slug cookie/header to the final supabase response
+  applyOrgSlug(supabaseResponse)
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
