@@ -178,6 +178,10 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user && !isPublicRoute) {
+    // Unauthenticated users on root → redirect to main domain
+    if (request.nextUrl.pathname === '/') {
+      return NextResponse.redirect(new URL('https://kawadir.io'))
+    }
     // No user, redirect to login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
