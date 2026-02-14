@@ -190,9 +190,9 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         const supabase = createClient()
         const { data } = await supabase
           .from("organizations")
-          .select("name, logo_url, primary_color, secondary_color")
+          .select("name, logo_url, primary_color, secondary_color, login_image_url")
           .eq("slug", orgSlugParam)
-          .single()
+          .single() as { data: { name: string; logo_url: string | null; primary_color: string | null; secondary_color: string | null; login_image_url: string | null } | null }
 
         if (data) {
           setOrgBranding({
@@ -200,7 +200,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             logo_url: data.logo_url,
             primary_color: data.primary_color || "#2D4CFF",
             secondary_color: data.secondary_color || "#6B7FFF",
-            login_image_url: null,
+            login_image_url: data.login_image_url || null,
           })
         }
       } catch (error) {
