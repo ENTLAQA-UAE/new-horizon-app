@@ -46,6 +46,75 @@ export interface VercelDomainConfig {
 }
 
 /**
+ * Check if a domain is available on Vercel (not already added to another project).
+ * Uses the GET domains endpoint — if the domain exists and belongs to our project, it's available.
+ * If it belongs to another project, it's taken.
+ */
+export async function checkDomainAvailability(domain: string): Promise<{
+  available: boolean
+  error?: string
+}> {
+  try {
+    const projectId = getProjectId()
+    const teamQuery = getTeamQuery()
+
+    // Check if domain already exists on our project
+    const response = await fetch(
+      `${VERCEL_API_URL}/v10/projects/${projectId}/domains/${domain}${teamQuery}`,
+      {
+        method: 'GET',
+        headers: getVercelHeaders(),
+      }
+    )
+
+    if (response.status === 404) {
+      // Domain not on our project — check if it's on another project
+      // by attempting a dry-run add (Vercel returns domain_already_in_use)
+      const addResponse = await fetch(
+        `${VERCEL_API_URL}/v10/projects/${projectId}/domains${teamQuery}`,
+        {
+          method: 'POST',
+          headers: getVercelHeaders(),
+          body: JSON.stringify({ name: domain }),
+        }
+      )
+
+      if (addResponse.ok) {
+        // Domain was added successfully — remove it to keep it as a check only
+        await fetch(
+          `${VERCEL_API_URL}/v10/projects/${projectId}/domains/${domain}${teamQuery}`,
+          { method: 'DELETE', headers: getVercelHeaders() }
+        )
+        return { available: true }
+      }
+
+      const addData = await addResponse.json()
+      if (addData.error?.code === 'domain_already_in_use') {
+        return { available: false, error: 'This subdomain is already in use on another Vercel project' }
+      }
+      if (addData.error?.code === 'forbidden') {
+        return { available: false, error: 'This domain is owned by another Vercel account' }
+      }
+
+      return { available: false, error: addData.error?.message || 'Domain not available' }
+    }
+
+    if (response.ok) {
+      // Domain already on our project — it's available (we own it)
+      return { available: true }
+    }
+
+    return { available: false, error: 'Unable to check domain availability' }
+  } catch (err) {
+    console.error('[vercel-domain] checkDomainAvailability error:', err)
+    return {
+      available: false,
+      error: err instanceof Error ? err.message : 'Failed to check availability',
+    }
+  }
+}
+
+/**
  * Add a domain to the Vercel project.
  * For subdomains like slug.kawadir.io, Vercel auto-configures them
  * if the wildcard *.kawadir.io is already added.

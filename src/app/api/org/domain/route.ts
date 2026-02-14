@@ -15,12 +15,25 @@ import {
   removeDomain,
   verifyDomain,
   getDomainConfig,
+  checkDomainAvailability,
 } from '@/lib/vercel/domain-service'
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
 
 // System-reserved subdomains that cannot be used
 const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'mail', 'smtp', 'ftp', 'ns1', 'ns2']
+
+// Subdomain validation: lowercase alphanumeric + hyphens, 3-63 chars, no leading/trailing hyphens
+const SUBDOMAIN_REGEX = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/
+
+function validateSubdomainName(name: string): string | null {
+  if (!name) return 'Subdomain name is required'
+  if (name.length < 3) return 'Subdomain must be at least 3 characters'
+  if (name.length > 63) return 'Subdomain must be 63 characters or fewer'
+  if (!SUBDOMAIN_REGEX.test(name)) return 'Subdomain can only contain lowercase letters, numbers, and hyphens (no leading/trailing hyphens)'
+  if (RESERVED_SUBDOMAINS.includes(name)) return `"${name}" is a reserved name and cannot be used`
+  return null
+}
 
 export async function GET() {
   try {
@@ -96,12 +109,75 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
+    // ---- ACTION: Check subdomain availability ----
+    if (action === 'check_subdomain') {
+      const subdomain = (body.subdomain || '').trim().toLowerCase()
+
+      // Validate format
+      const validationError = validateSubdomainName(subdomain)
+      if (validationError) {
+        return NextResponse.json({ available: false, error: validationError }, { status: 400 })
+      }
+
+      // Check DB: no other org uses this as their slug (skip self)
+      const { data: existingOrg } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', subdomain)
+        .neq('id', authInfo.orgId)
+        .limit(1)
+
+      if (existingOrg && existingOrg.length > 0) {
+        return NextResponse.json({
+          available: false,
+          error: 'This subdomain is already taken by another organization',
+        })
+      }
+
+      // Check Vercel availability
+      const subdomainFull = `${subdomain}.${ROOT_DOMAIN}`
+      const vercelCheck = await checkDomainAvailability(subdomainFull)
+      if (!vercelCheck.available) {
+        return NextResponse.json({
+          available: false,
+          error: vercelCheck.error || 'Subdomain not available',
+        })
+      }
+
+      return NextResponse.json({ available: true })
+    }
+
     // ---- ACTION: Enable/disable subdomain ----
     if (action === 'toggle_subdomain') {
       const enable = !!body.enabled
-      const subdomainFull = `${org.slug}.${ROOT_DOMAIN}`
+      const subdomain = (body.subdomain || org.slug).trim().toLowerCase()
 
       if (enable) {
+        // Validate subdomain name
+        const validationError = validateSubdomainName(subdomain)
+        if (validationError) {
+          return NextResponse.json({ error: validationError }, { status: 400 })
+        }
+
+        // Check DB uniqueness (no other org has this slug)
+        if (subdomain !== org.slug) {
+          const { data: existingOrg } = await supabase
+            .from('organizations')
+            .select('id')
+            .eq('slug', subdomain)
+            .neq('id', authInfo.orgId)
+            .limit(1)
+
+          if (existingOrg && existingOrg.length > 0) {
+            return NextResponse.json(
+              { error: 'This subdomain is already taken by another organization' },
+              { status: 409 }
+            )
+          }
+        }
+
+        const subdomainFull = `${subdomain}.${ROOT_DOMAIN}`
+
         // Add subdomain to Vercel
         const result = await addDomain(subdomainFull)
         if (!result.success) {
@@ -110,20 +186,40 @@ export async function POST(request: NextRequest) {
             { status: 502 }
           )
         }
+
+        // Update org: enable subdomain and update slug if changed
+        const updateData: Record<string, unknown> = {
+          subdomain_enabled: true,
+          updated_at: new Date().toISOString(),
+        }
+        if (subdomain !== org.slug) {
+          updateData.slug = subdomain
+        }
+
+        await supabase
+          .from('organizations')
+          .update(updateData)
+          .eq('id', authInfo.orgId)
+
+        return NextResponse.json({
+          subdomain_enabled: true,
+          subdomain_url: `https://${subdomainFull}`,
+          slug: subdomain,
+        })
       } else {
-        // Remove subdomain from Vercel
+        // Disable: remove from Vercel
         await removeDomain(`${org.slug}.${ROOT_DOMAIN}`)
+
+        await supabase
+          .from('organizations')
+          .update({ subdomain_enabled: false, updated_at: new Date().toISOString() })
+          .eq('id', authInfo.orgId)
+
+        return NextResponse.json({
+          subdomain_enabled: false,
+          subdomain_url: null,
+        })
       }
-
-      await supabase
-        .from('organizations')
-        .update({ subdomain_enabled: enable, updated_at: new Date().toISOString() })
-        .eq('id', authInfo.orgId)
-
-      return NextResponse.json({
-        subdomain_enabled: enable,
-        subdomain_url: enable ? `https://${subdomainFull}` : null,
-      })
     }
 
     // ---- ACTION: Set custom domain ----
