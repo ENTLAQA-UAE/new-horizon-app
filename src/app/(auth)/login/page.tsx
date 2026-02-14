@@ -21,6 +21,8 @@ import {
   Zap,
   Shield,
   Globe,
+  Lock,
+  Mail,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -30,6 +32,51 @@ interface OrgBranding {
   login_image_url: string | null
   primary_color: string
   secondary_color: string
+}
+
+// Inline Kawadir logo as SVG - no external file needed
+function KawadirLogo({ size = 40, className }: { size?: number; className?: string }) {
+  return (
+    <div
+      className={cn("flex items-center justify-center rounded-2xl", className)}
+      style={{
+        width: size,
+        height: size,
+        background: "linear-gradient(135deg, #2D4CFF 0%, #6B7FFF 100%)",
+        boxShadow: "0 8px 32px -8px rgba(45, 76, 255, 0.5)",
+      }}
+    >
+      <svg
+        width={size * 0.55}
+        height={size * 0.55}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M12 2L2 7L12 12L22 7L12 2Z"
+          fill="white"
+          fillOpacity="0.9"
+        />
+        <path
+          d="M2 17L12 22L22 17"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.7"
+        />
+        <path
+          d="M2 12L12 17L22 12"
+          stroke="white"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.85"
+        />
+      </svg>
+    </div>
+  )
 }
 
 export default function LoginPage() {
@@ -42,13 +89,9 @@ export default function LoginPage() {
 
 function LoginPageSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
       <div className="flex flex-col items-center gap-4">
-        <img
-          src="/kawadir-logo.png"
-          alt="Kawadir"
-          className="h-12 object-contain animate-pulse"
-        />
+        <KawadirLogo size={48} className="animate-pulse" />
         <div className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin text-[#2D4CFF]" />
           <span className="text-sm text-[#616161]">Loading...</span>
@@ -117,8 +160,8 @@ function LoginPageContent() {
           setOrgBranding({
             name: result.data.name,
             logo_url: result.data.logo_url,
-            primary_color: result.data.primary_color || "#6366f1",
-            secondary_color: result.data.secondary_color || "#8b5cf6",
+            primary_color: result.data.primary_color || "#2D4CFF",
+            secondary_color: result.data.secondary_color || "#6B7FFF",
             login_image_url: null,
           })
         }
@@ -255,210 +298,218 @@ function LoginPageContent() {
   if (!mounted) return <LoginPageSkeleton />
 
   return (
-    <div className="min-h-screen flex bg-[#F5F5F5]">
-      {/* Left Side - Login Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 xl:px-24 py-12 relative">
-        {/* Background decorations */}
+    <div className="min-h-screen flex bg-[#F8F9FC]">
+      {/* Left Side - Ultra Modern Login Form */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 relative">
+        {/* Subtle background mesh */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
-            className="absolute -top-40 -left-40 w-80 h-80 rounded-full opacity-[0.03]"
-            style={{ background: gradient }}
+            className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-[0.04] blur-3xl"
+            style={{ background: primaryColor }}
           />
           <div
-            className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full opacity-[0.05]"
-            style={{ background: gradient }}
+            className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-[0.03] blur-3xl"
+            style={{ background: secondaryColor }}
           />
         </div>
 
-        <div className="w-full max-w-md mx-auto relative z-10">
-          {/* Logo & Brand */}
-          <div className="mb-10">
-            <div className={cn(
-              "flex items-center gap-4 mb-10",
-              mounted && "animate-fade-in-up"
-            )}>
-              {orgBranding?.logo_url ? (
+        <div className="w-full max-w-[420px] relative z-10">
+          {/* Logo & Brand Header */}
+          <div className={cn(
+            "mb-12",
+            mounted && "animate-fade-in-up"
+          )}>
+            {orgBranding?.logo_url ? (
+              <div className="flex items-center gap-3">
                 <img
                   src={orgBranding.logo_url}
                   alt={orgBranding.name}
                   className="h-12 object-contain"
                 />
-              ) : (
-                <>
-                  <img
-                    src="/kawadir-logo.png"
-                    alt="Kawadir"
-                    className="h-12 object-contain"
-                  />
-                  <div>
-                    <h1
-                      className="text-3xl font-bold tracking-tight"
-                      style={{
-                        background: gradient,
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
-                      }}
-                    >
-                      {orgBranding?.name || "Kawadir"}
-                    </h1>
-                    <p className="text-sm text-gray-500 font-medium">
-                      AI-Powered Recruitment Platform
-                    </p>
-                  </div>
-                </>
-              )}
-              {orgBranding?.logo_url && (
-                <div className="ml-2">
-                  <h1 className="text-2xl font-bold text-gray-900">{orgBranding.name}</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-[#1A1A2E]">{orgBranding.name}</h1>
                 </div>
-              )}
-            </div>
-
-            <div className={cn(
-              mounted && "animate-fade-in-up"
-            )} style={{ animationDelay: "100ms" }}>
-              <h2 className="text-4xl font-bold tracking-tight text-gray-900">
-                Welcome back
-              </h2>
-              <p className="text-gray-500 mt-3 text-lg">
-                Sign in to continue to your dashboard
-              </p>
-            </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <KawadirLogo size={44} />
+                <div>
+                  <h1
+                    className="text-2xl font-bold tracking-tight"
+                    style={{
+                      background: gradient,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    Kawadir
+                  </h1>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div
-              className={cn(
-                "space-y-2",
-                mounted && "animate-fade-in-up"
-              )}
-              style={{ animationDelay: "200ms" }}
-            >
-              <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
-                Email address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  if (emailError) setEmailError(null)
-                }}
-                required
-                disabled={loading}
-                className={cn(
-                  "h-13 px-4 rounded-xl border-2 bg-white",
-                  "focus:ring-4 transition-all duration-200 text-base",
-                  emailError ? "border-red-500" : "border-gray-200"
-                )}
-                style={{
-                  "--tw-ring-color": `${primaryColor}15`,
-                } as React.CSSProperties}
-                onFocus={(e) => e.target.style.borderColor = emailError ? "#ef4444" : primaryColor}
-                onBlur={(e) => {
-                  validateEmail(email)
-                  e.target.style.borderColor = emailError ? "#ef4444" : "#e5e7eb"
-                }}
-              />
-              {emailError && (
-                <p className="text-sm text-red-500 mt-1">{emailError}</p>
-              )}
-            </div>
+          {/* Welcome Text */}
+          <div className={cn(
+            "mb-8",
+            mounted && "animate-fade-in-up"
+          )} style={{ animationDelay: "80ms" }}>
+            <h2 className="text-[32px] font-bold tracking-tight text-[#1A1A2E] leading-tight">
+              Welcome back
+            </h2>
+            <p className="text-[#616161] mt-2 text-[15px]">
+              Enter your credentials to access your dashboard
+            </p>
+          </div>
 
-            <div
-              className={cn(
-                "space-y-2",
-                mounted && "animate-fade-in-up"
-              )}
-              style={{ animationDelay: "300ms" }}
-            >
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
-                  Password
+          {/* Glass Card Form */}
+          <div
+            className={cn(
+              "rounded-2xl p-6 border border-white/60",
+              mounted && "animate-fade-in-up"
+            )}
+            style={{
+              animationDelay: "160ms",
+              background: "rgba(255, 255, 255, 0.7)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "0 4px 24px -4px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.8) inset",
+            }}
+          >
+            <form onSubmit={handleLogin} className="space-y-5">
+              {/* Email Field */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[13px] font-semibold text-[#2C2C2C] uppercase tracking-wider">
+                  Email
                 </Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium transition-colors hover:opacity-80"
-                  style={{ color: primaryColor }}
-                >
-                  Forgot password?
-                </Link>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[#9E9E9E]" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (emailError) setEmailError(null)
+                    }}
+                    required
+                    disabled={loading}
+                    className={cn(
+                      "h-12 pl-11 pr-4 rounded-xl border bg-white/80 text-[15px]",
+                      "placeholder:text-[#9E9E9E] transition-all duration-200",
+                      "focus:ring-2 focus:border-transparent focus:bg-white",
+                      emailError
+                        ? "border-red-400 focus:ring-red-100"
+                        : "border-[#E0E0E0] hover:border-[#9E9E9E]"
+                    )}
+                    style={{
+                      "--tw-ring-color": emailError ? undefined : `${primaryColor}25`,
+                    } as React.CSSProperties}
+                    onFocus={(e) => {
+                      if (!emailError) e.target.style.borderColor = primaryColor
+                    }}
+                    onBlur={(e) => {
+                      validateEmail(email)
+                      e.target.style.borderColor = emailError ? "#f87171" : "#E0E0E0"
+                    }}
+                  />
+                </div>
+                {emailError && (
+                  <p className="text-[13px] text-red-500 flex items-center gap-1">
+                    <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+                    {emailError}
+                  </p>
+                )}
               </div>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  className={cn(
-                    "h-13 px-4 pr-12 rounded-xl border-2 border-gray-200 bg-white",
-                    "focus:ring-4 transition-all duration-200 text-base"
-                  )}
-                  style={{
-                    "--tw-ring-color": `${primaryColor}15`,
-                  } as React.CSSProperties}
-                  onFocus={(e) => e.target.style.borderColor = primaryColor}
-                  onBlur={(e) => e.target.style.borderColor = "#e5e7eb"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
 
-            <div
-              className={cn(mounted && "animate-fade-in-up")}
-              style={{ animationDelay: "400ms" }}
-            >
+              {/* Password Field */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-[13px] font-semibold text-[#2C2C2C] uppercase tracking-wider">
+                    Password
+                  </Label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-[13px] font-medium transition-colors hover:opacity-80"
+                    style={{ color: primaryColor }}
+                  >
+                    Forgot?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[#9E9E9E]" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                    className={cn(
+                      "h-12 pl-11 pr-12 rounded-xl border border-[#E0E0E0] bg-white/80 text-[15px]",
+                      "placeholder:text-[#9E9E9E] transition-all duration-200",
+                      "focus:ring-2 focus:border-transparent focus:bg-white",
+                      "hover:border-[#9E9E9E]"
+                    )}
+                    style={{
+                      "--tw-ring-color": `${primaryColor}25`,
+                    } as React.CSSProperties}
+                    onFocus={(e) => e.target.style.borderColor = primaryColor}
+                    onBlur={(e) => e.target.style.borderColor = "#E0E0E0"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#616161] transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sign In Button */}
               <Button
                 type="submit"
                 disabled={loading}
                 className={cn(
-                  "w-full h-13 rounded-xl text-base font-semibold text-white",
-                  "transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5",
-                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  "w-full h-12 rounded-xl text-[15px] font-semibold text-white",
+                  "transition-all duration-300 hover:shadow-lg hover:-translate-y-[1px]",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+                  "active:translate-y-0"
                 )}
                 style={{
                   background: gradient,
-                  boxShadow: `0 8px 30px -10px ${primaryColor}80`
+                  boxShadow: `0 4px 16px -4px ${primaryColor}60`
                 }}
               >
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    Sign in to dashboard
-                    <ArrowRight className="h-5 w-5" />
+                    Sign in
+                    <ArrowRight className="h-4 w-4" />
                   </span>
                 )}
               </Button>
-            </div>
-          </form>
+            </form>
+          </div>
 
-          {/* Trust badges */}
+          {/* Bottom Section */}
           <div
             className={cn(
-              "mt-12 pt-8 border-t border-gray-200",
+              "mt-8 text-center",
               mounted && "animate-fade-in-up"
             )}
-            style={{ animationDelay: "600ms" }}
+            style={{ animationDelay: "320ms" }}
           >
-            <p className="text-xs text-gray-400 text-center mb-4">TRUSTED BY LEADING COMPANIES</p>
-            <div className="flex items-center justify-center gap-8 opacity-40">
-              <div className="h-6 w-20 bg-gray-400 rounded" />
-              <div className="h-6 w-24 bg-gray-400 rounded" />
-              <div className="h-6 w-16 bg-gray-400 rounded" />
-            </div>
+            <p className="text-[13px] text-[#9E9E9E]">
+              Powered by{" "}
+              <span className="font-semibold" style={{ color: primaryColor }}>
+                Kawadir
+              </span>
+              {" "}&middot;{" "}AI-Powered Recruitment
+            </p>
           </div>
         </div>
       </div>

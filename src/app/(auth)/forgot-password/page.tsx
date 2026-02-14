@@ -17,6 +17,25 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+function KawadirLogo({ size = 40 }: { size?: number }) {
+  return (
+    <div
+      className="flex items-center justify-center rounded-xl"
+      style={{
+        width: size, height: size,
+        background: "linear-gradient(135deg, #2D4CFF 0%, #6B7FFF 100%)",
+        boxShadow: "0 6px 24px -6px rgba(45, 76, 255, 0.4)",
+      }}
+    >
+      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" fillOpacity="0.9" />
+        <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+        <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+      </svg>
+    </div>
+  )
+}
+
 interface OrgBranding {
   name: string
   logo_url: string | null
@@ -34,13 +53,9 @@ export default function ForgotPasswordPage() {
 
 function ForgotPasswordSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
       <div className="flex flex-col items-center gap-4">
-        <img
-          src="/kawadir-logo.png"
-          alt="Kawadir"
-          className="h-12 object-contain animate-pulse"
-        />
+        <KawadirLogo size={48} />
         <div className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin text-[#2D4CFF]" />
           <span className="text-sm text-[#616161]">Loading...</span>
@@ -147,11 +162,7 @@ function ForgotPasswordContent() {
                   className="h-12 w-auto object-contain"
                 />
               ) : (
-                <img
-                  src="/kawadir-logo.png"
-                  alt="Kawadir"
-                  className="h-12 object-contain"
-                />
+                <KawadirLogo size={44} />
               )}
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
