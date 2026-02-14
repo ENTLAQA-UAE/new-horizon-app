@@ -47,40 +47,52 @@ async function loadLandingPageData() {
 
   // Load config from platform_settings
   let config: LandingPageConfig = defaultLandingConfig
+  let platformLogo: string | null = null
   try {
     const { data: configData, error: configError } = await supabase
       .from("platform_settings")
       .select("key, value")
-      .in("key", ["landing_page_config"])
+      .in("key", ["landing_page_config", "platform_logo"])
 
     if (configError) {
       console.error("Error loading landing page config:", configError)
     }
 
     if (configData && configData.length > 0) {
-      try {
-        const rawValue = configData[0].value
-        // Value may be a string (needs parsing) or already an object (JSONB)
-        const parsed = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue
-        config = { ...defaultLandingConfig, ...parsed }
-      } catch {
-        // Use defaults
+      for (const row of configData) {
+        if (row.key === "landing_page_config") {
+          try {
+            const rawValue = row.value
+            const parsed = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue
+            config = { ...defaultLandingConfig, ...parsed }
+          } catch {
+            // Use defaults
+          }
+        }
+        if (row.key === "platform_logo" && row.value) {
+          let logoVal = row.value as string
+          if (typeof logoVal === 'string' && logoVal.startsWith('"') && logoVal.endsWith('"')) {
+            try { logoVal = JSON.parse(logoVal) } catch { /* keep as-is */ }
+          }
+          platformLogo = logoVal
+        }
       }
     }
   } catch (error) {
     console.error("Error fetching landing page config:", error)
   }
 
-  return { blocks, config }
+  return { blocks, config, platformLogo }
 }
 
 export default async function LandingPageAdmin() {
-  const { blocks, config } = await loadLandingPageData()
+  const { blocks, config, platformLogo } = await loadLandingPageData()
 
   return (
     <LandingPageBuilder
       initialBlocks={blocks}
       initialConfig={config}
+      platformLogo={platformLogo}
     />
   )
 }

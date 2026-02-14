@@ -105,6 +105,7 @@ export interface LandingBlockStyles {
 export interface LandingPageConfig {
   published: boolean
   styles: LandingPageStyles
+  settings: LandingPageSettings
   seo: LandingPageSeo
   navbar: LandingNavbar
   footer: LandingFooter
@@ -116,7 +117,18 @@ export interface LandingPageStyles {
   backgroundColor: string
   textColor: string
   fontFamily: string
+  fontSize: 'small' | 'medium' | 'large'
   borderRadius: string
+  headerStyle: 'minimal' | 'standard' | 'bold'
+  footerStyle: 'minimal' | 'standard' | 'detailed'
+}
+
+export interface LandingPageSettings {
+  showHeader: boolean
+  showFooter: boolean
+  showLogo: boolean
+  language: 'en' | 'ar' | 'both'
+  defaultLanguage: 'en' | 'ar'
 }
 
 export interface LandingPageSeo {
@@ -383,8 +395,18 @@ export const defaultLandingConfig: LandingPageConfig = {
     secondaryColor: '#6B7FFF',
     backgroundColor: '#FFFFFF',
     textColor: '#1A1A2E',
-    fontFamily: 'Inter, system-ui, sans-serif',
+    fontFamily: 'Inter',
+    fontSize: 'medium',
     borderRadius: '12px',
+    headerStyle: 'standard',
+    footerStyle: 'detailed',
+  },
+  settings: {
+    showHeader: true,
+    showFooter: true,
+    showLogo: true,
+    language: 'both',
+    defaultLanguage: 'en',
   },
   seo: {
     title: 'Kawadir - AI-Powered Recruitment Platform',
