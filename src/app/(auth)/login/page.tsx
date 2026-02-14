@@ -198,7 +198,7 @@ function LoginPageContent() {
         // Race between fetch and timeout
         const fetchPromise = supabase
           .from("organizations")
-          .select("name, logo_url, login_image_url, primary_color, secondary_color")
+          .select("name, logo_url, primary_color, secondary_color")
           .eq("slug", orgSlug)
           .single()
 
@@ -210,7 +210,7 @@ function LoginPageContent() {
             logo_url: result.data.logo_url,
             primary_color: result.data.primary_color || "#2D4CFF",
             secondary_color: result.data.secondary_color || "#6B7FFF",
-            login_image_url: result.data.login_image_url || null,
+            login_image_url: null,
           })
         }
       } catch (error) {
