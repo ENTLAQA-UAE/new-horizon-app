@@ -31,8 +31,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Plus, MoreHorizontal, Pencil, Trash2, Users, Check, X, Crown, Sparkles, Building } from "lucide-react"
 import { toast } from "sonner"
+
+const SUPPORTED_CURRENCIES = [
+  { value: "SAR", label: "SAR (Saudi Riyal)" },
+  { value: "USD", label: "USD (US Dollar)" },
+  { value: "AED", label: "AED (UAE Dirham)" },
+  { value: "EGP", label: "EGP (Egyptian Pound)" },
+] as const
 
 interface SubscriptionTier {
   id: string
@@ -40,6 +54,7 @@ interface SubscriptionTier {
   name_ar: string | null
   price_monthly: number
   price_yearly: number
+  currency: string
   max_jobs: number
   max_users: number
   max_candidates: number
@@ -78,6 +93,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
     name_ar: "",
     price_monthly: 0,
     price_yearly: 0,
+    currency: "SAR",
     max_jobs: 10,
     max_users: 5,
     max_candidates: 100,
@@ -91,6 +107,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       name_ar: "",
       price_monthly: 0,
       price_yearly: 0,
+      currency: "SAR",
       max_jobs: 10,
       max_users: 5,
       max_candidates: 100,
@@ -112,6 +129,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
         name_ar: formData.name_ar || null,
         price_monthly: formData.price_monthly,
         price_yearly: formData.price_yearly,
+        currency: formData.currency,
         max_jobs: formData.max_jobs,
         max_users: formData.max_users,
         max_candidates: formData.max_candidates,
@@ -146,6 +164,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
         name_ar: formData.name_ar || null,
         price_monthly: formData.price_monthly,
         price_yearly: formData.price_yearly,
+        currency: formData.currency,
         max_jobs: formData.max_jobs,
         max_users: formData.max_users,
         max_candidates: formData.max_candidates,
@@ -158,7 +177,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       setTiers(
         tiers.map((t) =>
           t.id === selectedTier.id
-            ? { ...t, ...formData, name_ar: formData.name_ar || null }
+            ? { ...t, ...formData, name_ar: formData.name_ar || null, currency: formData.currency }
             : t
         )
       )
@@ -224,6 +243,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       name_ar: tier.name_ar || "",
       price_monthly: tier.price_monthly,
       price_yearly: tier.price_yearly,
+      currency: tier.currency || "SAR",
       max_jobs: tier.max_jobs,
       max_users: tier.max_users,
       max_candidates: tier.max_candidates,
@@ -250,10 +270,10 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
     return <Building className="h-5 w-5" />
   }
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number, currency: string = "SAR") => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "SAR",
+      currency: currency || "SAR",
       minimumFractionDigits: 0,
     }).format(price)
   }
@@ -346,11 +366,11 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
                 </DropdownMenu>
               </div>
               <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-3xl font-bold">{formatPrice(tier.price_monthly)}</span>
+                <span className="text-3xl font-bold">{formatPrice(tier.price_monthly, tier.currency)}</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {formatPrice(tier.price_yearly)}/year
+                {formatPrice(tier.price_yearly, tier.currency)}/year
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -436,6 +456,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
               <TableHeader>
                 <TableRow>
                   <TableHead>Tier</TableHead>
+                  <TableHead>Currency</TableHead>
                   <TableHead>Monthly</TableHead>
                   <TableHead>Yearly</TableHead>
                   <TableHead>Jobs</TableHead>
@@ -449,8 +470,9 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
                 {tiers.map((tier) => (
                   <TableRow key={tier.id}>
                     <TableCell className="font-medium">{tier.name}</TableCell>
-                    <TableCell>{formatPrice(tier.price_monthly)}</TableCell>
-                    <TableCell>{formatPrice(tier.price_yearly)}</TableCell>
+                    <TableCell>{tier.currency || "SAR"}</TableCell>
+                    <TableCell>{formatPrice(tier.price_monthly, tier.currency)}</TableCell>
+                    <TableCell>{formatPrice(tier.price_yearly, tier.currency)}</TableCell>
                     <TableCell>{tier.max_jobs === -1 ? "∞" : tier.max_jobs}</TableCell>
                     <TableCell>{tier.max_users === -1 ? "∞" : tier.max_users}</TableCell>
                     <TableCell>{tier.max_candidates === -1 ? "∞" : tier.max_candidates.toLocaleString()}</TableCell>
@@ -530,10 +552,30 @@ function TierForm({
         </div>
       </div>
 
+      {/* Currency */}
+      <div className="space-y-2">
+        <Label htmlFor="currency">Currency</Label>
+        <Select
+          value={formData.currency}
+          onValueChange={(value) => setFormData({ ...formData, currency: value })}
+        >
+          <SelectTrigger id="currency" className="w-48">
+            <SelectValue placeholder="Select currency" />
+          </SelectTrigger>
+          <SelectContent>
+            {SUPPORTED_CURRENCIES.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Pricing */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="price_monthly">Monthly Price (SAR)</Label>
+          <Label htmlFor="price_monthly">Monthly Price ({formData.currency})</Label>
           <Input
             id="price_monthly"
             type="number"
@@ -544,7 +586,7 @@ function TierForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="price_yearly">Yearly Price (SAR)</Label>
+          <Label htmlFor="price_yearly">Yearly Price ({formData.currency})</Label>
           <Input
             id="price_yearly"
             type="number"

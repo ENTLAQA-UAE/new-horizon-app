@@ -377,15 +377,15 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center">
                 {platformBranding?.platform_logo ? (
                   <img
                     src={platformBranding.platform_logo}
                     alt="Kawadir"
-                    className="h-12 object-contain"
+                    className="h-24 object-contain"
                   />
                 ) : (
-                  <KawadirLogo size={44} />
+                  <KawadirLogo size={96} />
                 )}
               </div>
             )}
