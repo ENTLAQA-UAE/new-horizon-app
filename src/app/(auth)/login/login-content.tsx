@@ -38,48 +38,15 @@ interface PlatformBranding {
   platform_logo_dark: string | null
 }
 
-// Inline Kawadir logo as SVG - no external file needed
+// Kawadir logo component using the brand SVG
 function KawadirLogo({ size = 40, className }: { size?: number; className?: string }) {
   return (
-    <div
-      className={cn("flex items-center justify-center rounded-2xl", className)}
-      style={{
-        width: size,
-        height: size,
-        background: "linear-gradient(135deg, #2D4CFF 0%, #6B7FFF 100%)",
-        boxShadow: "0 8px 32px -8px rgba(45, 76, 255, 0.5)",
-      }}
-    >
-      <svg
-        width={size * 0.55}
-        height={size * 0.55}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M12 2L2 7L12 12L22 7L12 2Z"
-          fill="white"
-          fillOpacity="0.9"
-        />
-        <path
-          d="M2 17L12 22L22 17"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.7"
-        />
-        <path
-          d="M2 12L12 17L22 12"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.85"
-        />
-      </svg>
-    </div>
+    <img
+      src="/kawadir.svg"
+      alt="Kawadir"
+      className={cn("object-contain", className)}
+      style={{ height: size }}
+    />
   )
 }
 
@@ -418,21 +385,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                     className="h-12 object-contain"
                   />
                 ) : (
-                  <>
-                    <KawadirLogo size={44} />
-                    <div>
-                      <h1
-                        className="text-2xl font-bold tracking-tight"
-                        style={{
-                          background: gradient,
-                          WebkitBackgroundClip: "text",
-                          WebkitTextFillColor: "transparent",
-                        }}
-                      >
-                        Kawadir
-                      </h1>
-                    </div>
-                  </>
+                  <KawadirLogo size={44} />
                 )}
               </div>
             )}
