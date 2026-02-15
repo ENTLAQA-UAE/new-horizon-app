@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Sparkles,
   Brain,
@@ -262,9 +263,10 @@ const content = {
     messageField: { en: "Message", ar: "الرسالة" },
     send: { en: "Send Message", ar: "إرسال الرسالة" },
     info: [
-      { icon: "Mail", value: "hello@kawadir.io", label: { en: "Email Us", ar: "راسلنا" } },
-      { icon: "Phone", value: "+971 4 XXX XXXX", label: { en: "Call Us", ar: "اتصل بنا" } },
-      { icon: "MapPin", value: { en: "Dubai, United Arab Emirates", ar: "دبي، الإمارات العربية المتحدة" }, label: { en: "Visit Us", ar: "زرنا" } },
+      { icon: "Mail", value: "info@kawadir.io", label: { en: "Email Us", ar: "راسلنا" } },
+      { icon: "Phone", value: { en: "Egypt: +201004778643", ar: "مصر: +201004778643" }, label: { en: "Egypt", ar: "مصر" } },
+      { icon: "Phone", value: { en: "UAE: +971565626269", ar: "الإمارات: +971565626269" }, label: { en: "UAE", ar: "الإمارات" } },
+      { icon: "Phone", value: { en: "KSA: +966 50 223 9955", ar: "السعودية: +966 50 223 9955" }, label: { en: "KSA", ar: "السعودية" } },
     ],
   },
   faq: {
@@ -395,16 +397,19 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
   )
 }
 
-/* ─── Inline SVG Logo ─── */
+/* ─── Logo Component ─── */
 function KawadirLogo({ lang, variant = "default" }: { lang: Lang; variant?: "default" | "white" }) {
   const textColor = variant === "white" ? "text-white" : "text-gray-900"
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2D4CFF] to-[#6B7FFF] flex items-center justify-center shadow-lg shadow-[#2D4CFF]/20">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4h4v8l8-8h4L12 12l8 8h-4l-8-8v8H4V4z" fill="white" />
-        </svg>
-      </div>
+    <div className="flex items-center gap-2.5">
+      <Image
+        src="/kawadir-logo.svg"
+        alt="Kawadir"
+        width={36}
+        height={36}
+        priority
+        className="rounded-xl shadow-lg shadow-[#2D4CFF]/20"
+      />
       <span className={`text-xl font-bold ${textColor}`}>
         {lang === "ar" ? "كوادر" : "Kawadir"}
       </span>
@@ -443,10 +448,10 @@ export default function LandingPage() {
             <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               {t(content.nav.features, lang)}
             </a>
-            <a href="#pricing" className="text-sm font-semibold text-[#2D4CFF] hover:text-[#1E3ACC] transition-colors">
+            <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               {t(content.nav.pricing, lang)}
             </a>
-            <a href="#contact" className="text-sm font-semibold text-[#2D4CFF] hover:text-[#1E3ACC] transition-colors">
+            <a href="#contact" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               {t(content.nav.contact, lang)}
             </a>
           </div>
@@ -487,20 +492,16 @@ export default function LandingPage() {
           <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
             <div className="px-4 py-4 space-y-1">
               {[
-                { href: "#", label: t(content.nav.home, lang), highlight: false },
-                { href: "#features", label: t(content.nav.features, lang), highlight: false },
-                { href: "#pricing", label: t(content.nav.pricing, lang), highlight: true },
-                { href: "#contact", label: t(content.nav.contact, lang), highlight: true },
+                { href: "#", label: t(content.nav.home, lang) },
+                { href: "#features", label: t(content.nav.features, lang) },
+                { href: "#pricing", label: t(content.nav.pricing, lang) },
+                { href: "#contact", label: t(content.nav.contact, lang) },
               ].map((item, i) => (
                 <a
                   key={i}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                    item.highlight
-                      ? "text-[#2D4CFF] font-semibold bg-[#2D4CFF]/5"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className="block px-4 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   {item.label}
                 </a>
@@ -530,36 +531,35 @@ export default function LandingPage() {
       <div className="h-16" />
 
       {/* ═══════════════════════════════════════════
-          HERO SECTION — Bright & Cheerful
+          HERO SECTION
           ═══════════════════════════════════════════ */}
       <section id="hero" className="relative overflow-hidden">
-        {/* Bright Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#F0F4FF] via-white to-[#F5F3FF]" />
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0A1340] to-[#1E3ACC]" />
         <div className="absolute inset-0">
-          <div className="absolute top-[-20%] right-[-5%] w-[600px] h-[600px] rounded-full bg-[#2D4CFF]/8 blur-[120px]" />
-          <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-[#7C4DFF]/8 blur-[100px]" />
-          <div className="absolute top-[20%] left-[40%] w-[300px] h-[300px] rounded-full bg-[#6B7FFF]/6 blur-[80px]" />
+          <div className="absolute top-[-30%] right-[-10%] w-[700px] h-[700px] rounded-full bg-[#2D4CFF]/20 blur-[120px]" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#7C4DFF]/15 blur-[100px]" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-20 sm:pb-32">
           <div className="text-center max-w-4xl mx-auto">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 bg-[#2D4CFF]/8 text-[#2D4CFF] border border-[#2D4CFF]/15 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 bg-white/10 text-white/90 backdrop-blur-sm border border-white/10 animate-fade-in-up">
               <Sparkles className="h-4 w-4 text-[#6B7FFF]" />
               {t(content.hero.badge, lang)}
             </div>
 
             {/* Headline */}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.12] sm:leading-[1.08] mb-5 sm:mb-6 text-gray-900 tracking-tight animate-fade-in-up">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.12] sm:leading-[1.08] mb-5 sm:mb-6 text-white tracking-tight animate-fade-in-up">
               {t(content.hero.title, lang)}
               <br />
-              <span className="bg-gradient-to-r from-[#2D4CFF] via-[#6B7FFF] to-[#7C4DFF] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#6B7FFF] via-[#7C4DFF] to-[#A78BFA] bg-clip-text text-transparent">
                 {t(content.hero.titleHighlight, lang)}
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animate-delay-100">
+            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animate-delay-100">
               {t(content.hero.subtitle, lang)}
             </p>
 
@@ -567,14 +567,14 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animate-delay-200">
               <Link
                 href="/signup"
-                className="px-8 py-3.5 text-base font-semibold bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] text-white rounded-xl hover:shadow-2xl hover:shadow-[#2D4CFF]/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                className="px-8 py-3.5 text-base font-semibold bg-white text-[#1E3ACC] rounded-xl hover:shadow-2xl hover:shadow-[#2D4CFF]/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
               >
                 {t(content.hero.cta, lang)}
                 <ArrowIcon className="h-4 w-4" />
               </Link>
               <a
                 href="#features"
-                className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/10 hover:border-white/40 transition-all"
               >
                 {t(content.hero.demo, lang)}
               </a>
@@ -583,7 +583,7 @@ export default function LandingPage() {
 
           {/* Dashboard Mockup */}
           <div className="mt-20 max-w-5xl mx-auto animate-fade-in-up animate-delay-300">
-            <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm p-2 shadow-2xl shadow-[#2D4CFF]/8">
+            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-2 shadow-2xl shadow-black/40">
               <div className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 overflow-hidden">
                 {/* Title bar */}
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
@@ -1110,7 +1110,7 @@ export default function LandingPage() {
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-500">{t(content.footer.copyright, lang)}</p>
             <div className="flex items-center gap-6">
-              <a href="mailto:support@kawadir.io" className="text-gray-400 hover:text-white transition-colors">
+              <a href="mailto:info@kawadir.io" className="text-gray-400 hover:text-white transition-colors">
                 <Mail className="h-5 w-5" />
               </a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
