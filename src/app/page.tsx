@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 /**
  * Root Redirect Page
@@ -223,12 +223,11 @@ export default function RootRedirectPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
-            style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
-          >
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
+          <img
+            src="/kawadir.svg"
+            alt="Kawadir"
+            className="h-16 object-contain"
+          />
           <p className="text-muted-foreground">{error}</p>
         </div>
       </div>
@@ -238,12 +237,11 @@ export default function RootRedirectPage() {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
-          style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
-        >
-          <Sparkles className="w-8 h-8 text-white" />
-        </div>
+        <img
+          src="/kawadir.svg"
+          alt="Kawadir"
+          className="h-16 object-contain animate-pulse"
+        />
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         <p className="text-sm text-muted-foreground">Redirecting...</p>
       </div>
