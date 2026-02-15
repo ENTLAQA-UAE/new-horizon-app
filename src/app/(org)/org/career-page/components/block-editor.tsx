@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react"
 import { toast } from "sonner"
-import { getAccessToken } from "@/lib/supabase/auth-fetch"
+import { uploadFile } from "@/lib/upload"
 import {
   CareerPageBlock,
   CareerPageStyles,
@@ -34,8 +34,6 @@ import {
   ContentItem,
 } from "@/lib/career-page/types"
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 interface BlockEditorProps {
   block: CareerPageBlock
@@ -81,36 +79,9 @@ export function BlockEditor({ block, onUpdate, pageStyles, organizationId }: Blo
 
     setIsUploadingBanner(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        toast.error("Session expired. Please refresh.")
-        return
-      }
-
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${organizationId}/career-hero-banner.${fileExt}`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append("", file)
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            apikey: SUPABASE_ANON_KEY || "",
-            "x-upsert": "true",
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-      }
-
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = await uploadFile(file, {
+        folder: `${organizationId}`,
+      })
       updateContent({ backgroundImage: publicUrl })
       toast.success("Banner image uploaded successfully")
     } catch (error) {
@@ -163,36 +134,9 @@ export function BlockEditor({ block, onUpdate, pageStyles, organizationId }: Blo
 
     setIsUploadingGallery(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        toast.error("Session expired. Please refresh.")
-        return
-      }
-
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${organizationId}/career-gallery-${crypto.randomUUID()}.${fileExt}`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append("", file)
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            apikey: SUPABASE_ANON_KEY || "",
-            "x-upsert": "true",
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-      }
-
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = await uploadFile(file, {
+        folder: `${organizationId}`,
+      })
       const images = block.content.images || []
       updateContent({
         images: [...images, { id: crypto.randomUUID(), url: publicUrl, alt: file.name.replace(/\.[^.]+$/, "") }],

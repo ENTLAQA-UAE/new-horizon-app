@@ -55,7 +55,7 @@ import {
 } from "lucide-react"
 import { Upload } from "lucide-react"
 import { toast } from "sonner"
-import { getAccessToken } from "@/lib/supabase/auth-fetch"
+import { uploadFile } from "@/lib/upload"
 import {
   LandingPageBlock,
   LandingPageConfig,
@@ -151,38 +151,9 @@ export function LandingPageBuilder({
 
     setIsUploadingLogo(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        toast.error("Session expired. Please refresh.")
-        return
-      }
-
-      const fileExt = file.name.split(".").pop()
-      const fileName = `landing-page/navbar-logo-${crypto.randomUUID()}.${fileExt}`
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-      const uploadFormData = new FormData()
-      uploadFormData.append("", file)
-      const uploadResponse = await fetch(
-        `${supabaseUrl}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            apikey: supabaseKey || "",
-            "x-upsert": "true",
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-      }
-
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = await uploadFile(file, {
+        folder: "landing-page",
+      })
       updateConfig({ navbar: { ...config.navbar, logoUrl: publicUrl } })
       toast.success("Logo uploaded successfully")
     } catch (error) {

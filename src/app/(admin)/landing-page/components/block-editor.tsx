@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react"
 import { toast } from "sonner"
-import { getAccessToken } from "@/lib/supabase/auth-fetch"
+import { uploadFile } from "@/lib/upload"
 import {
   LandingPageBlock,
   LandingPageStyles,
@@ -34,8 +34,6 @@ import {
   LandingContentItem,
 } from "@/lib/landing-page/types"
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 interface BlockEditorProps {
   block: LandingPageBlock
@@ -67,36 +65,9 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
   }
 
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
-    const accessToken = await getAccessToken()
-    if (!accessToken) {
-      toast.error("Session expired. Please refresh.")
-      return null
-    }
-
-    const fileExt = file.name.split(".").pop()
-    const fileName = `landing-page/${folder}-${crypto.randomUUID()}.${fileExt}`
-
-    const uploadFormData = new FormData()
-    uploadFormData.append("", file)
-    const uploadResponse = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: SUPABASE_ANON_KEY || "",
-          "x-upsert": "true",
-        },
-        body: uploadFormData,
-      }
-    )
-
-    if (!uploadResponse.ok) {
-      const errText = await uploadResponse.text()
-      throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-    }
-
-    return `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+    return await uploadFile(file, {
+      folder: `landing-page`,
+    })
   }
 
   const handleItemImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

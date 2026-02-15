@@ -2,7 +2,8 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { getAccessToken, supabaseSelect, supabaseUpdate } from "@/lib/supabase/auth-fetch"
+import { supabaseSelect, supabaseUpdate } from "@/lib/supabase/auth-fetch"
+import { uploadFile } from "@/lib/upload"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +14,6 @@ import { toast } from "sonner"
 import { useAuth } from "@/lib/auth"
 import { useI18n } from "@/lib/i18n"
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 interface Profile {
   id: string
@@ -125,44 +124,16 @@ export default function ProfilePage() {
 
     setIsUploading(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        throw new Error("Not authenticated")
-      }
-
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`
-      // Use organization-assets bucket with org_id prefix to satisfy RLS policy
       const orgId = profile.org_id
       if (!orgId) {
         throw new Error("Organization not found")
       }
-      const storagePath = `${orgId}/avatars/${fileName}`
 
-      // Upload using direct REST API (bypasses getSession hang)
-      // URL format: /storage/v1/object/{bucket}/{path}
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${storagePath}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            apikey: SUPABASE_ANON_KEY,
-            "x-upsert": "true",
-          },
-          body: file,
-        }
-      )
+      const avatarUrl = await uploadFile(file, {
+        folder: `${orgId}/avatars`,
+      })
 
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text()
-        throw new Error(`Upload failed: ${errorText}`)
-      }
-
-      // Get public URL
-      const avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${storagePath}`
-
-      // Update profile with new avatar URL (using direct REST API)
+      // Update profile with new avatar URL
       const { error } = await supabaseUpdate(
         "profiles",
         {
@@ -217,50 +188,20 @@ export default function ProfilePage() {
 
     setIsChangingPassword(true)
     try {
-      // Verify current password via direct REST call to avoid triggering
-      // auth state changes (signInWithPassword fires SIGNED_IN event which
-      // causes a full AuthProvider reload and UI disruption)
-      const verifyResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      const response = await fetch("/api/auth/change-password", {
         method: "POST",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: profile?.email || "",
-          password: currentPassword,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
       })
 
-      if (!verifyResponse.ok) {
-        toast.error(language === "ar" ? "كلمة المرور الحالية غير صحيحة" : "Current password is incorrect")
-        return
-      }
+      const data = await response.json()
 
-      // Get the access token from the verify response to use for the update call
-      const verifyData = await verifyResponse.json()
-      const accessToken = verifyData?.access_token
-
-      if (!accessToken) {
-        throw new Error("Failed to obtain access token")
-      }
-
-      // Update to new password via direct REST call to avoid triggering
-      // auth state changes (updateUser fires USER_UPDATED event which
-      // can cause AuthProvider disruption)
-      const updateResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        method: "PUT",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password: newPassword }),
-      })
-
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json().catch(() => ({}))
-        throw new Error(errorData?.msg || errorData?.message || "Failed to update password")
+      if (!response.ok) {
+        if (response.status === 400 && data.error?.includes("incorrect")) {
+          toast.error(language === "ar" ? "كلمة المرور الحالية غير صحيحة" : "Current password is incorrect")
+          return
+        }
+        throw new Error(data.error || "Failed to change password")
       }
 
       toast.success(language === "ar" ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully")
