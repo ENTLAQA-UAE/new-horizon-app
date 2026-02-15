@@ -83,6 +83,7 @@ const routeRoleMap: { path: string; roles: string[] }[] = [
 
   // HR manager only (configuration)
   { path: '/org/pipelines', roles: ['hr_manager'] },
+  { path: '/org/workflows', roles: ['hr_manager'] },
   { path: '/org/offers/templates', roles: ['hr_manager'] },
   { path: '/org/scorecard-templates', roles: ['hr_manager'] },
   { path: '/org/screening-questions', roles: ['hr_manager'] },
