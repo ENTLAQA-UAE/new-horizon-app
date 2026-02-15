@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Sparkles,
   Brain,
@@ -296,13 +297,15 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/landing" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2D4CFF] to-[#6B7FFF] flex items-center justify-center shadow-lg shadow-[#2D4CFF]/20">
-              <span className="text-white font-extrabold text-lg">K</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900 tracking-tight">
-              {isRtl ? "كوادر" : "kawadir"}
-            </span>
+          <Link href="/landing" className="flex items-center gap-2">
+            <Image
+              src="/kawadir-logo.png"
+              alt="Kawadir"
+              width={140}
+              height={40}
+              className="h-9 w-auto"
+              priority
+            />
           </Link>
 
           {/* Nav Links */}
@@ -695,13 +698,14 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12">
             {/* Brand */}
             <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2D4CFF] to-[#6B7FFF] flex items-center justify-center">
-                  <span className="text-white font-extrabold text-lg">K</span>
-                </div>
-                <span className="text-xl font-bold tracking-tight">
-                  {isRtl ? "كوادر" : "kawadir"}
-                </span>
+              <div className="mb-4">
+                <Image
+                  src="/kawadir-logo.png"
+                  alt="Kawadir"
+                  width={120}
+                  height={36}
+                  className="h-8 w-auto brightness-0 invert"
+                />
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {t(content.footer.desc, lang)}
