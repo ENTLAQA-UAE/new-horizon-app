@@ -67,12 +67,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Save config to platform_settings (pass object directly for JSONB)
+    // is_public must be true so the anon client can read it on the public landing page
     const { error: configError } = await serviceClient
       .from("platform_settings")
       .upsert(
         {
           key: "landing_page_config",
           value: config,
+          is_public: true,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "key" }
