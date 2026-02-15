@@ -10,8 +10,7 @@ import { Loader2, Sparkles } from "lucide-react"
  *
  * This page handles the post-login redirect logic:
  * - super_admin users → /admin (admin dashboard)
- * - org users with org_id → /org (organization dashboard)
- * - users without org_id → /onboarding
+ * - authenticated users → /org (organization dashboard)
  * - unauthenticated users → /login
  *
  * This prevents race conditions by doing a single auth check
@@ -172,12 +171,9 @@ export default function RootRedirectPage() {
         if (isSuperAdmin) {
           console.log("RootRedirect: User is super_admin, redirecting to /admin")
           router.replace("/admin")
-        } else if (orgId) {
-          console.log("RootRedirect: User has org_id, redirecting to /org")
-          router.replace("/org")
         } else {
-          console.log("RootRedirect: User needs onboarding, redirecting to /onboarding")
-          router.replace("/onboarding")
+          console.log("RootRedirect: User has session, redirecting to /org")
+          router.replace("/org")
         }
       } catch (err) {
         console.error("RootRedirect: Error determining redirect:", err)
