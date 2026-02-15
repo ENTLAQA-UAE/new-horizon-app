@@ -53,7 +53,10 @@ const iconOptions = [
 export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
   const [activeTab, setActiveTab] = useState("content")
   const [isUploadingBanner, setIsUploadingBanner] = useState(false)
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const itemImageInputRef = useRef<HTMLInputElement>(null)
+  const [pendingItemUpload, setPendingItemUpload] = useState<{ itemId: string; field: "authorImage" | "image" } | null>(null)
 
   const updateContent = (updates: any) => {
     onUpdate({ content: { ...block.content, ...updates } })
@@ -61,6 +64,77 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
 
   const updateStyles = (updates: Partial<LandingBlockStyles>) => {
     onUpdate({ styles: { ...block.styles, ...updates } })
+  }
+
+  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
+    const accessToken = await getAccessToken()
+    if (!accessToken) {
+      toast.error("Session expired. Please refresh.")
+      return null
+    }
+
+    const fileExt = file.name.split(".").pop()
+    const fileName = `landing-page/${folder}-${crypto.randomUUID()}.${fileExt}`
+
+    const uploadFormData = new FormData()
+    uploadFormData.append("", file)
+    const uploadResponse = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_ANON_KEY || "",
+          "x-upsert": "true",
+        },
+        body: uploadFormData,
+      }
+    )
+
+    if (!uploadResponse.ok) {
+      const errText = await uploadResponse.text()
+      throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
+    }
+
+    return `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
+  }
+
+  const handleItemImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !pendingItemUpload) return
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (JPG, PNG, or WebP)")
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB")
+      return
+    }
+
+    const { itemId, field } = pendingItemUpload
+    setUploadingItemId(itemId)
+    try {
+      const folder = field === "authorImage" ? "testimonial" : "client"
+      const publicUrl = await uploadImage(file, folder)
+      if (publicUrl) {
+        updateItem(itemId, { [field]: publicUrl })
+        toast.success("Image uploaded successfully")
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      toast.error("Failed to upload image")
+    } finally {
+      setUploadingItemId(null)
+      setPendingItemUpload(null)
+      if (itemImageInputRef.current) itemImageInputRef.current.value = ""
+    }
+  }
+
+  const triggerItemImageUpload = (itemId: string, field: "authorImage" | "image") => {
+    setPendingItemUpload({ itemId, field })
+    setTimeout(() => itemImageInputRef.current?.click(), 0)
   }
 
   const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,38 +153,11 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
 
     setIsUploadingBanner(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        toast.error("Session expired. Please refresh.")
-        return
+      const publicUrl = await uploadImage(file, "hero-banner")
+      if (publicUrl) {
+        updateContent({ backgroundImage: publicUrl })
+        toast.success("Banner image uploaded successfully")
       }
-
-      const fileExt = file.name.split(".").pop()
-      const fileName = `landing-page/hero-banner-${crypto.randomUUID()}.${fileExt}`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append("", file)
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            apikey: SUPABASE_ANON_KEY || "",
-            "x-upsert": "true",
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-      }
-
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}`
-      updateContent({ backgroundImage: publicUrl })
-      toast.success("Banner image uploaded successfully")
     } catch (error) {
       console.error("Error uploading banner:", error)
       toast.error("Failed to upload banner image")
@@ -147,6 +194,14 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
 
   return (
     <div className="mt-6">
+      {/* Hidden file input for item image uploads (testimonials, clients) */}
+      <input
+        ref={itemImageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleItemImageUpload}
+      />
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="content">Content</TabsTrigger>
@@ -825,6 +880,58 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
                         </div>
                       )}
 
+                      {/* Client logo upload */}
+                      {block.type === "clients" && (
+                        <div className="space-y-1">
+                          <Label className="text-xs">Logo</Label>
+                          {item.image ? (
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={item.image}
+                                alt="Client logo"
+                                className="h-10 w-20 object-contain border rounded bg-white p-1"
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs"
+                                disabled={uploadingItemId === item.id}
+                                onClick={() => triggerItemImageUpload(item.id, "image")}
+                              >
+                                {uploadingItemId === item.id ? (
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                ) : (
+                                  <Upload className="h-3 w-3 mr-1" />
+                                )}
+                                Replace
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                onClick={() => updateItem(item.id, { image: "" })}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={uploadingItemId === item.id}
+                              onClick={() => triggerItemImageUpload(item.id, "image")}
+                              className="w-full h-10 border border-dashed rounded-md flex items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer disabled:opacity-50 text-xs"
+                            >
+                              {uploadingItemId === item.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <ImageIcon className="h-3 w-3" />
+                              )}
+                              Upload logo
+                            </button>
+                          )}
+                        </div>
+                      )}
+
                       {/* Testimonials extra fields */}
                       {block.type === "testimonials" && (
                         <>
@@ -871,13 +978,52 @@ export function BlockEditor({ block, onUpdate, pageStyles }: BlockEditorProps) {
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">Photo URL</Label>
-                            <Input
-                              value={item.authorImage || ""}
-                              onChange={(e) => updateItem(item.id, { authorImage: e.target.value })}
-                              placeholder="https://..."
-                              className="h-8"
-                            />
+                            <Label className="text-xs">Author Photo</Label>
+                            {item.authorImage ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={item.authorImage}
+                                  alt="Author"
+                                  className="h-10 w-10 rounded-full object-cover border"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  disabled={uploadingItemId === item.id}
+                                  onClick={() => triggerItemImageUpload(item.id, "authorImage")}
+                                >
+                                  {uploadingItemId === item.id ? (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <Upload className="h-3 w-3 mr-1" />
+                                  )}
+                                  Replace
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive"
+                                  onClick={() => updateItem(item.id, { authorImage: "" })}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={uploadingItemId === item.id}
+                                onClick={() => triggerItemImageUpload(item.id, "authorImage")}
+                                className="w-full h-10 border border-dashed rounded-md flex items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:bg-muted/30 transition-colors cursor-pointer disabled:opacity-50 text-xs"
+                              >
+                                {uploadingItemId === item.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Upload className="h-3 w-3" />
+                                )}
+                                Upload photo
+                              </button>
+                            )}
                           </div>
                         </>
                       )}
