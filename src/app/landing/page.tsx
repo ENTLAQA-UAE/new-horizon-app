@@ -399,21 +399,15 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
 
 /* ─── Logo Component ─── */
 function KawadirLogo({ lang, variant = "default" }: { lang: Lang; variant?: "default" | "white" }) {
-  const textColor = variant === "white" ? "text-white" : "text-gray-900"
   return (
-    <div className="flex items-center gap-2.5">
-      <Image
-        src="/kawadir-logo.svg"
-        alt="Kawadir"
-        width={36}
-        height={36}
-        priority
-        className="rounded-xl shadow-lg shadow-[#2D4CFF]/20"
-      />
-      <span className={`text-xl font-bold ${textColor}`}>
-        {lang === "ar" ? "كوادر" : "Kawadir"}
-      </span>
-    </div>
+    <Image
+      src="/kawadir.svg"
+      alt={lang === "ar" ? "كوادر" : "Kawadir"}
+      width={140}
+      height={45}
+      priority
+      className={variant === "white" ? "brightness-0 invert" : ""}
+    />
   )
 }
 
