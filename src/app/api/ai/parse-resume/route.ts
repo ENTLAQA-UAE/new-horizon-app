@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { parseResume } from "@/lib/ai/resume-parser"
+import { aiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
  * @deprecated This endpoint uses global AI configuration.
@@ -8,6 +9,10 @@ import { parseResume } from "@/lib/ai/resume-parser"
  * New endpoints should use /api/org/ai/* routes.
  */
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = aiLimiter.check(`ai-resume:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   console.warn("[DEPRECATED] /api/ai/parse-resume uses global AI config. Migrate to org-level AI config.")
   try {
     const supabase = await createClient()

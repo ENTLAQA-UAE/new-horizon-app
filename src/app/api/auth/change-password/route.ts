@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { authLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = authLimiter.check(`change-pwd:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   try {
     const supabase = await createClient()
 

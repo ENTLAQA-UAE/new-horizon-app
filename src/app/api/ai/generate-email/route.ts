@@ -5,6 +5,7 @@ import {
   improveEmailTemplate,
   translateEmailToArabic,
 } from "@/lib/ai/email-generator"
+import { aiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
  * @deprecated This endpoint uses global AI configuration.
@@ -12,6 +13,10 @@ import {
  * New endpoints should use /api/org/ai/* routes.
  */
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = aiLimiter.check(`ai-email:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   console.warn("[DEPRECATED] /api/ai/generate-email uses global AI config. Migrate to org-level AI config.")
   try {
     const supabase = await createClient()

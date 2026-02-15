@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { scoreCandidate } from "@/lib/ai/candidate-matcher"
+import { aiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
  * @deprecated This endpoint uses global AI configuration.
  * Use /api/org/ai/screen-candidate instead for org-level AI configuration.
  */
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = aiLimiter.check(`ai-score:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   console.warn("[DEPRECATED] /api/ai/score-candidate uses global AI config. Use /api/org/ai/screen-candidate instead.")
   try {
     const supabase = await createClient()

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { uploadLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 const ALLOWED_BUCKETS = ["organization-assets"]
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = uploadLimiter.check(`upload:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   try {
     const supabase = await createClient()
 

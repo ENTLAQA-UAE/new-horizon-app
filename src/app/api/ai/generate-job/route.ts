@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { generateJobDescription, generateInterviewQuestions } from "@/lib/ai/job-generator"
+import { aiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 /**
  * @deprecated This endpoint uses global AI configuration.
@@ -8,6 +9,10 @@ import { generateJobDescription, generateInterviewQuestions } from "@/lib/ai/job
  * Interview questions generation will be migrated to org-level config soon.
  */
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = aiLimiter.check(`ai-job:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   console.warn("[DEPRECATED] /api/ai/generate-job uses global AI config. Use /api/org/ai/generate-job-description for job descriptions.")
   try {
     const supabase = await createClient()

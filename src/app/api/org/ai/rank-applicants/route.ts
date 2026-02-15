@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getAICompletion, parseJSONFromAI, hasAIConfigured } from "@/lib/ai/unified-client"
+import { aiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export interface ApplicantRanking {
   applicationId: string
@@ -78,6 +79,10 @@ IMPORTANT:
 - Return ONLY the JSON object, no markdown code blocks`
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = aiLimiter.check(`org-ai-rank:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   const supabase = await createClient()
 
   const {
