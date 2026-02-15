@@ -13,8 +13,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
 import { sendNotification } from "@/lib/notifications/send-notification"
+import { authLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = authLimiter.check(`forgot-pwd:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   try {
     const { email, redirectUrl } = await request.json()
 

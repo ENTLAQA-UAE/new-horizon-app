@@ -243,7 +243,7 @@ export const defaultLandingBlocks: Record<LandingBlockType, Partial<LandingPageB
   },
   testimonials: {
     type: 'testimonials',
-    enabled: false,
+    enabled: true,
     content: {
       title: 'What Our Customers Say',
       titleAr: 'ماذا يقول عملاؤنا',
@@ -332,13 +332,16 @@ export const defaultLandingBlocks: Record<LandingBlockType, Partial<LandingPageB
   },
   faq: {
     type: 'faq',
-    enabled: false,
+    enabled: true,
     content: {
       title: 'Frequently Asked Questions',
       titleAr: 'الأسئلة الشائعة',
       items: [
         { id: '1', title: 'How does AI screening work?', titleAr: 'كيف يعمل الفرز بالذكاء الاصطناعي؟', description: 'Our AI analyzes resumes and job descriptions to match candidates based on skills, experience, and qualifications.', descriptionAr: 'يحلل الذكاء الاصطناعي السير الذاتية ووصف الوظائف لمطابقة المرشحين بناءً على المهارات والخبرة والمؤهلات.' },
         { id: '2', title: 'Is there a free trial?', titleAr: 'هل يوجد نسخة تجريبية مجانية؟', description: 'Yes! You can try Kawadir free for 14 days with full access to all features.', descriptionAr: 'نعم! يمكنك تجربة كوادر مجاناً لمدة 14 يوماً مع الوصول الكامل لجميع الميزات.' },
+        { id: '3', title: 'Can I use my own domain?', titleAr: 'هل يمكنني استخدام نطاقي الخاص؟', description: 'Yes, you can connect a custom domain to your career page for a fully branded experience.', descriptionAr: 'نعم، يمكنك ربط نطاق مخصص بصفحة التوظيف الخاصة بك لتجربة متكاملة.' },
+        { id: '4', title: 'Does it support Arabic?', titleAr: 'هل يدعم العربية؟', description: 'Absolutely. Kawadir is built from the ground up with full Arabic and RTL support across every feature.', descriptionAr: 'بالتأكيد. كوادر مصممة من الأساس مع دعم كامل للعربية والتخطيط من اليمين لليسار في جميع الميزات.' },
+        { id: '5', title: 'What integrations are available?', titleAr: 'ما هي عمليات التكامل المتاحة؟', description: 'We integrate with Google Calendar, Microsoft Outlook, Zoom, and support multiple email providers including Resend, SendGrid, and Mailgun.', descriptionAr: 'نتكامل مع تقويم جوجل ومايكروسوفت أوتلوك وزووم، وندعم موفري بريد إلكتروني متعددين بما في ذلك Resend وSendGrid وMailgun.' },
       ],
     },
     styles: {
@@ -432,8 +435,8 @@ export const defaultLandingConfig: LandingPageConfig = {
     companyNameAr: 'كوادر',
     description: 'AI-Powered Recruitment Platform for the MENA Region.',
     descriptionAr: 'منصة التوظيف المدعومة بالذكاء الاصطناعي لمنطقة الشرق الأوسط.',
-    copyright: '© 2025 Kawadir. All rights reserved.',
-    copyrightAr: '© 2025 كوادر. جميع الحقوق محفوظة.',
+    copyright: '© 2026 Kawadir. All rights reserved.',
+    copyrightAr: '© 2026 كوادر. جميع الحقوق محفوظة.',
     links: [
       { label: 'Privacy Policy', labelAr: 'سياسة الخصوصية', href: '/privacy' },
       { label: 'Terms of Service', labelAr: 'شروط الخدمة', href: '/terms' },

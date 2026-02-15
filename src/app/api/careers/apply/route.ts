@@ -3,12 +3,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { notify } from "@/lib/notifications/send-notification"
+import { apiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
 
 // Ensure this runs on Node.js runtime (not Edge) for file uploads
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
+  const rlKey = getRateLimitKey(request)
+  const rl = apiLimiter.check(`apply:${rlKey}`)
+  if (!rl.success) return rateLimitResponse(rl)
+
   try {
     // Create service client early to catch config errors
     let supabase

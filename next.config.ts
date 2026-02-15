@@ -1,9 +1,52 @@
 import type { NextConfig } from "next"
 import { withSentryConfig } from "@sentry/nextjs"
 
+const securityHeaders = [
+  // Prevent MIME-type sniffing
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Prevent clickjacking - allow framing only from same origin
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  // Enable browser XSS filter
+  { key: "X-XSS-Protection", value: "1; mode=block" },
+  // Control referrer information sent with requests
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Permissions Policy - disable unused browser features
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  },
+  // Strict Transport Security - enforce HTTPS for 1 year (with subdomains + preload)
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains; preload",
+  },
+  // Content Security Policy
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.sentry.io",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.sentry.io wss://*.supabase.co",
+      "frame-ancestors 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ].join("; "),
+  },
+]
+
 const nextConfig: NextConfig = {
-  // Optimize for production
   reactStrictMode: true,
+  headers: async () => [
+    {
+      // Apply security headers to all routes
+      source: "/(.*)",
+      headers: securityHeaders,
+    },
+  ],
 }
 
 // Sentry configuration options
