@@ -331,27 +331,14 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
                 />
               </div>
             ) : (
-              <>
-                <div
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:shadow-xl"
-                  style={{
-                    background: `var(--brand-gradient)`,
-                    boxShadow: '0 4px 14px -3px var(--brand-primary)'
-                  }}
-                >
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                {!collapsed && (
-                  <div className="flex flex-col">
-                    <span className="font-bold text-lg tracking-tight gradient-text">
-                      {language === "ar" ? branding.orgNameAr : branding.orgName}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">
-                      ATS Platform
-                    </span>
-                  </div>
+              <img
+                src="/kawadir.svg"
+                alt={language === "ar" ? branding.orgNameAr : branding.orgName}
+                className={cn(
+                  "object-contain transition-all duration-300 group-hover:scale-105",
+                  collapsed ? "h-9 w-9" : "h-9 max-w-[140px]"
                 )}
-              </>
+              />
             )}
           </Link>
 
@@ -520,12 +507,11 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
         {!collapsed && (
           <div className="p-4 border-t border-border/50">
             <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-muted/30">
-              <div
-                className="w-6 h-6 rounded-lg flex items-center justify-center"
-                style={{ background: `var(--brand-gradient)` }}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-white" />
-              </div>
+              <img
+                src="/kawadir.svg"
+                alt="Kawadir"
+                className="w-6 h-6 object-contain"
+              />
               <div className="flex flex-col">
                 <span className="text-[11px] font-semibold text-foreground">Powered by Kawadir</span>
                 <span className="text-[9px] text-muted-foreground">AI-Powered Recruitment</span>

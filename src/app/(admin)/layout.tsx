@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/header"
 import { I18nProvider } from "@/lib/i18n"
 import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
 import { AuthErrorDisplay } from "@/components/auth/auth-error"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 // Apply default Kawadir branding CSS variables
 function applyDefaultBranding() {
@@ -119,12 +119,11 @@ function AdminLoadingScreen() {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
-          style={{ background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
-        >
-          <Sparkles className="w-8 h-8 text-white" />
-        </div>
+        <img
+          src="/kawadir.svg"
+          alt="Kawadir"
+          className="h-16 object-contain animate-pulse"
+        />
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     </div>
