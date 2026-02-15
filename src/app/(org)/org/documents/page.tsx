@@ -46,28 +46,34 @@ export default async function DocumentsPage() {
         title
       )
     `)
+    .eq("org_id", orgId)
     .order("created_at", { ascending: false })
 
-  // Get application attachments
-  const { data: attachments } = await supabase
-    .from("application_attachments")
-    .select(`
-      id,
-      application_id,
-      file_name,
-      file_type,
-      file_url,
-      file_size,
-      mime_type,
-      description,
-      created_at
-    `)
-    .order("created_at", { ascending: false })
+  // Get application attachments (filtered via applications in the same org)
+  const applicationIds = (applications || []).map(a => a.id)
+  const { data: attachments } = applicationIds.length > 0
+    ? await supabase
+        .from("application_attachments")
+        .select(`
+          id,
+          application_id,
+          file_name,
+          file_type,
+          file_url,
+          file_size,
+          mime_type,
+          description,
+          created_at
+        `)
+        .in("application_id", applicationIds)
+        .order("created_at", { ascending: false })
+    : { data: [] as any[] }
 
   // Get jobs for filtering
   const { data: jobs } = await supabase
     .from("jobs")
     .select("id, title")
+    .eq("org_id", orgId)
     .order("title", { ascending: true })
 
   // Transform data for the client component

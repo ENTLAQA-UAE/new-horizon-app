@@ -77,9 +77,13 @@ export default async function RequisitionsPage() {
   // Fallback to global setting if org-specific not found
   let defaultCurrency = "SAR"
   if (currencySetting?.value) {
-    defaultCurrency = typeof currencySetting.value === 'string'
-      ? JSON.parse(currencySetting.value)
-      : currencySetting.value
+    try {
+      defaultCurrency = typeof currencySetting.value === 'string'
+        ? JSON.parse(currencySetting.value)
+        : currencySetting.value
+    } catch {
+      defaultCurrency = String(currencySetting.value)
+    }
   } else {
     // Try global setting as fallback
     const { data: globalCurrency } = await supabase
@@ -88,9 +92,13 @@ export default async function RequisitionsPage() {
       .eq("key", "org_settings_currency")
       .single()
     if (globalCurrency?.value) {
-      defaultCurrency = typeof globalCurrency.value === 'string'
-        ? JSON.parse(globalCurrency.value)
-        : globalCurrency.value
+      try {
+        defaultCurrency = typeof globalCurrency.value === 'string'
+          ? JSON.parse(globalCurrency.value)
+          : globalCurrency.value
+      } catch {
+        defaultCurrency = String(globalCurrency.value)
+      }
     }
   }
 

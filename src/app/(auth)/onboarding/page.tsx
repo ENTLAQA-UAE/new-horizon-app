@@ -141,21 +141,17 @@ export default function OnboardingPage() {
     try {
       const supabase = createClient()
 
-      // Find the invite - use type assertion to avoid deep type instantiation
-      const inviteResult = await supabase
-        .from("team_invites")
-        .select("*, organizations(id, name)")
-        .eq("invite_code", inviteCode)
-        .eq("status", "pending")
-        .single()
-      const invite = inviteResult.data as { id: string; email: string; org_id: string; role: string | null; expires_at: string | null; organizations: { id: string; name: string } | null } | null
-      const inviteError = inviteResult.error
+      // Validate the invite first (client-side checks for fast feedback)
+      const validateResponse = await fetch(`/api/invites/validate?code=${encodeURIComponent(inviteCode)}`)
+      const validateResult = await validateResponse.json()
 
-      if (inviteError || !invite) {
-        toast.error("Invalid or expired invite code")
+      if (!validateResponse.ok || !validateResult.invite) {
+        toast.error(validateResult.error || "Invalid or expired invite code")
         setIsSubmitting(false)
         return
       }
+
+      const invite = validateResult.invite
 
       // Check if invite is for this email
       if (invite.email.toLowerCase() !== user.email.toLowerCase()) {
@@ -164,46 +160,24 @@ export default function OnboardingPage() {
         return
       }
 
-      // Check if invite is expired
-      if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-        toast.error("This invite has expired")
-        setIsSubmitting(false)
-        return
+      // Accept the invite via server API (bypasses RLS for role assignment)
+      const acceptResponse = await fetch("/api/invites/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inviteId: invite.id,
+          userId: user.id,
+        }),
+      })
+
+      const acceptResult = await acceptResponse.json()
+
+      if (!acceptResponse.ok) {
+        throw new Error(acceptResult.error || "Failed to accept invite")
       }
-
-      // Update user profile with org_id
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ org_id: invite.org_id })
-        .eq("id", user.id)
-
-      if (profileError) throw profileError
-
-      // Assign the role from the invite
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: user.id,
-          org_id: invite.org_id,
-          role: invite.role || "recruiter",
-        })
-
-      if (roleError) {
-        console.error("Role assignment error:", roleError)
-      }
-
-      // Update invite status
-      await supabase
-        .from("team_invites")
-        .update({
-          status: "accepted",
-          accepted_at: new Date().toISOString(),
-          accepted_by: user.id,
-        })
-        .eq("id", invite.id)
 
       setStep("complete")
-      toast.success(`Welcome to ${invite.organizations?.name}!`)
+      toast.success(`Welcome to ${invite.organization?.name || "the organization"}!`)
 
       setTimeout(() => {
         router.push("/org")

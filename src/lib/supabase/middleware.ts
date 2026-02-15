@@ -208,6 +208,7 @@ export async function updateSession(request: NextRequest) {
     '/api/auth/forgot-password', // Password reset API endpoint
     '/api/auth/reset-password',  // Password reset confirmation endpoint
     '/api/offers/respond',       // Offer accept/decline API (token-based, no auth)
+    '/api/health',               // Health check endpoint (monitoring)
     '/offers/respond',           // Offer accept/decline landing page
     '/onboarding', // Allow onboarding for authenticated users without org
     '/landing',    // Public landing page
@@ -325,32 +326,38 @@ export async function updateSession(request: NextRequest) {
     // If no valid cookie, query DB once and set cookie for future requests
     if (!userRole) {
       try {
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
-          .single()
+          .limit(1)
 
-        userRole = roleData?.role || null
-      } catch {
-        // DB query failed — skip role enforcement
+        if (roleError) {
+          console.error('Middleware: user_roles query failed:', roleError.message)
+        }
+        userRole = roleData?.[0]?.role || null
+      } catch (err) {
+        console.error('Middleware: user_roles query exception:', err)
       }
 
       // Also resolve the user's org slug from profiles → organizations
       if (userRole && userRole !== 'super_admin') {
         try {
-          const { data: profileData } = await supabase
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('org_id, organizations(slug)')
             .eq('id', user.id)
             .single()
 
+          if (profileError) {
+            console.error('Middleware: profile query failed:', profileError.message)
+          }
           if (profileData?.organizations) {
             const org = profileData.organizations as unknown as { slug: string }
             userOrgSlug = org.slug || null
           }
-        } catch {
-          // DB query failed — continue without org slug
+        } catch (err) {
+          console.error('Middleware: profile query exception:', err)
         }
       }
 

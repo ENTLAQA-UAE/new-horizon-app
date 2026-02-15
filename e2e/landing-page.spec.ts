@@ -8,7 +8,7 @@ test.describe("Landing Page", () => {
     await expect(page.locator("text=Hire the Best Talent")).toBeVisible()
 
     // Should have a Get Started CTA
-    await expect(page.locator('a:has-text("Get Started")')).toBeVisible()
+    await expect(page.locator('a:has-text("Get Started")').first()).toBeVisible()
   })
 
   test("has working navigation links", async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe("Landing Page", () => {
     await expect(page.locator("nav")).toBeVisible()
 
     // Login link should be accessible
-    const loginLink = page.locator('a[href="/login"]')
+    const loginLink = page.locator('a[href="/login"]').first()
     if (await loginLink.isVisible()) {
       await loginLink.click()
       await expect(page).toHaveURL(/\/login/)
