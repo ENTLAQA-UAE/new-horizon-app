@@ -91,56 +91,26 @@ export default function OnboardingPage() {
     setIsSubmitting(true)
 
     try {
-      const supabase = createClient()
-
-      // Check if slug is available
-      const { data: existing } = await supabase
-        .from("organizations")
-        .select("id")
-        .eq("slug", orgSlug)
-        .single()
-
-      if (existing) {
-        toast.error("This organization URL is already taken")
-        setIsSubmitting(false)
-        return
-      }
-
-      // Create organization
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .insert({
+      const response = await fetch("/api/org/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: orgName,
           slug: orgSlug,
           industry: orgIndustry || null,
-          company_size: orgSize || null,
-          owner_id: user.id,
-        })
-        .select()
-        .single()
+          companySize: orgSize || null,
+        }),
+      })
 
-      if (orgError) throw orgError
+      const result = await response.json()
 
-      // Update user profile with org_id
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ org_id: org.id })
-        .eq("id", user.id)
-
-      if (profileError) throw profileError
-
-      // Assign org_admin role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: user.id,
-          org_id: org.id,
-          role: "org_admin",
-        })
-
-      if (roleError) {
-        console.error("Role assignment error:", roleError)
-        // Continue anyway - role might already exist or table might not exist
+      if (!response.ok) {
+        if (response.status === 409) {
+          toast.error("This organization URL is already taken")
+          setIsSubmitting(false)
+          return
+        }
+        throw new Error(result.error || "Failed to create organization")
       }
 
       setStep("complete")
