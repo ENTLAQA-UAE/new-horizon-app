@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect, getAccessToken } from "@/lib/supabase/auth-fetch"
+import { supabaseInsert, supabaseUpdate, supabaseDelete, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { uploadFile } from "@/lib/upload"
 import { useAuth } from "@/lib/auth/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -718,43 +719,9 @@ export default function JobSettingsPage() {
 
     setIsUploadingThumbnail(true)
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${orgId}/jobs/${jobId}/thumbnail.${fileExt}`
-
-      // Use direct fetch with auth-fetch token to avoid getSession() hanging
-      const accessToken = await getAccessToken()
-      if (!accessToken) {
-        toast.error("Session expired. Please refresh the page.")
-        return
-      }
-
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-      const uploadFormData = new FormData()
-      uploadFormData.append('', file)
-
-      const uploadResponse = await fetch(
-        `${supabaseUrl}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': supabaseAnonKey || '',
-            'x-upsert': 'true',
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text()
-        console.error("Storage upload failed:", errorText)
-        throw new Error(`Upload failed: ${uploadResponse.status}`)
-      }
-
-      // Construct public URL
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/organization-assets/${fileName}`
+      const publicUrl = await uploadFile(file, {
+        folder: `${orgId}/jobs/${jobId}`,
+      })
 
       // Update job with thumbnail URL
       const { error: updateError } = await supabaseUpdate(

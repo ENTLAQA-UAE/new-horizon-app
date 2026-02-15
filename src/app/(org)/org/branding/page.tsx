@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { supabaseUpdate, supabaseSelect, getAccessToken } from "@/lib/supabase/auth-fetch"
+import { supabaseUpdate, supabaseSelect } from "@/lib/supabase/auth-fetch"
+import { uploadFile } from "@/lib/upload"
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,8 +51,6 @@ const defaultColors = [
   "#EC4899", // Pink
 ]
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 export default function BrandingPage() {
   const { profile, organization, isLoading: authLoading } = useAuth()
@@ -174,33 +173,9 @@ export default function BrandingPage() {
 
     setIsUploadingLogo(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) { toast.error("Session expired. Please refresh."); return }
-
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${organizationId}/logo.${fileExt}`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append('', file)
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': SUPABASE_ANON_KEY || '',
-            'x-upsert': 'true',
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-      }
-
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}?t=${Date.now()}`
+      const publicUrl = await uploadFile(file, {
+        folder: `${organizationId}`,
+      })
       setSettings({ ...settings, logo_url: publicUrl })
       toast.success("Logo uploaded successfully")
     } catch (error) {
@@ -228,33 +203,9 @@ export default function BrandingPage() {
 
     setIsUploadingFavicon(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) { toast.error("Session expired. Please refresh."); return }
-
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${organizationId}/favicon.${fileExt}`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append('', file)
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': SUPABASE_ANON_KEY || '',
-            'x-upsert': 'true',
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        throw new Error(errText || `Upload failed: ${uploadResponse.status}`)
-      }
-
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}?t=${Date.now()}`
+      const publicUrl = await uploadFile(file, {
+        folder: `${organizationId}`,
+      })
       setSettings({ ...settings, favicon_url: publicUrl })
       toast.success("Favicon uploaded successfully")
     } catch (error) {
@@ -286,40 +237,9 @@ export default function BrandingPage() {
 
     setIsUploadingLoginImage(true)
     try {
-      const accessToken = await getAccessToken()
-      if (!accessToken) { toast.error("Session expired. Please refresh."); return }
-
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${organizationId}/login-image.${fileExt}`
-
-      const uploadFormData = new FormData()
-      uploadFormData.append('', file)
-      const uploadResponse = await fetch(
-        `${SUPABASE_URL}/storage/v1/object/organization-assets/${fileName}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': SUPABASE_ANON_KEY || '',
-            'x-upsert': 'true',
-          },
-          body: uploadFormData,
-        }
-      )
-
-      if (!uploadResponse.ok) {
-        const errText = await uploadResponse.text()
-        if (errText.includes('row-level security') || errText.includes('policy')) {
-          toast.error("Permission denied. Please contact support to enable file uploads.")
-        } else if (errText.includes('bucket')) {
-          toast.error("Storage not configured. Please contact support.")
-        } else {
-          toast.error(`Upload failed: ${errText || uploadResponse.status}`)
-        }
-        return
-      }
-
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/organization-assets/${fileName}?t=${Date.now()}`
+      const publicUrl = await uploadFile(file, {
+        folder: `${organizationId}`,
+      })
       setSettings({ ...settings, login_image_url: publicUrl })
       setLoginImageError(false) // Reset error state on successful upload
       toast.success("Login image uploaded successfully")
