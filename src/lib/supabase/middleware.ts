@@ -376,11 +376,20 @@ export async function updateSession(request: NextRequest) {
     }
 
     // -------------------------------------------------
-    // Super admins: redirect away from org subdomains
+    // Super admins: always redirect to /admin on main domain
     // -------------------------------------------------
-    if (userRole === 'super_admin' && orgSlug) {
-      const mainUrl = new URL(`${protocol}//${ROOT_DOMAIN}/admin`)
-      return redirectWithCookies(mainUrl)
+    if (userRole === 'super_admin') {
+      if (orgSlug) {
+        // On an org subdomain → redirect to main domain /admin
+        const mainUrl = new URL(`${protocol}//${ROOT_DOMAIN}/admin`)
+        return redirectWithCookies(mainUrl)
+      }
+      // On main domain at root → redirect to /admin directly (skip client-side redirect)
+      if (pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin'
+        return redirectWithCookies(url)
+      }
     }
 
     // -------------------------------------------------
