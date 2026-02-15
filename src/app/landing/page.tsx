@@ -181,7 +181,14 @@ export default function LandingPage() {
               try {
                 // Value may be a raw object (JSONB) or a JSON-encoded string (legacy)
                 const parsed = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
-                const merged = { ...defaultLandingConfig, ...parsed, settings: { ...defaultLandingConfig.settings, ...parsed?.settings }, styles: { ...defaultLandingConfig.styles, ...parsed?.styles } }
+                const merged = {
+                  ...defaultLandingConfig,
+                  ...parsed,
+                  settings: { ...defaultLandingConfig.settings, ...parsed?.settings },
+                  styles: { ...defaultLandingConfig.styles, ...parsed?.styles },
+                  navbar: { ...defaultLandingConfig.navbar, ...parsed?.navbar },
+                  footer: { ...defaultLandingConfig.footer, ...parsed?.footer },
+                }
                 setConfig(merged)
                 // Set initial language from settings
                 if (!langInit) {
@@ -255,8 +262,8 @@ export default function LandingPage() {
       {settings.showHeader && (
       <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b border-gray-100",
-          styles.headerStyle === "bold" ? "shadow-lg" : ""
+          "fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-all duration-300",
+          styles.headerStyle === "bold" ? "shadow-lg border-white/10" : "border-gray-100"
         )}
         style={{
           backgroundColor: styles.headerStyle === "bold" ? styles.primaryColor + "ee" : "rgba(255,255,255,0.8)",
@@ -291,7 +298,10 @@ export default function LandingPage() {
                 <a
                   key={i}
                   href={link.href}
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                  className={cn(
+                    "text-sm font-medium transition-colors",
+                    styles.headerStyle === "bold" ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
+                  )}
                 >
                   {t(link.label, link.labelAr, lang)}
                 </a>
@@ -303,7 +313,10 @@ export default function LandingPage() {
             {showLangToggle && (
               <button
                 onClick={toggleLang}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
+                  styles.headerStyle === "bold" ? "text-white/80 hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                )}
                 aria-label="Toggle language"
               >
                 <Languages className="h-4 w-4" />
@@ -312,7 +325,10 @@ export default function LandingPage() {
             )}
             <Link
               href="/login"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className={cn(
+                "text-sm font-medium transition-colors",
+                styles.headerStyle === "bold" ? "text-white/80 hover:text-white" : "text-gray-600 hover:text-gray-900"
+              )}
             >
               {lang === "ar" ? "تسجيل الدخول" : "Sign In"}
             </Link>
@@ -320,7 +336,7 @@ export default function LandingPage() {
               <Link
                 href={navbar.ctaLink || '/signup'}
                 className="px-4 py-2 text-sm font-semibold text-white rounded-lg transition-all hover:opacity-90 hover:shadow-lg"
-                style={{ background: gradient }}
+                style={{ background: styles.headerStyle === "bold" ? "rgba(255,255,255,0.2)" : gradient }}
               >
                 {t(navbar.ctaText, navbar.ctaTextAr, lang)}
               </Link>
@@ -480,52 +496,44 @@ function HeroBlock({ block, gradient, styles, lang, ArrowIcon }: { block: Landin
   const secondaryCta = t(block.content.secondaryCtaText, block.content.secondaryCtaTextAr, lang)
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden" style={{ minHeight: '500px' }}>
       {/* Background */}
       {block.content.backgroundImage ? (
         <>
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${block.content.backgroundImage})` }} />
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${styles.primaryColor}cc 0%, rgba(0,0,0,0.6) 100%)` }} />
         </>
       ) : (
-        <div className="absolute inset-0">
-          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full opacity-[0.08] blur-3xl" style={{ background: styles.primaryColor }} />
-          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-[0.06] blur-3xl" style={{ background: styles.secondaryColor }} />
-        </div>
+        <>
+          <div className="absolute inset-0" style={{ background: gradient }} />
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full blur-3xl bg-white" />
+            <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full blur-3xl bg-white" />
+          </div>
+        </>
       )}
 
       <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-28 text-center">
         {badge && (
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8 animate-fade-in-up" style={{ background: `${styles.primaryColor}12`, color: styles.primaryColor }}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8 animate-fade-in-up bg-white/15 text-white backdrop-blur-sm">
             <Zap className="h-4 w-4" />
             {badge}
           </div>
         )}
         <h1
-          className={cn(
-            "text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] mb-6 animate-fade-in-up",
-            block.content.backgroundImage ? "text-white" : ""
-          )}
-          style={!block.content.backgroundImage ? {
-            background: `linear-gradient(135deg, ${styles.textColor} 0%, ${styles.primaryColor} 100%)`,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          } : undefined}
+          className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] mb-6 animate-fade-in-up text-white tracking-tight"
         >
           {title}
         </h1>
-        <p className={cn(
-          "text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-fade-in-up",
-          block.content.backgroundImage ? "text-white/80" : "text-gray-600"
-        )} style={{ animationDelay: '100ms' }}>
+        <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-fade-in-up text-white/80" style={{ animationDelay: '100ms' }}>
           {subtitle}
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
           {ctaText && (
             <Link
               href={block.content.ctaLink || '/signup'}
-              className="px-8 py-3.5 text-base font-semibold text-white rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5"
-              style={{ background: gradient, boxShadow: `0 8px 32px -8px ${styles.primaryColor}50` }}
+              className="px-8 py-3.5 text-base font-semibold rounded-xl transition-all hover:shadow-xl hover:-translate-y-0.5 bg-white hover:bg-white/90 shadow-xl"
+              style={{ color: styles.primaryColor, borderRadius: styles.borderRadius }}
             >
               <span className="flex items-center gap-2">
                 {ctaText}
@@ -536,11 +544,7 @@ function HeroBlock({ block, gradient, styles, lang, ArrowIcon }: { block: Landin
           {secondaryCta && (
             <a
               href={block.content.secondaryCtaLink || '#'}
-              className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 transition-all hover:-translate-y-0.5"
-              style={{
-                borderColor: block.content.backgroundImage ? 'white' : styles.primaryColor,
-                color: block.content.backgroundImage ? 'white' : styles.primaryColor,
-              }}
+              className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 border-white/40 text-white transition-all hover:-translate-y-0.5 hover:border-white hover:bg-white/10 backdrop-blur-sm"
             >
               {secondaryCta}
             </a>
