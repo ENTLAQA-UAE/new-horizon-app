@@ -12,12 +12,21 @@ export const metadata: Metadata = {
     siteName: "Kawadir",
     locale: "en_US",
     alternateLocale: "ar_AE",
+    images: [
+      {
+        url: "/kawadir.svg",
+        width: 1200,
+        height: 630,
+        alt: "Kawadir - AI-Powered Recruitment Platform",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Kawadir - AI-Powered Recruitment Platform",
     description:
       "Transform your hiring process with Kawadir's intelligent ATS. AI-powered resume screening, smart candidate matching, and collaborative hiring tools built for the MENA region.",
+    images: ["/kawadir.svg"],
   },
 }
 
