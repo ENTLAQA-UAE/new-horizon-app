@@ -318,23 +318,27 @@ export function RequisitionsClient({
               filter: [{ column: "role", operator: "eq", value: "hr_manager" }],
             }
           )
-          if (hrManagers && Array.isArray(hrManagers)) {
-            const newApprovals: RequisitionApproval[] = []
-            for (let index = 0; index < hrManagers.length; index++) {
-              const approvalData = {
-                requisition_id: data.id,
-                approver_id: hrManagers[index].user_id,
-                approval_order: index + 1,
-                status: "pending",
+          if (hrManagers && Array.isArray(hrManagers) && hrManagers.length > 0) {
+            try {
+              const response = await fetch("/api/requisition-approvals", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  requisition_id: data.id,
+                  auto_assign: true,
+                  approvers: hrManagers.map((m, index) => ({
+                    user_id: m.user_id,
+                    approval_order: index + 1,
+                  })),
+                }),
+              })
+              if (response.ok) {
+                const { approvals: newApprovals } = await response.json()
+                if (newApprovals?.length > 0) setApprovals([...approvals, ...newApprovals])
               }
-              const { data: approvalResult, error: approvalError } = await supabaseInsert<RequisitionApproval>(
-                'requisition_approvals',
-                approvalData
-              )
-              if (approvalError) console.error("Error creating approval:", approvalError)
-              if (approvalResult) newApprovals.push(approvalResult)
+            } catch (err) {
+              console.error("Error auto-assigning approvals:", err)
             }
-            if (newApprovals.length > 0) setApprovals([...approvals, ...newApprovals])
           }
         }
 
@@ -380,20 +384,27 @@ export function RequisitionsClient({
 
     setIsLoading(true)
     try {
-      if (myApproval) {
-        // Update existing approval record
-        const { error: approvalError } = await supabaseUpdate(
-          'requisition_approvals',
-          {
-            status: approved ? "approved" : "rejected",
-            decided_at: new Date().toISOString(),
-            comments: approvalComment || null,
-          },
-          { column: 'id', value: myApproval.id }
-        )
-        if (approvalError) throw new Error(approvalError.message)
+      // Use server API route to bypass RLS issues on requisition_approvals
+      const response = await fetch("/api/requisition-approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requisition_id: selectedRequisition.id,
+          status: approved ? "approved" : "rejected",
+          comments: approvalComment || null,
+          existing_approval_id: myApproval?.id || null,
+        }),
+      })
 
-        // Update local approvals state
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to process approval")
+      }
+
+      const { approval, requisition_status } = await response.json()
+
+      // Update local approvals state
+      if (myApproval) {
         setApprovals(
           approvals.map((a) =>
             a.id === myApproval.id
@@ -401,36 +412,13 @@ export function RequisitionsClient({
               : a
           )
         )
-      } else {
-        // No explicit approval record - create one for this HR manager
-        const { data: newApproval, error: createError } = await supabaseInsert<RequisitionApproval>(
-          'requisition_approvals',
-          {
-            requisition_id: selectedRequisition.id,
-            approver_id: currentUserId,
-            approval_order: 1,
-            status: approved ? "approved" : "rejected",
-            decided_at: new Date().toISOString(),
-            comments: approvalComment || null,
-          }
-        )
-        if (createError) throw new Error(createError.message)
-        if (newApproval) setApprovals([...approvals, newApproval])
+      } else if (approval) {
+        setApprovals([...approvals, approval])
       }
-
-      // Update requisition status directly
-      const newStatus = approved ? "approved" : "rejected"
-      const { error: requisitionError } = await supabaseUpdate(
-        'job_requisitions',
-        { status: newStatus },
-        { column: 'id', value: selectedRequisition.id }
-      )
-
-      if (requisitionError) throw new Error(requisitionError.message)
 
       // Update local requisitions state
       setRequisitions(
-        requisitions.map((r) => (r.id === selectedRequisition.id ? { ...r, status: newStatus } : r))
+        requisitions.map((r) => (r.id === selectedRequisition.id ? { ...r, status: requisition_status } : r))
       )
 
       // Send notification to the requisition creator about approval/rejection
@@ -464,8 +452,8 @@ export function RequisitionsClient({
 
     setIsLoading(true)
     try {
-      // Delete approvals first
-      await supabaseDelete('requisition_approvals', { column: 'requisition_id', value: selectedRequisition.id })
+      // Delete approvals first (via API to bypass RLS)
+      await fetch(`/api/requisition-approvals?requisition_id=${selectedRequisition.id}`, { method: "DELETE" })
 
       // Delete requisition
       const { error } = await supabaseDelete('job_requisitions', { column: 'id', value: selectedRequisition.id })
