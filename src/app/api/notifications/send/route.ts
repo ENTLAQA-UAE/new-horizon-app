@@ -802,6 +802,8 @@ export async function POST(request: NextRequest) {
         const scorecardDeptId = applicationId ? await getApplicationDepartmentId(serviceClient, applicationId) : null
         const scorecardRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], scorecardDeptId)
 
+        const scorecardActionUrl = applicationId ? `/org/applications?id=${applicationId}` : "/org/applications"
+
         result = await sendNotification(serviceClient, {
           eventCode: "scorecard_submitted",
           orgId,
@@ -811,6 +813,7 @@ export async function POST(request: NextRequest) {
             job_title: jobTitle || "the position",
             interviewer_name: interviewerName || "An interviewer",
             score: String(data.score || "N/A"),
+            action_url: scorecardActionUrl,
           },
           interviewId: data.interviewId,
           applicationId: applicationId,
@@ -1067,6 +1070,8 @@ export async function POST(request: NextRequest) {
         // Notify HR manager (offer created)
         const offerRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
+        const offerCreatedUrl = `/org/offers?id=${data.offerId}`
+
         result = await sendNotification(serviceClient, {
           eventCode: "offer_created",
           orgId,
@@ -1078,7 +1083,8 @@ export async function POST(request: NextRequest) {
             start_date: offer.start_date ? new Date(offer.start_date).toLocaleDateString() : "TBD",
             created_by: getFullName(creator) || "A team member",
             org_name: org?.name || "the organization",
-            offer_url: `/org/offers?id=${data.offerId}`,
+            offer_url: offerCreatedUrl,
+            action_url: offerCreatedUrl,
           },
           applicationId: offerApp?.id,
         })
@@ -1202,6 +1208,8 @@ export async function POST(request: NextRequest) {
         const jobExpiringDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
         const jobExpiringRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter", "hiring_manager"], jobExpiringDeptId)
 
+        const jobExpiringUrl = `/org/jobs/${data.jobId}`
+
         result = await sendNotification(serviceClient, {
           eventCode: "job_expiring",
           orgId,
@@ -1211,7 +1219,8 @@ export async function POST(request: NextRequest) {
             expiry_date: job.expires_at ? new Date(job.expires_at).toLocaleDateString() : "Soon",
             days_remaining: data.daysRemaining || "a few",
             org_name: org?.name || "the organization",
-            job_url: `/org/jobs/${data.jobId}`,
+            job_url: jobExpiringUrl,
+            action_url: jobExpiringUrl,
           },
         })
         break
@@ -1246,17 +1255,23 @@ export async function POST(request: NextRequest) {
         // Notify HR managers (sole approvers for requisitions)
         const requisitionRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
+        const createdReqTitle = requisition.title || "New Requisition"
+        const createdReqUrl = `/org/requisitions?id=${data.requisitionId}`
+
         result = await sendNotification(serviceClient, {
           eventCode: "requisition_created",
           orgId,
           recipients: requisitionRecipients,
           variables: {
-            requisition_title: requisition.title || "New Requisition",
+            job_title: createdReqTitle,
+            requisition_title: createdReqTitle,
             department: (requisition.departments as any)?.name || "Not specified",
             positions_count: String(requisition.positions_count || 1),
+            headcount: String(requisition.positions_count || 1),
             created_by: getFullName(creator) || "A team member",
             org_name: org?.name || "the organization",
-            requisition_url: `/org/requisitions?id=${data.requisitionId}`,
+            action_url: createdReqUrl,
+            requisition_url: createdReqUrl,
           },
         })
         break
@@ -1266,7 +1281,7 @@ export async function POST(request: NextRequest) {
         // Get requisition details
         const { data: requisition } = await serviceClient
           .from("job_requisitions")
-          .select("id, title, requested_by, departments(id, name)")
+          .select("id, title, positions_count, requested_by, departments(id, name)")
           .eq("id", data.requisitionId)
           .single()
 
@@ -1301,16 +1316,24 @@ export async function POST(request: NextRequest) {
           ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
           : await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
+        const approvedReqTitle = requisition.title || "Requisition"
+        const approvedReqUrl = `/org/requisitions?id=${data.requisitionId}`
+
         result = await sendNotification(serviceClient, {
           eventCode: "requisition_approved",
           orgId,
           recipients: approvedRecipients,
           variables: {
-            requisition_title: requisition.title || "Requisition",
+            job_title: approvedReqTitle,
+            requisition_title: approvedReqTitle,
             department: (requisition.departments as any)?.name || "Not specified",
             approved_by: getFullName(approver) || "An approver",
+            approved_date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+            headcount: String(requisition.positions_count || 1),
             org_name: org?.name || "the organization",
-            requisition_url: `/org/requisitions?id=${data.requisitionId}`,
+            action_url: approvedReqUrl,
+            create_job_url: approvedReqUrl,
+            requisition_url: approvedReqUrl,
           },
         })
         break
@@ -1355,17 +1378,23 @@ export async function POST(request: NextRequest) {
           ? [{ userId: creator.id, email: creator.email, name: getFullName(creator) || creator.email }]
           : await getTeamRecipients(serviceClient, orgId, ["hr_manager"])
 
+        const rejectedReqTitle = requisition.title || "Requisition"
+        const rejectedReqUrl = `/org/requisitions?id=${data.requisitionId}`
+
         result = await sendNotification(serviceClient, {
           eventCode: "requisition_rejected",
           orgId,
           recipients: rejectedRecipients,
           variables: {
-            requisition_title: requisition.title || "Requisition",
+            job_title: rejectedReqTitle,
+            requisition_title: rejectedReqTitle,
             department: (requisition.departments as any)?.name || "Not specified",
             rejected_by: getFullName(rejector) || "An approver",
             rejection_reason: data.reason || "Not specified",
+            reason: data.reason || "Not specified",
             org_name: org?.name || "the organization",
-            requisition_url: `/org/requisitions?id=${data.requisitionId}`,
+            action_url: rejectedReqUrl,
+            requisition_url: rejectedReqUrl,
           },
         })
         break
@@ -1474,6 +1503,8 @@ export async function POST(request: NextRequest) {
         }
 
         const interviewerFullName = getFullName(interviewer)
+        const scorecardReminderUrl = `/org/interviews?id=${data.interviewId}`
+
         result = await sendNotification(serviceClient, {
           eventCode: "scorecard_reminder",
           orgId,
@@ -1488,7 +1519,8 @@ export async function POST(request: NextRequest) {
             job_title: scorecardApp?.jobs?.title || "the position",
             interview_date: interview.scheduled_at ? new Date(interview.scheduled_at).toLocaleDateString() : "Recent",
             org_name: org?.name || "the organization",
-            scorecard_url: `/org/interviews?id=${data.interviewId}`,
+            scorecard_url: scorecardReminderUrl,
+            action_url: scorecardReminderUrl,
           },
           interviewId: data.interviewId,
           applicationId: scorecardApp?.id,
