@@ -210,7 +210,6 @@ export async function updateSession(request: NextRequest) {
     '/api/offers/respond',       // Offer accept/decline API (token-based, no auth)
     '/api/health',               // Health check endpoint (monitoring)
     '/offers/respond',           // Offer accept/decline landing page
-    '/onboarding', // Allow onboarding for authenticated users without org
     '/landing',    // Public landing page
   ]
 
