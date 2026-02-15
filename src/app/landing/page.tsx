@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import {
   Sparkles,
   Brain,
@@ -14,7 +13,6 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle,
-  Languages,
   Clock,
   Target,
   Shield,
@@ -27,15 +25,23 @@ import {
   Mail,
   Phone,
   MapPin,
+  Check,
+  Award,
+  Building2,
+  Send,
+  Star,
+  Menu,
+  X,
 } from "lucide-react"
 
 type Lang = "en" | "ar"
 
 const content = {
   nav: {
+    home: { en: "Home", ar: "الرئيسية" },
     features: { en: "Features", ar: "المميزات" },
-    howItWorks: { en: "How It Works", ar: "كيف يعمل" },
     pricing: { en: "Pricing", ar: "الأسعار" },
+    contact: { en: "Contact Us", ar: "تواصل معنا" },
     signIn: { en: "Sign In", ar: "تسجيل الدخول" },
     getStarted: { en: "Get Started", ar: "ابدأ الآن" },
   },
@@ -191,19 +197,75 @@ const content = {
     ],
   },
   stats: [
-    { value: "10K+", label: { en: "Candidates Screened", ar: "مرشح تم فرزهم" } },
-    { value: "85%", label: { en: "Faster Hiring", ar: "توظيف أسرع" } },
-    { value: "200+", label: { en: "Companies Trust Us", ar: "شركة تثق بنا" } },
-    { value: "98%", label: { en: "Satisfaction Rate", ar: "نسبة الرضا" } },
+    { numericValue: 10, suffix: "K+", icon: "Users", label: { en: "Candidates Screened", ar: "مرشح تم فرزهم" } },
+    { numericValue: 85, suffix: "%", icon: "Zap", label: { en: "Faster Hiring", ar: "توظيف أسرع" } },
+    { numericValue: 200, suffix: "+", icon: "Building2", label: { en: "Companies Trust Us", ar: "شركة تثق بنا" } },
+    { numericValue: 98, suffix: "%", icon: "Award", label: { en: "Satisfaction Rate", ar: "نسبة الرضا" } },
   ],
-  cta: {
-    title: { en: "Ready to Transform Your Hiring?", ar: "مستعد لتحويل عملية التوظيف؟" },
+  pricing: {
+    label: { en: "Pricing", ar: "الأسعار" },
+    title: { en: "Simple, Transparent Pricing", ar: "أسعار بسيطة وشفافة" },
     subtitle: {
-      en: "Join hundreds of companies across MENA who hire smarter with Kawadir.",
-      ar: "انضم لمئات الشركات في الشرق الأوسط التي توظّف بذكاء مع كوادر.",
+      en: "Choose the plan that fits your hiring needs. Start free, upgrade anytime.",
+      ar: "اختر الخطة التي تناسب احتياجات التوظيف. ابدأ مجانًا وقم بالترقية في أي وقت.",
     },
-    cta: { en: "Start Free Trial", ar: "ابدأ تجربتك المجانية" },
-    demo: { en: "Contact Sales", ar: "تواصل مع المبيعات" },
+    monthly: { en: "Monthly", ar: "شهري" },
+    yearly: { en: "Yearly", ar: "سنوي" },
+    popular: { en: "Most Popular", ar: "الأكثر شيوعًا" },
+    cta: { en: "Get Started", ar: "ابدأ الآن" },
+    contactSales: { en: "Contact Sales", ar: "تواصل مع المبيعات" },
+    plans: [
+      {
+        name: { en: "Starter", ar: "المبتدئ" },
+        price: { en: "Free", ar: "مجاني" },
+        period: { en: "", ar: "" },
+        description: { en: "Perfect for small teams getting started", ar: "مثالي للفرق الصغيرة في البداية" },
+        features: {
+          en: ["Up to 3 active jobs", "Basic AI screening", "5 team members", "Email support"],
+          ar: ["حتى 3 وظائف نشطة", "فرز أساسي بالذكاء الاصطناعي", "5 أعضاء فريق", "دعم بالبريد الإلكتروني"],
+        },
+        highlighted: false,
+      },
+      {
+        name: { en: "Professional", ar: "الاحترافي" },
+        price: { en: "$99", ar: "$99" },
+        period: { en: "/month", ar: "/شهريًا" },
+        description: { en: "For growing companies with active hiring", ar: "للشركات النامية مع توظيف نشط" },
+        features: {
+          en: ["Unlimited active jobs", "Advanced AI matching", "Unlimited team members", "Priority support", "Custom workflows", "Analytics dashboard"],
+          ar: ["وظائف نشطة غير محدودة", "مطابقة متقدمة بالذكاء الاصطناعي", "أعضاء فريق غير محدودين", "دعم أولوي", "سير عمل مخصصة", "لوحة تحليلات"],
+        },
+        highlighted: true,
+      },
+      {
+        name: { en: "Enterprise", ar: "المؤسسات" },
+        price: { en: "Custom", ar: "مخصص" },
+        period: { en: "", ar: "" },
+        description: { en: "For large organizations with complex needs", ar: "للمؤسسات الكبيرة ذات الاحتياجات المعقدة" },
+        features: {
+          en: ["Everything in Professional", "Dedicated account manager", "Custom integrations", "SLA guarantee", "On-premise option", "White-label solution"],
+          ar: ["كل ما في الاحترافي", "مدير حساب مخصص", "تكاملات مخصصة", "ضمان مستوى الخدمة", "خيار محلي", "حل العلامة البيضاء"],
+        },
+        highlighted: false,
+      },
+    ],
+  },
+  contact: {
+    label: { en: "Contact Us", ar: "تواصل معنا" },
+    title: { en: "Get in Touch", ar: "تواصل معنا" },
+    subtitle: {
+      en: "Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.",
+      ar: "لديك أسئلة؟ يسعدنا سماع رأيك. أرسل لنا رسالة وسنرد في أقرب وقت ممكن.",
+    },
+    nameField: { en: "Full Name", ar: "الاسم الكامل" },
+    emailField: { en: "Email Address", ar: "البريد الإلكتروني" },
+    messageField: { en: "Message", ar: "الرسالة" },
+    send: { en: "Send Message", ar: "إرسال الرسالة" },
+    info: [
+      { icon: "Mail", value: "hello@kawadir.io", label: { en: "Email Us", ar: "راسلنا" } },
+      { icon: "Phone", value: "+971 4 XXX XXXX", label: { en: "Call Us", ar: "اتصل بنا" } },
+      { icon: "MapPin", value: { en: "Dubai, United Arab Emirates", ar: "دبي، الإمارات العربية المتحدة" }, label: { en: "Visit Us", ar: "زرنا" } },
+    ],
   },
   faq: {
     title: { en: "Frequently Asked Questions", ar: "الأسئلة الشائعة" },
@@ -238,6 +300,15 @@ const content = {
       },
     ],
   },
+  cta: {
+    title: { en: "Ready to Transform Your Hiring?", ar: "مستعد لتحويل عملية التوظيف؟" },
+    subtitle: {
+      en: "Join hundreds of companies across MENA who hire smarter with Kawadir.",
+      ar: "انضم لمئات الشركات في الشرق الأوسط التي توظّف بذكاء مع كوادر.",
+    },
+    cta: { en: "Start Free Trial", ar: "ابدأ تجربتك المجانية" },
+    demo: { en: "Contact Sales", ar: "تواصل مع المبيعات" },
+  },
   footer: {
     desc: {
       en: "AI-powered recruitment platform built for the MENA region. Hire smarter, faster, and fairer.",
@@ -268,6 +339,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Workflow,
   CheckCircle,
   Clock,
+  Award,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
 }
 
 function t(obj: { en: string; ar: string }, lang: Lang) {
@@ -279,9 +355,67 @@ function Icon({ name, className }: { name: string; className?: string }) {
   return <Comp className={className} />
 }
 
+/* ─── Animated counter for stats ─── */
+function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLDivElement>(null)
+  const hasAnimated = useRef(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasAnimated.current) {
+          hasAnimated.current = true
+          const duration = 2000
+          const startTime = performance.now()
+          const animate = (currentTime: number) => {
+            const elapsed = currentTime - startTime
+            const progress = Math.min(elapsed / duration, 1)
+            const eased = 1 - Math.pow(1 - progress, 3)
+            setCount(Math.round(eased * value))
+            if (progress < 1) requestAnimationFrame(animate)
+          }
+          requestAnimationFrame(animate)
+        }
+      },
+      { threshold: 0.3 }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [value])
+
+  return (
+    <span ref={ref}>
+      {count}{suffix}
+    </span>
+  )
+}
+
+/* ─── Inline SVG Logo ─── */
+function KawadirLogo({ lang, variant = "default" }: { lang: Lang; variant?: "default" | "white" }) {
+  const textColor = variant === "white" ? "text-white" : "text-gray-900"
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2D4CFF] to-[#6B7FFF] flex items-center justify-center shadow-lg shadow-[#2D4CFF]/20">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4h4v8l8-8h4L12 12l8 8h-4l-8-8v8H4V4z" fill="white" />
+        </svg>
+      </div>
+      <span className={`text-xl font-bold ${textColor}`}>
+        {lang === "ar" ? "كوادر" : "Kawadir"}
+      </span>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("ar")
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isRtl = lang === "ar"
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight
 
@@ -295,44 +429,40 @@ export default function LandingPage() {
           NAVBAR
           ═══════════════════════════════════════════ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href="/landing" className="flex items-center gap-2">
-            <Image
-              src="/kawadir-logo.png"
-              alt="Kawadir"
-              width={140}
-              height={40}
-              className="h-9 w-auto"
-              priority
-            />
+            <KawadirLogo lang={lang} />
           </Link>
 
-          {/* Nav Links */}
+          {/* Nav Links — desktop */}
           <div className="hidden md:flex items-center gap-8">
+            <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+              {t(content.nav.home, lang)}
+            </a>
             <a href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               {t(content.nav.features, lang)}
             </a>
-            <a href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-              {t(content.nav.howItWorks, lang)}
+            <a href="#pricing" className="text-sm font-semibold text-[#2D4CFF] hover:text-[#1E3ACC] transition-colors">
+              {t(content.nav.pricing, lang)}
             </a>
-            <a href="#faq" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-              FAQ
+            <a href="#contact" className="text-sm font-semibold text-[#2D4CFF] hover:text-[#1E3ACC] transition-colors">
+              {t(content.nav.contact, lang)}
             </a>
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title={lang === "en" ? "العربية" : "English"}
             >
-              <Languages className="h-4 w-4" />
-              {lang === "en" ? "العربية" : "English"}
+              <Globe className="h-5 w-5" />
             </button>
             <Link
               href="/login"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className="hidden sm:inline-flex text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
               {t(content.nav.signIn, lang)}
             </Link>
@@ -342,43 +472,94 @@ export default function LandingPage() {
             >
               {t(content.nav.getStarted, lang)}
             </Link>
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
+            <div className="px-4 py-4 space-y-1">
+              {[
+                { href: "#", label: t(content.nav.home, lang), highlight: false },
+                { href: "#features", label: t(content.nav.features, lang), highlight: false },
+                { href: "#pricing", label: t(content.nav.pricing, lang), highlight: true },
+                { href: "#contact", label: t(content.nav.contact, lang), highlight: true },
+              ].map((item, i) => (
+                <a
+                  key={i}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    item.highlight
+                      ? "text-[#2D4CFF] font-semibold bg-[#2D4CFF]/5"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              ))}
+              <div className="border-t border-gray-100 pt-3 mt-3 flex flex-col gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  {t(content.nav.signIn, lang)}
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] rounded-xl text-center"
+                >
+                  {t(content.nav.getStarted, lang)}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Spacer */}
       <div className="h-16" />
 
       {/* ═══════════════════════════════════════════
-          HERO SECTION
+          HERO SECTION — Bright & Cheerful
           ═══════════════════════════════════════════ */}
-      <section className="relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0A1340] to-[#1E3ACC]" />
+      <section id="hero" className="relative overflow-hidden">
+        {/* Bright Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F0F4FF] via-white to-[#F5F3FF]" />
         <div className="absolute inset-0">
-          <div className="absolute top-[-30%] right-[-10%] w-[700px] h-[700px] rounded-full bg-[#2D4CFF]/[0.06]0/20 blur-[120px]" />
-          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#7C4DFF]/15 blur-[100px]" />
+          <div className="absolute top-[-20%] right-[-5%] w-[600px] h-[600px] rounded-full bg-[#2D4CFF]/8 blur-[120px]" />
+          <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-[#7C4DFF]/8 blur-[100px]" />
+          <div className="absolute top-[20%] left-[40%] w-[300px] h-[300px] rounded-full bg-[#6B7FFF]/6 blur-[80px]" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 pt-20 pb-32">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-20 sm:pb-32">
           <div className="text-center max-w-4xl mx-auto">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium mb-8 bg-white/10 text-white/90 backdrop-blur-sm border border-white/10 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 bg-[#2D4CFF]/8 text-[#2D4CFF] border border-[#2D4CFF]/15 animate-fade-in-up">
               <Sparkles className="h-4 w-4 text-[#6B7FFF]" />
               {t(content.hero.badge, lang)}
             </div>
 
             {/* Headline */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.08] mb-6 text-white tracking-tight animate-fade-in-up">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.12] sm:leading-[1.08] mb-5 sm:mb-6 text-gray-900 tracking-tight animate-fade-in-up">
               {t(content.hero.title, lang)}
               <br />
-              <span className="bg-gradient-to-r from-[#6B7FFF] via-[#7C4DFF] to-[#A78BFA] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#2D4CFF] via-[#6B7FFF] to-[#7C4DFF] bg-clip-text text-transparent">
                 {t(content.hero.titleHighlight, lang)}
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animate-delay-100">
+            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animate-delay-100">
               {t(content.hero.subtitle, lang)}
             </p>
 
@@ -386,14 +567,14 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animate-delay-200">
               <Link
                 href="/signup"
-                className="px-8 py-3.5 text-base font-semibold bg-white text-[#1E3ACC] rounded-xl hover:shadow-2xl hover:shadow-[#2D4CFF]/100/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                className="px-8 py-3.5 text-base font-semibold bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] text-white rounded-xl hover:shadow-2xl hover:shadow-[#2D4CFF]/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
               >
                 {t(content.hero.cta, lang)}
                 <ArrowIcon className="h-4 w-4" />
               </Link>
               <a
                 href="#features"
-                className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 border-white/20 text-white hover:bg-white/10 hover:border-white/40 transition-all"
+                className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
                 {t(content.hero.demo, lang)}
               </a>
@@ -402,7 +583,7 @@ export default function LandingPage() {
 
           {/* Dashboard Mockup */}
           <div className="mt-20 max-w-5xl mx-auto animate-fade-in-up animate-delay-300">
-            <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-2 shadow-2xl shadow-black/40">
+            <div className="rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm p-2 shadow-2xl shadow-[#2D4CFF]/8">
               <div className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 overflow-hidden">
                 {/* Title bar */}
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
@@ -418,9 +599,9 @@ export default function LandingPage() {
                   </div>
                 </div>
                 {/* Dashboard content mockup */}
-                <div className="p-6">
+                <div className="p-3 sm:p-6">
                   {/* Stats row */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
                     {[
                       { label: isRtl ? "المرشحون" : "Candidates", val: "1,284", change: "+12%" },
                       { label: isRtl ? "الوظائف النشطة" : "Active Jobs", val: "24", change: "+3" },
@@ -435,7 +616,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   {/* Pipeline mockup */}
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="hidden sm:grid grid-cols-5 gap-3">
                     {[
                       { label: isRtl ? "جديد" : "New", count: 45, color: "from-blue-500 to-blue-600" },
                       { label: isRtl ? "مُراجعة" : "Screening", count: 32, color: "from-[#2D4CFF] to-[#1E3ACC]" },
@@ -466,17 +647,20 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          STATS BAND
+          STATS BAND — Animated Counting with Icons
           ═══════════════════════════════════════════ */}
-      <section className="bg-gray-50 border-y border-gray-100">
+      <section className="bg-gradient-to-r from-[#2D4CFF] to-[#1E3ACC] border-y border-[#2D4CFF]">
         <div className="max-w-7xl mx-auto px-6 py-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {content.stats.map((stat, i) => (
               <div key={i} className="text-center">
-                <div className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] bg-clip-text text-transparent mb-2">
-                  {stat.value}
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 mb-4">
+                  <Icon name={stat.icon} className="h-7 w-7 text-white" />
                 </div>
-                <div className="text-gray-500 font-medium text-sm">{t(stat.label, lang)}</div>
+                <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2">
+                  <AnimatedCounter value={stat.numericValue} suffix={stat.suffix} />
+                </div>
+                <div className="text-white/70 font-medium text-sm">{t(stat.label, lang)}</div>
               </div>
             ))}
           </div>
@@ -490,7 +674,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           {/* Section header */}
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/[0.06] mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
               {t(content.features.label, lang)}
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
@@ -512,7 +696,7 @@ export default function LandingPage() {
                 >
                   {/* Text */}
                   <div className="flex-1 max-w-xl">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#2D4CFF]/[0.06] mb-5">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#2D4CFF]/6 mb-5">
                       <Icon name={feature.icon} className="h-6 w-6 text-[#2D4CFF]" />
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">
@@ -561,7 +745,7 @@ export default function LandingPage() {
                 key={i}
                 className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-[#2D4CFF]/10 hover:shadow-xl hover:shadow-[#2D4CFF]/10 hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#2D4CFF]/[0.06] flex items-center justify-center mb-4">
+                <div className="w-11 h-11 rounded-xl bg-[#2D4CFF]/6 flex items-center justify-center mb-4">
                   <Icon name={f.icon} className="h-5 w-5 text-[#2D4CFF]" />
                 </div>
                 <h3 className="text-lg font-bold mb-2">{t(f.title, lang)}</h3>
@@ -578,7 +762,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-24">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/[0.06] mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
               {t(content.howItWorks.label, lang)}
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
@@ -616,9 +800,88 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
+          PRICING
+          ═══════════════════════════════════════════ */}
+      <section id="pricing" className="bg-gray-50 py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
+              {t(content.pricing.label, lang)}
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
+              {t(content.pricing.title, lang)}
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+              {t(content.pricing.subtitle, lang)}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {content.pricing.plans.map((plan, i) => (
+              <div
+                key={i}
+                className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                  plan.highlighted
+                    ? "bg-gradient-to-br from-[#2D4CFF] to-[#1E3ACC] text-white shadow-2xl shadow-[#2D4CFF]/25 md:scale-105"
+                    : "bg-white border border-gray-200 hover:border-[#2D4CFF]/20 hover:shadow-xl"
+                }`}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900">
+                    <Star className="h-3.5 w-3.5" />
+                    {t(content.pricing.popular, lang)}
+                  </div>
+                )}
+
+                <h3 className={`text-xl font-bold mb-2 ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
+                  {t(plan.name, lang)}
+                </h3>
+                <p className={`text-sm mb-6 ${plan.highlighted ? "text-white/70" : "text-gray-500"}`}>
+                  {t(plan.description, lang)}
+                </p>
+
+                <div className="mb-8">
+                  <span className={`text-4xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
+                    {t(plan.price, lang)}
+                  </span>
+                  {plan.period.en && (
+                    <span className={`text-sm ${plan.highlighted ? "text-white/60" : "text-gray-400"}`}>
+                      {t(plan.period, lang)}
+                    </span>
+                  )}
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
+                    <li key={j} className="flex items-center gap-3">
+                      <Check className={`h-5 w-5 shrink-0 ${plan.highlighted ? "text-white/80" : "text-[#2D4CFF]"}`} />
+                      <span className={`text-sm ${plan.highlighted ? "text-white/90" : "text-gray-600"}`}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={plan.highlighted ? "/signup" : i === 2 ? "mailto:sales@kawadir.io" : "/signup"}
+                  className={`block w-full text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
+                    plan.highlighted
+                      ? "bg-white text-[#2D4CFF] hover:shadow-lg hover:-translate-y-0.5"
+                      : "bg-[#2D4CFF]/6 text-[#2D4CFF] hover:bg-[#2D4CFF]/10"
+                  }`}
+                >
+                  {i === 2 ? t(content.pricing.contactSales, lang) : t(content.pricing.cta, lang)}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
           FAQ
           ═══════════════════════════════════════════ */}
-      <section id="faq" className="bg-gray-50 py-24">
+      <section id="faq" className="py-24">
         <div className="max-w-3xl mx-auto px-6">
           <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-12 tracking-tight">
             {t(content.faq.title, lang)}
@@ -647,6 +910,87 @@ export default function LandingPage() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          CONTACT US
+          ═══════════════════════════════════════════ */}
+      <section id="contact" className="bg-gray-50 py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
+              {t(content.contact.label, lang)}
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
+              {t(content.contact.title, lang)}
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+              {t(content.contact.subtitle, lang)}
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <div className="space-y-6">
+              {content.contact.info.map((item, i) => (
+                <div key={i} className="flex items-start gap-4 bg-white rounded-2xl p-6 border border-gray-100">
+                  <div className="w-12 h-12 rounded-xl bg-[#2D4CFF]/6 flex items-center justify-center shrink-0">
+                    <Icon name={item.icon} className="h-6 w-6 text-[#2D4CFF]" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-1">{t(item.label, lang)}</h4>
+                    <p className="text-gray-500 text-sm">
+                      {typeof item.value === "string" ? item.value : t(item.value, lang)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Contact Form */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+              <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t(content.contact.nameField, lang)}
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2D4CFF] focus:ring-2 focus:ring-[#2D4CFF]/20 outline-none transition-all text-sm"
+                    placeholder={lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t(content.contact.emailField, lang)}
+                  </label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2D4CFF] focus:ring-2 focus:ring-[#2D4CFF]/20 outline-none transition-all text-sm"
+                    placeholder={lang === "ar" ? "أدخل بريدك الإلكتروني" : "Enter your email address"}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t(content.contact.messageField, lang)}
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2D4CFF] focus:ring-2 focus:ring-[#2D4CFF]/20 outline-none transition-all text-sm resize-none"
+                    placeholder={lang === "ar" ? "اكتب رسالتك هنا..." : "Write your message here..."}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 px-6 bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#2D4CFF]/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {t(content.contact.send, lang)}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </section>
@@ -699,13 +1043,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div className="md:col-span-1">
               <div className="mb-4">
-                <Image
-                  src="/kawadir-logo.png"
-                  alt="Kawadir"
-                  width={120}
-                  height={36}
-                  className="h-8 w-auto brightness-0 invert"
-                />
+                <KawadirLogo lang={lang} variant="white" />
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {t(content.footer.desc, lang)}
@@ -720,7 +1058,7 @@ export default function LandingPage() {
               <div className="space-y-2.5">
                 {[
                   { en: "Features", ar: "المميزات", href: "#features" },
-                  { en: "Pricing", ar: "الأسعار", href: "#" },
+                  { en: "Pricing", ar: "الأسعار", href: "#pricing" },
                   { en: "Integrations", ar: "التكاملات", href: "#" },
                   { en: "API", ar: "واجهة البرمجة", href: "#" },
                 ].map((link, i) => (
@@ -741,7 +1079,7 @@ export default function LandingPage() {
                   { en: "About Us", ar: "عن كوادر", href: "#" },
                   { en: "Blog", ar: "المدونة", href: "#" },
                   { en: "Careers", ar: "وظائف", href: "#" },
-                  { en: "Contact", ar: "تواصل معنا", href: "#" },
+                  { en: "Contact", ar: "تواصل معنا", href: "#contact" },
                 ].map((link, i) => (
                   <a key={i} href={link.href} className="block text-sm text-gray-400 hover:text-white transition-colors">
                     {lang === "ar" ? link.ar : link.en}
@@ -788,10 +1126,6 @@ export default function LandingPage() {
 
 /* ═══════════════════════════════════════════
    FEATURE MOCKUPS
-   ═══════════════════════════════════════════
-   These are CSS-based dashboard mockups that
-   simulate screenshots. Replace with actual
-   screenshots by swapping in <img> tags.
    ═══════════════════════════════════════════ */
 function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
   const isRtl = lang === "ar"
@@ -799,7 +1133,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
   const mockups: Record<string, React.ReactNode> = {
     screening: (
       <div className="space-y-3">
-        {/* Candidate cards with AI scores */}
         {[
           { name: isRtl ? "أحمد الحربي" : "Ahmed Al-Harbi", score: 95, skills: ["React", "TypeScript", "Node.js"], status: "top" },
           { name: isRtl ? "سارة المالكي" : "Sara Al-Malki", score: 88, skills: ["Python", "ML", "AWS"], status: "good" },
@@ -822,14 +1155,13 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               </div>
               <div className="flex gap-1.5">
                 {c.skills.map((s, j) => (
-                  <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2D4CFF]/[0.06] text-[#2D4CFF] font-medium">{s}</span>
+                  <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2D4CFF]/6 text-[#2D4CFF] font-medium">{s}</span>
                 ))}
               </div>
             </div>
           </div>
         ))}
-        {/* AI insight bar */}
-        <div className="flex items-center gap-2 bg-[#2D4CFF]/[0.06] rounded-xl p-3 border border-[#2D4CFF]/10">
+        <div className="flex items-center gap-2 bg-[#2D4CFF]/6 rounded-xl p-3 border border-[#2D4CFF]/10">
           <Brain className="h-4 w-4 text-[#2D4CFF] shrink-0" />
           <span className="text-xs text-[#1E3ACC] font-medium">
             {isRtl
@@ -841,7 +1173,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
     ),
     matching: (
       <div className="space-y-4">
-        {/* Job match card */}
         <div className="bg-white/80 rounded-xl p-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -854,7 +1185,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               <span className="text-white font-extrabold text-lg">92%</span>
             </div>
           </div>
-          {/* Skill bars */}
           <div className="space-y-2.5">
             {[
               { skill: isRtl ? "الخبرة التقنية" : "Technical Skills", pct: 95 },
@@ -877,7 +1207,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-[#7C4DFF]/[0.06] rounded-xl p-3 border border-[#7C4DFF]/10">
+        <div className="flex items-center gap-2 bg-[#7C4DFF]/6 rounded-xl p-3 border border-[#7C4DFF]/10">
           <Target className="h-4 w-4 text-[#7C4DFF] shrink-0" />
           <span className="text-xs text-[#7C4DFF] font-medium">
             {isRtl
@@ -889,7 +1219,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
     ),
     analytics: (
       <div className="space-y-4">
-        {/* Mini chart mockup */}
         <div className="bg-white/80 rounded-xl p-5 border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-bold text-sm text-gray-900">
@@ -899,7 +1228,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               +24% {isRtl ? "هذا الشهر" : "this month"}
             </span>
           </div>
-          {/* Bar chart */}
           <div className="flex items-end gap-2 h-32">
             {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
               <div key={i} className="flex-1 rounded-t-md bg-gradient-to-t from-[#2D4CFF] to-[#6B7FFF] opacity-80 hover:opacity-100 transition-opacity" style={{ height: `${h}%` }} />
@@ -910,7 +1238,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
             <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
           </div>
         </div>
-        {/* Metrics */}
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: isRtl ? "وقت التوظيف" : "Time to Hire", val: "18 " + (isRtl ? "يوم" : "days"), icon: Clock },
@@ -928,7 +1255,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
     ),
     collaboration: (
       <div className="space-y-3">
-        {/* Team review card */}
         <div className="bg-white/80 rounded-xl p-4 border border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-sm text-gray-900">
@@ -942,7 +1268,6 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               ))}
             </div>
           </div>
-          {/* Scorecard */}
           <div className="space-y-2">
             {[
               { reviewer: isRtl ? "أحمد" : "Ahmed", score: 4.5, comment: isRtl ? "مرشح ممتاز، خبرة قوية" : "Excellent candidate, strong experience" },
