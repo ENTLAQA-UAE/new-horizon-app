@@ -208,6 +208,7 @@ export async function updateSession(request: NextRequest) {
     '/api/auth/forgot-password', // Password reset API endpoint
     '/api/auth/reset-password',  // Password reset confirmation endpoint
     '/api/offers/respond',       // Offer accept/decline API (token-based, no auth)
+    '/api/health',               // Health check endpoint (monitoring)
     '/offers/respond',           // Offer accept/decline landing page
     '/onboarding', // Allow onboarding for authenticated users without org
     '/landing',    // Public landing page
