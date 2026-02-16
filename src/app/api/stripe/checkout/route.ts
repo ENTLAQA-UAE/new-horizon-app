@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Get organization details
     const { data: org, error: orgError } = await supabase
       .from("organizations")
-      .select("id, name, slug, stripe_customer_id")
+      .select("id, name, slug")
       .eq("id", org_id)
       .single()
 
@@ -60,8 +60,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Subscription tier not found" }, { status: 404 })
     }
 
-    // Create or reuse Stripe customer
-    let customerId = org.stripe_customer_id
+    // Try to get existing Stripe customer ID (column may not exist yet)
+    let customerId: string | null = null
+    try {
+      const { data: stripeData } = await supabase
+        .from("organizations")
+        .select("stripe_customer_id")
+        .eq("id", org_id)
+        .single()
+      customerId = stripeData?.stripe_customer_id || null
+    } catch {
+      // Column may not exist yet - that's fine, we'll create a new customer
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         name: org.name,
