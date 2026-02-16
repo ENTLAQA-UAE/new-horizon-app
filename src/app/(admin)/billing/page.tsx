@@ -18,7 +18,8 @@ async function getBillingStats() {
       subscription_tiers (
         name,
         price_monthly,
-        price_yearly
+        price_yearly,
+        currency
       )
     `)
 
@@ -31,7 +32,8 @@ async function getBillingStats() {
   // Calculate MRR (Monthly Recurring Revenue)
   let mrr = 0
   let arr = 0
-  const tierRevenue: Record<string, { name: string; count: number; revenue: number }> = {}
+  let defaultCurrency = "USD"
+  const tierRevenue: Record<string, { name: string; count: number; revenue: number; currency: string }> = {}
 
   organizations?.forEach((org) => {
     const tier = org.subscription_tiers
@@ -40,16 +42,22 @@ async function getBillingStats() {
       arr += tier.price_yearly
 
       if (!tierRevenue[tier.name]) {
-        tierRevenue[tier.name] = { name: tier.name, count: 0, revenue: 0 }
+        tierRevenue[tier.name] = { name: tier.name, count: 0, revenue: 0, currency: tier.currency || "USD" }
       }
       tierRevenue[tier.name].count++
       tierRevenue[tier.name].revenue += tier.price_monthly
+
+      // Use the first tier's currency as the default for aggregate stats
+      if (!defaultCurrency || defaultCurrency === "USD") {
+        defaultCurrency = tier.currency || "USD"
+      }
     }
   })
 
   return {
     mrr,
     arr,
+    defaultCurrency,
     activeOrganizations: organizations?.length || 0,
     tierRevenue: Object.values(tierRevenue),
     recentOrganizations: organizations?.slice(0, 10) || [],
@@ -59,10 +67,11 @@ async function getBillingStats() {
 export default async function BillingPage() {
   const stats = await getBillingStats()
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-SA", {
+  const formatCurrency = (amount: number, currency?: string) => {
+    const code = currency || stats.defaultCurrency || "USD"
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "SAR",
+      currency: code,
       minimumFractionDigits: 0,
     }).format(amount)
   }
@@ -149,7 +158,7 @@ export default async function BillingPage() {
                         <span className="font-medium">{tier.name}</span>
                         <Badge variant="secondary">{tier.count} orgs</Badge>
                       </div>
-                      <span className="font-bold">{formatCurrency(tier.revenue)}</span>
+                      <span className="font-bold">{formatCurrency(tier.revenue, tier.currency)}</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
@@ -204,7 +213,7 @@ export default async function BillingPage() {
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">Currency</p>
-                  <p className="text-sm text-muted-foreground">Saudi Riyal (SAR)</p>
+                  <p className="text-sm text-muted-foreground">{stats.defaultCurrency}</p>
                 </div>
               </div>
               <Badge variant="secondary">Default</Badge>
@@ -237,7 +246,7 @@ export default async function BillingPage() {
                     <TableCell className="font-medium">{org.name}</TableCell>
                     <TableCell>{org.subscription_tiers?.name || "N/A"}</TableCell>
                     <TableCell>
-                      {formatCurrency(org.subscription_tiers?.price_monthly || 0)}
+                      {formatCurrency(org.subscription_tiers?.price_monthly || 0, org.subscription_tiers?.currency)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={org.subscription_status === "active" ? "default" : "secondary"}>
