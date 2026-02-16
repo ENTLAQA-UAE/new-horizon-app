@@ -109,6 +109,34 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
     setMounted(true)
   }, [])
 
+  // Redirect already-authenticated users away from login page.
+  // This is a client-side check (not middleware) to avoid redirect loops
+  // when layouts briefly detect unauthenticated state and push to /login.
+  useEffect(() => {
+    async function checkExistingSession() {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+
+        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
+        const currentHost = window.location.hostname
+        const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1'
+
+        // On an org subdomain, don't redirect — let the user re-login if needed
+        if (!isLocalhost && currentHost.endsWith(`.${rootDomain}`) && currentHost !== rootDomain) {
+          return
+        }
+
+        // On main domain or localhost, redirect to home (middleware/RootRedirect handles the rest)
+        window.location.href = '/'
+      } catch {
+        // Silently fail — just show the login form
+      }
+    }
+    checkExistingSession()
+  }, [])
+
   // Fetch platform branding (logo from super admin settings)
   useEffect(() => {
     async function fetchPlatformBranding() {
