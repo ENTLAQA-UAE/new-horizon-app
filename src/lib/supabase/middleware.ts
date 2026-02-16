@@ -75,6 +75,9 @@ const routeRoleMap: { path: string; roles: string[] }[] = [
   { path: '/org/settings/domain', roles: ['org_admin'] },
   { path: '/org/settings', roles: ['org_admin'] },
 
+  // Org billing
+  { path: '/org/billing', roles: ['org_admin'] },
+
   // Org admin only
   { path: '/org/team', roles: ['org_admin'] },
   { path: '/org/departments', roles: ['org_admin'] },

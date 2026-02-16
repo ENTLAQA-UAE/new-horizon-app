@@ -9,6 +9,7 @@ import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
 import { AuthErrorDisplay } from "@/components/auth/auth-error"
 import { OnboardingGuideProvider, OnboardingGuideWidget } from "@/components/onboarding-guide"
 import { Loader2, Sparkles } from "lucide-react"
+import { TrialBanner } from "@/components/org/trial-banner"
 import { useState, useEffect } from "react"
 
 /**
@@ -119,6 +120,7 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
               userRole={sidebarRole}
             />
             <div className="flex flex-1 flex-col overflow-hidden">
+              <TrialBanner />
               <Header />
               <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
                 <div className="animate-fade-in-up">
