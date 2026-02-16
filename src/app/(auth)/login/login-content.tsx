@@ -43,7 +43,7 @@ interface PlatformBranding {
 function KawadirLogo({ size = 40, className }: { size?: number; className?: string }) {
   return (
     <img
-      src="/kawadir.svg"
+      src="/new-logo-light-final.PNG"
       alt="Kawadir"
       className={cn("object-contain", className)}
       style={{ height: size }}

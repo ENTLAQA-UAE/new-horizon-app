@@ -120,7 +120,7 @@ function AdminLoadingScreen() {
     <div className="flex h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <img
-          src="/kawadir.svg"
+          src="/new-logo-light-final.PNG"
           alt="Kawadir"
           className="h-16 object-contain animate-pulse"
         />
