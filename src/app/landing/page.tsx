@@ -214,12 +214,43 @@ const content = {
     yearly: { en: "Yearly", ar: "سنوي" },
     popular: { en: "Most Popular", ar: "الأكثر شيوعًا" },
     cta: { en: "Start Now", ar: "ابدأ الآن" },
-    perMonth: { en: "/month", ar: "/شهريًا" },
-    jobs: { en: "Active jobs", ar: "وظائف نشطة" },
-    users: { en: "Team members", ar: "أعضاء فريق" },
-    candidates: { en: "Candidates", ar: "مرشحين" },
-    unlimited: { en: "Unlimited", ar: "غير محدود" },
+    contactSales: { en: "Contact Sales", ar: "تواصل مع المبيعات" },
     loading: { en: "Loading plans...", ar: "جاري تحميل الخطط..." },
+    plans: [
+      {
+        name: { en: "Starter", ar: "المبتدئ" },
+        price: { en: "$200", ar: "$200" },
+        period: { en: "/month", ar: "/شهريًا" },
+        description: { en: "Perfect for small teams getting started", ar: "مثالي للفرق الصغيرة في البداية" },
+        features: {
+          en: ["Up to 5 active jobs", "3 team members", "1,000 candidates", "AI resume parsing", "Basic analytics", "Email templates"],
+          ar: ["حتى 5 وظائف نشطة", "3 أعضاء فريق", "1,000 مرشح", "تحليل السير الذاتية بالذكاء الاصطناعي", "تحليلات أساسية", "قوالب بريد إلكتروني"],
+        },
+        highlighted: false,
+      },
+      {
+        name: { en: "Professional", ar: "الاحترافي" },
+        price: { en: "$500", ar: "$500" },
+        period: { en: "/month", ar: "/شهريًا" },
+        description: { en: "For growing companies with active hiring", ar: "للشركات النامية مع توظيف نشط" },
+        features: {
+          en: ["Up to 25 active jobs", "15 team members", "10,000 candidates", "AI resume parsing", "Advanced analytics", "Custom workflows", "Email templates", "White-label solution"],
+          ar: ["حتى 25 وظيفة نشطة", "15 عضو فريق", "10,000 مرشح", "تحليل السير الذاتية بالذكاء الاصطناعي", "تحليلات متقدمة", "سير عمل مخصصة", "قوالب بريد إلكتروني", "حل العلامة البيضاء"],
+        },
+        highlighted: true,
+      },
+      {
+        name: { en: "Enterprise", ar: "المؤسسات" },
+        price: { en: "$1,000", ar: "$1,000" },
+        period: { en: "/month", ar: "/شهريًا" },
+        description: { en: "For large organizations with complex needs", ar: "للمؤسسات الكبيرة ذات الاحتياجات المعقدة" },
+        features: {
+          en: ["Unlimited active jobs", "Unlimited team members", "Unlimited candidates", "Everything in Professional", "SSO authentication", "API access", "Dedicated support"],
+          ar: ["وظائف نشطة غير محدودة", "أعضاء فريق غير محدودين", "مرشحون غير محدودين", "كل ما في الاحترافي", "تسجيل دخول موحد SSO", "وصول API", "دعم مخصص"],
+        },
+        highlighted: false,
+      },
+    ],
   },
   contact: {
     label: { en: "Contact Us", ar: "تواصل معنا" },
@@ -325,11 +356,6 @@ const featureLabels: Record<string, { en: string; ar: string }> = {
   sso_integration: { en: "SSO Authentication", ar: "تسجيل دخول موحد SSO" },
 }
 
-function formatLimit(value: number, lang: Lang, label: { en: string; ar: string }) {
-  if (value >= 999999) return `${t(content.pricing.unlimited, lang)} ${t(label, lang).toLowerCase()}`
-  return `${lang === "ar" ? "حتى" : "Up to"} ${value.toLocaleString()} ${t(label, lang).toLowerCase()}`
-}
-
 function getCurrencySymbol(currency: string | null) {
   switch (currency) {
     case "USD": return "$"
@@ -338,6 +364,62 @@ function getCurrencySymbol(currency: string | null) {
     case "EGP": return "EGP "
     default: return "$"
   }
+}
+
+/* Convert API tiers to the same plan format used by the hardcoded fallback */
+function tiersToPlans(tiers: Tier[]) {
+  return tiers.map((tier, i) => {
+    const currency = getCurrencySymbol(tier.currency)
+    const priceStr = `${currency}${tier.price_monthly.toLocaleString()}`
+
+    // Build bilingual feature lists from limits + feature flags
+    const featuresEn: string[] = []
+    const featuresAr: string[] = []
+
+    // Limits
+    if (tier.max_jobs >= 999999) {
+      featuresEn.push("Unlimited active jobs")
+      featuresAr.push("وظائف نشطة غير محدودة")
+    } else {
+      featuresEn.push(`Up to ${tier.max_jobs.toLocaleString()} active jobs`)
+      featuresAr.push(`حتى ${tier.max_jobs.toLocaleString()} وظائف نشطة`)
+    }
+
+    if (tier.max_users >= 999999) {
+      featuresEn.push("Unlimited team members")
+      featuresAr.push("أعضاء فريق غير محدودين")
+    } else {
+      featuresEn.push(`${tier.max_users.toLocaleString()} team members`)
+      featuresAr.push(`${tier.max_users.toLocaleString()} أعضاء فريق`)
+    }
+
+    if (tier.max_candidates >= 999999) {
+      featuresEn.push("Unlimited candidates")
+      featuresAr.push("مرشحون غير محدودين")
+    } else {
+      featuresEn.push(`${tier.max_candidates.toLocaleString()} candidates`)
+      featuresAr.push(`${tier.max_candidates.toLocaleString()} مرشح`)
+    }
+
+    // Feature flags
+    if (tier.features) {
+      Object.entries(tier.features).forEach(([key, enabled]) => {
+        if (enabled && featureLabels[key]) {
+          featuresEn.push(featureLabels[key].en)
+          featuresAr.push(featureLabels[key].ar)
+        }
+      })
+    }
+
+    return {
+      name: { en: tier.name, ar: tier.name_ar || tier.name },
+      price: { en: priceStr, ar: priceStr },
+      period: { en: "/month", ar: "/شهريًا" },
+      description: { en: tier.description || "", ar: tier.description_ar || tier.description || "" },
+      features: { en: featuresEn, ar: featuresAr },
+      highlighted: tiers.length >= 3 ? i === 1 : false,
+    }
+  })
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -444,13 +526,16 @@ export default function LandingPage() {
           setTiers(data.tiers || [])
         }
       } catch {
-        // Silent fail — pricing section will show empty state
+        // Silent fail — will use hardcoded fallback plans
       } finally {
         setTiersLoading(false)
       }
     }
     fetchTiers()
   }, [])
+
+  // Use dynamic tiers when available, otherwise fall back to hardcoded plans
+  const plans = tiers.length > 0 ? tiersToPlans(tiers) : content.pricing.plans
 
   return (
     <div
@@ -849,87 +934,67 @@ export default function LandingPage() {
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#2563EB]/20 border-t-[#2563EB]" />
               <p className="text-gray-500 mt-4 text-sm">{t(content.pricing.loading, lang)}</p>
             </div>
-          ) : tiers.length > 0 ? (
-            <div className={`grid gap-8 ${tiers.length === 1 ? "max-w-md mx-auto" : tiers.length === 2 ? "md:grid-cols-2 max-w-4xl mx-auto" : "md:grid-cols-3"}`}>
-              {tiers.map((tier, i) => {
-                // Middle tier is highlighted when there are 3+ tiers
-                const isHighlighted = tiers.length >= 3 ? i === 1 : false
-                const tierName = lang === "ar" && tier.name_ar ? tier.name_ar : tier.name
-                const tierDesc = lang === "ar" && tier.description_ar ? tier.description_ar : (tier.description || "")
-                const currency = getCurrencySymbol(tier.currency)
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8">
+              {plans.map((plan, i) => (
+                <div
+                  key={i}
+                  className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                    plan.highlighted
+                      ? "bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white shadow-2xl shadow-[#2563EB]/25 md:scale-105"
+                      : "bg-white border border-gray-200 hover:border-[#2563EB]/20 hover:shadow-xl"
+                  }`}
+                >
+                  {plan.highlighted && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900">
+                      <Star className="h-3.5 w-3.5" />
+                      {t(content.pricing.popular, lang)}
+                    </div>
+                  )}
 
-                // Build feature list from limits + feature flags
-                const featureList: string[] = []
-                featureList.push(formatLimit(tier.max_jobs, lang, content.pricing.jobs))
-                featureList.push(formatLimit(tier.max_users, lang, content.pricing.users))
-                featureList.push(formatLimit(tier.max_candidates, lang, content.pricing.candidates))
+                  <h3 className={`text-xl font-bold mb-2 ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
+                    {t(plan.name, lang)}
+                  </h3>
+                  <p className={`text-sm mb-6 ${plan.highlighted ? "text-white/70" : "text-gray-500"}`}>
+                    {t(plan.description, lang)}
+                  </p>
 
-                if (tier.features) {
-                  Object.entries(tier.features).forEach(([key, enabled]) => {
-                    if (enabled && featureLabels[key]) {
-                      featureList.push(t(featureLabels[key], lang))
-                    }
-                  })
-                }
+                  <div className="mb-8">
+                    <span className={`text-4xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
+                      {t(plan.price, lang)}
+                    </span>
+                    {plan.period.en && (
+                      <span className={`text-sm ${plan.highlighted ? "text-white/60" : "text-gray-400"}`}>
+                        {t(plan.period, lang)}
+                      </span>
+                    )}
+                  </div>
 
-                return (
-                  <div
-                    key={tier.id}
-                    className={`relative rounded-2xl p-8 transition-all duration-300 ${
-                      isHighlighted
-                        ? "bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white shadow-2xl shadow-[#2563EB]/25 md:scale-105"
-                        : "bg-white border border-gray-200 hover:border-[#2563EB]/20 hover:shadow-xl"
+                  <ul className="space-y-3 mb-8">
+                    {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
+                      <li key={j} className="flex items-center gap-3">
+                        <Check className={`h-5 w-5 shrink-0 ${plan.highlighted ? "text-white/80" : "text-[#2563EB]"}`} />
+                        <span className={`text-sm ${plan.highlighted ? "text-white/90" : "text-gray-600"}`}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href={plan.highlighted ? "/signup" : i === plans.length - 1 ? "mailto:sales@kawadir.io" : "/signup"}
+                    className={`block w-full text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
+                      plan.highlighted
+                        ? "bg-white text-[#2563EB] hover:shadow-lg hover:-translate-y-0.5"
+                        : "bg-[#2563EB]/6 text-[#2563EB] hover:bg-[#2563EB]/10"
                     }`}
                   >
-                    {isHighlighted && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900">
-                        <Star className="h-3.5 w-3.5" />
-                        {t(content.pricing.popular, lang)}
-                      </div>
-                    )}
-
-                    <h3 className={`text-xl font-bold mb-2 ${isHighlighted ? "text-white" : "text-gray-900"}`}>
-                      {tierName}
-                    </h3>
-                    <p className={`text-sm mb-6 ${isHighlighted ? "text-white/70" : "text-gray-500"}`}>
-                      {tierDesc}
-                    </p>
-
-                    <div className="mb-8">
-                      <span className={`text-4xl font-extrabold ${isHighlighted ? "text-white" : "text-gray-900"}`}>
-                        {currency}{tier.price_monthly.toLocaleString()}
-                      </span>
-                      <span className={`text-sm ${isHighlighted ? "text-white/60" : "text-gray-400"}`}>
-                        {t(content.pricing.perMonth, lang)}
-                      </span>
-                    </div>
-
-                    <ul className="space-y-3 mb-8">
-                      {featureList.map((feature, j) => (
-                        <li key={j} className="flex items-center gap-3">
-                          <Check className={`h-5 w-5 shrink-0 ${isHighlighted ? "text-white/80" : "text-[#2563EB]"}`} />
-                          <span className={`text-sm ${isHighlighted ? "text-white/90" : "text-gray-600"}`}>
-                            {feature}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Link
-                      href="/signup"
-                      className={`block w-full text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
-                        isHighlighted
-                          ? "bg-white text-[#2563EB] hover:shadow-lg hover:-translate-y-0.5"
-                          : "bg-[#2563EB]/6 text-[#2563EB] hover:bg-[#2563EB]/10"
-                      }`}
-                    >
-                      {t(content.pricing.cta, lang)}
-                    </Link>
-                  </div>
-                )
-              })}
+                    {i === plans.length - 1 ? t(content.pricing.contactSales, lang) : t(content.pricing.cta, lang)}
+                  </Link>
+                </div>
+              ))}
             </div>
-          ) : null}
+          )}
         </div>
       </section>
 
