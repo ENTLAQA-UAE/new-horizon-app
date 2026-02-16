@@ -290,21 +290,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         // If we still don't have a session, set unauthenticated state
+        // BUT: guard against race conditions — if we're already authenticated
+        // from a previous successful loadAuth(), do NOT override to unauthenticated.
+        // This prevents late/stale loadAuth() calls (e.g. from INITIAL_SESSION event
+        // or setSession background sync) from destroying a good auth state.
         if (!session) {
           console.log("AuthProvider: No session available, setting unauthenticated state")
           if (mountedRef.current) {
-            setState(prev => ({
-              ...prev,
-              isLoading: false,
-              isAuthenticated: false,
-              user: null,
-              session: null,
-              profile: null,
-              organization: null,
-              roles: [],
-              primaryRole: null,
-              error: null,
-            }))
+            setState(prev => {
+              if (prev.isAuthenticated) {
+                console.log("AuthProvider: Already authenticated, ignoring no-session result (race condition guard)")
+                return prev
+              }
+              return {
+                ...prev,
+                isLoading: false,
+                isAuthenticated: false,
+                user: null,
+                session: null,
+                profile: null,
+                organization: null,
+                roles: [],
+                primaryRole: null,
+                error: null,
+              }
+            })
           }
           loadingRef.current = false
           return
@@ -316,18 +326,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try { sessionStorage.removeItem(AUTH_USER_KEY) } catch {}
 
         if (mountedRef.current) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            isAuthenticated: false,
-            user: null,
-            session: null,
-            profile: null,
-            organization: null,
-            roles: [],
-            primaryRole: null,
-            error: null,
-          }))
+          setState(prev => {
+            if (prev.isAuthenticated) {
+              console.log("AuthProvider: Already authenticated, ignoring no-session result (race condition guard)")
+              return prev
+            }
+            return {
+              ...prev,
+              isLoading: false,
+              isAuthenticated: false,
+              user: null,
+              session: null,
+              profile: null,
+              organization: null,
+              roles: [],
+              primaryRole: null,
+              error: null,
+            }
+          })
         }
         loadingRef.current = false
         return
