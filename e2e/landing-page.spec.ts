@@ -4,11 +4,11 @@ test.describe("Landing Page", () => {
   test("loads the landing page for unauthenticated users", async ({ page }) => {
     await page.goto("/")
 
-    // Should see the hero section
-    await expect(page.locator("text=Hire the Best Talent")).toBeVisible()
+    // Default language is Arabic — should see the Arabic hero text
+    await expect(page.locator("text=وظّف الكفاءات المناسبة،")).toBeVisible()
 
-    // Should have a Get Started CTA
-    await expect(page.locator('a:has-text("Get Started")').first()).toBeVisible()
+    // Should have a Get Started CTA (Arabic: ابدأ الآن)
+    await expect(page.locator('a:has-text("ابدأ الآن")').first()).toBeVisible()
   })
 
   test("has working navigation links", async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe("Landing Page", () => {
     // Navbar should be visible
     await expect(page.locator("nav")).toBeVisible()
 
-    // Login link should be accessible
+    // Login link should be accessible (Arabic: تسجيل الدخول)
     const loginLink = page.locator('a[href="/login"]').first()
     if (await loginLink.isVisible()) {
       await loginLink.click()
@@ -25,17 +25,18 @@ test.describe("Landing Page", () => {
     }
   })
 
-  test("language toggle switches to Arabic", async ({ page }) => {
+  test("language toggle switches to English", async ({ page }) => {
     await page.goto("/")
 
-    // Find and click language toggle
-    const langToggle = page.locator('button:has-text("العربية"), button:has-text("AR")')
-    if (await langToggle.isVisible()) {
-      await langToggle.click()
+    // Default is Arabic (RTL) — verify initial state
+    await expect(page.locator('[dir="rtl"]').first()).toBeVisible()
 
-      // Page should now show Arabic text
-      await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
-    }
+    // Find and click language toggle (Globe icon button with title="English")
+    const langToggle = page.locator('button[title="English"]')
+    await langToggle.click()
+
+    // Page should now be in English (LTR)
+    await expect(page.locator('[dir="ltr"]').first()).toBeVisible()
   })
 
   test("signup link navigates correctly", async ({ page }) => {
