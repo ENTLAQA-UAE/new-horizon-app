@@ -133,14 +133,14 @@ export default function RootRedirectPage() {
         const rolesTimeoutId = setTimeout(() => rolesController.abort(), 10000)
         const profileTimeoutId = setTimeout(() => profileController.abort(), 10000)
 
-        // Fetch roles and profile in parallel with timeout
+        // Fetch roles and profile (with org slug) in parallel with timeout
         const [rolesResponse, profileResponse] = await Promise.all([
           fetch(
             `${supabaseUrl}/rest/v1/user_roles?select=role&user_id=eq.${session.user.id}`,
             { headers: authHeaders, signal: rolesController.signal }
           ),
           fetch(
-            `${supabaseUrl}/rest/v1/profiles?select=id,org_id&id=eq.${session.user.id}`,
+            `${supabaseUrl}/rest/v1/profiles?select=id,org_id,organizations(slug)&id=eq.${session.user.id}`,
             { headers: authHeaders, signal: profileController.signal }
           )
         ])
@@ -150,6 +150,7 @@ export default function RootRedirectPage() {
 
         let roles: string[] = []
         let orgId: string | null = null
+        let orgSlug: string | null = null
 
         if (rolesResponse.ok) {
           const rolesData = await rolesResponse.json()
@@ -161,18 +162,27 @@ export default function RootRedirectPage() {
           const profileData = await profileResponse.json()
           if (profileData && profileData.length > 0) {
             orgId = profileData[0].org_id
-            console.log("RootRedirect: User org_id:", orgId)
+            orgSlug = profileData[0].organizations?.slug || null
+            console.log("RootRedirect: User org_id:", orgId, "org_slug:", orgSlug)
           }
         }
 
         // Determine redirect destination based on role and org_id
         const isSuperAdmin = roles.includes("super_admin")
+        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "kawadir.io"
 
         if (isSuperAdmin) {
           console.log("RootRedirect: User is super_admin, redirecting to /admin")
           router.replace("/admin")
+        } else if (orgSlug) {
+          // Redirect to the org's subdomain using full page navigation
+          // so the middleware can set org context properly
+          const protocol = window.location.protocol
+          const subdomainUrl = `${protocol}//${orgSlug}.${rootDomain}/org`
+          console.log("RootRedirect: Redirecting to org subdomain:", subdomainUrl)
+          window.location.href = subdomainUrl
         } else {
-          console.log("RootRedirect: User has session, redirecting to /org")
+          console.log("RootRedirect: User has session but no org slug, redirecting to /org")
           router.replace("/org")
         }
       } catch (err) {
