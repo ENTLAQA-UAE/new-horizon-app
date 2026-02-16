@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import {
-  Sparkles,
   Brain,
   Users,
   BarChart3,
@@ -449,7 +449,7 @@ function t(obj: { en: string; ar: string }, lang: Lang) {
 }
 
 function Icon({ name, className }: { name: string; className?: string }) {
-  const Comp = iconMap[name] || Sparkles
+  const Comp = iconMap[name] || KawadirIcon
   return <Comp className={className} />
 }
 
@@ -658,7 +658,7 @@ export default function LandingPage() {
           <div className="text-center max-w-4xl mx-auto">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 bg-white/10 text-white/90 backdrop-blur-sm border border-white/10 animate-fade-in-up">
-              <Sparkles className="h-4 w-4 text-[#60A5FA]" />
+              <KawadirIcon className="h-4 w-4 text-[#60A5FA]" />
               {t(content.hero.badge, lang)}
             </div>
 

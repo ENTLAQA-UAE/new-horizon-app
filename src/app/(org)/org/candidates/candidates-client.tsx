@@ -63,10 +63,10 @@ import {
   Download,
   Upload,
   X,
-  Sparkles,
   Wand2,
   ExternalLink,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { useAI } from "@/hooks/use-ai"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
@@ -852,7 +852,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
               {isParsing || isAiLoading ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
-                <Sparkles className="h-3 w-3" />
+                <KawadirIcon className="h-3 w-3" />
               )}
               {t("candidates.parseWithAI")}
             </Button>

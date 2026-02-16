@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   keywords: ["ATS", "Recruitment", "HR", "MENA", "Saudi Arabia", "UAE", "Hiring"],
   icons: {
     icon: "/new-favicon-final.PNG",
+    apple: "/new-favicon-final.PNG",
   },
   openGraph: {
     title: "Kawadir - AI-Powered Recruitment Platform",

@@ -67,11 +67,11 @@ import {
   Share2,
   Link,
   ExternalLink,
-  Sparkles,
   RefreshCw,
   CheckCircle,
   X,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
 
@@ -966,7 +966,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
       {/* AI Generation Button */}
       <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-purple-600" />
+          <KawadirIcon className="h-5 w-5 text-purple-600" />
           <div>
             <p className="text-sm font-medium">{t("jobs.jobDescription")}</p>
             <p className="text-xs text-muted-foreground">{t("jobs.fields.description")}</p>
@@ -987,7 +987,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
             </>
           ) : (
             <>
-              <Sparkles className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
+              <KawadirIcon className={isRTL ? "ml-2 h-4 w-4" : "mr-2 h-4 w-4"} />
               {t("common.create")}
             </>
           )}
@@ -1711,7 +1711,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-600" />
+              <KawadirIcon className="h-5 w-5 text-purple-600" />
               {t("jobs.jobDescription")}
             </DialogTitle>
             <DialogDescription>

@@ -42,8 +42,8 @@ import {
   ArrowRightLeft,
   UserPlus,
   Layers,
-  Sparkles,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 
 // =====================================================
 // Types
@@ -274,7 +274,7 @@ export function WorkflowsClient({ initialWorkflows, emailTemplates, stages, team
       {/* Workflow List */}
       {workflows.length === 0 ? (
         <Card className="p-12 text-center">
-          <Sparkles className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+          <KawadirIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
           <h3 className="font-semibold text-lg">No workflows yet</h3>
           <p className="text-muted-foreground text-sm mt-1 mb-4">
             Create your first workflow to automate hiring actions

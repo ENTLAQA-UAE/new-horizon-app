@@ -68,8 +68,8 @@ import {
   Redo,
   Layout,
   Type,
-  Sparkles,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import {
   BlockType,
   CareerPageBlock,

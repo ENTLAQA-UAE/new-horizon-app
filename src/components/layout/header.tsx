@@ -29,7 +29,6 @@ import {
   User,
   Settings,
   Globe,
-  Sparkles,
   Briefcase,
   Users,
   BarChart3,
@@ -45,6 +44,7 @@ import { useBranding } from "@/lib/branding/branding-context"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { cn } from "@/lib/utils"
 import { useTheme } from "@/lib/theme/theme-context"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 
 interface HeaderProps {
   title?: string
@@ -364,7 +364,7 @@ export function Header({ title, titleAr }: HeaderProps) {
               className="gap-3 py-3"
             >
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted">
-                <Sparkles className="h-4 w-4" />
+                <KawadirIcon className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
                 <span className="font-medium">{t("nav.branding")}</span>

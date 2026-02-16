@@ -78,7 +78,6 @@ import {
   ClipboardCheck,
   XCircle,
   ClipboardList,
-  Sparkles,
   Brain,
   Target,
   TrendingUp,
@@ -86,6 +85,7 @@ import {
   CheckCircle,
   RefreshCw,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
 
@@ -1829,7 +1829,7 @@ export function ApplicationsClient({
                       value="ai-review"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-t-lg rounded-b-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary,#6366f1)] px-4 py-2.5"
                     >
-                      <Sparkles className="h-4 w-4 mr-2" />
+                      <KawadirIcon className="h-4 w-4 mr-2" />
                       {t("applications.tabs.aiReview")}
                       {aiScreeningResult && (
                         <Badge className={cn("ml-2 h-5 px-1.5 text-[10px]", getRecommendationColor(aiScreeningResult.recommendation))}>
@@ -2552,7 +2552,7 @@ export function ApplicationsClient({
                               </>
                             ) : (
                               <>
-                                <Sparkles className="mr-2 h-4 w-4" />
+                                <KawadirIcon className="mr-2 h-4 w-4" />
                                 {t("applications.ai.reviewWithAI")}
                               </>
                             )}

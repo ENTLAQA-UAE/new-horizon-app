@@ -8,7 +8,7 @@ import { BrandingProvider } from "@/lib/branding/branding-context"
 import { AuthProvider, useAuth, UserRole } from "@/lib/auth"
 import { AuthErrorDisplay } from "@/components/auth/auth-error"
 import { OnboardingGuideProvider, OnboardingGuideWidget } from "@/components/onboarding-guide"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { TrialBanner } from "@/components/org/trial-banner"
 import { useState, useEffect } from "react"
 
@@ -140,12 +140,11 @@ function OrgLoadingScreen() {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
-          style={{ background: "var(--brand-gradient, linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%))" }}
-        >
-          <Sparkles className="w-8 h-8 text-white" />
-        </div>
+        <img
+          src="/new-favicon-final.PNG"
+          alt="Kawadir"
+          className="h-16 w-16 object-contain animate-pulse"
+        />
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     </div>

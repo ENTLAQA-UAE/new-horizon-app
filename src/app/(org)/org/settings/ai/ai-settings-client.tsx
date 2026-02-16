@@ -44,12 +44,12 @@ import {
   ExternalLink,
   Trash2,
   AlertTriangle,
-  Sparkles,
   Zap,
   FileText,
   Users,
   Copy,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonValue = string | number | boolean | null | { [key: string]: any } | any[]
@@ -103,7 +103,7 @@ const AI_PROVIDER_CONFIG = {
   openai: {
     name: "OpenAI GPT",
     description: "Powerful language models including GPT-4o",
-    icon: Sparkles,
+    icon: KawadirIcon,
     color: "text-green-500",
     bgColor: "bg-green-500/10",
     defaultModel: "gpt-4o",
@@ -457,7 +457,7 @@ export function AISettingsClient({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <KawadirIcon className="h-5 w-5 text-primary" />
             AI-Powered Features
           </CardTitle>
           <CardDescription>
