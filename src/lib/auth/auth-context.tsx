@@ -705,18 +705,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
             } catch {}
           }
         } else if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-          // Use the session from the auth state change event directly
-          // This avoids the getSession() call which can hang
+          // Only trigger loadAuth when the event provides a valid session.
+          // When session is null (e.g. INITIAL_SESSION on a fresh Supabase client),
+          // do NOT call loadAuth() again — the mount-triggered loadAuth() already
+          // handles this by checking localStorage and getSession().
+          // Calling loadAuth() again with null session causes a race condition where
+          // getSession() times out and overrides an already-successful auth state.
           console.log("AuthProvider: Auth event with session, loadingRef:", loadingRef.current, "session:", session ? "exists" : "null")
           if (session) {
             // We have a valid session from the event - use it directly
             loadingRef.current = false // Reset to allow loading with the new session
             await loadAuth(session)
-          } else if (!loadingRef.current) {
-            // No session in event, try loading normally
-            await loadAuth()
           } else {
-            console.log("AuthProvider: Skipping - load already in progress")
+            console.log("AuthProvider: No session in event, relying on mount loadAuth()")
           }
         }
       }

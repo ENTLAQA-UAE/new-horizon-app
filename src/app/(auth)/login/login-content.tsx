@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createClient, fullCleanup } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { clearTokenCache } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -110,21 +110,18 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
     setMounted(true)
   }, [])
 
-  // Clean up stale auth state and optionally redirect already-authenticated users.
-  // This ensures that after a logout, no leftover tokens or cookies
-  // prevent logging in with a different account.
+  // Clear in-memory token cache when landing on login page.
+  // This ensures stale tokens from a previous session don't interfere.
+  // Note: We do NOT clear localStorage or cookies here — the logout flow
+  // handles that. Clearing here would break the session redirect check below.
   useEffect(() => {
-    // Always clear cached tokens and pending sessions when landing on /login.
-    // This prevents stale data from a previous account interfering with a new login.
-    try {
-      clearTokenCache()
-      localStorage.removeItem('kawadir_pending_session')
-    } catch {
-      // Ignore cleanup errors
-    }
+    clearTokenCache()
+  }, [])
 
-    // Check if the user has a genuine active session (not stale cookies).
-    // If so, redirect them away from the login page.
+  // Redirect already-authenticated users away from login page.
+  // This is a client-side check (not middleware) to avoid redirect loops
+  // when layouts briefly detect unauthenticated state and push to /login.
+  useEffect(() => {
     async function checkExistingSession() {
       try {
         const supabase = createClient()
@@ -284,11 +281,9 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
     const attemptLogin = async (retryCount: number): Promise<boolean> => {
       try {
-        // Clear all previous auth state before login attempt.
-        // This ensures signing in with a different account starts completely fresh.
+        // Clear pending session from previous login attempt
         try {
-          clearTokenCache()
-          fullCleanup()
+          localStorage.removeItem('kawadir_pending_session')
         } catch (e) {
           console.warn("Could not clear storage:", e)
         }
