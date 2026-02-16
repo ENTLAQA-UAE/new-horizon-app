@@ -982,14 +982,14 @@ export default function LandingPage() {
                   </ul>
 
                   <Link
-                    href={plan.highlighted ? "/signup" : i === plans.length - 1 ? "mailto:sales@kawadir.io" : "/signup"}
+                    href="/signup"
                     className={`block w-full text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
                       plan.highlighted
                         ? "bg-white text-[#2563EB] hover:shadow-lg hover:-translate-y-0.5"
                         : "bg-[#2563EB]/6 text-[#2563EB] hover:bg-[#2563EB]/10"
                     }`}
                   >
-                    {i === plans.length - 1 ? t(content.pricing.contactSales, lang) : t(content.pricing.cta, lang)}
+                    {t(content.pricing.cta, lang)}
                   </Link>
                 </div>
               ))}
