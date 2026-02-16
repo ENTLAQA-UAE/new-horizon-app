@@ -48,8 +48,6 @@ interface SubscriptionData {
     subscription_start_date: string | null
     subscription_end_date: string | null
     tier_id: string | null
-    stripe_customer_id: string | null
-    stripe_subscription_id: string | null
     max_jobs: number | null
     max_candidates: number | null
     max_users: number | null

@@ -335,7 +335,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
                   alt={branding.orgName}
                   className={cn(
                     "object-contain transition-all duration-300 group-hover:scale-105",
-                    collapsed ? "h-9 w-9" : "h-9 max-w-[140px]"
+                    collapsed ? "h-11 w-11" : "h-12 max-w-[160px]"
                   )}
                 />
               </div>
@@ -345,7 +345,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
                 alt={language === "ar" ? branding.orgNameAr : branding.orgName}
                 className={cn(
                   "object-contain transition-all duration-300 group-hover:scale-105",
-                  collapsed ? "h-9 w-9" : "h-9 max-w-[140px]"
+                  collapsed ? "h-11 w-11" : "h-12 max-w-[160px]"
                 )}
               />
             )}

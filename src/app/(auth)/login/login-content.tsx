@@ -40,7 +40,7 @@ interface PlatformBranding {
 }
 
 // Kawadir logo component using the brand SVG
-function KawadirLogo({ size = 40, className }: { size?: number; className?: string }) {
+function KawadirLogo({ size = 80, className }: { size?: number; className?: string }) {
   return (
     <img
       src="/new-logo-light-final.PNG"
@@ -67,7 +67,7 @@ function LoginPageSkeleton() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
       <div className="flex flex-col items-center gap-4">
-        <KawadirLogo size={48} className="animate-pulse" />
+        <KawadirLogo size={80} className="animate-pulse" />
         <div className="flex items-center gap-2">
           <Loader2 className="h-5 w-5 animate-spin text-[#2D4CFF]" />
           <span className="text-sm text-[#616161]">Loading...</span>
@@ -494,7 +494,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                     className="h-24 object-contain"
                   />
                 ) : (
-                  <KawadirLogo size={96} />
+                  <KawadirLogo size={140} />
                 )}
               </div>
             )}

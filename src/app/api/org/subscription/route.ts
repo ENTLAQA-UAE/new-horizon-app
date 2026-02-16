@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
         subscription_start_date,
         subscription_end_date,
         tier_id,
-        stripe_customer_id,
-        stripe_subscription_id,
         max_jobs,
         max_candidates,
         max_users,
@@ -45,7 +43,12 @@ export async function GET(request: NextRequest) {
       .eq("id", orgId)
       .single()
 
-    if (error || !org) {
+    if (error) {
+      console.error("Subscription query error:", error)
+      return NextResponse.json({ error: error.message || "Organization not found" }, { status: 404 })
+    }
+
+    if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 })
     }
 

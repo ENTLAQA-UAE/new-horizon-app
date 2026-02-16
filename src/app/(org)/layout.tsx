@@ -143,7 +143,7 @@ function OrgLoadingScreen() {
         <img
           src="/new-favicon-final.PNG"
           alt="Kawadir"
-          className="h-16 w-16 object-contain animate-pulse"
+          className="h-24 w-24 object-contain animate-pulse"
         />
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
