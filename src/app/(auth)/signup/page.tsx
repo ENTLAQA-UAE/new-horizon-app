@@ -360,6 +360,7 @@ function SignupPageContent() {
                   id="firstName"
                   placeholder="John"
                   value={firstName}
+                  autoComplete="given-name"
                   onChange={(e) => setFirstName(e.target.value)}
                   required
                   disabled={loading}
@@ -371,6 +372,7 @@ function SignupPageContent() {
                   id="lastName"
                   placeholder="Doe"
                   value={lastName}
+                  autoComplete="family-name"
                   onChange={(e) => setLastName(e.target.value)}
                   required
                   disabled={loading}
@@ -384,6 +386,7 @@ function SignupPageContent() {
                 type="email"
                 placeholder="name@company.com"
                 value={email}
+                autoComplete="email"
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading || (inviteInfo !== null)}
@@ -402,6 +405,7 @@ function SignupPageContent() {
                 type="password"
                 placeholder="Create a strong password"
                 value={password}
+                autoComplete="new-password"
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}

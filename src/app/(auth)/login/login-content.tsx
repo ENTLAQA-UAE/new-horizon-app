@@ -322,6 +322,16 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
         console.log("Login successful for user:", data.user.id)
 
+        // CRITICAL: Save session to localStorage BEFORE any redirect.
+        // This prevents the race condition where AuthProvider can't find the session
+        // because Supabase hasn't persisted it yet when the new page loads.
+        try {
+          localStorage.setItem('kawadir_pending_session', JSON.stringify(data.session))
+          console.log("Login: Session saved to localStorage for post-redirect pickup")
+        } catch (e) {
+          console.warn("Login: Could not save session to localStorage:", e)
+        }
+
         toast.success("Welcome back!")
 
         // Fetch user's role and org to redirect directly to the correct subdomain.
@@ -520,6 +530,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                     type="email"
                     placeholder="you@company.com"
                     value={email}
+                    autoComplete="email"
                     onChange={(e) => {
                       setEmail(e.target.value)
                       if (emailError) setEmailError(null)
@@ -575,6 +586,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
+                    autoComplete="current-password"
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
