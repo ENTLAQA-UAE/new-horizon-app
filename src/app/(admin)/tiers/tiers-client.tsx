@@ -38,7 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Plus, MoreHorizontal, Pencil, Trash2, Users, Check, X, Crown, Sparkles, Building } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash2, Users, Check, X, Crown, Building } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { toast } from "sonner"
 
 const SUPPORTED_CURRENCIES = [
@@ -266,7 +267,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
   const getTierIcon = (tierName: string) => {
     const name = tierName.toLowerCase()
     if (name.includes("enterprise") || name.includes("unlimited")) return <Crown className="h-5 w-5" />
-    if (name.includes("professional") || name.includes("pro")) return <Sparkles className="h-5 w-5" />
+    if (name.includes("professional") || name.includes("pro")) return <KawadirIcon className="h-5 w-5" />
     return <Building className="h-5 w-5" />
   }
 

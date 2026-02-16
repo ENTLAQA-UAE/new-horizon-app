@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import {
   Bell,
   BellOff,
@@ -19,7 +20,6 @@ import {
   UserCheck,
   Briefcase,
   MessageSquare,
-  Sparkles,
   AlertCircle,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -40,7 +40,7 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   application_status_changed: UserCheck,
   interview_scheduled: Calendar,
   interview_reminder: Calendar,
-  candidate_scored: Sparkles,
+  candidate_scored: KawadirIcon,
   offer_sent: Briefcase,
   team_mention: MessageSquare,
   job_published: Briefcase,

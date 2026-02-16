@@ -39,7 +39,6 @@ import {
   Activity,
   Timer,
   Layers,
-  Sparkles,
   Trophy,
   Medal,
   AlertTriangle,
@@ -47,6 +46,7 @@ import {
   TrendingDown as FunnelIcon,
   Flag,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import {
   AreaChart,
   Area,
@@ -498,7 +498,7 @@ export function AnalyticsDashboard({ stats, candidateListData }: AnalyticsDashbo
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
+                <KawadirIcon className="h-5 w-5 text-amber-500" />
                 Top Performing Jobs
               </CardTitle>
             </CardHeader>

@@ -21,9 +21,9 @@ import {
   X,
   Link as LinkIcon,
   Monitor,
-  Sparkles,
   Info,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 
 interface BrandingSettings {
   company_name: string
@@ -687,7 +687,7 @@ export default function BrandingPage() {
                               className="w-6 h-6 rounded-lg flex items-center justify-center"
                               style={{ background: "var(--brand-gradient)" }}
                             >
-                              <Sparkles className="w-3 h-3 text-white" />
+                              <KawadirIcon className="w-3 h-3 text-white" />
                             </div>
                           )}
                           <span className="text-xs font-bold gradient-text">

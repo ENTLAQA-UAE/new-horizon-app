@@ -10,11 +10,11 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import {
   Loader2,
-  Sparkles,
   ArrowLeft,
   Mail,
   CheckCircle2,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { cn } from "@/lib/utils"
 
 function KawadirLogo({ size = 40 }: { size?: number }) {

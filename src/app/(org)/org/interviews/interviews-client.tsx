@@ -53,7 +53,6 @@ import {
   XCircle,
   User,
   Briefcase,
-  Sparkles,
   Copy,
   ExternalLink,
   Link2,
@@ -64,6 +63,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { format, addHours, startOfDay, isSameDay, isAfter, isBefore } from "date-fns"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { useAI } from "@/hooks/use-ai"
 import { ScorecardForm } from "@/components/interviews/scorecard-form"
 import { ClipboardList, X, Mail, Globe } from "lucide-react"
@@ -853,7 +853,7 @@ export function InterviewsClient({
                   <DropdownMenuItem
                     onSelect={() => handleGenerateQuestions(interview)}
                   >
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <KawadirIcon className="mr-2 h-4 w-4" />
                     {t("interviews.actions.aiQuestions")}
                   </DropdownMenuItem>
                   {interview.meeting_link && (
@@ -1571,7 +1571,7 @@ export function InterviewsClient({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
+              <KawadirIcon className="h-5 w-5 text-primary" />
               {t("interviews.ai.title")}
             </DialogTitle>
             <DialogDescription>

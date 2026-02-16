@@ -34,10 +34,10 @@ import {
   FileSignature,
   PanelTop,
   Bell,
-  Sparkles,
   ChevronDown,
   Globe,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/lib/i18n"
 import {
@@ -119,7 +119,7 @@ const orgAdminSections: NavSection[] = [
     collapsible: true,
     links: [
       { href: "/org/settings", label: "General", labelAr: "عام", icon: Settings },
-      { href: "/org/settings/ai", label: "AI Configuration", labelAr: "إعدادات الذكاء الاصطناعي", icon: Sparkles },
+      { href: "/org/settings/ai", label: "AI Configuration", labelAr: "إعدادات الذكاء الاصطناعي", icon: KawadirIcon },
       { href: "/org/settings/integrations", label: "Video Integration", labelAr: "تكامل الفيديو", icon: Plug },
       { href: "/org/settings/email", label: "Email Integration", labelAr: "تكامل البريد", icon: Mail },
       { href: "/org/settings/domain", label: "Domain", labelAr: "النطاق", icon: Globe },
@@ -158,7 +158,7 @@ const hrManagerSections: NavSection[] = [
       { href: "/org/offers/templates", label: "Offer Templates", labelAr: "قوالب العروض", icon: FileSignature },
       { href: "/org/scorecard-templates", label: "Scorecard Templates", labelAr: "قوالب التقييم", icon: ClipboardList },
       { href: "/org/pipelines", label: "Pipelines", labelAr: "مسارات التوظيف", icon: GitBranch },
-      { href: "/org/workflows", label: "Workflows", labelAr: "سير العمل", icon: Sparkles },
+      { href: "/org/workflows", label: "Workflows", labelAr: "سير العمل", icon: KawadirIcon },
       { href: "/org/screening-questions", label: "Screening Questions", labelAr: "أسئلة الفحص", icon: HelpCircle },
       { href: "/org/vacancy-settings", label: "Vacancy Settings", labelAr: "إعدادات الوظائف", icon: SlidersHorizontal },
       { href: "/org/settings/notifications", label: "Notification Settings", labelAr: "إعدادات الإشعارات", icon: Bell },

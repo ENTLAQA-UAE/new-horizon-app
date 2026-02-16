@@ -11,12 +11,12 @@ import {
   Shield,
   ChevronRight,
   ArrowRight,
-  Sparkles,
   Palette,
   CheckCircle,
   UserPlus,
   FolderTree,
 } from "lucide-react"
+import { KawadirIcon } from "@/components/ui/kawadir-icon"
 
 interface OrgAdminDashboardProps {
   orgId: string
@@ -389,7 +389,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
           <div className="bento-card p-6 h-full">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold">{t("dashboard.quickActions")}</h3>
-              <Sparkles className="h-5 w-5 text-muted-foreground" />
+              <KawadirIcon className="h-5 w-5 text-muted-foreground" />
             </div>
 
             <div className="space-y-3">
@@ -538,7 +538,7 @@ export async function OrgAdminDashboard({ orgId }: OrgAdminDashboardProps) {
                 <h3 className="text-lg font-semibold">{t("dashboard.orgAdmin.gettingStarted")}</h3>
                 <p className="text-sm text-muted-foreground">{t("dashboard.orgAdmin.completeYourSetup")}</p>
               </div>
-              <Sparkles className="h-5 w-5 text-muted-foreground" />
+              <KawadirIcon className="h-5 w-5 text-muted-foreground" />
             </div>
 
             <div className="space-y-4">
