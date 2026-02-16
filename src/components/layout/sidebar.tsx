@@ -81,6 +81,7 @@ const superAdminSections: NavSection[] = [
       { href: "/billing", label: "Billing & Payments", labelAr: "الفواتير والمدفوعات", icon: CreditCard },
       { href: "/audit-logs", label: "Audit Logs", labelAr: "سجل المراجعة", icon: History },
       { href: "/settings", label: "Platform Settings", labelAr: "إعدادات المنصة", icon: Settings },
+      { href: "/settings/stripe", label: "Stripe Settings", labelAr: "إعدادات سترايب", icon: CreditCard },
     ],
   },
 ]
@@ -102,6 +103,14 @@ const orgAdminSections: NavSection[] = [
       { href: "/org/departments", label: "Departments", labelAr: "الأقسام", icon: FolderTree },
       { href: "/org/branding", label: "Branding", labelAr: "الهوية", icon: Palette },
       { href: "/org/career-page", label: "Career Page", labelAr: "صفحة التوظيف", icon: PanelTop },
+    ],
+  },
+  {
+    title: "Billing",
+    titleAr: "الفوترة",
+    collapsible: true,
+    links: [
+      { href: "/org/billing", label: "Subscription", labelAr: "الاشتراك", icon: CreditCard },
     ],
   },
   {

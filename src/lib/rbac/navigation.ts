@@ -232,6 +232,22 @@ export const orgAdminNavigation: NavigationSection[] = [
     ],
   },
   {
+    id: "billing",
+    title: "Billing",
+    titleAr: "الفوترة",
+    roles: ["super_admin", "org_admin"],
+    items: [
+      {
+        id: "subscription",
+        title: "Subscription",
+        titleAr: "الاشتراك",
+        href: "/org/billing",
+        icon: CreditCard,
+        roles: ["org_admin"],
+      },
+    ],
+  },
+  {
     id: "settings",
     title: "Settings",
     titleAr: "الإعدادات",
