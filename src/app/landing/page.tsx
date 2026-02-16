@@ -401,7 +401,7 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
 function KawadirLogo({ lang, variant = "default" }: { lang: Lang; variant?: "default" | "white" }) {
   return (
     <Image
-      src="/kawadir.svg"
+      src="/new-logo-light-final.PNG"
       alt={lang === "ar" ? "كوادر" : "Kawadir"}
       width={140}
       height={45}

@@ -332,7 +332,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
               </div>
             ) : (
               <img
-                src="/kawadir.svg"
+                src="/new-logo-light-final.PNG"
                 alt={language === "ar" ? branding.orgNameAr : branding.orgName}
                 className={cn(
                   "object-contain transition-all duration-300 group-hover:scale-105",
@@ -508,7 +508,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
           <div className="p-4 border-t border-border/50">
             <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-muted/30">
               <img
-                src="/kawadir.svg"
+                src="/new-logo-light-final.PNG"
                 alt="Kawadir"
                 className="w-6 h-6 object-contain"
               />
