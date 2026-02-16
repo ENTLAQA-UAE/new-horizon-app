@@ -467,7 +467,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/signup"
-              className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] rounded-xl hover:shadow-lg hover:shadow-[#2D4CFF]/20 hover:-translate-y-0.5 transition-all"
+              className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#60A5FA] rounded-xl hover:shadow-lg hover:shadow-[#2563EB]/20 hover:-translate-y-0.5 transition-all"
             >
               {t(content.nav.getStarted, lang)}
             </Link>
@@ -511,7 +511,7 @@ export default function LandingPage() {
                 <Link
                   href="/signup"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] rounded-xl text-center"
+                  className="px-4 py-3 text-sm font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#60A5FA] rounded-xl text-center"
                 >
                   {t(content.nav.getStarted, lang)}
                 </Link>
@@ -529,17 +529,17 @@ export default function LandingPage() {
           ═══════════════════════════════════════════ */}
       <section id="hero" className="relative overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0A1340] to-[#1E3ACC]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0B1437] to-[#1D4ED8]" />
         <div className="absolute inset-0">
-          <div className="absolute top-[-30%] right-[-10%] w-[700px] h-[700px] rounded-full bg-[#2D4CFF]/20 blur-[120px]" />
-          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#7C4DFF]/15 blur-[100px]" />
+          <div className="absolute top-[-30%] right-[-10%] w-[700px] h-[700px] rounded-full bg-[#2563EB]/20 blur-[120px]" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#3B82F6]/15 blur-[100px]" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-20 sm:pb-32">
           <div className="text-center max-w-4xl mx-auto">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8 bg-white/10 text-white/90 backdrop-blur-sm border border-white/10 animate-fade-in-up">
-              <Sparkles className="h-4 w-4 text-[#6B7FFF]" />
+              <Sparkles className="h-4 w-4 text-[#60A5FA]" />
               {t(content.hero.badge, lang)}
             </div>
 
@@ -547,7 +547,7 @@ export default function LandingPage() {
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.12] sm:leading-[1.08] mb-5 sm:mb-6 text-white tracking-tight animate-fade-in-up">
               {t(content.hero.title, lang)}
               <br />
-              <span className="bg-gradient-to-r from-[#6B7FFF] via-[#7C4DFF] to-[#A78BFA] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#60A5FA] via-[#3B82F6] to-[#93C5FD] bg-clip-text text-transparent">
                 {t(content.hero.titleHighlight, lang)}
               </span>
             </h1>
@@ -561,7 +561,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animate-delay-200">
               <Link
                 href="/signup"
-                className="px-8 py-3.5 text-base font-semibold bg-white text-[#1E3ACC] rounded-xl hover:shadow-2xl hover:shadow-[#2D4CFF]/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                className="px-8 py-3.5 text-base font-semibold bg-white text-[#1D4ED8] rounded-xl hover:shadow-2xl hover:shadow-[#2563EB]/25 hover:-translate-y-0.5 transition-all flex items-center gap-2"
               >
                 {t(content.hero.cta, lang)}
                 <ArrowIcon className="h-4 w-4" />
@@ -613,8 +613,8 @@ export default function LandingPage() {
                   <div className="hidden sm:grid grid-cols-5 gap-3">
                     {[
                       { label: isRtl ? "جديد" : "New", count: 45, color: "from-blue-500 to-blue-600" },
-                      { label: isRtl ? "مُراجعة" : "Screening", count: 32, color: "from-[#2D4CFF] to-[#1E3ACC]" },
-                      { label: isRtl ? "مقابلة" : "Interview", count: 18, color: "from-[#7C4DFF] to-[#6B7FFF]" },
+                      { label: isRtl ? "مُراجعة" : "Screening", count: 32, color: "from-[#2563EB] to-[#1D4ED8]" },
+                      { label: isRtl ? "مقابلة" : "Interview", count: 18, color: "from-[#3B82F6] to-[#60A5FA]" },
                       { label: isRtl ? "عرض" : "Offer", count: 8, color: "from-pink-500 to-pink-600" },
                       { label: isRtl ? "تم التوظيف" : "Hired", count: 5, color: "from-emerald-500 to-emerald-600" },
                     ].map((stage, i) => (
@@ -643,7 +643,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════
           STATS BAND — Animated Counting with Icons
           ═══════════════════════════════════════════ */}
-      <section className="bg-gradient-to-r from-[#2D4CFF] to-[#1E3ACC] border-y border-[#2D4CFF]">
+      <section className="bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] border-y border-[#2563EB]">
         <div className="max-w-7xl mx-auto px-6 py-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {content.stats.map((stat, i) => (
@@ -668,7 +668,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           {/* Section header */}
           <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
               {t(content.features.label, lang)}
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
@@ -690,8 +690,8 @@ export default function LandingPage() {
                 >
                   {/* Text */}
                   <div className="flex-1 max-w-xl">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#2D4CFF]/6 mb-5">
-                      <Icon name={feature.icon} className="h-6 w-6 text-[#2D4CFF]" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#2563EB]/6 mb-5">
+                      <Icon name={feature.icon} className="h-6 w-6 text-[#2563EB]" />
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">
                       {t(feature.title, lang)}
@@ -702,7 +702,7 @@ export default function LandingPage() {
                     <ul className="space-y-3">
                       {(lang === "ar" ? feature.highlights.ar : feature.highlights.en).map((h, i) => (
                         <li key={i} className="flex items-center gap-3 text-gray-700">
-                          <CheckCircle className="h-5 w-5 text-[#2D4CFF] shrink-0" />
+                          <CheckCircle className="h-5 w-5 text-[#2563EB] shrink-0" />
                           <span className="font-medium">{h}</span>
                         </li>
                       ))}
@@ -737,10 +737,10 @@ export default function LandingPage() {
             {content.featureGrid.map((f, i) => (
               <div
                 key={i}
-                className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-[#2D4CFF]/10 hover:shadow-xl hover:shadow-[#2D4CFF]/10 hover:-translate-y-1 transition-all duration-300"
+                className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-[#2563EB]/10 hover:shadow-xl hover:shadow-[#2563EB]/10 hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#2D4CFF]/6 flex items-center justify-center mb-4">
-                  <Icon name={f.icon} className="h-5 w-5 text-[#2D4CFF]" />
+                <div className="w-11 h-11 rounded-xl bg-[#2563EB]/6 flex items-center justify-center mb-4">
+                  <Icon name={f.icon} className="h-5 w-5 text-[#2563EB]" />
                 </div>
                 <h3 className="text-lg font-bold mb-2">{t(f.title, lang)}</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">{t(f.desc, lang)}</p>
@@ -756,7 +756,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-24">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
               {t(content.howItWorks.label, lang)}
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
@@ -773,15 +773,15 @@ export default function LandingPage() {
                 {/* Connector line */}
                 {i < 2 && (
                   <div
-                    className="hidden md:block absolute top-10 w-full h-[2px] bg-gradient-to-r from-[#2D4CFF]/20 to-[#6B7FFF]/20"
+                    className="hidden md:block absolute top-10 w-full h-[2px] bg-gradient-to-r from-[#2563EB]/20 to-[#60A5FA]/20"
                     style={{ [isRtl ? "right" : "left"]: "60%" }}
                   />
                 )}
                 <div className="relative z-10">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#2D4CFF] to-[#6B7FFF] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-[#2D4CFF]/20">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#2563EB] to-[#60A5FA] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-[#2563EB]/20">
                     <Icon name={step.icon} className="h-9 w-9 text-white" />
                   </div>
-                  <div className="text-xs font-bold uppercase tracking-[0.15em] text-[#2D4CFF] mb-2">
+                  <div className="text-xs font-bold uppercase tracking-[0.15em] text-[#2563EB] mb-2">
                     {lang === "ar" ? `الخطوة ${step.step}` : `Step ${step.step}`}
                   </div>
                   <h3 className="text-xl font-bold mb-3">{t(step.title, lang)}</h3>
@@ -799,7 +799,7 @@ export default function LandingPage() {
       <section id="pricing" className="bg-gray-50 py-24">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
               {t(content.pricing.label, lang)}
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
@@ -816,8 +816,8 @@ export default function LandingPage() {
                 key={i}
                 className={`relative rounded-2xl p-8 transition-all duration-300 ${
                   plan.highlighted
-                    ? "bg-gradient-to-br from-[#2D4CFF] to-[#1E3ACC] text-white shadow-2xl shadow-[#2D4CFF]/25 md:scale-105"
-                    : "bg-white border border-gray-200 hover:border-[#2D4CFF]/20 hover:shadow-xl"
+                    ? "bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white shadow-2xl shadow-[#2563EB]/25 md:scale-105"
+                    : "bg-white border border-gray-200 hover:border-[#2563EB]/20 hover:shadow-xl"
                 }`}
               >
                 {plan.highlighted && (
@@ -848,7 +848,7 @@ export default function LandingPage() {
                 <ul className="space-y-3 mb-8">
                   {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
                     <li key={j} className="flex items-center gap-3">
-                      <Check className={`h-5 w-5 shrink-0 ${plan.highlighted ? "text-white/80" : "text-[#2D4CFF]"}`} />
+                      <Check className={`h-5 w-5 shrink-0 ${plan.highlighted ? "text-white/80" : "text-[#2563EB]"}`} />
                       <span className={`text-sm ${plan.highlighted ? "text-white/90" : "text-gray-600"}`}>
                         {feature}
                       </span>
@@ -860,8 +860,8 @@ export default function LandingPage() {
                   href={plan.highlighted ? "/signup" : i === 2 ? "mailto:sales@kawadir.io" : "/signup"}
                   className={`block w-full text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
                     plan.highlighted
-                      ? "bg-white text-[#2D4CFF] hover:shadow-lg hover:-translate-y-0.5"
-                      : "bg-[#2D4CFF]/6 text-[#2D4CFF] hover:bg-[#2D4CFF]/10"
+                      ? "bg-white text-[#2563EB] hover:shadow-lg hover:-translate-y-0.5"
+                      : "bg-[#2563EB]/6 text-[#2563EB] hover:bg-[#2563EB]/10"
                   }`}
                 >
                   {i === 2 ? t(content.pricing.contactSales, lang) : t(content.pricing.cta, lang)}
@@ -914,7 +914,7 @@ export default function LandingPage() {
       <section id="contact" className="bg-gray-50 py-24">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2D4CFF] bg-[#2D4CFF]/6 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
               {t(content.contact.label, lang)}
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
@@ -930,8 +930,8 @@ export default function LandingPage() {
             <div className="space-y-6">
               {content.contact.info.map((item, i) => (
                 <div key={i} className="flex items-start gap-4 bg-white rounded-2xl p-6 border border-gray-100">
-                  <div className="w-12 h-12 rounded-xl bg-[#2D4CFF]/6 flex items-center justify-center shrink-0">
-                    <Icon name={item.icon} className="h-6 w-6 text-[#2D4CFF]" />
+                  <div className="w-12 h-12 rounded-xl bg-[#2563EB]/6 flex items-center justify-center shrink-0">
+                    <Icon name={item.icon} className="h-6 w-6 text-[#2563EB]" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">{t(item.label, lang)}</h4>
@@ -952,7 +952,7 @@ export default function LandingPage() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2D4CFF] focus:ring-2 focus:ring-[#2D4CFF]/20 outline-none transition-all text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all text-sm"
                     placeholder={lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
                   />
                 </div>
@@ -962,7 +962,7 @@ export default function LandingPage() {
                   </label>
                   <input
                     type="email"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2D4CFF] focus:ring-2 focus:ring-[#2D4CFF]/20 outline-none transition-all text-sm"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all text-sm"
                     placeholder={lang === "ar" ? "أدخل بريدك الإلكتروني" : "Enter your email address"}
                   />
                 </div>
@@ -972,13 +972,13 @@ export default function LandingPage() {
                   </label>
                   <textarea
                     rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2D4CFF] focus:ring-2 focus:ring-[#2D4CFF]/20 outline-none transition-all text-sm resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all text-sm resize-none"
                     placeholder={lang === "ar" ? "اكتب رسالتك هنا..." : "Write your message here..."}
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-3 px-6 bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#2D4CFF]/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 px-6 bg-gradient-to-r from-[#2563EB] to-[#60A5FA] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#2563EB]/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                 >
                   <Send className="h-4 w-4" />
                   {t(content.contact.send, lang)}
@@ -994,11 +994,11 @@ export default function LandingPage() {
           ═══════════════════════════════════════════ */}
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="relative rounded-3xl overflow-hidden px-8 py-20 text-center bg-gradient-to-br from-[#2D4CFF] via-[#1E3ACC] to-[#2D4CFF]">
+          <div className="relative rounded-3xl overflow-hidden px-8 py-20 text-center bg-gradient-to-br from-[#2563EB] via-[#1D4ED8] to-[#2563EB]">
             {/* Decorative elements */}
             <div className="absolute inset-0 overflow-hidden">
               <div className="absolute top-[-40%] right-[-15%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
-              <div className="absolute bottom-[-40%] left-[-15%] w-[400px] h-[400px] rounded-full bg-[#7C4DFF]/10 blur-[80px]" />
+              <div className="absolute bottom-[-40%] left-[-15%] w-[400px] h-[400px] rounded-full bg-[#3B82F6]/10 blur-[80px]" />
             </div>
 
             <div className="relative z-10">
@@ -1011,7 +1011,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   href="/signup"
-                  className="px-8 py-3.5 text-base font-semibold bg-white text-[#1E3ACC] rounded-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                  className="px-8 py-3.5 text-base font-semibold bg-white text-[#1D4ED8] rounded-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
                 >
                   {t(content.cta.cta, lang)}
                   <ArrowIcon className="h-4 w-4" />
@@ -1133,7 +1133,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
           { name: isRtl ? "محمد العتيبي" : "Mohammed Al-Otaibi", score: 76, skills: ["Java", "Spring", "SQL"], status: "ok" },
         ].map((c, i) => (
           <div key={i} className="flex items-center gap-4 bg-white/80 rounded-xl p-4 border border-gray-100">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2D4CFF] to-[#6B7FFF] flex items-center justify-center text-white font-bold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2563EB] to-[#60A5FA] flex items-center justify-center text-white font-bold text-sm shrink-0">
               {c.name[0]}
             </div>
             <div className="flex-1 min-w-0">
@@ -1149,15 +1149,15 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               </div>
               <div className="flex gap-1.5">
                 {c.skills.map((s, j) => (
-                  <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2D4CFF]/6 text-[#2D4CFF] font-medium">{s}</span>
+                  <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-[#2563EB]/6 text-[#2563EB] font-medium">{s}</span>
                 ))}
               </div>
             </div>
           </div>
         ))}
-        <div className="flex items-center gap-2 bg-[#2D4CFF]/6 rounded-xl p-3 border border-[#2D4CFF]/10">
-          <Brain className="h-4 w-4 text-[#2D4CFF] shrink-0" />
-          <span className="text-xs text-[#1E3ACC] font-medium">
+        <div className="flex items-center gap-2 bg-[#2563EB]/6 rounded-xl p-3 border border-[#2563EB]/10">
+          <Brain className="h-4 w-4 text-[#2563EB] shrink-0" />
+          <span className="text-xs text-[#1D4ED8] font-medium">
             {isRtl
               ? "تم فرز 128 مرشح بالذكاء الاصطناعي — 12 مرشح مطابق بنسبة عالية"
               : "AI screened 128 candidates — 12 high-match candidates identified"}
@@ -1193,7 +1193,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#2D4CFF] to-[#6B7FFF] transition-all"
+                    className="h-full rounded-full bg-gradient-to-r from-[#2563EB] to-[#60A5FA] transition-all"
                     style={{ width: `${s.pct}%` }}
                   />
                 </div>
@@ -1201,9 +1201,9 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-[#7C4DFF]/6 rounded-xl p-3 border border-[#7C4DFF]/10">
-          <Target className="h-4 w-4 text-[#7C4DFF] shrink-0" />
-          <span className="text-xs text-[#7C4DFF] font-medium">
+        <div className="flex items-center gap-2 bg-[#3B82F6]/6 rounded-xl p-3 border border-[#3B82F6]/10">
+          <Target className="h-4 w-4 text-[#3B82F6] shrink-0" />
+          <span className="text-xs text-[#3B82F6] font-medium">
             {isRtl
               ? "الذكاء الاصطناعي وجد 8 مرشحين متوافقين بنسبة أعلى من 85%"
               : "AI found 8 candidates with 85%+ compatibility score"}
@@ -1224,7 +1224,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
           </div>
           <div className="flex items-end gap-2 h-32">
             {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88].map((h, i) => (
-              <div key={i} className="flex-1 rounded-t-md bg-gradient-to-t from-[#2D4CFF] to-[#6B7FFF] opacity-80 hover:opacity-100 transition-opacity" style={{ height: `${h}%` }} />
+              <div key={i} className="flex-1 rounded-t-md bg-gradient-to-t from-[#2563EB] to-[#60A5FA] opacity-80 hover:opacity-100 transition-opacity" style={{ height: `${h}%` }} />
             ))}
           </div>
           <div className="flex justify-between mt-2 text-[10px] text-gray-400">
@@ -1239,7 +1239,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
             { label: isRtl ? "نسبة الرضا" : "Satisfaction", val: "4.8/5", icon: BarChart3 },
           ].map((m, i) => (
             <div key={i} className="bg-white/80 rounded-xl p-3 border border-gray-100 text-center">
-              <m.icon className="h-4 w-4 text-[#2D4CFF] mx-auto mb-1" />
+              <m.icon className="h-4 w-4 text-[#2563EB] mx-auto mb-1" />
               <p className="text-lg font-extrabold text-gray-900">{m.val}</p>
               <p className="text-[10px] text-gray-500">{m.label}</p>
             </div>
@@ -1255,7 +1255,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               {isRtl ? "تقييم الفريق" : "Team Evaluation"}
             </h4>
             <div className="flex -space-x-2">
-              {["bg-[#2D4CFF]", "bg-[#7C4DFF]", "bg-pink-500", "bg-amber-500"].map((c, i) => (
+              {["bg-[#2563EB]", "bg-[#3B82F6]", "bg-pink-500", "bg-amber-500"].map((c, i) => (
                 <div key={i} className={`w-7 h-7 rounded-full ${c} border-2 border-white flex items-center justify-center text-white text-[10px] font-bold`}>
                   {["A", "S", "M", "N"][i]}
                 </div>
@@ -1269,7 +1269,7 @@ function FeatureMockup({ type, lang }: { type: string; lang: Lang }) {
               { reviewer: isRtl ? "محمد" : "Mohammed", score: 4.8, comment: isRtl ? "أفضل مرشح لهذا الدور" : "Best candidate for this role" },
             ].map((r, i) => (
               <div key={i} className="flex items-start gap-3 p-2.5 bg-gray-50 rounded-lg">
-                <div className="w-7 h-7 rounded-full bg-[#2D4CFF]/10 flex items-center justify-center text-[#2D4CFF] text-xs font-bold shrink-0">
+                <div className="w-7 h-7 rounded-full bg-[#2563EB]/10 flex items-center justify-center text-[#2563EB] text-xs font-bold shrink-0">
                   {r.reviewer[0]}
                 </div>
                 <div className="flex-1 min-w-0">
