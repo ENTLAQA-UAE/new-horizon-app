@@ -191,7 +191,7 @@ export default async function BillingPage() {
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">Billing Cycle</p>
-                  <p className="text-sm text-muted-foreground">Monthly / Yearly</p>
+                  <p className="text-sm text-muted-foreground">Monthly / Quarterly / Annually</p>
                 </div>
               </div>
               <Badge variant="default">Active</Badge>
