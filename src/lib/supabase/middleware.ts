@@ -438,6 +438,16 @@ export async function updateSession(request: NextRequest) {
       url.pathname = getHomeForRole(userRole)
       return applyOrgSlug(redirectWithCookies(url))
     }
+
+    // Fallback: authenticated user at root (/) but role couldn't be determined.
+    // Redirect to /org so the client-side AuthProvider can handle session loading
+    // instead of falling through to the RootRedirect page which may fail to
+    // detect the cookie-based session.
+    if (!userRole && pathname === '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/org'
+      return applyOrgSlug(redirectWithCookies(url))
+    }
   }
 
   // Apply org slug cookie/header to the final supabase response

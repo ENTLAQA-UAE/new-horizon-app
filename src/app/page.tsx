@@ -85,27 +85,46 @@ export default function RootRedirectPage() {
             const result = await Promise.race([sessionPromise, timeoutPromise])
             session = result.data.session
           } catch (e) {
-            console.warn("RootRedirect: getSession timed out, checking localStorage")
+            console.warn("RootRedirect: getSession timed out, checking fallbacks")
 
-            // Try Supabase's localStorage
+            // Try Supabase's localStorage (legacy fallback)
             const storageKeys = Object.keys(localStorage).filter(
               k => k.startsWith("sb-") && k.endsWith("-auth-token")
             )
             if (storageKeys.length > 0) {
               const storedData = localStorage.getItem(storageKeys[0])
               if (storedData) {
-                const parsed = JSON.parse(storedData)
-                if (parsed?.access_token && parsed?.user) {
-                  session = parsed
-                }
+                try {
+                  const parsed = JSON.parse(storedData)
+                  if (parsed?.access_token && parsed?.user) {
+                    session = parsed
+                  }
+                } catch {}
+              }
+            }
+
+            // Cookie-based fallback: @supabase/ssr stores sessions in cookies
+            // (not localStorage) for cross-subdomain auth. If auth cookies exist,
+            // the middleware already validated the user — redirect to /org and let
+            // the AuthProvider handle session loading from cookies.
+            if (!session) {
+              const hasAuthCookies = document.cookie.split(';').some(c => {
+                const name = c.trim().split('=')[0]
+                return name.startsWith('sb-') && name.includes('auth-token')
+              })
+
+              if (hasAuthCookies) {
+                console.log("RootRedirect: Auth cookies found but getSession timed out, redirecting to /org")
+                router.replace("/org")
+                return
               }
             }
           }
         }
 
         if (!session?.user) {
-          console.log("RootRedirect: No session found, redirecting to landing page")
-          router.replace("/")
+          console.log("RootRedirect: No session found, redirecting to login")
+          window.location.href = "/login"
           return
         }
 
@@ -197,7 +216,11 @@ export default function RootRedirectPage() {
           const storageKeys = Object.keys(localStorage).filter(
             k => k.startsWith("sb-") && k.endsWith("-auth-token")
           )
-          const hasSession = pendingSession || storageKeys.length > 0
+          const hasAuthCookies = document.cookie.split(';').some(c => {
+            const name = c.trim().split('=')[0]
+            return name.startsWith('sb-') && name.includes('auth-token')
+          })
+          const hasSession = pendingSession || storageKeys.length > 0 || hasAuthCookies
 
           if (hasSession) {
             console.log("RootRedirect: Fetch failed but session exists, defaulting to /org")
@@ -210,13 +233,13 @@ export default function RootRedirectPage() {
           console.warn("RootRedirect: Could not check session storage:", storageErr)
         }
 
-        // Only show error and redirect to landing page if no session exists
+        // Only show error and redirect to login if no session exists
         const errorMessage = isTimeout
           ? "Connection timed out. Please check your internet and try again."
           : "Something went wrong. Please try again."
         setError(errorMessage)
-        // Fallback to landing page after a delay
-        setTimeout(() => { router.replace("/") }, 2000)
+        // Fallback to login page after a delay
+        setTimeout(() => { window.location.href = "/login" }, 2000)
       }
     }
 
