@@ -296,9 +296,51 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
         toast.success("Welcome back!")
 
-        // Use client-side navigation to avoid full page reload
-        // The AuthProvider will pick up the session via onAuthStateChange
-        router.push("/")
+        // Fetch user's role and org to redirect directly to the correct subdomain.
+        // Using window.location.href (full navigation) instead of router.push
+        // because cross-subdomain redirects fail with client-side navigation.
+        try {
+          const [roleResult, profileResult] = await Promise.all([
+            supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', data.user.id)
+              .limit(1),
+            supabase
+              .from('profiles')
+              .select('org_id, organizations(slug)')
+              .eq('id', data.user.id)
+              .single(),
+          ])
+
+          const role = roleResult.data?.[0]?.role
+          const org = profileResult.data?.organizations as unknown as { slug: string } | null
+          const orgSlug = org?.slug
+
+          if (role === 'super_admin') {
+            window.location.href = '/admin'
+            return true
+          }
+
+          if (orgSlug) {
+            const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
+            const currentHost = window.location.hostname
+            const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1'
+            const isOnCorrectSubdomain = currentHost === `${orgSlug}.${rootDomain}`
+
+            if (isLocalhost || isOnCorrectSubdomain) {
+              window.location.href = '/org'
+            } else {
+              window.location.href = `${window.location.protocol}//${orgSlug}.${rootDomain}/org`
+            }
+            return true
+          }
+        } catch (err) {
+          console.warn('Login: Could not determine redirect destination, falling back', err)
+        }
+
+        // Fallback: full page navigation to root (middleware will handle redirect)
+        window.location.href = '/'
         return true
       } catch (err) {
         console.error("Login error:", err)
