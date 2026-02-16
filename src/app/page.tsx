@@ -259,7 +259,7 @@ export default function RootRedirectPage() {
           <img
             src="/new-logo-light-final.PNG"
             alt="Kawadir"
-            className="h-16 object-contain"
+            className="h-24 object-contain"
           />
           <p className="text-muted-foreground">{error}</p>
         </div>
@@ -273,7 +273,7 @@ export default function RootRedirectPage() {
         <img
           src="/new-logo-light-final.PNG"
           alt="Kawadir"
-          className="h-16 object-contain animate-pulse"
+          className="h-24 object-contain animate-pulse"
         />
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         <p className="text-sm text-muted-foreground">Redirecting...</p>
