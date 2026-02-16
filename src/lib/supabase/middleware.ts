@@ -315,6 +315,73 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse
   }
 
+  // -------------------------------------------------
+  // Redirect authenticated users away from /login
+  // If already logged in, skip login page and go to dashboard.
+  // -------------------------------------------------
+  if (user && (pathname === '/login' || pathname === '/signup')) {
+    // Quick role resolution for redirect target
+    let redirectRole: string | null = null
+    let redirectOrgSlug: string | null = null
+
+    const roleCookie = request.cookies.get('x-user-role')?.value || null
+    if (roleCookie) {
+      const parts = roleCookie.split(':')
+      if (parts.length >= 2 && parts[0] === user.id) {
+        redirectRole = parts[1]
+        redirectOrgSlug = parts[2] || null
+      }
+    }
+
+    if (!redirectRole) {
+      try {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .limit(1)
+        redirectRole = roleData?.[0]?.role || null
+
+        if (redirectRole && redirectRole !== 'super_admin') {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('org_id, organizations(slug)')
+            .eq('id', user.id)
+            .single()
+          if (profileData?.organizations) {
+            const org = profileData.organizations as unknown as { slug: string }
+            redirectOrgSlug = org.slug || null
+          }
+        }
+      } catch {
+        // Fall through — will redirect to root
+      }
+    }
+
+    if (redirectRole === 'super_admin') {
+      if (orgSlug) {
+        return redirectWithCookies(new URL(`${protocol}//${ROOT_DOMAIN}/admin`))
+      }
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return redirectWithCookies(url)
+    }
+
+    if (redirectOrgSlug) {
+      if (!orgSlug || orgSlug !== redirectOrgSlug) {
+        return redirectWithCookies(new URL(`${protocol}//${redirectOrgSlug}.${ROOT_DOMAIN}/org`))
+      }
+      const url = request.nextUrl.clone()
+      url.pathname = '/org'
+      return applyOrgSlug(redirectWithCookies(url))
+    }
+
+    // Fallback: redirect to root
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return applyOrgSlug(redirectWithCookies(url))
+  }
+
   if (user && !pathname.startsWith('/api/') && !isPublicRoute) {
     // -------------------------------------------------
     // Resolve user role + org slug (from cookies or DB)
@@ -411,7 +478,9 @@ export async function updateSession(request: NextRequest) {
     if (isOrgRole && userOrgSlug) {
       // On the main domain → redirect to their org subdomain
       if (!orgSlug) {
-        const orgUrl = new URL(`${protocol}//${userOrgSlug}.${ROOT_DOMAIN}${pathname}`)
+        // If at root (/), redirect to /org on the subdomain instead of preserving /
+        const targetPath = pathname === '/' ? '/org' : pathname
+        const orgUrl = new URL(`${protocol}//${userOrgSlug}.${ROOT_DOMAIN}${targetPath}`)
         orgUrl.search = request.nextUrl.search
         return redirectWithCookies(orgUrl)
       }
@@ -420,6 +489,13 @@ export async function updateSession(request: NextRequest) {
       if (orgSlug !== userOrgSlug) {
         const orgUrl = new URL(`${protocol}//${userOrgSlug}.${ROOT_DOMAIN}/org`)
         return redirectWithCookies(orgUrl)
+      }
+
+      // On correct subdomain at root → redirect to /org dashboard
+      if (pathname === '/') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/org'
+        return applyOrgSlug(redirectWithCookies(url))
       }
     }
 
