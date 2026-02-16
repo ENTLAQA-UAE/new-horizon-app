@@ -20,7 +20,16 @@ export function createClient(): SupabaseClient<Database> {
     )
   }
 
-  supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+  // Set cookie domain for cross-subdomain auth (e.g. kawadir.io ↔ entlaqa.kawadir.io)
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
+  const isLocalhost = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
+  supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      ...(isLocalhost ? {} : { domain: `.${rootDomain}` }),
+    },
+  })
   return supabaseClient
 }
 

@@ -148,6 +148,13 @@ function getHomeForRole(role: string): string {
 }
 
 export async function updateSession(request: NextRequest) {
+  // Compute cookie domain for cross-subdomain auth
+  // (e.g. cookies set on kawadir.io must also be readable on entlaqa.kawadir.io)
+  const reqHostname = request.headers.get('host') || ''
+  const reqHost = reqHostname.split(':')[0]
+  const isLocalDev = reqHost === 'localhost' || reqHost === '127.0.0.1'
+  const cookieDomain = isLocalDev ? undefined : `.${ROOT_DOMAIN}`
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -168,7 +175,10 @@ export async function updateSession(request: NextRequest) {
             request,
           })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              ...(cookieDomain ? { domain: cookieDomain } : {}),
+            })
           )
         },
       },
@@ -232,8 +242,7 @@ export async function updateSession(request: NextRequest) {
   // Resolve org slug from hostname BEFORE any redirects
   // so the cookie is set on every response (including redirects).
   // =====================================================
-  const hostname = request.headers.get('host') || ''
-  const orgSlug = await resolveOrgSlug(hostname)
+  const orgSlug = await resolveOrgSlug(reqHostname)
 
   // Helper: copy the x-org-slug cookie onto any response we create
   function applyOrgSlug(response: NextResponse) {
@@ -245,6 +254,7 @@ export async function updateSession(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 60 * 60 * 4,
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
       })
     }
     return response
@@ -299,8 +309,8 @@ export async function updateSession(request: NextRequest) {
   // Helper: build a redirect response that preserves Supabase auth cookies
   function redirectWithCookies(url: string | URL) {
     const redirectResponse = NextResponse.redirect(url)
-    for (const cookie of supabaseResponse.cookies.getAll()) {
-      redirectResponse.cookies.set(cookie.name, cookie.value)
+    for (const { name, value, ...options } of supabaseResponse.cookies.getAll()) {
+      redirectResponse.cookies.set(name, value, options)
     }
     return redirectResponse
   }
@@ -371,6 +381,7 @@ export async function updateSession(request: NextRequest) {
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           maxAge: 60 * 60 * 4, // 4 hours
+          ...(cookieDomain ? { domain: cookieDomain } : {}),
         })
       }
     }
