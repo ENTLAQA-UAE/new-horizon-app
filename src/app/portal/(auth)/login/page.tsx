@@ -132,6 +132,7 @@ export default function CandidateLoginPage() {
                 type="email"
                 placeholder="Enter the email you used to apply"
                 value={email}
+                autoComplete="email"
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 autoFocus

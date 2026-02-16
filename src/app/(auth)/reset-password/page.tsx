@@ -304,6 +304,7 @@ function ResetPasswordContent() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter new password"
                       value={password}
+                      autoComplete="new-password"
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-12 text-base pr-12 border-gray-200 focus:border-transparent transition-all duration-200"
                       style={{
@@ -342,6 +343,7 @@ function ResetPasswordContent() {
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
                       value={confirmPassword}
+                      autoComplete="new-password"
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="h-12 text-base pr-12 border-gray-200 focus:border-transparent transition-all duration-200"
                       style={{
