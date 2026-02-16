@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { createClient, fullCleanup } from "@/lib/supabase/client"
+import { clearTokenCache } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -109,10 +110,21 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
     setMounted(true)
   }, [])
 
-  // Redirect already-authenticated users away from login page.
-  // This is a client-side check (not middleware) to avoid redirect loops
-  // when layouts briefly detect unauthenticated state and push to /login.
+  // Clean up stale auth state and optionally redirect already-authenticated users.
+  // This ensures that after a logout, no leftover tokens or cookies
+  // prevent logging in with a different account.
   useEffect(() => {
+    // Always clear cached tokens and pending sessions when landing on /login.
+    // This prevents stale data from a previous account interfering with a new login.
+    try {
+      clearTokenCache()
+      localStorage.removeItem('kawadir_pending_session')
+    } catch {
+      // Ignore cleanup errors
+    }
+
+    // Check if the user has a genuine active session (not stale cookies).
+    // If so, redirect them away from the login page.
     async function checkExistingSession() {
       try {
         const supabase = createClient()
@@ -272,9 +284,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
     const attemptLogin = async (retryCount: number): Promise<boolean> => {
       try {
-        // Clear pending session from previous login attempt
+        // Clear all previous auth state before login attempt.
+        // This ensures signing in with a different account starts completely fresh.
         try {
-          localStorage.removeItem('kawadir_pending_session')
+          clearTokenCache()
+          fullCleanup()
         } catch (e) {
           console.warn("Could not clear storage:", e)
         }

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { createClient, fullCleanup } from "@/lib/supabase/client"
+import { clearTokenCache } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -81,8 +82,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   const handleLogout = async () => {
     const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/portal/login")
+    await supabase.auth.signOut({ scope: 'local' })
+    clearTokenCache()
+    fullCleanup()
+    // Full page reload to /portal/login ensures all in-memory state is cleared
+    window.location.href = "/portal/login"
   }
 
   if (isLoading) {
