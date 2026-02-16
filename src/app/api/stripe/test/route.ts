@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
+import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth check - only authenticated super_admin users can test Stripe keys
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { secret_key } = await request.json()
 
     if (!secret_key) {
