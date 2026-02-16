@@ -42,6 +42,8 @@ export function resetSupabaseClient() {
 function clearAuthCookies() {
   if (typeof document === 'undefined') return
 
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
+
   try {
     const cookies = document.cookie.split(";")
     let clearedCount = 0
@@ -50,19 +52,22 @@ function clearAuthCookies() {
       const [name] = cookie.split("=")
       const cookieName = name.trim()
 
-      // Clear cookies that match Supabase or auth patterns
+      // Clear cookies that match Supabase, auth, or middleware patterns
       if (
         cookieName.startsWith("sb-") ||
+        cookieName.startsWith("x-user-") ||
+        cookieName.startsWith("x-org-") ||
         cookieName.includes("supabase") ||
         cookieName.includes("auth") ||
         cookieName.includes("token") ||
         cookieName.includes("session") ||
         cookieName.includes("kawadir")
       ) {
-        // Clear cookie for multiple paths and domains to ensure removal
+        // Clear cookie for multiple domains to ensure removal
+        // Must include the root domain (e.g. .kawadir.io) since cookies are set there
         document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
         document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=;`
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${rootDomain};`
         clearedCount++
       }
     }
