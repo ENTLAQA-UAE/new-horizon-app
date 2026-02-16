@@ -315,23 +315,43 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
           const role = roleResult.data?.[0]?.role
           const org = profileResult.data?.organizations as unknown as { slug: string } | null
-          const orgSlug = org?.slug
+          const userOrgSlug = org?.slug
+
+          const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
+          const currentHost = window.location.hostname
+          const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1'
+
+          // Detect if we're on an org subdomain (not main domain, not localhost)
+          let currentSubdomain: string | null = null
+          if (!isLocalhost && currentHost.endsWith(`.${rootDomain}`)) {
+            currentSubdomain = currentHost.replace(`.${rootDomain}`, '')
+          }
 
           if (role === 'super_admin') {
-            window.location.href = '/admin'
+            // Super admins should not log in from org subdomains
+            if (currentSubdomain) {
+              window.location.href = `${window.location.protocol}//${rootDomain}/admin`
+            } else {
+              window.location.href = '/admin'
+            }
             return true
           }
 
-          if (orgSlug) {
-            const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'kawadir.io'
-            const currentHost = window.location.hostname
-            const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1'
-            const isOnCorrectSubdomain = currentHost === `${orgSlug}.${rootDomain}`
+          if (userOrgSlug) {
+            // If on an org subdomain, validate the user belongs to THIS org
+            if (currentSubdomain && currentSubdomain !== userOrgSlug) {
+              // User is logging into the wrong org subdomain — reject
+              await supabase.auth.signOut()
+              toast.error("This account is not associated with this organization.")
+              return false
+            }
 
-            if (isLocalhost || isOnCorrectSubdomain) {
+            // On correct subdomain or localhost → go to /org
+            if (isLocalhost || currentSubdomain === userOrgSlug) {
               window.location.href = '/org'
             } else {
-              window.location.href = `${window.location.protocol}//${orgSlug}.${rootDomain}/org`
+              // On main domain (no subdomain) → redirect to user's org subdomain
+              window.location.href = `${window.location.protocol}//${userOrgSlug}.${rootDomain}/org`
             }
             return true
           }
