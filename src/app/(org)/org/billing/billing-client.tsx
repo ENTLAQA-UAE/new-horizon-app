@@ -67,7 +67,7 @@ export default function BillingClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null)
   const [data, setData] = useState<SubscriptionData | null>(null)
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "quarterly" | "annually">("monthly")
 
   useEffect(() => {
     const status = searchParams.get("status")
@@ -277,7 +277,7 @@ export default function BillingClient() {
             </div>
             {currentTier?.price_yearly && (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Yearly Price</span>
+                <span className="text-sm text-muted-foreground">Annual Price</span>
                 <span className="font-semibold">
                   {formatCurrency(currentTier.price_yearly, currentTier.currency)}/yr
                 </span>
@@ -377,7 +377,7 @@ export default function BillingClient() {
                 Select a plan to activate your subscription
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <Button
                 variant={billingCycle === "monthly" ? "default" : "ghost"}
                 size="sm"
@@ -386,12 +386,20 @@ export default function BillingClient() {
                 Monthly
               </Button>
               <Button
-                variant={billingCycle === "yearly" ? "default" : "ghost"}
+                variant={billingCycle === "quarterly" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setBillingCycle("yearly")}
+                onClick={() => setBillingCycle("quarterly")}
               >
-                Yearly
-                <Badge variant="secondary" className="ml-2 text-xs">Save 20%</Badge>
+                Quarterly
+                <Badge variant="secondary" className="ml-1.5 text-xs">Save 10%</Badge>
+              </Button>
+              <Button
+                variant={billingCycle === "annually" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setBillingCycle("annually")}
+              >
+                Annually
+                <Badge variant="secondary" className="ml-1.5 text-xs">Save 20%</Badge>
               </Button>
             </div>
           </div>
@@ -399,9 +407,17 @@ export default function BillingClient() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {available_tiers.map((tier) => {
               const isCurrentTier = tier.id === organization.tier_id
-              const price = billingCycle === "yearly"
-                ? tier.price_yearly || tier.price_monthly * 12
-                : tier.price_monthly
+              const yearlyPrice = tier.price_yearly || tier.price_monthly * 12
+              const price =
+                billingCycle === "annually"
+                  ? yearlyPrice
+                  : billingCycle === "quarterly"
+                    ? Math.round(tier.price_monthly * 3 * 0.9) // 10% quarterly discount
+                    : tier.price_monthly
+              const cycleSuffix =
+                billingCycle === "annually" ? "/yr"
+                  : billingCycle === "quarterly" ? "/qtr"
+                    : "/mo"
 
               return (
                 <Card
@@ -425,7 +441,7 @@ export default function BillingClient() {
                         {formatCurrency(price, tier.currency)}
                       </span>
                       <span className="text-muted-foreground">
-                        /{billingCycle === "yearly" ? "yr" : "mo"}
+                        {cycleSuffix}
                       </span>
                     </div>
 

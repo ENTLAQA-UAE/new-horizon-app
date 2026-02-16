@@ -295,6 +295,56 @@ export default function StripeSettingsPage() {
           Test Connection
         </Button>
       </div>
+
+      {/* Test Mode Guide */}
+      <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+        <CardHeader>
+          <CardTitle className="text-base">Testing Payments</CardTitle>
+          <CardDescription>
+            How to test the payment flow before going live
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div>
+            <p className="font-medium mb-1">1. Use Stripe test keys</p>
+            <p className="text-muted-foreground">
+              In your Stripe Dashboard, toggle to "Test mode" and copy the test API keys
+              (they start with <code className="bg-muted px-1 py-0.5 rounded text-xs">pk_test_</code> and <code className="bg-muted px-1 py-0.5 rounded text-xs">sk_test_</code>).
+              Paste them above and save.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium mb-1">2. Test card numbers</p>
+            <p className="text-muted-foreground">
+              Use these test cards on the checkout page:
+            </p>
+            <div className="mt-1.5 space-y-1 font-mono text-xs">
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span className="font-semibold text-green-700 dark:text-green-400">Success:</span>
+                <span>4242 4242 4242 4242</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span className="font-semibold text-red-700 dark:text-red-400">Decline:</span>
+                <span>4000 0000 0000 0002</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                <span className="font-semibold text-blue-700 dark:text-blue-400">3D Secure:</span>
+                <span>4000 0025 0000 3155</span>
+              </div>
+            </div>
+            <p className="text-muted-foreground mt-1.5">
+              Use any future expiry date, any 3-digit CVC, and any billing details.
+            </p>
+          </div>
+          <div>
+            <p className="font-medium mb-1">3. Switch to live when ready</p>
+            <p className="text-muted-foreground">
+              Replace test keys with live keys (<code className="bg-muted px-1 py-0.5 rounded text-xs">pk_live_</code> / <code className="bg-muted px-1 py-0.5 rounded text-xs">sk_live_</code>)
+              to start accepting real payments.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

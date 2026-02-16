@@ -60,8 +60,10 @@ export async function POST(request: NextRequest) {
 
         const now = new Date()
         const endDate = new Date(now)
-        if (billingCycle === "yearly") {
+        if (billingCycle === "annually") {
           endDate.setFullYear(endDate.getFullYear() + 1)
+        } else if (billingCycle === "quarterly") {
+          endDate.setMonth(endDate.getMonth() + 3)
         } else {
           endDate.setMonth(endDate.getMonth() + 1)
         }

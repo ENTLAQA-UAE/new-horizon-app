@@ -90,11 +90,36 @@ export async function POST(request: NextRequest) {
         .eq("id", org.id)
     }
 
-    // Determine price based on billing cycle
-    const cycle = billing_cycle === "yearly" ? "yearly" : "monthly"
-    const amount = cycle === "yearly"
-      ? Math.round((tier.price_yearly || tier.price_monthly * 12) * 100)
-      : Math.round(tier.price_monthly * 100)
+    // Determine price and Stripe interval based on billing cycle
+    const cycle = ["monthly", "quarterly", "annually"].includes(billing_cycle)
+      ? (billing_cycle as "monthly" | "quarterly" | "annually")
+      : "monthly"
+
+    let amount: number
+    let interval: "month" | "year"
+    let intervalCount: number
+    let cycleLabel: string
+
+    switch (cycle) {
+      case "annually":
+        amount = Math.round((tier.price_yearly || tier.price_monthly * 12) * 100)
+        interval = "year"
+        intervalCount = 1
+        cycleLabel = "Annual"
+        break
+      case "quarterly":
+        // 10% quarterly discount (same as shown in billing UI)
+        amount = Math.round(tier.price_monthly * 3 * 0.9 * 100)
+        interval = "month"
+        intervalCount = 3
+        cycleLabel = "Quarterly"
+        break
+      default:
+        amount = Math.round(tier.price_monthly * 100)
+        interval = "month"
+        intervalCount = 1
+        cycleLabel = "Monthly"
+    }
 
     const currencyMap: Record<string, string> = {
       SAR: "sar", USD: "usd", AED: "aed", EUR: "eur", GBP: "gbp",
@@ -116,12 +141,13 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency,
             product_data: {
-              name: `${tier.name} Plan`,
+              name: `${tier.name} Plan (${cycleLabel})`,
               description: tier.description || `${tier.name} subscription plan`,
             },
             unit_amount: amount,
             recurring: {
-              interval: cycle === "yearly" ? "year" : "month",
+              interval,
+              interval_count: intervalCount,
             },
           },
           quantity: 1,
