@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
             subscription_status: "active",
             subscription_start_date: now.toISOString().split("T")[0],
             subscription_end_date: endDate.toISOString().split("T")[0],
+            billing_cycle: billingCycle,
             stripe_subscription_id: typeof session.subscription === "string"
               ? session.subscription
               : session.subscription?.id || null,
@@ -116,18 +117,26 @@ export async function POST(request: NextRequest) {
         // Find the org by stripe_subscription_id
         const { data: org } = await supabase
           .from("organizations")
-          .select("id, subscription_end_date")
+          .select("id, subscription_end_date, billing_cycle")
           .eq("stripe_subscription_id", subscriptionId)
           .single()
 
         if (!org) break
 
-        // Extend subscription end date
+        // Extend subscription end date based on billing cycle
         const currentEnd = org.subscription_end_date
           ? new Date(org.subscription_end_date)
           : new Date()
         const newEnd = new Date(currentEnd)
-        newEnd.setMonth(newEnd.getMonth() + 1)
+
+        const cycle = org.billing_cycle || "monthly"
+        if (cycle === "annually") {
+          newEnd.setFullYear(newEnd.getFullYear() + 1)
+        } else if (cycle === "quarterly") {
+          newEnd.setMonth(newEnd.getMonth() + 3)
+        } else {
+          newEnd.setMonth(newEnd.getMonth() + 1)
+        }
 
         await supabase
           .from("organizations")
@@ -137,7 +146,7 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", org.id)
 
-        console.log(`Subscription renewed for org ${org.id}`)
+        console.log(`Subscription renewed for org ${org.id} (${cycle})`)
         break
       }
 

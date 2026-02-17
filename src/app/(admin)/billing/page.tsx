@@ -14,6 +14,9 @@ async function getBillingStats() {
       id,
       name,
       subscription_status,
+      billing_cycle,
+      subscription_start_date,
+      subscription_end_date,
       created_at,
       subscription_tiers (
         name,
@@ -235,9 +238,10 @@ export default async function BillingPage() {
                 <TableRow>
                   <TableHead>Organization</TableHead>
                   <TableHead>Tier</TableHead>
+                  <TableHead>Cycle</TableHead>
                   <TableHead>Monthly</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Since</TableHead>
+                  <TableHead>Renewal</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -245,6 +249,13 @@ export default async function BillingPage() {
                   <TableRow key={org.id}>
                     <TableCell className="font-medium">{org.name}</TableCell>
                     <TableCell>{org.subscription_tiers?.name || "N/A"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {org.billing_cycle === "annually" ? "Annual"
+                          : org.billing_cycle === "quarterly" ? "Quarterly"
+                            : "Monthly"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       {formatCurrency(org.subscription_tiers?.price_monthly || 0, org.subscription_tiers?.currency)}
                     </TableCell>
@@ -254,7 +265,9 @@ export default async function BillingPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(org.created_at).toLocaleDateString()}
+                      {org.subscription_end_date
+                        ? new Date(org.subscription_end_date).toLocaleDateString()
+                        : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
