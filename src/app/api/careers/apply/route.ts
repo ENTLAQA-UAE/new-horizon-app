@@ -167,12 +167,24 @@ export async function POST(request: NextRequest) {
 
     const resumeUrl = urlData?.publicUrl || null
 
-    // Update candidate with resume URL
+    // Update candidate with resume URL and create candidate_documents record
     if (resumeUrl) {
       await supabase
         .from("candidates")
         .update({ resume_url: resumeUrl })
         .eq("id", candidateId)
+
+      // Create candidate_documents record so it appears on the Documents page
+      await supabase
+        .from("candidate_documents")
+        .insert({
+          org_id: organizationId,
+          candidate_id: candidateId,
+          file_name: `${firstName} ${lastName} - Resume`,
+          file_url: resumeUrl,
+          file_size: resumeFile.size,
+          mime_type: resumeFile.type,
+        })
     }
 
     // Create application with the Applied stage from job's pipeline

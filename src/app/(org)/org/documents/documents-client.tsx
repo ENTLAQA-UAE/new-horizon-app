@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import {
@@ -33,12 +32,10 @@ import { toast } from "sonner"
 import {
   FileText,
   Search,
-  Filter,
   File,
   Image,
   FolderOpen,
   User,
-  Briefcase,
   ExternalLink,
   Upload,
   Plus,
@@ -46,65 +43,30 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { useI18n } from "@/lib/i18n"
-import { createClient } from "@/lib/supabase/client"
 
 interface Document {
   id: string
   name: string
   file_url: string
-  file_type: string
   file_size: number | null
-  document_type: string
+  mime_type: string | null
   candidate_id: string | null
   candidate_name: string
-  application_id: string | null
-  job_id: string | null
-  job_title: string
+  candidate_email: string
   created_at: string
 }
 
-interface Job {
+interface Candidate {
   id: string
-  title: string
-}
-
-interface Application {
-  id: string
-  job_id: string
-  candidate_id: string
-  candidates: {
-    id: string
-    first_name: string
-    last_name: string
-  }
+  first_name: string
+  last_name: string
+  email: string
 }
 
 interface DocumentsClientProps {
   documents: Document[]
-  jobs: Job[]
+  candidates: Candidate[]
   organizationId: string
-}
-
-const documentTypes = [
-  { value: "english_test", label: "English Test" },
-  { value: "assessment", label: "Assessment Report" },
-  { value: "certificate", label: "Certificate" },
-  { value: "id_document", label: "ID Document" },
-  { value: "reference", label: "Reference Letter" },
-  { value: "background_check", label: "Background Check" },
-  { value: "medical", label: "Medical Report" },
-  { value: "contract", label: "Contract" },
-  { value: "other", label: "Other" },
-]
-
-const documentTypeColors: Record<string, string> = {
-  resume: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  pdf: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  doc: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  docx: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  attachment: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-  image: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  other: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -116,11 +78,12 @@ function formatFileSize(bytes: number | null): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 
-function getFileIcon(fileType: string) {
-  if (fileType.includes("image") || ["png", "jpg", "jpeg", "gif"].includes(fileType)) {
+function getFileIcon(mimeType: string | null) {
+  if (!mimeType) return <File className="h-5 w-5 text-gray-600" />
+  if (mimeType.startsWith("image/")) {
     return <Image className="h-5 w-5 text-green-600" />
   }
-  if (fileType.includes("pdf") || fileType === "resume") {
+  if (mimeType.includes("pdf")) {
     return <FileText className="h-5 w-5 text-red-600" />
   }
   return <File className="h-5 w-5 text-gray-600" />
@@ -128,61 +91,26 @@ function getFileIcon(fileType: string) {
 
 export function DocumentsClient({
   documents: initialDocuments,
-  jobs,
+  candidates,
   organizationId,
 }: DocumentsClientProps) {
-  const { t, language, isRTL } = useI18n()
+  const { t } = useI18n()
   const [documents, setDocuments] = useState(initialDocuments)
   const [searchQuery, setSearchQuery] = useState("")
-  const [jobFilter, setJobFilter] = useState<string>("all")
-  const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [candidateFilter, setCandidateFilter] = useState<string>("all")
 
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [documentName, setDocumentName] = useState("")
-  const [selectedJobId, setSelectedJobId] = useState<string>("")
-  const [selectedApplicationId, setSelectedApplicationId] = useState<string>("")
-  const [selectedDocType, setSelectedDocType] = useState<string>("")
-  const [applications, setApplications] = useState<Application[]>([])
-  const [loadingApplications, setLoadingApplications] = useState(false)
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Load applications when job is selected
-  useEffect(() => {
-    if (selectedJobId) {
-      setLoadingApplications(true)
-      setSelectedApplicationId("")
-      const loadApps = async () => {
-        try {
-          const supabase = createClient()
-          const { data } = await supabase
-            .from("applications")
-            .select("id, job_id, candidate_id, candidates(id, first_name, last_name)")
-            .eq("job_id", selectedJobId)
-          // Transform the data to match our interface (Supabase returns candidates as object, not array)
-          const apps = (data || []).map((item) => ({
-            id: item.id,
-            job_id: item.job_id,
-            candidate_id: item.candidate_id,
-            candidates: item.candidates as unknown as Application["candidates"],
-          }))
-          setApplications(apps)
-        } finally {
-          setLoadingApplications(false)
-        }
-      }
-      loadApps()
-    } else {
-      setApplications([])
-    }
-  }, [selectedJobId])
 
   // Handle file upload
   const handleUpload = async () => {
-    if (!selectedFile || !documentName || !selectedJobId || !selectedApplicationId || !selectedDocType) {
-      toast.error("Please fill in all required fields")
+    if (!selectedFile || !documentName || !selectedCandidateId) {
+      toast.error(t("documents.fillRequired"))
       return
     }
 
@@ -191,8 +119,7 @@ export function DocumentsClient({
       const formData = new FormData()
       formData.append("file", selectedFile)
       formData.append("name", documentName)
-      formData.append("applicationId", selectedApplicationId)
-      formData.append("documentType", selectedDocType)
+      formData.append("candidateId", selectedCandidateId)
       formData.append("organizationId", organizationId)
 
       const response = await fetch("/api/documents/upload", {
@@ -208,33 +135,29 @@ export function DocumentsClient({
       const result = await response.json()
 
       // Add the new document to the list
-      const application = applications.find(a => a.id === selectedApplicationId)
-      const job = jobs.find(j => j.id === selectedJobId)
+      const candidate = candidates.find(c => c.id === selectedCandidateId)
 
-      if (application && job) {
+      if (candidate) {
         const newDoc: Document = {
           id: result.id,
           name: documentName,
           file_url: result.file_url,
-          file_type: selectedFile.type.split("/")[1] || "file",
           file_size: selectedFile.size,
-          document_type: selectedDocType,
-          candidate_id: application.candidate_id,
-          candidate_name: `${application.candidates.first_name} ${application.candidates.last_name}`,
-          application_id: selectedApplicationId,
-          job_id: selectedJobId,
-          job_title: job.title,
+          mime_type: selectedFile.type,
+          candidate_id: selectedCandidateId,
+          candidate_name: `${candidate.first_name} ${candidate.last_name}`,
+          candidate_email: candidate.email,
           created_at: new Date().toISOString(),
         }
         setDocuments([newDoc, ...documents])
       }
 
-      toast.success("Document uploaded successfully")
+      toast.success(t("documents.uploadSuccess"))
       resetUploadForm()
       setUploadDialogOpen(false)
     } catch (error) {
       console.error("Upload error:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to upload document")
+      toast.error(error instanceof Error ? error.message : t("documents.uploadFailed"))
     } finally {
       setUploading(false)
     }
@@ -243,56 +166,38 @@ export function DocumentsClient({
   const resetUploadForm = () => {
     setSelectedFile(null)
     setDocumentName("")
-    setSelectedJobId("")
-    setSelectedApplicationId("")
-    setSelectedDocType("")
-    setApplications([])
+    setSelectedCandidateId("")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
   }
 
-  // Get unique document types from existing documents
-  const existingDocTypes = Array.from(new Set(documents.map(d => d.document_type)))
-
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
       doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.candidate_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.job_title.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesJob = jobFilter === "all" || doc.job_id === jobFilter
-    const matchesType = typeFilter === "all" || doc.document_type === typeFilter
-    return matchesSearch && matchesJob && matchesType
+      doc.candidate_email.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCandidate = candidateFilter === "all" || doc.candidate_id === candidateFilter
+    return matchesSearch && matchesCandidate
   })
 
-  // Group documents by job
-  const documentsByJob = filteredDocuments.reduce((acc, doc) => {
-    const jobKey = doc.job_id || "unassigned"
-    if (!acc[jobKey]) {
-      acc[jobKey] = {
-        job_title: doc.job_title,
-        documents: [],
-      }
-    }
-    acc[jobKey].documents.push(doc)
-    return acc
-  }, {} as Record<string, { job_title: string; documents: Document[] }>)
-
-  // Open document in new tab for viewing (like Google Drive)
+  // Open document in new tab
   const handleOpenDocument = (doc: Document) => {
     if (!doc.file_url) {
       toast.error(t("documents.fileNotAvailable"))
       return
     }
-    // Open the file directly in a new tab - user can view and download from there
     window.open(doc.file_url, "_blank", "noopener,noreferrer")
   }
 
+  // Get unique candidates that have documents (for filter dropdown)
+  const candidatesWithDocs = candidates.filter(c =>
+    documents.some(d => d.candidate_id === c.id)
+  )
+
   const stats = {
     total: documents.length,
-    resumes: documents.filter(d => d.document_type === "resume").length,
-    attachments: documents.filter(d => d.document_type !== "resume").length,
-    jobs: Object.keys(documentsByJob).length,
+    candidates: new Set(documents.map(d => d.candidate_id).filter(Boolean)).size,
   }
 
   return (
@@ -307,12 +212,12 @@ export function DocumentsClient({
         </div>
         <Button onClick={() => setUploadDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Upload Document
+          {t("documents.uploadDocument")}
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t("documents.totalDocuments")}</CardTitle>
@@ -324,29 +229,11 @@ export function DocumentsClient({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("documents.resumes")}</CardTitle>
-            <FileText className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium">{t("documents.candidatesWithDocs")}</CardTitle>
+            <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.resumes}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("documents.otherAttachments")}</CardTitle>
-            <File className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.attachments}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("documents.jobPositions")}</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.jobs}</div>
+            <div className="text-2xl font-bold">{stats.candidates}</div>
           </CardContent>
         </Card>
       </div>
@@ -364,41 +251,26 @@ export function DocumentsClient({
                 className="pl-9"
               />
             </div>
-            <div className="flex gap-2">
-              <Select value={jobFilter} onValueChange={setJobFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder={t("documents.filterByJob")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("documents.allJobs")}</SelectItem>
-                  {jobs.map((job) => (
-                    <SelectItem key={job.id} value={job.id}>
-                      {job.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={t("documents.filterByType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("documents.allTypes")}</SelectItem>
-                  {existingDocTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={candidateFilter} onValueChange={setCandidateFilter}>
+              <SelectTrigger className="w-[250px]">
+                <User className="mr-2 h-4 w-4" />
+                <SelectValue placeholder={t("documents.filterByCandidate")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("documents.allCandidates")}</SelectItem>
+                {candidatesWithDocs.map((candidate) => (
+                  <SelectItem key={candidate.id} value={candidate.id}>
+                    {candidate.first_name} {candidate.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Documents grouped by job */}
-      {Object.keys(documentsByJob).length === 0 ? (
+      {/* Documents Table - Flat List */}
+      {filteredDocuments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FolderOpen className="h-16 w-16 text-muted-foreground/50 mb-4" />
@@ -409,78 +281,62 @@ export function DocumentsClient({
           </CardContent>
         </Card>
       ) : (
-        Object.entries(documentsByJob).map(([jobId, { job_title, documents: jobDocs }]) => (
-          <Card key={jobId}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
-                {job_title}
-                <Badge variant="secondary" className="ml-2">
-                  {jobDocs.length} {jobDocs.length !== 1 ? t("documents.documentPlural") : t("documents.documentSingular")}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("documents.table.document")}</TableHead>
-                    <TableHead>{t("documents.table.candidate")}</TableHead>
-                    <TableHead>{t("documents.table.type")}</TableHead>
-                    <TableHead>{t("documents.table.size")}</TableHead>
-                    <TableHead>{t("documents.table.uploaded")}</TableHead>
-                    <TableHead className="text-right">{t("common.table.actions")}</TableHead>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("documents.table.document")}</TableHead>
+                  <TableHead>{t("documents.table.candidate")}</TableHead>
+                  <TableHead>{t("documents.table.size")}</TableHead>
+                  <TableHead>{t("documents.table.uploaded")}</TableHead>
+                  <TableHead className="text-right">{t("common.table.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDocuments.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {getFileIcon(doc.mime_type)}
+                        <span className="font-medium">{doc.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <div className="text-sm font-medium">{doc.candidate_name}</div>
+                          <div className="text-xs text-muted-foreground">{doc.candidate_email}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground">
+                        {formatFileSize(doc.file_size)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenDocument(doc)}
+                        title={t("documents.openInNewTab")}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {jobDocs.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          {getFileIcon(doc.file_type)}
-                          <span className="font-medium">{doc.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {doc.candidate_name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={documentTypeColors[doc.document_type] || documentTypeColors.other}
-                        >
-                          {doc.document_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">
-                          {formatFileSize(doc.file_size)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenDocument(doc)}
-                          title={t("documents.openInNewTab")}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ))
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
       {/* Upload Document Dialog */}
@@ -492,17 +348,17 @@ export function DocumentsClient({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Upload Document
+              {t("documents.uploadDocument")}
             </DialogTitle>
             <DialogDescription>
-              Upload a document and link it to a candidate and job position.
+              {t("documents.uploadDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* File Upload */}
             <div className="space-y-2">
-              <Label htmlFor="file">File *</Label>
+              <Label htmlFor="file">{t("documents.file")} *</Label>
               <div className="flex items-center gap-2">
                 <Input
                   ref={fileInputRef}
@@ -523,83 +379,41 @@ export function DocumentsClient({
               </div>
               {selectedFile && (
                 <p className="text-sm text-muted-foreground">
-                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  {t("documents.selected")}: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
                 </p>
               )}
             </div>
 
             {/* Document Name */}
             <div className="space-y-2">
-              <Label htmlFor="docName">Document Name *</Label>
+              <Label htmlFor="docName">{t("documents.fileName")} *</Label>
               <Input
                 id="docName"
                 value={documentName}
                 onChange={(e) => setDocumentName(e.target.value)}
-                placeholder="e.g., English Test Report"
+                placeholder={t("documents.fileNamePlaceholder")}
               />
-            </div>
-
-            {/* Document Type */}
-            <div className="space-y-2">
-              <Label>Document Type *</Label>
-              <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select document type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {documentTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Job Selection */}
-            <div className="space-y-2">
-              <Label>Job Position *</Label>
-              <Select value={selectedJobId} onValueChange={setSelectedJobId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select job position" />
-                </SelectTrigger>
-                <SelectContent>
-                  {jobs.map((job) => (
-                    <SelectItem key={job.id} value={job.id}>
-                      {job.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             {/* Candidate Selection */}
             <div className="space-y-2">
-              <Label>Candidate *</Label>
+              <Label>{t("documents.table.candidate")} *</Label>
               <Select
-                value={selectedApplicationId}
-                onValueChange={setSelectedApplicationId}
-                disabled={!selectedJobId || loadingApplications}
+                value={selectedCandidateId}
+                onValueChange={setSelectedCandidateId}
               >
                 <SelectTrigger>
-                  {loadingApplications ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading candidates...
-                    </div>
-                  ) : (
-                    <SelectValue placeholder={selectedJobId ? "Select candidate" : "Select a job first"} />
-                  )}
+                  <SelectValue placeholder={t("documents.selectCandidate")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {applications.length === 0 ? (
+                  {candidates.length === 0 ? (
                     <div className="p-2 text-sm text-muted-foreground text-center">
-                      No candidates found for this job
+                      {t("documents.noCandidates")}
                     </div>
                   ) : (
-                    applications.map((app) => (
-                      <SelectItem key={app.id} value={app.id}>
-                        {app.candidates.first_name} {app.candidates.last_name}
+                    candidates.map((candidate) => (
+                      <SelectItem key={candidate.id} value={candidate.id}>
+                        {candidate.first_name} {candidate.last_name} ({candidate.email})
                       </SelectItem>
                     ))
                   )}
@@ -610,21 +424,21 @@ export function DocumentsClient({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={uploading || !selectedFile || !documentName || !selectedJobId || !selectedApplicationId || !selectedDocType}
+              disabled={uploading || !selectedFile || !documentName || !selectedCandidateId}
             >
               {uploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading...
+                  {t("documents.uploading")}
                 </>
               ) : (
                 <>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload
+                  {t("documents.upload")}
                 </>
               )}
             </Button>

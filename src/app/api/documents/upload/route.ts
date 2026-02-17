@@ -38,36 +38,29 @@ export async function POST(request: NextRequest) {
 
     const file = formData.get("file") as File | null
     const name = formData.get("name") as string | null
-    const applicationId = formData.get("applicationId") as string | null
-    const documentType = formData.get("documentType") as string | null
-    const organizationId = formData.get("organizationId") as string | null
+    const candidateId = formData.get("candidateId") as string | null
 
     // Validate required fields
-    if (!file || !name || !applicationId || !documentType) {
+    if (!file || !name || !candidateId) {
       return NextResponse.json(
-        { error: "Missing required fields: file, name, applicationId, documentType" },
+        { error: "Missing required fields: file, name, candidateId" },
         { status: 400 }
       )
     }
 
-    // Verify organization matches
-    if (organizationId && organizationId !== profile.org_id) {
-      return NextResponse.json({ error: "Organization mismatch" }, { status: 403 })
-    }
-
-    // Verify application belongs to the organization
-    const { data: application, error: appError } = await supabase
-      .from("applications")
-      .select("id, org_id, candidate_id")
-      .eq("id", applicationId)
+    // Verify candidate belongs to the organization
+    const { data: candidate, error: candidateError } = await supabase
+      .from("candidates")
+      .select("id, org_id")
+      .eq("id", candidateId)
       .single()
 
-    if (appError || !application) {
-      return NextResponse.json({ error: "Application not found" }, { status: 404 })
+    if (candidateError || !candidate) {
+      return NextResponse.json({ error: "Candidate not found" }, { status: 404 })
     }
 
-    if (application.org_id !== profile.org_id) {
-      return NextResponse.json({ error: "Application does not belong to your organization" }, { status: 403 })
+    if (candidate.org_id !== profile.org_id) {
+      return NextResponse.json({ error: "Candidate does not belong to your organization" }, { status: 403 })
     }
 
     // Validate file size (max 10MB)
@@ -77,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Upload file to Supabase Storage
     const fileExt = file.name.split(".").pop() || "pdf"
-    const fileName = `${profile.org_id}/${applicationId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExt}`
+    const fileName = `${profile.org_id}/${candidateId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
       .from("documents")
@@ -108,18 +101,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create attachment record
-    const { data: attachment, error: insertError } = await supabase
-      .from("application_attachments")
+    // Create candidate_documents record
+    const { data: document, error: insertError } = await supabase
+      .from("candidate_documents")
       .insert({
-        application_id: applicationId,
-        uploaded_by: user.id,
+        org_id: profile.org_id,
+        candidate_id: candidateId,
         file_name: name,
-        file_type: documentType,
         file_url: fileUrl,
         file_size: file.size,
         mime_type: file.type,
-        description: `${documentType.replace(/_/g, " ")} - Uploaded by recruiter`,
+        uploaded_by: user.id,
       })
       .select("id, file_url")
       .single()
@@ -136,8 +128,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      id: attachment.id,
-      file_url: attachment.file_url,
+      id: document.id,
+      file_url: document.file_url,
     })
   } catch (error) {
     console.error("Document upload error:", error)
