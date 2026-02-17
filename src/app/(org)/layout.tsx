@@ -47,6 +47,7 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
   } = useAuth()
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Handle redirects based on auth state
   useEffect(() => {
@@ -125,12 +126,14 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
                   collapsed={sidebarCollapsed}
                   onCollapse={setSidebarCollapsed}
                   userRole={sidebarRole}
+                  mobileOpen={mobileSidebarOpen}
+                  onMobileClose={() => setMobileSidebarOpen(false)}
                 />
               </SubscriptionSidebarGuard>
               <div className="flex flex-1 flex-col overflow-hidden">
                 <TrialBanner />
                 <SubscriptionAdminBanner />
-                <Header />
+                <Header onMobileMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
                 <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
                   <SubscriptionContentGuard>
                     <div className="animate-fade-in-up">

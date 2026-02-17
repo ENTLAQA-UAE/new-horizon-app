@@ -49,6 +49,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   } = useAuth()
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // Apply default Kawadir branding on mount
   useEffect(() => {
@@ -101,9 +102,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
           userRole="super_admin"
+          mobileOpen={mobileSidebarOpen}
+          onMobileClose={() => setMobileSidebarOpen(false)}
         />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <Header />
+          <Header onMobileMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
           <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
             <div className="animate-fade-in-up">
               {children}

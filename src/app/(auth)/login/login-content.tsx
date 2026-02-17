@@ -39,14 +39,13 @@ interface PlatformBranding {
   platform_logo_dark: string | null
 }
 
-// Kawadir logo component using the brand SVG
-function KawadirLogo({ size = 80, className }: { size?: number; className?: string }) {
+// Kawadir logo component using the brand image
+function KawadirLogo({ className }: { className?: string }) {
   return (
     <img
       src="/new-logo-light-final.PNG"
       alt="Kawadir"
-      className={cn("object-contain", className)}
-      style={{ height: size }}
+      className={cn("object-contain w-full max-w-[320px] md:max-w-[380px]", className)}
     />
   )
 }
@@ -67,9 +66,9 @@ function LoginPageSkeleton() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC]">
       <div className="flex flex-col items-center gap-4">
-        <KawadirLogo size={80} className="animate-pulse" />
+        <KawadirLogo className="max-w-[200px] animate-pulse" />
         <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin text-[#2D4CFF]" />
+          <Loader2 className="h-5 w-5 animate-spin text-[#2563EB]" />
           <span className="text-sm text-[#616161]">Loading...</span>
         </div>
       </div>
@@ -447,18 +446,18 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
     { icon: Globe, text: "Multi-language support", delay: "400ms" },
   ]
 
-  // Dynamic colors based on org branding
-  const primaryColor = orgBranding?.primary_color || "#2D4CFF"
-  const secondaryColor = orgBranding?.secondary_color || "#6B7FFF"
-  const gradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
+  // Dynamic colors based on org branding — defaults match Kawadir blue
+  const primaryColor = orgBranding?.primary_color || "#2563EB"
+  const secondaryColor = orgBranding?.secondary_color || "#3B82F6"
+  const gradient = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, #1E40AF 100%)`
   const hasCustomImage = !!orgBranding?.login_image_url
 
   if (!mounted) return <LoginPageSkeleton />
 
   return (
     <div className="min-h-screen flex bg-[#F8F9FC]">
-      {/* Left Side - Ultra Modern Login Form */}
-      <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 relative">
+      {/* Left Side - Login Form */}
+      <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-8 sm:py-12 relative">
         {/* Subtle background mesh */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
@@ -471,10 +470,10 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
           />
         </div>
 
-        <div className="w-full max-w-[420px] relative z-10">
+        <div className="w-full max-w-[420px] relative z-10 mx-auto">
           {/* Logo & Brand Header */}
           <div className={cn(
-            "mb-12",
+            "mb-10",
             mounted && "animate-fade-in-up"
           )}>
             {orgBranding?.logo_url ? (
@@ -482,7 +481,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                 <img
                   src={orgBranding.logo_url}
                   alt={orgBranding.name}
-                  className="max-w-[280px] max-h-[160px] object-contain"
+                  className="max-w-[340px] max-h-[180px] object-contain"
                 />
               </div>
             ) : (
@@ -491,10 +490,10 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                   <img
                     src={platformBranding.platform_logo}
                     alt="Kawadir"
-                    className="h-24 object-contain"
+                    className="max-w-[320px] md:max-w-[380px] object-contain"
                   />
                 ) : (
-                  <KawadirLogo size={140} />
+                  <KawadirLogo />
                 )}
               </div>
             )}
@@ -667,11 +666,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         </div>
       </div>
 
-      {/* Right Side - Hero Image/Graphics */}
+      {/* Right Side - Creative Brand Panel */}
       <div
         className="hidden lg:flex lg:w-[55%] relative overflow-hidden"
         style={{
-          background: hasCustomImage ? undefined : gradient,
+          background: hasCustomImage ? undefined : `linear-gradient(160deg, #1E3A8A 0%, #2563EB 40%, #3B82F6 70%, #60A5FA 100%)`,
         }}
       >
         {/* Custom Image Background */}
@@ -683,7 +682,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             />
             <div
               className="absolute inset-0"
-              style={{ background: `${gradient}`, opacity: 0.35 }}
+              style={{ background: gradient, opacity: 0.35 }}
             />
           </>
         )}
@@ -691,16 +690,34 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         {/* Animated background elements */}
         {!hasCustomImage && (
           <div className="absolute inset-0 overflow-hidden">
-            {/* Floating orbs */}
-            <div className="absolute top-[10%] left-[10%] w-72 h-72 bg-white/10 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-[20%] right-[10%] w-96 h-96 bg-white/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
-            <div className="absolute top-[50%] left-[50%] w-64 h-64 bg-white/5 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
-
-            {/* Grid pattern */}
+            {/* Large floating geometric shapes */}
             <div
-              className="absolute inset-0 opacity-[0.07]"
+              className="absolute -top-20 -right-20 w-[400px] h-[400px] rounded-full opacity-[0.08] animate-float"
+              style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }}
+            />
+            <div
+              className="absolute top-[30%] -left-16 w-[300px] h-[300px] rounded-full opacity-[0.06] animate-float"
+              style={{ animationDelay: '1.5s', background: 'radial-gradient(circle, white 0%, transparent 70%)' }}
+            />
+            <div
+              className="absolute bottom-[10%] right-[20%] w-[250px] h-[250px] rounded-full opacity-[0.05] animate-float"
+              style={{ animationDelay: '3s', background: 'radial-gradient(circle, white 0%, transparent 70%)' }}
+            />
+
+            {/* Subtle dot grid pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.04]"
               style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
+                backgroundSize: '32px 32px',
+              }}
+            />
+
+            {/* Diagonal lines accent */}
+            <div
+              className="absolute top-0 right-0 w-full h-full opacity-[0.03]"
+              style={{
+                backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 40px, white 40px, white 41px)`,
               }}
             />
           </div>
@@ -708,71 +725,81 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
         {/* Content */}
         {orgBranding ? (
-          /* Org-branded: just the login image background, no overlay content */
           <div className="relative z-10" />
         ) : (
-          /* Default Kawadir: full marketing content */
-          <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white w-full">
+          <div className="relative z-10 flex flex-col justify-center px-10 xl:px-16 text-white w-full">
             <div className="max-w-xl">
+              {/* Logo watermark */}
+              <div className={cn("mb-8", mounted && "animate-fade-in-up")}>
+                <img
+                  src="/new-logo-light-final.PNG"
+                  alt=""
+                  className="w-48 xl:w-56 object-contain brightness-0 invert opacity-90"
+                />
+              </div>
+
               <h2
                 className={cn(
-                  "text-5xl xl:text-6xl font-bold leading-[1.1] mb-8",
+                  "text-4xl xl:text-5xl font-bold leading-[1.15] mb-6",
                   mounted && "animate-fade-in-up"
                 )}
+                style={{ animationDelay: "80ms" }}
               >
-                Hire the best
+                Smarter Hiring,
                 <br />
-                <span className="text-white/90">talent, faster.</span>
+                <span className="text-white/85 font-light">Powered by AI.</span>
               </h2>
 
               <p
                 className={cn(
-                  "text-xl text-white/80 mb-12 leading-relaxed",
+                  "text-lg xl:text-xl text-white/70 mb-10 leading-relaxed max-w-md",
                   mounted && "animate-fade-in-up"
                 )}
-                style={{ animationDelay: "100ms" }}
+                style={{ animationDelay: "160ms" }}
               >
-                Streamline your recruitment with intelligent automation, collaborative tools, and data-driven insights.
+                Transform your recruitment pipeline with intelligent automation and data-driven decisions.
               </p>
 
-              <div className="space-y-4">
+              {/* Feature cards */}
+              <div className="space-y-3">
                 {features.map((feature, index) => (
                   <div
                     key={index}
                     className={cn(
-                      "flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 transition-all hover:bg-white/15",
+                      "flex items-center gap-4 rounded-2xl p-4 transition-all duration-300",
+                      "bg-white/[0.08] backdrop-blur-sm border border-white/[0.08]",
+                      "hover:bg-white/[0.14] hover:border-white/[0.15] hover:translate-x-1",
                       mounted && "animate-fade-in-up"
                     )}
-                    style={{ animationDelay: feature.delay }}
+                    style={{ animationDelay: `${200 + index * 80}ms` }}
                   >
-                    <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                      <feature.icon className="h-6 w-6" />
+                    <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                      <feature.icon className="h-5 w-5" />
                     </div>
-                    <span className="font-medium text-lg">{feature.text}</span>
-                    <CheckCircle2 className="h-5 w-5 ml-auto text-white/60" />
+                    <span className="font-medium text-[15px]">{feature.text}</span>
+                    <CheckCircle2 className="h-4.5 w-4.5 ml-auto text-white/40 flex-shrink-0" />
                   </div>
                 ))}
               </div>
 
+              {/* Stats row */}
               <div
                 className={cn(
-                  "grid grid-cols-3 gap-8 mt-16 pt-8 border-t border-white/20",
+                  "flex items-center gap-6 xl:gap-10 mt-12 pt-8 border-t border-white/10",
                   mounted && "animate-fade-in-up"
                 )}
-                style={{ animationDelay: "500ms" }}
+                style={{ animationDelay: "650ms" }}
               >
-                <div>
-                  <div className="text-4xl font-bold">500+</div>
-                  <div className="text-sm text-white/70 mt-1">Companies</div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold">50K+</div>
-                  <div className="text-sm text-white/70 mt-1">Candidates</div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold">95%</div>
-                  <div className="text-sm text-white/70 mt-1">Satisfaction</div>
-                </div>
+                {[
+                  { value: "500+", label: "Companies" },
+                  { value: "50K+", label: "Candidates" },
+                  { value: "95%", label: "Satisfaction" },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <div className="text-3xl xl:text-4xl font-bold tracking-tight">{stat.value}</div>
+                    <div className="text-xs text-white/50 mt-1 uppercase tracking-wider">{stat.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -38,6 +38,7 @@ import {
   CalendarDays,
   FileText,
   ChevronRight,
+  Menu,
 } from "lucide-react"
 import { useI18n } from "@/lib/i18n"
 import { useBranding } from "@/lib/branding/branding-context"
@@ -49,13 +50,14 @@ import { KawadirIcon } from "@/components/ui/kawadir-icon"
 interface HeaderProps {
   title?: string
   titleAr?: string
+  onMobileMenuToggle?: () => void
 }
 
 /**
  * Header component - Now uses centralized AuthProvider
  * No more duplicate profile fetches!
  */
-export function Header({ title, titleAr }: HeaderProps) {
+export function Header({ title, titleAr, onMobileMenuToggle }: HeaderProps) {
   const router = useRouter()
   const { language, setLanguage, t, isRTL } = useI18n()
   const branding = useBranding()
@@ -105,6 +107,18 @@ export function Header({ title, titleAr }: HeaderProps) {
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-xl px-6">
         {/* Left side - Title & Search */}
         <div className="flex items-center gap-4">
+          {/* Mobile hamburger menu */}
+          {onMobileMenuToggle && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMobileMenuToggle}
+              className="md:hidden h-9 w-9 rounded-xl hover:bg-muted/60 flex-shrink-0"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+
           {/* Page Title */}
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold tracking-tight">{displayTitle}</h1>
