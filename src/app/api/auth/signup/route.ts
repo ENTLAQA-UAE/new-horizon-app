@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { data: authData, error: signUpError } = await serviceClient.auth.admin.createUser({
       email,
       password,
-      email_confirm: false,
+      email_confirm: true,
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
