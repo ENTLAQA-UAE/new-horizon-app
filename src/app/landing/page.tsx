@@ -516,6 +516,23 @@ export default function LandingPage() {
   const isRtl = lang === "ar"
   const ArrowIcon = isRtl ? ArrowLeft : ArrowRight
 
+  // Dynamically update <html> dir and lang so that position:fixed elements,
+  // CSS logical properties, and the whole document inherit the correct direction.
+  useEffect(() => {
+    document.documentElement.dir = isRtl ? "rtl" : "ltr"
+    document.documentElement.lang = lang
+    // Also set the font on body for the nav (which is position:fixed)
+    document.body.style.fontFamily = isRtl
+      ? "'IBM Plex Sans Arabic', sans-serif"
+      : "'Poppins', sans-serif"
+    return () => {
+      // Reset on unmount (e.g., navigating away from landing page)
+      document.documentElement.dir = "ltr"
+      document.documentElement.lang = "en"
+      document.body.style.fontFamily = ""
+    }
+  }, [lang, isRtl])
+
   // Fetch subscription tiers from API
   useEffect(() => {
     async function fetchTiers() {
@@ -538,15 +555,12 @@ export default function LandingPage() {
   const plans = tiers.length > 0 ? tiersToPlans(tiers) : content.pricing.plans
 
   return (
-    <div
-      dir={isRtl ? "rtl" : "ltr"}
-      style={{ fontFamily: isRtl ? "'IBM Plex Sans Arabic', sans-serif" : "'Poppins', sans-serif" }}
-      className="bg-white text-gray-900 overflow-x-hidden"
-    >
+    <>
       {/* ═══════════════════════════════════════════
-          NAVBAR
+          NAVBAR — Outside main wrapper to avoid overflow/stacking issues.
+          Direction and font inherited from <html>/<body> via useEffect.
           ═══════════════════════════════════════════ */}
-      <nav dir={isRtl ? "rtl" : "ltr"} className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <nav className="fixed top-0 inset-x-0 z-[100] bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo — always at the start (right in RTL, left in LTR) */}
           <Link href="/landing" className="flex items-center gap-2 shrink-0">
@@ -640,7 +654,9 @@ export default function LandingPage() {
         )}
       </nav>
 
-      {/* Spacer */}
+      {/* Main content wrapper */}
+      <div className="bg-white text-gray-900 overflow-x-hidden">
+      {/* Spacer for fixed navbar */}
       <div className="h-16" />
 
       {/* ═══════════════════════════════════════════
@@ -1316,7 +1332,8 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>{/* end main content wrapper */}
+    </>
   )
 }
 
