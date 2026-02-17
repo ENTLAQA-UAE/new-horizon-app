@@ -205,10 +205,10 @@ const content = {
   ],
   pricing: {
     label: { en: "Pricing", ar: "الأسعار" },
-    title: { en: "Simple, Transparent Pricing", ar: "أسعار بسيطة وشفافة" },
+    title: { en: "Invest in Smarter Hiring", ar: "استثمر في توظيف أذكى" },
     subtitle: {
-      en: "Choose the plan that fits your hiring needs. Start free, upgrade anytime.",
-      ar: "اختر الخطة التي تناسب احتياجات التوظيف. ابدأ مجانًا وقم بالترقية في أي وقت.",
+      en: "Every plan unlocks the full power of AI recruitment. Pick the scale that fits your team — upgrade or downgrade anytime.",
+      ar: "كل خطة تمنحك القوة الكاملة للتوظيف بالذكاء الاصطناعي. اختر الحجم المناسب لفريقك — طوّر أو غيّر خطتك في أي وقت.",
     },
     monthly: { en: "Monthly", ar: "شهري" },
     yearly: { en: "Yearly", ar: "سنوي" },
@@ -1004,71 +1004,95 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-6 items-start">
-              {plans.map((plan, i) => (
-                <div
-                  key={i}
-                  className={`relative rounded-3xl transition-all duration-500 ${
-                    plan.highlighted
-                      ? "bg-gradient-to-br from-[#2563EB] via-[#3B82F6] to-[#1D4ED8] shadow-2xl shadow-[#2563EB]/30 md:scale-[1.04] md:-translate-y-3 ring-1 ring-white/20"
-                      : "bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] hover:-translate-y-1"
-                  }`}
-                >
-                  {plan.highlighted && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900 shadow-lg shadow-amber-500/30">
-                      <Star className="h-3.5 w-3.5" />
-                      {t(content.pricing.popular, lang)}
-                    </div>
-                  )}
+              {plans.map((plan, i) => {
+                const tierThemes = [
+                  { accent: "from-cyan-500 to-blue-500", accentSolid: "bg-cyan-500", checkBg: "bg-cyan-500/10", checkColor: "text-cyan-500", btnGradient: "from-cyan-500 to-blue-500", shadow: "shadow-cyan-500/20", ring: "ring-cyan-500/20" },
+                  { accent: "from-[#2563EB] to-[#7C3AED]", accentSolid: "bg-[#2563EB]", checkBg: "bg-[#2563EB]/10", checkColor: "text-[#2563EB]", btnGradient: "from-[#2563EB] to-[#7C3AED]", shadow: "shadow-[#2563EB]/25", ring: "ring-[#2563EB]/20" },
+                  { accent: "from-violet-600 to-purple-600", accentSolid: "bg-violet-600", checkBg: "bg-violet-500/10", checkColor: "text-violet-500", btnGradient: "from-violet-600 to-purple-600", shadow: "shadow-violet-600/20", ring: "ring-violet-500/20" },
+                ]
+                const theme = tierThemes[i] || tierThemes[0]
 
-                  <div className="p-8">
-                    <h3 className="text-xl font-bold text-white mb-2">
-                      {t(plan.name, lang)}
-                    </h3>
-                    <p className={`text-sm mb-6 ${plan.highlighted ? "text-white/70" : "text-white/40"}`}>
-                      {t(plan.description, lang)}
-                    </p>
+                return (
+                  <div
+                    key={i}
+                    className={`relative group rounded-3xl transition-all duration-500 ${
+                      plan.highlighted
+                        ? `bg-white shadow-2xl ${theme.shadow} md:scale-[1.04] md:-translate-y-4 ring-2 ${theme.ring}`
+                        : "bg-white/95 backdrop-blur-sm shadow-xl hover:shadow-2xl hover:-translate-y-2"
+                    }`}
+                  >
+                    {/* Top accent bar */}
+                    <div className={`absolute top-0 inset-x-0 h-1.5 rounded-t-3xl bg-gradient-to-r ${theme.accent}`} />
 
-                    <div className="mb-8">
-                      <span className="text-5xl font-extrabold text-white">
-                        {t(plan.price, lang)}
-                      </span>
-                      {plan.period.en && (
-                        <span className={`text-sm ${plan.highlighted ? "text-white/60" : "text-white/30"}`}>
-                          {t(plan.period, lang)}
+                    {plan.highlighted && (
+                      <div className={`absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold text-white bg-gradient-to-r ${theme.accent} shadow-lg ${theme.shadow}`}>
+                        <Star className="h-3.5 w-3.5" />
+                        {t(content.pricing.popular, lang)}
+                      </div>
+                    )}
+
+                    <div className="p-8 pt-9">
+                      {/* Plan name with icon */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${theme.accent} flex items-center justify-center shadow-lg ${theme.shadow}`}>
+                          {i === 0 && <Zap className="h-5 w-5 text-white" />}
+                          {i === 1 && <Star className="h-5 w-5 text-white" />}
+                          {i === 2 && <Building2 className="h-5 w-5 text-white" />}
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {t(plan.name, lang)}
+                          </h3>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-500 mb-6">
+                        {t(plan.description, lang)}
+                      </p>
+
+                      {/* Price */}
+                      <div className="mb-8">
+                        <span className="text-5xl font-extrabold text-gray-900">
+                          {t(plan.price, lang)}
                         </span>
-                      )}
-                    </div>
-
-                    <div className={`h-px mb-8 ${plan.highlighted ? "bg-white/20" : "bg-white/[0.06]"}`} />
-
-                    <ul className="space-y-3.5 mb-8">
-                      {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
-                        <li key={j} className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                            plan.highlighted ? "bg-white/20" : "bg-[#2563EB]/20"
-                          }`}>
-                            <Check className={`h-3 w-3 ${plan.highlighted ? "text-white" : "text-[#60A5FA]"}`} />
-                          </div>
-                          <span className={`text-sm ${plan.highlighted ? "text-white/90" : "text-white/60"}`}>
-                            {feature}
+                        {plan.period.en && (
+                          <span className="text-sm text-gray-400 ms-1">
+                            {t(plan.period, lang)}
                           </span>
-                        </li>
-                      ))}
-                    </ul>
+                        )}
+                      </div>
 
-                    <Link
-                      href="/signup"
-                      className={`block w-full text-center py-3.5 px-6 rounded-xl text-sm font-semibold transition-all ${
-                        plan.highlighted
-                          ? "bg-white text-[#2563EB] hover:shadow-xl hover:shadow-white/20 hover:-translate-y-0.5"
-                          : "bg-white/[0.08] text-white border border-white/[0.1] hover:bg-white/[0.15] hover:border-white/[0.2]"
-                      }`}
-                    >
-                      {t(content.pricing.cta, lang)}
-                    </Link>
+                      {/* Divider */}
+                      <div className={`h-px mb-8 bg-gradient-to-r ${theme.accent} opacity-20`} />
+
+                      {/* Features */}
+                      <ul className="space-y-3.5 mb-8">
+                        {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
+                          <li key={j} className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${theme.checkBg}`}>
+                              <Check className={`h-3 w-3 ${theme.checkColor}`} />
+                            </div>
+                            <span className="text-sm text-gray-600">
+                              {feature}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* CTA Button */}
+                      <Link
+                        href="/signup"
+                        className={`block w-full text-center py-3.5 px-6 rounded-xl text-sm font-semibold transition-all ${
+                          plan.highlighted
+                            ? `bg-gradient-to-r ${theme.btnGradient} text-white hover:shadow-xl ${theme.shadow} hover:-translate-y-0.5`
+                            : `border-2 border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50`
+                        }`}
+                      >
+                        {t(content.pricing.cta, lang)}
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
