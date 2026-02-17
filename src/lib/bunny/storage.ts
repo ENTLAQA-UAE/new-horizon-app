@@ -11,6 +11,9 @@ export async function uploadFile(path: string, fileBuffer: Buffer): Promise<stri
   const config = getBunnyConfig()
   const checksum = crypto.createHash("sha256").update(fileBuffer).digest("hex")
 
+  // Convert Buffer to Uint8Array for fetch body compatibility
+  const body = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset, fileBuffer.byteLength)
+
   const response = await fetch(`${config.storageBaseUrl}/${path}`, {
     method: "PUT",
     headers: {
@@ -18,7 +21,7 @@ export async function uploadFile(path: string, fileBuffer: Buffer): Promise<stri
       "Content-Type": "application/octet-stream",
       Checksum: checksum,
     },
-    body: fileBuffer,
+    body,
   })
 
   if (response.status !== 201) {
