@@ -27,13 +27,9 @@ import {
   Save,
   RefreshCw,
   CheckCircle,
-  Image,
-  Upload,
-  X,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Json } from "@/lib/supabase/types"
-import { useRef } from "react"
 
 interface SettingRecord {
   id: string
@@ -55,8 +51,6 @@ interface SettingsClientProps {
 export function SettingsClient({ initialSettings, settingsRecords }: SettingsClientProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
-  const logoInputRef = useRef<HTMLInputElement>(null)
   const [settings, setSettings] = useState({
     // General
     app_name: initialSettings.app_name || "Kawadir ATS",
@@ -64,10 +58,6 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     support_email: initialSettings.support_email || "support@kawadir.io",
     default_language: initialSettings.default_language || "en",
     default_timezone: initialSettings.default_timezone || "Asia/Riyadh",
-
-    // Platform Branding
-    platform_logo: initialSettings.platform_logo || "",
-    platform_logo_dark: initialSettings.platform_logo_dark || "",
 
     // Security
     session_timeout_minutes: initialSettings.session_timeout_minutes || 30,
@@ -133,86 +123,6 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     setIsSaved(false)
   }
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'light' | 'dark') => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select an image file")
-      return
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be less than 2MB")
-      return
-    }
-
-    setIsUploadingLogo(true)
-
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', type)
-
-      const response = await fetch('/api/admin/upload-logo', {
-        method: 'POST',
-        body: formData,
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || `Upload failed (${response.status})`)
-      }
-
-      const settingKey = type === 'light' ? 'platform_logo' : 'platform_logo_dark'
-      updateSetting(settingKey, result.publicUrl)
-
-      // Auto-save the logo URL to database immediately so it persists on refresh
-      try {
-        const supabase = createClient()
-        await supabase
-          .from("platform_settings")
-          .upsert(
-            { key: settingKey, value: result.publicUrl, updated_at: new Date().toISOString() },
-            { onConflict: 'key' }
-          )
-      } catch (saveErr) {
-        console.error("Failed to auto-save logo setting:", saveErr)
-      }
-
-      toast.success("Logo uploaded and saved")
-    } catch (error: any) {
-      console.error("Error uploading logo:", error)
-      toast.error(error?.message || "Failed to upload logo. Please try again.")
-    } finally {
-      setIsUploadingLogo(false)
-      if (logoInputRef.current) {
-        logoInputRef.current.value = ''
-      }
-    }
-  }
-
-  const removeLogo = async (type: 'light' | 'dark') => {
-    const settingKey = type === 'light' ? 'platform_logo' : 'platform_logo_dark'
-    updateSetting(settingKey, '')
-
-    // Auto-save removal to database
-    try {
-      const supabase = createClient()
-      await supabase
-        .from("platform_settings")
-        .upsert(
-          { key: settingKey, value: '', updated_at: new Date().toISOString() },
-          { onConflict: 'key' }
-        )
-    } catch (saveErr) {
-      console.error("Failed to auto-save logo removal:", saveErr)
-    }
-  }
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -234,136 +144,6 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           {isSaved ? "Saved" : "Save Changes"}
         </Button>
       </div>
-
-      {/* Platform Branding - Full width at top */}
-      <Card className="border-primary/20 bg-primary/[0.02]">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Image className="h-5 w-5 text-primary" />
-            <CardTitle>Platform Branding</CardTitle>
-          </div>
-          <CardDescription>Upload your logo to display on the login page and landing page</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-3">
-              <Label>Platform Logo (Light Mode)</Label>
-              <p className="text-xs text-muted-foreground">
-                Shown on the login page. Recommended: PNG with transparent background, max 2MB
-              </p>
-              <div className="flex items-center gap-4">
-                {settings.platform_logo ? (
-                  <div className="relative group">
-                    <div className="w-[200px] h-[60px] border rounded-lg flex items-center justify-center bg-white p-2">
-                      <img
-                        src={settings.platform_logo}
-                        alt="Platform Logo"
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeLogo('light')}
-                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-[200px] h-[60px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground">
-                    <Image className="h-6 w-6 mb-1" />
-                    <span className="text-xs">No logo set</span>
-                  </div>
-                )}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleLogoUpload(e, 'light')}
-                    className="hidden"
-                    id="logo-upload-light"
-                    disabled={isUploadingLogo}
-                  />
-                  <label htmlFor="logo-upload-light">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isUploadingLogo}
-                      asChild
-                    >
-                      <span className="cursor-pointer">
-                        {isUploadingLogo ? (
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        Upload Logo
-                      </span>
-                    </Button>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Platform Logo (Dark Mode)</Label>
-              <p className="text-xs text-muted-foreground">
-                Optional: Used when dark mode is active. Leave empty to use the light logo.
-              </p>
-              <div className="flex items-center gap-4">
-                {settings.platform_logo_dark ? (
-                  <div className="relative group">
-                    <div className="w-[200px] h-[60px] border rounded-lg flex items-center justify-center bg-gray-900 p-2">
-                      <img
-                        src={settings.platform_logo_dark}
-                        alt="Platform Logo (Dark)"
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeLogo('dark')}
-                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-[200px] h-[60px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground bg-gray-100 dark:bg-gray-800">
-                    <Image className="h-6 w-6 mb-1" />
-                    <span className="text-xs">No logo set</span>
-                  </div>
-                )}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleLogoUpload(e, 'dark')}
-                    className="hidden"
-                    id="logo-upload-dark"
-                    disabled={isUploadingLogo}
-                  />
-                  <label htmlFor="logo-upload-dark">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isUploadingLogo}
-                      asChild
-                    >
-                      <span className="cursor-pointer">
-                        {isUploadingLogo ? (
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        Upload Logo
-                      </span>
-                    </Button>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* General Settings */}
@@ -437,6 +217,9 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                       {settings.default_timezone === "Asia/Riyadh" ? "Riyadh (GMT+3)" :
                        settings.default_timezone === "Asia/Dubai" ? "Dubai (GMT+4)" :
                        settings.default_timezone === "Africa/Cairo" ? "Cairo (GMT+2)" :
+                       settings.default_timezone === "Asia/Kuwait" ? "Kuwait (GMT+3)" :
+                       settings.default_timezone === "Asia/Bahrain" ? "Bahrain (GMT+3)" :
+                       settings.default_timezone === "Asia/Qatar" ? "Qatar (GMT+3)" :
                        settings.default_timezone === "UTC" ? "UTC" :
                        "Select timezone"}
                     </SelectValue>
