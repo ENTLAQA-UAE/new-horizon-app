@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -134,22 +135,26 @@ const statusStyles: Record<string, string> = {
 
 type CandidateSource = "career_page" | "linkedin" | "indeed" | "referral" | "agency" | "direct" | "other"
 
-const sourceOptions: { value: CandidateSource; label: string }[] = [
-  { value: "direct", label: "Direct Application" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "indeed", label: "Indeed" },
-  { value: "referral", label: "Employee Referral" },
-  { value: "agency", label: "Recruitment Agency" },
-  { value: "career_page", label: "Career Page" },
-  { value: "other", label: "Other" },
-]
-
 export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }: CandidatesClientProps) {
   const router = useRouter()
   const [candidates, setCandidates] = useState(initialCandidates)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sourceFilter, setSourceFilter] = useState<string>("all")
+
+  const { t } = useI18n()
+
+  const getSourceOptions = (): { value: CandidateSource; label: string }[] => [
+    { value: "direct", label: t("admin.candidates.sourceDirect") },
+    { value: "linkedin", label: t("admin.candidates.sourceLinkedin") },
+    { value: "indeed", label: t("admin.candidates.sourceIndeed") },
+    { value: "referral", label: t("admin.candidates.sourceReferral") },
+    { value: "agency", label: t("admin.candidates.sourceAgency") },
+    { value: "career_page", label: t("admin.candidates.sourceCareerPage") },
+    { value: "other", label: t("admin.candidates.sourceOther") },
+  ]
+
+  const sourceOptions = getSourceOptions()
 
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -216,7 +221,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
   // CREATE
   const handleCreate = async () => {
     if (!formData.first_name || !formData.last_name || !formData.email) {
-      toast.error("Please fill in required fields")
+      toast.error(t("admin.candidates.fillRequired"))
       return
     }
 
@@ -240,7 +245,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
       if (error) {
         if (error.code === "23505") {
-          toast.error("A candidate with this email already exists")
+          toast.error(t("admin.candidates.emailExists"))
         } else {
           toast.error(error.message)
         }
@@ -250,10 +255,10 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       if (data) setCandidates([data, ...candidates])
       setIsCreateDialogOpen(false)
       resetForm()
-      toast.success("Candidate added successfully")
+      toast.success(t("admin.candidates.createdSuccess"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("admin.candidates.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -282,7 +287,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
   const handleEdit = async () => {
     if (!selectedCandidate || !formData.first_name || !formData.last_name || !formData.email) {
-      toast.error("Please fill in required fields")
+      toast.error(t("admin.candidates.fillRequired"))
       return
     }
 
@@ -323,10 +328,10 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       setIsEditDialogOpen(false)
       setSelectedCandidate(null)
       resetForm()
-      toast.success("Candidate updated successfully")
+      toast.success(t("admin.candidates.updatedSuccess"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("admin.candidates.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -359,10 +364,10 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       setCandidates(candidates.filter((c) => c.id !== selectedCandidate.id))
       setIsDeleteDialogOpen(false)
       setSelectedCandidate(null)
-      toast.success("Candidate deleted successfully")
+      toast.success(t("admin.candidates.deletedSuccess"))
       router.refresh()
     } catch {
-      toast.error("An unexpected error occurred")
+      toast.error(t("admin.candidates.unexpectedError"))
     } finally {
       setIsLoading(false)
     }
@@ -375,7 +380,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
     <div className="space-y-4 py-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-first_name`}>First Name *</Label>
+          <Label htmlFor={`${idPrefix}-first_name`}>{t("admin.candidates.firstName")} *</Label>
           <Input
             id={`${idPrefix}-first_name`}
             value={formData.first_name}
@@ -384,7 +389,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-last_name`}>Last Name *</Label>
+          <Label htmlFor={`${idPrefix}-last_name`}>{t("admin.candidates.lastName")} *</Label>
           <Input
             id={`${idPrefix}-last_name`}
             value={formData.last_name}
@@ -396,7 +401,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-email`}>Email *</Label>
+          <Label htmlFor={`${idPrefix}-email`}>{t("admin.candidates.email")} *</Label>
           <Input
             id={`${idPrefix}-email`}
             type="email"
@@ -406,7 +411,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-phone`}>Phone</Label>
+          <Label htmlFor={`${idPrefix}-phone`}>{t("admin.candidates.phone")}</Label>
           <Input
             id={`${idPrefix}-phone`}
             value={formData.phone}
@@ -420,7 +425,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-city`}>City</Label>
+          <Label htmlFor={`${idPrefix}-city`}>{t("admin.candidates.city")}</Label>
           <Input
             id={`${idPrefix}-city`}
             value={formData.city}
@@ -429,7 +434,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-country`}>Country</Label>
+          <Label htmlFor={`${idPrefix}-country`}>{t("admin.candidates.country")}</Label>
           <Input
             id={`${idPrefix}-country`}
             value={formData.country}
@@ -438,7 +443,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-nationality`}>Nationality</Label>
+          <Label htmlFor={`${idPrefix}-nationality`}>{t("admin.candidates.nationality")}</Label>
           <Input
             id={`${idPrefix}-nationality`}
             value={formData.nationality}
@@ -452,7 +457,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-current_job_title`}>Current Job Title</Label>
+          <Label htmlFor={`${idPrefix}-current_job_title`}>{t("admin.candidates.currentJobTitle")}</Label>
           <Input
             id={`${idPrefix}-current_job_title`}
             value={formData.current_job_title}
@@ -461,7 +466,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-current_company`}>Current Company</Label>
+          <Label htmlFor={`${idPrefix}-current_company`}>{t("admin.candidates.currentCompany")}</Label>
           <Input
             id={`${idPrefix}-current_company`}
             value={formData.current_company}
@@ -473,7 +478,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-years_of_experience`}>Years of Experience</Label>
+          <Label htmlFor={`${idPrefix}-years_of_experience`}>{t("admin.candidates.yearsOfExperience")}</Label>
           <Input
             id={`${idPrefix}-years_of_experience`}
             type="number"
@@ -483,27 +488,27 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-highest_education`}>Highest Education</Label>
+          <Label htmlFor={`${idPrefix}-highest_education`}>{t("admin.candidates.highestEducation")}</Label>
           <Select
             value={formData.highest_education}
             onValueChange={(value) => setFormData({ ...formData, highest_education: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select education" />
+              <SelectValue placeholder={t("admin.candidates.selectEducation")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="high_school">High School</SelectItem>
-              <SelectItem value="diploma">Diploma</SelectItem>
-              <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
-              <SelectItem value="masters">Master's Degree</SelectItem>
-              <SelectItem value="phd">PhD / Doctorate</SelectItem>
+              <SelectItem value="high_school">{t("admin.candidates.highSchool")}</SelectItem>
+              <SelectItem value="diploma">{t("admin.candidates.diploma")}</SelectItem>
+              <SelectItem value="bachelors">{t("admin.candidates.bachelors")}</SelectItem>
+              <SelectItem value="masters">{t("admin.candidates.masters")}</SelectItem>
+              <SelectItem value="phd">{t("admin.candidates.phd")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-skills`}>Skills (comma separated)</Label>
+        <Label htmlFor={`${idPrefix}-skills`}>{t("admin.candidates.skillsCommaSeparated")}</Label>
         <Textarea
           id={`${idPrefix}-skills`}
           value={formData.skills}
@@ -514,7 +519,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-source`}>Source</Label>
+        <Label htmlFor={`${idPrefix}-source`}>{t("admin.candidates.sourceLabel")}</Label>
         <Select
           value={formData.source}
           onValueChange={(value) => setFormData({ ...formData, source: value })}
@@ -539,33 +544,33 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Candidates</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.candidates.title")}</h2>
           <p className="text-muted-foreground">
-            Manage your candidate database
+            {t("admin.candidates.subtitle")}
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Candidate
+              {t("admin.candidates.addCandidate")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add New Candidate</DialogTitle>
+              <DialogTitle>{t("admin.candidates.addNew")}</DialogTitle>
               <DialogDescription>
-                Add a new candidate to your talent pool.
+                {t("admin.candidates.addNewDesc")}
               </DialogDescription>
             </DialogHeader>
             {renderCandidateFormFields("create")}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
+                {t("admin.candidates.cancel")}
               </Button>
               <Button onClick={handleCreate} disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Candidate
+                {t("admin.candidates.addCandidate")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -576,7 +581,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Candidates</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.candidates.totalCandidates")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -584,7 +589,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">AI Scored</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.candidates.aiScored")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.scored}</div>
@@ -592,7 +597,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Score</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t("admin.candidates.pendingScore")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{stats.unscored}</div>
@@ -605,7 +610,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, job title..."
+            placeholder={t("admin.candidates.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -614,24 +619,24 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
             <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("admin.candidates.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="screening">Screening</SelectItem>
-            <SelectItem value="interviewing">Interviewing</SelectItem>
-            <SelectItem value="offered">Offered</SelectItem>
-            <SelectItem value="hired">Hired</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">{t("admin.candidates.allStatus")}</SelectItem>
+            <SelectItem value="new">{t("admin.candidates.statusNew")}</SelectItem>
+            <SelectItem value="screening">{t("admin.candidates.statusScreening")}</SelectItem>
+            <SelectItem value="interviewing">{t("admin.candidates.statusInterviewing")}</SelectItem>
+            <SelectItem value="offered">{t("admin.candidates.statusOffered")}</SelectItem>
+            <SelectItem value="hired">{t("admin.candidates.statusHired")}</SelectItem>
+            <SelectItem value="rejected">{t("admin.candidates.statusRejected")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sourceFilter} onValueChange={setSourceFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Source" />
+            <SelectValue placeholder={t("admin.candidates.source")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
+            <SelectItem value="all">{t("admin.candidates.allSources")}</SelectItem>
             {sourceOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
@@ -646,13 +651,13 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Candidate</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Current Role</TableHead>
-              <TableHead>Experience</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("admin.candidates.candidate")}</TableHead>
+              <TableHead>{t("admin.candidates.contact")}</TableHead>
+              <TableHead>{t("admin.candidates.currentRole")}</TableHead>
+              <TableHead>{t("admin.candidates.experience")}</TableHead>
+              <TableHead>{t("admin.candidates.status")}</TableHead>
+              <TableHead>{t("admin.candidates.source")}</TableHead>
+              <TableHead className="text-right">{t("admin.candidates.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -660,7 +665,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-12">
                   <UserSearch className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No candidates found</p>
+                  <p className="text-muted-foreground">{t("admin.candidates.noCandidatesFound")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -707,12 +712,12 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                   </TableCell>
                   <TableCell>
                     {candidate.years_of_experience !== null
-                      ? `${candidate.years_of_experience} years`
+                      ? t("admin.candidates.yearsExperience").replace("{count}", String(candidate.years_of_experience))
                       : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge className={cn("capitalize", statusStyles[candidate.ai_overall_score ? "scored" : "new"])}>
-                      {candidate.ai_overall_score ? "scored" : "new"}
+                      {candidate.ai_overall_score ? t("admin.candidates.statusScored") : t("admin.candidates.statusNew")}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -735,7 +740,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                           }}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View Profile
+                          {t("admin.candidates.viewProfile")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -744,7 +749,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                           }}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit
+                          {t("admin.candidates.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -755,7 +760,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("admin.candidates.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -771,19 +776,19 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Candidate</DialogTitle>
+            <DialogTitle>{t("admin.candidates.editCandidate")}</DialogTitle>
             <DialogDescription>
-              Update candidate information.
+              {t("admin.candidates.editCandidateDesc")}
             </DialogDescription>
           </DialogHeader>
           {renderCandidateFormFields("edit")}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("admin.candidates.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {t("admin.candidates.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -793,7 +798,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Candidate Profile</DialogTitle>
+            <DialogTitle>{t("admin.candidates.candidateProfile")}</DialogTitle>
           </DialogHeader>
           {selectedCandidate && (
             <div className="space-y-4">
@@ -808,12 +813,12 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                     {selectedCandidate.first_name} {selectedCandidate.last_name}
                   </h3>
                   <p className="text-muted-foreground">
-                    {selectedCandidate.current_title || "No title"}
-                    {selectedCandidate.current_company && ` at ${selectedCandidate.current_company}`}
+                    {selectedCandidate.current_title || t("admin.candidates.noTitle")}
+                    {selectedCandidate.current_company && ` ${t("admin.candidates.atCompany").replace("{company}", selectedCandidate.current_company)}`}
                   </p>
                   {selectedCandidate.ai_overall_score !== null && (
                     <Badge className="mt-1">
-                      Score: {selectedCandidate.ai_overall_score}%
+                      {t("admin.candidates.score").replace("{score}", String(selectedCandidate.ai_overall_score))}
                     </Badge>
                   )}
                 </div>
@@ -843,13 +848,13 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                 {selectedCandidate.years_of_experience !== null && (
                   <div className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedCandidate.years_of_experience} years experience</span>
+                    <span>{t("admin.candidates.yearsExperienceFull").replace("{count}", String(selectedCandidate.years_of_experience))}</span>
                   </div>
                 )}
                 {selectedCandidate.education && (
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    <span>Education on file</span>
+                    <span>{t("admin.candidates.educationOnFile")}</span>
                   </div>
                 )}
               </div>
@@ -858,7 +863,7 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
                 <>
                   <Separator />
                   <div>
-                    <p className="text-sm font-medium mb-2">Skills</p>
+                    <p className="text-sm font-medium mb-2">{t("admin.candidates.skills")}</p>
                     <div className="flex flex-wrap gap-2">
                       {(selectedCandidate.skills as string[]).map((skill, i) => (
                         <Badge key={i} variant="secondary">
@@ -873,21 +878,21 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
               <Separator />
 
               <div className="text-xs text-muted-foreground">
-                Added on {selectedCandidate.created_at ? new Date(selectedCandidate.created_at).toLocaleDateString() : "N/A"}
-                {selectedCandidate.source && ` via ${selectedCandidate.source.replace("_", " ")}`}
+                {t("admin.candidates.addedOn").replace("{date}", selectedCandidate.created_at ? new Date(selectedCandidate.created_at).toLocaleDateString() : "N/A")}
+                {selectedCandidate.source && ` ${t("admin.candidates.viaSource").replace("{source}", selectedCandidate.source.replace("_", " "))}`}
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
+              {t("admin.candidates.close")}
             </Button>
             <Button onClick={() => {
               setIsViewDialogOpen(false)
               if (selectedCandidate) openEditDialog(selectedCandidate)
             }}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t("admin.candidates.edit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -897,9 +902,9 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Candidate</DialogTitle>
+            <DialogTitle>{t("admin.candidates.deleteCandidate")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this candidate? This action cannot be undone.
+              {t("admin.candidates.deleteConfirm")}
             </DialogDescription>
           </DialogHeader>
           {selectedCandidate && (
@@ -914,11 +919,11 @@ export function CandidatesClient({ candidates: initialCandidates, jobs, orgId }:
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("admin.candidates.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Candidate
+              {t("admin.candidates.deleteCandidate")}
             </Button>
           </DialogFooter>
         </DialogContent>
