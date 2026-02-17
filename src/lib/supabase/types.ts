@@ -35,6 +35,7 @@ export type Database = {
           subdomain_enabled: boolean | null
           custom_domain_verified: boolean | null
           max_users: number | null
+          billing_cycle: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           created_at: string | null
@@ -65,6 +66,7 @@ export type Database = {
           subdomain_enabled?: boolean | null
           custom_domain_verified?: boolean | null
           max_users?: number | null
+          billing_cycle?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           created_at?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           subdomain_enabled?: boolean | null
           custom_domain_verified?: boolean | null
           max_users?: number | null
+          billing_cycle?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           created_at?: string | null
