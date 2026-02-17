@@ -333,7 +333,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole, mobileOpen = 
         {/* Logo Section */}
         <div className={cn(
           "flex items-center gap-3 border-b border-border/50 relative",
-          collapsed ? "h-16 px-3 justify-center" : "h-20 px-5"
+          collapsed ? "h-16 px-3 justify-center" : "h-24 px-5"
         )}>
           <Link
             href={homeHref}
@@ -349,7 +349,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole, mobileOpen = 
                   alt={branding.orgName}
                   className={cn(
                     "object-contain transition-all duration-300 group-hover:scale-105",
-                    collapsed ? "h-10 w-10" : "h-14 max-w-[200px]"
+                    collapsed ? "h-10 w-10" : "h-20 max-w-[220px]"
                   )}
                 />
               </div>
@@ -359,7 +359,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole, mobileOpen = 
                 alt={language === "ar" ? branding.orgNameAr : branding.orgName}
                 className={cn(
                   "object-contain transition-all duration-300 group-hover:scale-105",
-                  collapsed ? "h-10 w-10" : "h-14 max-w-[200px]"
+                  collapsed ? "h-10 w-10" : "h-20 max-w-[220px]"
                 )}
               />
             )}
