@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -72,6 +73,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
     subscription_end_date: "",
     payment_method: "bank_transfer",
   })
+  const { t } = useI18n()
 
   // Calculate stats
   let mrr = 0
@@ -196,7 +198,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
         )
       )
 
-      toast.success(`Subscription updated for ${selectedOrg.name}`)
+      toast.success(t("admin.billing.subscriptionUpdated").replace("{orgName}", selectedOrg.name))
       setIsDialogOpen(false)
     } catch (error: any) {
       toast.error(error.message || "Failed to update subscription")
@@ -211,9 +213,9 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Billing & Revenue</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("admin.billing.title")}</h2>
         <p className="text-muted-foreground">
-          Monitor platform revenue, manage subscriptions, and activate plans manually
+          {t("admin.billing.subtitle")}
         </p>
       </div>
 
@@ -221,47 +223,47 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue (MRR)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.billing.monthlyRevenue")}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(mrr)}</div>
-            <p className="text-xs text-muted-foreground mt-1">From {activeCount} active subscriptions</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("admin.billing.fromActiveSubscriptions").replace("{count}", String(activeCount))}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Annual Revenue (ARR)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.billing.annualRevenue")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(arr)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Projected yearly revenue</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("admin.billing.projectedYearly")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Organizations</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.billing.totalOrgs")}</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{organizations.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">{activeCount} active, {organizations.length - activeCount} trial/other</p>
+            <p className="text-xs text-muted-foreground mt-1">{activeCount} {t("admin.billing.active").toLowerCase()}, {organizations.length - activeCount} trial/other</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Revenue/Customer</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.billing.avgRevenue")}</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {activeCount > 0 ? formatCurrency(mrr / activeCount) : formatCurrency(0)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">ARPU monthly</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("admin.billing.arpuMonthly")}</p>
           </CardContent>
         </Card>
       </div>
@@ -270,8 +272,8 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
         {/* Revenue by Tier */}
         <Card>
           <CardHeader>
-            <CardTitle>Revenue by Tier</CardTitle>
-            <CardDescription>Monthly revenue breakdown by subscription tier</CardDescription>
+            <CardTitle>{t("admin.billing.revenueByTier")}</CardTitle>
+            <CardDescription>{t("admin.billing.revenueByTierDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             {tierRevenueList.length > 0 ? (
@@ -298,7 +300,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No revenue data available yet
+                {t("admin.billing.noOrgsFound")}
               </p>
             )}
           </CardContent>
@@ -307,41 +309,41 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
         {/* Billing Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Billing Overview</CardTitle>
-            <CardDescription>Platform billing configuration</CardDescription>
+            <CardTitle>{t("admin.billing.billingOverview")}</CardTitle>
+            <CardDescription>{t("admin.billing.billingOverviewDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Billing Cycles</p>
-                  <p className="text-sm text-muted-foreground">Monthly / Quarterly (-10%) / Annually (-20%)</p>
+                  <p className="font-medium">{t("admin.billing.billingCycles")}</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.billing.billingCyclesDesc")}</p>
                 </div>
               </div>
-              <Badge variant="default">Active</Badge>
+              <Badge variant="default">{t("admin.billing.active")}</Badge>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
                 <CreditCard className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Payment Methods</p>
-                  <p className="text-sm text-muted-foreground">Stripe, Bank Transfer, Cheque, Cash</p>
+                  <p className="font-medium">{t("admin.billing.paymentMethods")}</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.billing.paymentMethodsDesc")}</p>
                 </div>
               </div>
-              <Badge variant="default">Enabled</Badge>
+              <Badge variant="default">{t("admin.billing.enabled")}</Badge>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Currency</p>
+                  <p className="font-medium">{t("admin.billing.currencyLabel")}</p>
                   <p className="text-sm text-muted-foreground">{defaultCurrency}</p>
                 </div>
               </div>
-              <Badge variant="secondary">Default</Badge>
+              <Badge variant="secondary">{t("admin.billing.default")}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -352,8 +354,8 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Organization Subscriptions</CardTitle>
-              <CardDescription>Manage subscriptions for all organizations</CardDescription>
+              <CardTitle>{t("admin.billing.orgSubscriptions")}</CardTitle>
+              <CardDescription>{t("admin.billing.orgSubscriptionsDesc")}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -362,13 +364,13 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Organization</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Cycle</TableHead>
-                  <TableHead>Monthly</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Renewal</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("admin.billing.organization")}</TableHead>
+                  <TableHead>{t("admin.billing.tier")}</TableHead>
+                  <TableHead>{t("admin.billing.cycle")}</TableHead>
+                  <TableHead>{t("admin.billing.monthly")}</TableHead>
+                  <TableHead>{t("admin.billing.status")}</TableHead>
+                  <TableHead>{t("admin.billing.renewal")}</TableHead>
+                  <TableHead className="text-right">{t("admin.billing.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -378,9 +380,9 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
                     <TableCell>{org.subscription_tiers?.name || "—"}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {org.billing_cycle === "annually" ? "Annual"
-                          : org.billing_cycle === "quarterly" ? "Quarterly"
-                            : "Monthly"}
+                        {org.billing_cycle === "annually" ? t("admin.billing.annual")
+                          : org.billing_cycle === "quarterly" ? t("admin.billing.quarterly")
+                            : t("admin.billing.monthly")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -414,7 +416,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
                         onClick={() => openManageDialog(org)}
                       >
                         <Pencil className="h-4 w-4 mr-1" />
-                        Manage
+                        {t("admin.billing.manageSubscription")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -423,7 +425,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
             </Table>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No organizations found
+              {t("admin.billing.noOrgsFound")}
             </p>
           )}
         </CardContent>
@@ -433,22 +435,22 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Manage Subscription</DialogTitle>
+            <DialogTitle>{t("admin.billing.manageSubscription")}</DialogTitle>
             <DialogDescription>
-              Update subscription for <strong>{selectedOrg?.name}</strong>. Use this to activate subscriptions paid via bank transfer, cheque, or other offline methods.
+              {t("admin.billing.manageSubscriptionDesc").replace("{orgName}", selectedOrg?.name || "")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             {/* Subscription Tier */}
             <div className="space-y-2">
-              <Label>Subscription Tier</Label>
+              <Label>{t("admin.billing.subscriptionTier")}</Label>
               <Select
                 value={formData.tier_id}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, tier_id: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select tier" />
+                  <SelectValue placeholder={t("admin.billing.selectTier")} />
                 </SelectTrigger>
                 <SelectContent>
                   {tiers.map((tier) => (
@@ -462,7 +464,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
 
             {/* Status */}
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("admin.billing.status")}</Label>
               <Select
                 value={formData.subscription_status}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, subscription_status: value }))}
@@ -471,7 +473,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="active">{t("admin.billing.active")}</SelectItem>
                   <SelectItem value="trial">Trial</SelectItem>
                   <SelectItem value="suspended">Suspended</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -481,7 +483,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
 
             {/* Billing Cycle */}
             <div className="space-y-2">
-              <Label>Billing Cycle</Label>
+              <Label>{t("admin.billing.billingCycles")}</Label>
               <Select
                 value={formData.billing_cycle}
                 onValueChange={(value) => {
@@ -493,8 +495,8 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly (every 3 months)</SelectItem>
+                  <SelectItem value="monthly">{t("admin.billing.monthly")}</SelectItem>
+                  <SelectItem value="quarterly">{t("admin.billing.quarterly")} (every 3 months)</SelectItem>
                   <SelectItem value="annually">Annually (every 12 months)</SelectItem>
                 </SelectContent>
               </Select>
@@ -502,7 +504,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
 
             {/* Start Date */}
             <div className="space-y-2">
-              <Label>Start Date</Label>
+              <Label>{t("admin.billing.startDate")}</Label>
               <Input
                 type="date"
                 value={formData.subscription_start_date}
@@ -515,20 +517,20 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
 
             {/* End Date */}
             <div className="space-y-2">
-              <Label>End / Renewal Date</Label>
+              <Label>{t("admin.billing.endDate")}</Label>
               <Input
                 type="date"
                 value={formData.subscription_end_date}
                 onChange={(e) => setFormData((prev) => ({ ...prev, subscription_end_date: e.target.value }))}
               />
               <p className="text-xs text-muted-foreground">
-                Auto-calculated from start date + billing cycle. You can override it manually.
+                {t("admin.billing.endDateDesc")}
               </p>
             </div>
 
             {/* Payment Method */}
             <div className="space-y-2">
-              <Label>Payment Method</Label>
+              <Label>{t("admin.billing.paymentMethod")}</Label>
               <Select
                 value={formData.payment_method}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, payment_method: value }))}
@@ -537,11 +539,11 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="cheque">Cheque</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="stripe">Stripe (Online)</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="bank_transfer">{t("admin.billing.bankTransfer")}</SelectItem>
+                  <SelectItem value="cheque">{t("admin.billing.cheque")}</SelectItem>
+                  <SelectItem value="cash">{t("admin.billing.cash")}</SelectItem>
+                  <SelectItem value="stripe">{t("admin.billing.stripeOnline")}</SelectItem>
+                  <SelectItem value="other">{t("admin.billing.other")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -549,7 +551,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
+              {t("admin.billing.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? (
@@ -557,7 +559,7 @@ export function BillingClient({ organizations: initialOrgs, tiers }: BillingClie
               ) : (
                 <CheckCircle2 className="mr-2 h-4 w-4" />
               )}
-              {isSaving ? "Saving..." : "Save & Activate"}
+              {isSaving ? t("admin.billing.saving") : t("admin.billing.saveActivate")}
             </Button>
           </DialogFooter>
         </DialogContent>

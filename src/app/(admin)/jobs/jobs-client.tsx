@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useI18n } from "@/lib/i18n"
 import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -88,31 +89,56 @@ const statusIcons: Record<string, React.ReactNode> = {
   filled: <CheckCircle className="h-3 w-3" />,
 }
 
-const jobTypeLabels: Record<string, string> = {
-  full_time: "Full Time",
-  part_time: "Part Time",
-  contract: "Contract",
-  temporary: "Temporary",
-  internship: "Internship",
-  freelance: "Freelance",
-}
-
-const experienceLevelLabels: Record<string, string> = {
-  entry: "Entry Level",
-  junior: "Junior",
-  mid: "Mid Level",
-  senior: "Senior",
-  lead: "Lead",
-  executive: "Executive",
-}
-
 export function JobsClient({ jobs: initialJobs, departments, locations }: JobsClientProps) {
   const router = useRouter()
+  const { t } = useI18n()
   const [jobs, setJobs] = useState(initialJobs)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  const getJobTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      full_time: t("admin.jobs.fullTime"),
+      part_time: t("admin.jobs.partTime"),
+      contract: t("admin.jobs.contract"),
+      temporary: t("admin.jobs.temporary"),
+      internship: t("admin.jobs.internship"),
+      freelance: t("admin.jobs.freelance"),
+    }
+    return labels[type] || type
+  }
+
+  const getExperienceLevelLabel = (level: string) => {
+    const labels: Record<string, string> = {
+      entry: t("admin.jobs.entryLevel"),
+      junior: t("admin.jobs.junior"),
+      mid: t("admin.jobs.midLevel"),
+      senior: t("admin.jobs.senior"),
+      lead: t("admin.jobs.lead"),
+      executive: t("admin.jobs.executive"),
+    }
+    return labels[level] || level
+  }
+
+  const jobTypeEntries = [
+    { value: "full_time", label: t("admin.jobs.fullTime") },
+    { value: "part_time", label: t("admin.jobs.partTime") },
+    { value: "contract", label: t("admin.jobs.contract") },
+    { value: "temporary", label: t("admin.jobs.temporary") },
+    { value: "internship", label: t("admin.jobs.internship") },
+    { value: "freelance", label: t("admin.jobs.freelance") },
+  ]
+
+  const experienceLevelEntries = [
+    { value: "entry", label: t("admin.jobs.entryLevel") },
+    { value: "junior", label: t("admin.jobs.junior") },
+    { value: "mid", label: t("admin.jobs.midLevel") },
+    { value: "senior", label: t("admin.jobs.senior") },
+    { value: "lead", label: t("admin.jobs.lead") },
+    { value: "executive", label: t("admin.jobs.executive") },
+  ]
 
   const [formData, setFormData] = useState({
     title: "",
@@ -159,7 +185,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
   const handleCreate = async () => {
     if (!formData.title) {
-      toast.error("Please enter a job title")
+      toast.error(t("admin.jobs.enterTitle"))
       return
     }
 
@@ -200,10 +226,10 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
       setJobs([newJob as any, ...jobs])
       setIsCreateOpen(false)
       resetForm()
-      toast.success("Job created successfully")
+      toast.success(t("admin.jobs.createdSuccess"))
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "Failed to create job")
+      toast.error(error.message || t("admin.jobs.failedCreate"))
     } finally {
       setIsLoading(false)
     }
@@ -225,15 +251,20 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
       if (error) throw error
 
       setJobs(jobs.map((j) => (j.id === job.id ? { ...j, ...updateData } : j)))
-      toast.success(`Job ${newStatus === "open" ? "published" : newStatus}`)
+      const statusMessages: Record<string, string> = {
+        open: t("admin.jobs.jobPublished"),
+        paused: t("admin.jobs.jobPaused"),
+        closed: t("admin.jobs.jobClosed"),
+      }
+      toast.success(statusMessages[newStatus] || t("admin.jobs.createdSuccess"))
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "Failed to update job")
+      toast.error(error.message || t("admin.jobs.failedUpdate"))
     }
   }
 
   const handleDelete = async (job: Job) => {
-    if (!confirm(`Are you sure you want to delete "${job.title}"?`)) return
+    if (!confirm(t("admin.jobs.deleteConfirm").replace("{title}", job.title))) return
 
     try {
       const { error } = await supabaseDelete("jobs", {
@@ -244,10 +275,10 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
       if (error) throw error
 
       setJobs(jobs.filter((j) => j.id !== job.id))
-      toast.success("Job deleted successfully")
+      toast.success(t("admin.jobs.deletedSuccess"))
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete job")
+      toast.error(error.message || t("admin.jobs.failedDelete"))
     }
   }
 
@@ -263,29 +294,29 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Jobs</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.jobs.title")}</h2>
           <p className="text-muted-foreground">
-            Manage job postings and track applications
+            {t("admin.jobs.subtitle")}
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="mr-2 h-4 w-4" />
-              Create Job
+              {t("admin.jobs.createJob")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create New Job</DialogTitle>
+              <DialogTitle>{t("admin.jobs.createNew")}</DialogTitle>
               <DialogDescription>
-                Create a new job posting. You can publish it later.
+                {t("admin.jobs.createNewDesc")}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Job Title (English)</Label>
+                  <Label htmlFor="title">{t("admin.jobs.jobTitleEn")}</Label>
                   <Input
                     id="title"
                     value={formData.title}
@@ -294,7 +325,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="title_ar">Job Title (Arabic)</Label>
+                  <Label htmlFor="title_ar">{t("admin.jobs.jobTitleAr")}</Label>
                   <Input
                     id="title_ar"
                     value={formData.title_ar}
@@ -307,13 +338,13 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Department</Label>
+                  <Label>{t("admin.jobs.department")}</Label>
                   <Select
                     value={formData.department_id}
                     onValueChange={(value) => setFormData({ ...formData, department_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder={t("admin.jobs.selectDepartment")} />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((dept) => (
@@ -325,13 +356,13 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Location</Label>
+                  <Label>{t("admin.jobs.location")}</Label>
                   <Select
                     value={formData.location_id}
                     onValueChange={(value) => setFormData({ ...formData, location_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
+                      <SelectValue placeholder={t("admin.jobs.selectLocation")} />
                     </SelectTrigger>
                     <SelectContent>
                       {locations.map((loc) => (
@@ -346,7 +377,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Job Type</Label>
+                  <Label>{t("admin.jobs.jobType")}</Label>
                   <Select
                     value={formData.job_type}
                     onValueChange={(value) => setFormData({ ...formData, job_type: value })}
@@ -355,7 +386,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(jobTypeLabels).map(([value, label]) => (
+                      {jobTypeEntries.map(({ value, label }) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>
@@ -364,7 +395,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Experience Level</Label>
+                  <Label>{t("admin.jobs.experienceLevel")}</Label>
                   <Select
                     value={formData.experience_level}
                     onValueChange={(value) => setFormData({ ...formData, experience_level: value })}
@@ -373,7 +404,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(experienceLevelLabels).map(([value, label]) => (
+                      {experienceLevelEntries.map(({ value, label }) => (
                         <SelectItem key={value} value={value}>
                           {label}
                         </SelectItem>
@@ -385,7 +416,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="salary_min">Min Salary (SAR)</Label>
+                  <Label htmlFor="salary_min">{t("admin.jobs.minSalary")}</Label>
                   <Input
                     id="salary_min"
                     type="number"
@@ -395,7 +426,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="salary_max">Max Salary (SAR)</Label>
+                  <Label htmlFor="salary_max">{t("admin.jobs.maxSalary")}</Label>
                   <Input
                     id="salary_max"
                     type="number"
@@ -405,7 +436,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="positions_count">Positions</Label>
+                  <Label htmlFor="positions_count">{t("admin.jobs.positions")}</Label>
                   <Input
                     id="positions_count"
                     type="number"
@@ -418,10 +449,10 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t("admin.jobs.cancel")}
               </Button>
               <Button onClick={handleCreate} disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Job"}
+                {isLoading ? t("admin.jobs.creating") : t("admin.jobs.createJob")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -432,7 +463,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.jobs.totalJobs")}</CardTitle>
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -441,7 +472,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Positions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.jobs.openPositions")}</CardTitle>
             <Play className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -450,7 +481,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Draft Jobs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.jobs.draftJobs")}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -459,7 +490,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.jobs.totalApplications")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -473,7 +504,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search jobs..."
+            placeholder={t("admin.jobs.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -482,15 +513,15 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
             <Filter className="mr-2 h-4 w-4" />
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("admin.jobs.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-            <SelectItem value="filled">Filled</SelectItem>
+            <SelectItem value="all">{t("admin.jobs.allStatus")}</SelectItem>
+            <SelectItem value="draft">{t("admin.jobs.statusDraft")}</SelectItem>
+            <SelectItem value="open">{t("admin.jobs.statusOpen")}</SelectItem>
+            <SelectItem value="paused">{t("admin.jobs.statusPaused")}</SelectItem>
+            <SelectItem value="closed">{t("admin.jobs.statusClosed")}</SelectItem>
+            <SelectItem value="filled">{t("admin.jobs.statusFilled")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -502,13 +533,13 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job Title</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Applications</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("admin.jobs.jobTitle")}</TableHead>
+                  <TableHead>{t("admin.jobs.department")}</TableHead>
+                  <TableHead>{t("admin.jobs.location")}</TableHead>
+                  <TableHead>{t("admin.jobs.type")}</TableHead>
+                  <TableHead>{t("admin.jobs.applications")}</TableHead>
+                  <TableHead>{t("admin.jobs.status")}</TableHead>
+                  <TableHead className="text-right">{t("admin.jobs.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -534,7 +565,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {jobTypeLabels[job.job_type] || job.job_type}
+                        {getJobTypeLabel(job.job_type)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -559,35 +590,35 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>
                             <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                            {t("admin.jobs.viewDetails")}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                            {t("admin.jobs.edit")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {job.status === "draft" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(job, "open")}>
                               <Play className="mr-2 h-4 w-4" />
-                              Publish
+                              {t("admin.jobs.publish")}
                             </DropdownMenuItem>
                           )}
                           {job.status === "open" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(job, "paused")}>
                               <Pause className="mr-2 h-4 w-4" />
-                              Pause
+                              {t("admin.jobs.pause")}
                             </DropdownMenuItem>
                           )}
                           {job.status === "paused" && (
                             <DropdownMenuItem onClick={() => handleStatusChange(job, "open")}>
                               <Play className="mr-2 h-4 w-4" />
-                              Resume
+                              {t("admin.jobs.resume")}
                             </DropdownMenuItem>
                           )}
                           {(job.status === "open" || job.status === "paused") && (
                             <DropdownMenuItem onClick={() => handleStatusChange(job, "closed")}>
                               <CheckCircle className="mr-2 h-4 w-4" />
-                              Close
+                              {t("admin.jobs.close")}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
@@ -596,7 +627,7 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
                             className="text-destructive"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {t("admin.jobs.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -608,11 +639,11 @@ export function JobsClient({ jobs: initialJobs, departments, locations }: JobsCl
           ) : (
             <div className="flex flex-col items-center justify-center py-12">
               <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold">No jobs found</h3>
+              <h3 className="text-lg font-semibold">{t("admin.jobs.noJobsFound")}</h3>
               <p className="text-muted-foreground text-center mt-1">
                 {searchQuery || statusFilter !== "all"
-                  ? "Try adjusting your search or filters"
-                  : "Create your first job posting to get started"}
+                  ? t("admin.jobs.adjustFilters")
+                  : t("admin.jobs.createFirstJob")}
               </p>
             </div>
           )}

@@ -15,9 +15,12 @@ import {
   Lock,
   CheckCircle2,
   ArrowRight,
+  ArrowLeft,
+  Globe,
 } from "lucide-react"
 import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 function KawadirLogo({ size = 40 }: { size?: number }) {
   return (
@@ -72,6 +75,9 @@ function ResetPasswordContent() {
   const [sessionError, setSessionError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, language, setLanguage, isRTL } = useI18n()
+
+  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
 
   useEffect(() => {
     setMounted(true)
@@ -219,12 +225,27 @@ function ResetPasswordContent() {
   // Show loading while establishing session
   if (!sessionReady && !sessionError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]" dir={isRTL ? "rtl" : "ltr"}>
+        {/* Language Switcher - Floating */}
+        <div className={cn(
+          "fixed top-4 z-50",
+          isRTL ? "left-4" : "right-4"
+        )}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+            className="h-10 w-10 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm"
+            title={language === "en" ? "العربية" : "English"}
+          >
+            <Globe className="h-5 w-5 text-gray-600" />
+          </Button>
+        </div>
         <div className="flex flex-col items-center gap-4">
           <KawadirLogo size={48} />
           <div className="flex items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin" style={{ color: primaryColor }} />
-            <span className="text-sm text-gray-500">Verifying reset link...</span>
+            <span className="text-sm text-gray-500">{t("auth.resetPassword.verifyingLink")}</span>
           </div>
         </div>
       </div>
@@ -234,7 +255,22 @@ function ResetPasswordContent() {
   // Show error if session could not be established
   if (sessionError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]" dir={isRTL ? "rtl" : "ltr"}>
+        {/* Language Switcher - Floating */}
+        <div className={cn(
+          "fixed top-4 z-50",
+          isRTL ? "left-4" : "right-4"
+        )}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+            className="h-10 w-10 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm"
+            title={language === "en" ? "العربية" : "English"}
+          >
+            <Globe className="h-5 w-5 text-gray-600" />
+          </Button>
+        </div>
         <div className="max-w-md text-center px-6">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
@@ -243,7 +279,7 @@ function ResetPasswordContent() {
             <Lock className="w-8 h-8 text-red-500" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Reset Link Invalid
+            {t("auth.resetPassword.linkExpired")}
           </h2>
           <p className="text-gray-600 mb-6">
             {sessionError}
@@ -253,8 +289,8 @@ function ResetPasswordContent() {
               className="w-full h-12 text-base font-semibold text-white border-0"
               style={{ background: brandGradient }}
             >
-              Request New Reset Link
-              <ArrowRight className="ml-2 h-5 w-5" />
+              {t("auth.resetPassword.requestNew")}
+              <ArrowIcon className={cn("h-5 w-5", isRTL ? "mr-2" : "ml-2")} />
             </Button>
           </Link>
         </div>
@@ -263,7 +299,23 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#F5F5F5]">
+    <div className="min-h-screen flex bg-[#F5F5F5]" dir={isRTL ? "rtl" : "ltr"}>
+      {/* Language Switcher - Floating */}
+      <div className={cn(
+        "fixed top-4 z-50",
+        isRTL ? "left-4" : "right-4"
+      )}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+          className="h-10 w-10 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm"
+          title={language === "en" ? "العربية" : "English"}
+        >
+          <Globe className="h-5 w-5 text-gray-600" />
+        </Button>
+      </div>
+
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-24">
         <div className="w-full max-w-md mx-auto">
@@ -273,9 +325,9 @@ function ResetPasswordContent() {
               <KawadirLogo size={44} />
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
-                  Kawadir
+                  {t("auth.common.kawadir")}
                 </h1>
-                <p className="text-sm text-gray-500">AI-Powered Recruitment Platform</p>
+                <p className="text-sm text-gray-500">{t("auth.resetPassword.platformSubtitle")}</p>
               </div>
             </div>
           </div>
@@ -285,10 +337,10 @@ function ResetPasswordContent() {
               {/* Heading */}
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Set new password
+                  {t("auth.resetPassword.title")}
                 </h2>
                 <p className="text-gray-600">
-                  Your new password must be at least 8 characters long.
+                  {t("auth.resetPassword.subtitle")}
                 </p>
               </div>
 
@@ -296,17 +348,20 @@ function ResetPasswordContent() {
               <form onSubmit={handleResetPassword} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-gray-700 font-medium">
-                    New Password
+                    {t("auth.resetPassword.newPassword")}
                   </Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter new password"
+                      placeholder={t("auth.resetPassword.newPasswordPlaceholder")}
                       value={password}
                       autoComplete="new-password"
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 text-base pr-12 border-gray-200 focus:border-transparent transition-all duration-200"
+                      className={cn(
+                        "h-12 text-base border-gray-200 focus:border-transparent transition-all duration-200",
+                        isRTL ? "pl-12 pr-4" : "pr-12 pl-4"
+                      )}
                       style={{
                         boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                       }}
@@ -322,7 +377,10 @@ function ResetPasswordContent() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600",
+                        isRTL ? "left-3" : "right-3"
+                      )}
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -335,17 +393,20 @@ function ResetPasswordContent() {
 
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">
-                    Confirm Password
+                    {t("auth.resetPassword.confirmPassword")}
                   </Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm new password"
+                      placeholder={t("auth.resetPassword.confirmPasswordPlaceholder")}
                       value={confirmPassword}
                       autoComplete="new-password"
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-12 text-base pr-12 border-gray-200 focus:border-transparent transition-all duration-200"
+                      className={cn(
+                        "h-12 text-base border-gray-200 focus:border-transparent transition-all duration-200",
+                        isRTL ? "pl-12 pr-4" : "pr-12 pl-4"
+                      )}
                       style={{
                         boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                       }}
@@ -361,7 +422,10 @@ function ResetPasswordContent() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600",
+                        isRTL ? "left-3" : "right-3"
+                      )}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -374,14 +438,14 @@ function ResetPasswordContent() {
 
                 {/* Password requirements */}
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-500">Password must contain:</p>
+                  <p className="text-sm text-gray-500">{t("auth.resetPassword.passwordMustContain")}</p>
                   <ul className="text-sm space-y-1">
                     <li className={cn(
                       "flex items-center gap-2",
                       password.length >= 8 ? "text-green-600" : "text-gray-400"
                     )}>
                       <CheckCircle2 className="h-4 w-4" />
-                      At least 8 characters
+                      {t("auth.resetPassword.passwordRequirement")}
                     </li>
                   </ul>
                 </div>
@@ -393,11 +457,11 @@ function ResetPasswordContent() {
                   style={{ background: brandGradient }}
                 >
                   {loading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className={cn("h-5 w-5 animate-spin", isRTL ? "ml-2" : "mr-2")} />
                   ) : (
-                    <Lock className="mr-2 h-5 w-5" />
+                    <Lock className={cn("h-5 w-5", isRTL ? "ml-2" : "mr-2")} />
                   )}
-                  {loading ? "Updating..." : "Reset password"}
+                  {loading ? t("auth.resetPassword.resetting") : t("auth.resetPassword.resetPassword")}
                 </Button>
               </form>
             </>
@@ -412,11 +476,11 @@ function ResetPasswordContent() {
                   <CheckCircle2 className="w-8 h-8" style={{ color: primaryColor }} />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Password reset!
+                  {t("auth.resetPassword.success")}
                 </h2>
                 <p className="text-gray-600 mb-8">
-                  Your password has been successfully updated.<br />
-                  Redirecting you to sign in...
+                  {t("auth.resetPassword.successMessage")}<br />
+                  {t("auth.resetPassword.redirecting")}
                 </p>
 
                 <Link href="/login">
@@ -424,8 +488,8 @@ function ResetPasswordContent() {
                     className="w-full h-12 text-base font-semibold text-white border-0"
                     style={{ background: brandGradient }}
                   >
-                    Continue to sign in
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    {t("auth.resetPassword.continueToSignIn")}
+                    <ArrowIcon className={cn("h-5 w-5", isRTL ? "mr-2" : "ml-2")} />
                   </Button>
                 </Link>
               </div>
@@ -435,9 +499,9 @@ function ResetPasswordContent() {
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
-              Powered by{" "}
+              {t("auth.common.poweredBy")}{" "}
               <span className="font-semibold" style={{ color: primaryColor }}>
-                Kawadir ATS
+                {t("auth.common.kawadirATS")}
               </span>
             </p>
           </div>
@@ -454,10 +518,10 @@ function ResetPasswordContent() {
             <Lock className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-bold mb-4">
-            Almost there!
+            {t("auth.resetPassword.almostThere")}
           </h2>
           <p className="text-lg text-white/80 max-w-md mx-auto">
-            Create a strong password to keep your account secure. We recommend using a mix of letters, numbers, and symbols.
+            {t("auth.resetPassword.almostThereDesc")}
           </p>
         </div>
 

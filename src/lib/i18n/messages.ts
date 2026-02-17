@@ -20,6 +20,7 @@ import pipelinesEn from '@/messages/en/pipelines.json'
 import screeningQuestionsEn from '@/messages/en/screeningQuestions.json'
 import requisitionsEn from '@/messages/en/requisitions.json'
 import scorecardsEn from '@/messages/en/scorecards.json'
+import adminEn from '@/messages/en/admin.json'
 
 // Arabic translations
 import commonAr from '@/messages/ar/common.json'
@@ -38,6 +39,7 @@ import pipelinesAr from '@/messages/ar/pipelines.json'
 import screeningQuestionsAr from '@/messages/ar/screeningQuestions.json'
 import requisitionsAr from '@/messages/ar/requisitions.json'
 import scorecardsAr from '@/messages/ar/scorecards.json'
+import adminAr from '@/messages/ar/admin.json'
 
 export const messages = {
   en: {
@@ -57,6 +59,7 @@ export const messages = {
     screeningQuestions: screeningQuestionsEn,
     requisitions: requisitionsEn,
     scorecards: scorecardsEn,
+    admin: adminEn,
   },
   ar: {
     common: commonAr,
@@ -75,6 +78,7 @@ export const messages = {
     screeningQuestions: screeningQuestionsAr,
     requisitions: requisitionsAr,
     scorecards: scorecardsAr,
+    admin: adminAr,
   },
 } as const
 

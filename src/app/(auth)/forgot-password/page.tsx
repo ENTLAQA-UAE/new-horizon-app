@@ -13,9 +13,11 @@ import {
   ArrowLeft,
   Mail,
   CheckCircle2,
+  Globe,
 } from "lucide-react"
 import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 function KawadirLogo({ size = 40 }: { size?: number }) {
   return (
@@ -66,6 +68,7 @@ function ForgotPasswordSkeleton() {
 }
 
 function ForgotPasswordContent() {
+  const { t, language, setLanguage, isRTL } = useI18n()
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -148,7 +151,20 @@ function ForgotPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[#F5F5F5]">
+    <div dir={isRTL ? "rtl" : "ltr"} className="min-h-screen flex bg-[#F5F5F5]">
+      {/* Language Switcher */}
+      <div className={cn("fixed top-4 z-50", isRTL ? "left-4" : "right-4")}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+          className="h-10 w-10 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm"
+          title={language === "en" ? "العربية" : "English"}
+        >
+          <Globe className="h-5 w-5 text-gray-600" />
+        </Button>
+      </div>
+
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 xl:px-24">
         <div className="w-full max-w-md mx-auto">
@@ -168,7 +184,7 @@ function ForgotPasswordContent() {
                 <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>
                   {brandName}
                 </h1>
-                <p className="text-sm text-gray-500">AI-Powered Recruitment Platform</p>
+                <p className="text-sm text-gray-500">{t("auth.forgotPassword.platformSubtitle")}</p>
               </div>
             </div>
           </div>
@@ -178,10 +194,10 @@ function ForgotPasswordContent() {
               {/* Heading */}
               <div className="mb-8">
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Forgot password?
+                  {t("auth.forgotPassword.title")}
                 </h2>
                 <p className="text-gray-600">
-                  No worries, we'll send you reset instructions.
+                  {t("auth.forgotPassword.subtitle")}
                 </p>
               </div>
 
@@ -189,12 +205,12 @@ function ForgotPasswordContent() {
               <form onSubmit={handleResetPassword} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-700 font-medium">
-                    Email address
+                    {t("auth.forgotPassword.emailAddress")}
                   </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t("auth.forgotPassword.emailPlaceholder")}
                     value={email}
                     autoComplete="email"
                     onChange={(e) => setEmail(e.target.value)}
@@ -220,11 +236,11 @@ function ForgotPasswordContent() {
                   style={{ background: brandGradient }}
                 >
                   {loading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className={cn("h-5 w-5 animate-spin", isRTL ? "ml-2" : "mr-2")} />
                   ) : (
-                    <Mail className="mr-2 h-5 w-5" />
+                    <Mail className={cn("h-5 w-5", isRTL ? "ml-2" : "mr-2")} />
                   )}
-                  {loading ? "Sending..." : "Reset password"}
+                  {loading ? t("auth.forgotPassword.sending") : t("auth.forgotPassword.sendLink")}
                 </Button>
 
                 <div className="text-center">
@@ -233,8 +249,8 @@ function ForgotPasswordContent() {
                     className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
                     style={{ color: primaryColor }}
                   >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to sign in
+                    <ArrowLeft className={cn("h-4 w-4", isRTL && "rotate-180")} />
+                    {t("auth.forgotPassword.backToLogin")}
                   </Link>
                 </div>
               </form>
@@ -250,10 +266,10 @@ function ForgotPasswordContent() {
                   <CheckCircle2 className="w-8 h-8" style={{ color: primaryColor }} />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  Check your email
+                  {t("auth.forgotPassword.checkEmail")}
                 </h2>
                 <p className="text-gray-600 mb-8">
-                  We sent a password reset link to<br />
+                  {t("auth.forgotPassword.emailSent")}<br />
                   <strong className="text-gray-900">{email}</strong>
                 </p>
 
@@ -263,7 +279,7 @@ function ForgotPasswordContent() {
                     variant="outline"
                     className="w-full h-12"
                   >
-                    Didn't receive the email? Try again
+                    {t("auth.forgotPassword.didntReceive")}
                   </Button>
 
                   <Link
@@ -271,8 +287,8 @@ function ForgotPasswordContent() {
                     className="inline-flex items-center justify-center gap-2 text-sm font-medium transition-colors hover:opacity-80 w-full"
                     style={{ color: primaryColor }}
                   >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to sign in
+                    <ArrowLeft className={cn("h-4 w-4", isRTL && "rotate-180")} />
+                    {t("auth.forgotPassword.backToLogin")}
                   </Link>
                 </div>
               </div>
@@ -282,9 +298,9 @@ function ForgotPasswordContent() {
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-gray-100">
             <p className="text-center text-sm text-gray-500">
-              Powered by{" "}
+              {t("auth.common.poweredBy")}{" "}
               <span className="font-semibold" style={{ color: primaryColor }}>
-                Kawadir ATS
+                {t("auth.common.kawadirATS")}
               </span>
             </p>
           </div>
@@ -301,10 +317,10 @@ function ForgotPasswordContent() {
             <Mail className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-bold mb-4">
-            Secure Password Reset
+            {t("auth.forgotPassword.secureReset")}
           </h2>
           <p className="text-lg text-white/80 max-w-md mx-auto">
-            We take your security seriously. You'll receive an email with a secure link to reset your password.
+            {t("auth.forgotPassword.secureResetDesc")}
           </p>
         </div>
 

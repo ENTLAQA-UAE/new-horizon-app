@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useI18n } from "@/lib/i18n"
 import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -88,6 +89,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null)
+  const { t } = useI18n()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -119,7 +121,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
 
   const handleCreate = async () => {
     if (!formData.name) {
-      toast.error("Please enter a tier name")
+      toast.error(t("admin.tiers.enterName"))
       return
     }
 
@@ -146,7 +148,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       }
       setIsCreateOpen(false)
       resetForm()
-      toast.success("Subscription tier created successfully")
+      toast.success(t("admin.tiers.createdSuccess"))
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || "Failed to create tier")
@@ -185,7 +187,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       setIsEditOpen(false)
       setSelectedTier(null)
       resetForm()
-      toast.success("Subscription tier updated successfully")
+      toast.success(t("admin.tiers.updatedSuccess"))
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || "Failed to update tier")
@@ -208,7 +210,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
           t.id === tier.id ? { ...t, is_active: !t.is_active } : t
         )
       )
-      toast.success(`Tier ${tier.is_active ? "deactivated" : "activated"} successfully`)
+      toast.success(tier.is_active ? t("admin.tiers.deactivatedSuccess") : t("admin.tiers.activatedSuccess"))
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || "Failed to update tier")
@@ -218,7 +220,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
   const handleDelete = async (tier: SubscriptionTier) => {
     const orgCount = tierStats[tier.id] || 0
     if (orgCount > 0) {
-      toast.error(`Cannot delete tier with ${orgCount} active organization(s)`)
+      toast.error(t("admin.tiers.cannotDelete").replace("{count}", String(orgCount)))
       return
     }
 
@@ -230,7 +232,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       if (error) throw error
 
       setTiers(tiers.filter((t) => t.id !== tier.id))
-      toast.success("Subscription tier deleted successfully")
+      toast.success(t("admin.tiers.deletedSuccess"))
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || "Failed to delete tier")
@@ -284,36 +286,37 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Subscription Tiers</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.tiers.title")}</h2>
           <p className="text-muted-foreground">
-            Manage pricing plans and feature access for organizations
+            {t("admin.tiers.subtitle")}
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Tier
+              {t("admin.tiers.addTier")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create Subscription Tier</DialogTitle>
+              <DialogTitle>{t("admin.tiers.createTier")}</DialogTitle>
               <DialogDescription>
-                Create a new subscription tier with pricing and feature limits.
+                {t("admin.tiers.createTierDesc")}
               </DialogDescription>
             </DialogHeader>
             <TierForm
               formData={formData}
               setFormData={setFormData}
               toggleFeature={toggleFeature}
+              t={t}
             />
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
+                {t("admin.tiers.cancel")}
               </Button>
               <Button onClick={handleCreate} disabled={isLoading}>
-                {isLoading ? "Creating..." : "Create Tier"}
+                {isLoading ? t("admin.tiers.creating") : t("admin.tiers.create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -341,18 +344,18 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => openEditDialog(tier)}>
                       <Pencil className="mr-2 h-4 w-4" />
-                      Edit
+                      {t("admin.tiers.edit")}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleToggleActive(tier)}>
                       {tier.is_active ? (
                         <>
                           <X className="mr-2 h-4 w-4" />
-                          Deactivate
+                          {t("admin.tiers.deactivate")}
                         </>
                       ) : (
                         <>
                           <Check className="mr-2 h-4 w-4" />
-                          Activate
+                          {t("admin.tiers.activate")}
                         </>
                       )}
                     </DropdownMenuItem>
@@ -361,22 +364,22 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
                       className="text-destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
+                      {t("admin.tiers.delete")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className="flex items-baseline gap-1 mt-2">
                 <span className="text-3xl font-bold">{formatPrice(tier.price_monthly, tier.currency)}</span>
-                <span className="text-muted-foreground">/month</span>
+                <span className="text-muted-foreground">{t("admin.tiers.perMonth")}</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {formatPrice(tier.price_yearly, tier.currency)}/year
+                {formatPrice(tier.price_yearly, tier.currency)}{t("admin.tiers.perYear")}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Organizations</span>
+                <span className="text-muted-foreground">{t("admin.tiers.organizations")}</span>
                 <Badge variant="secondary">
                   <Users className="h-3 w-3 mr-1" />
                   {tierStats[tier.id] || 0}
@@ -385,27 +388,27 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
 
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Max Jobs</span>
+                  <span className="text-muted-foreground">{t("admin.tiers.maxJobs")}</span>
                   <span className="font-medium">
-                    {tier.max_jobs === -1 ? "Unlimited" : tier.max_jobs}
+                    {tier.max_jobs === -1 ? t("admin.tiers.unlimited") : tier.max_jobs}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Max Users</span>
+                  <span className="text-muted-foreground">{t("admin.tiers.maxUsers")}</span>
                   <span className="font-medium">
-                    {tier.max_users === -1 ? "Unlimited" : tier.max_users}
+                    {tier.max_users === -1 ? t("admin.tiers.unlimited") : tier.max_users}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Max Candidates</span>
+                  <span className="text-muted-foreground">{t("admin.tiers.maxCandidates")}</span>
                   <span className="font-medium">
-                    {tier.max_candidates === -1 ? "Unlimited" : tier.max_candidates.toLocaleString()}
+                    {tier.max_candidates === -1 ? t("admin.tiers.unlimited") : tier.max_candidates.toLocaleString()}
                   </span>
                 </div>
               </div>
 
               <div className="pt-2 border-t">
-                <p className="text-xs font-medium mb-2">Features</p>
+                <p className="text-xs font-medium mb-2">{t("admin.tiers.features")}</p>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(tier.features || {}).map(([key, enabled]) => (
                     <Badge
@@ -422,10 +425,10 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
 
               <div className="flex items-center justify-between pt-2">
                 <Badge variant={tier.is_active ? "default" : "secondary"}>
-                  {tier.is_active ? "Active" : "Inactive"}
+                  {tier.is_active ? t("admin.tiers.active") : t("admin.tiers.inactive")}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  Order: {tier.sort_order}
+                  {t("admin.tiers.order")} {tier.sort_order}
                 </span>
               </div>
             </CardContent>
@@ -437,9 +440,9 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Crown className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">No subscription tiers</h3>
+            <h3 className="text-lg font-semibold">{t("admin.tiers.noTiers")}</h3>
             <p className="text-muted-foreground text-center mt-1">
-              Create your first subscription tier to start onboarding organizations.
+              {t("admin.tiers.noTiersDesc")}
             </p>
           </CardContent>
         </Card>
@@ -449,22 +452,22 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       {tiers.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>All Tiers Overview</CardTitle>
-            <CardDescription>Detailed comparison of all subscription tiers</CardDescription>
+            <CardTitle>{t("admin.tiers.allTiersOverview")}</CardTitle>
+            <CardDescription>{t("admin.tiers.allTiersOverviewDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Currency</TableHead>
-                  <TableHead>Monthly</TableHead>
-                  <TableHead>Yearly</TableHead>
-                  <TableHead>Jobs</TableHead>
-                  <TableHead>Users</TableHead>
-                  <TableHead>Candidates</TableHead>
-                  <TableHead>Orgs</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("admin.tiers.tier")}</TableHead>
+                  <TableHead>{t("admin.tiers.currency")}</TableHead>
+                  <TableHead>{t("admin.tiers.monthly")}</TableHead>
+                  <TableHead>{t("admin.tiers.yearly")}</TableHead>
+                  <TableHead>{t("admin.tiers.jobs")}</TableHead>
+                  <TableHead>{t("admin.tiers.users")}</TableHead>
+                  <TableHead>{t("admin.tiers.candidates")}</TableHead>
+                  <TableHead>{t("admin.tiers.orgs")}</TableHead>
+                  <TableHead>{t("admin.tiers.status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -480,7 +483,7 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
                     <TableCell>{tierStats[tier.id] || 0}</TableCell>
                     <TableCell>
                       <Badge variant={tier.is_active ? "default" : "secondary"}>
-                        {tier.is_active ? "Active" : "Inactive"}
+                        {tier.is_active ? t("admin.tiers.active") : t("admin.tiers.inactive")}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -495,22 +498,23 @@ export function TiersClient({ tiers: initialTiers, tierStats }: TiersClientProps
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Subscription Tier</DialogTitle>
+            <DialogTitle>{t("admin.tiers.editTier")}</DialogTitle>
             <DialogDescription>
-              Update the subscription tier details and features.
+              {t("admin.tiers.editTierDesc")}
             </DialogDescription>
           </DialogHeader>
           <TierForm
             formData={formData}
             setFormData={setFormData}
             toggleFeature={toggleFeature}
+            t={t}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
+              {t("admin.tiers.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading ? t("admin.tiers.saving") : t("admin.tiers.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -523,17 +527,19 @@ function TierForm({
   formData,
   setFormData,
   toggleFeature,
+  t,
 }: {
   formData: any
   setFormData: (data: any) => void
   toggleFeature: (feature: keyof typeof defaultFeatures) => void
+  t: (key: string) => string
 }) {
   return (
     <div className="grid gap-6 py-4">
       {/* Basic Info */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Name (English)</Label>
+          <Label htmlFor="name">{t("admin.tiers.nameEn")}</Label>
           <Input
             id="name"
             value={formData.name}
@@ -542,7 +548,7 @@ function TierForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="name_ar">Name (Arabic)</Label>
+          <Label htmlFor="name_ar">{t("admin.tiers.nameAr")}</Label>
           <Input
             id="name_ar"
             value={formData.name_ar}
@@ -555,13 +561,13 @@ function TierForm({
 
       {/* Currency */}
       <div className="space-y-2">
-        <Label htmlFor="currency">Currency</Label>
+        <Label htmlFor="currency">{t("admin.tiers.currency")}</Label>
         <Select
           value={formData.currency}
           onValueChange={(value) => setFormData({ ...formData, currency: value })}
         >
           <SelectTrigger id="currency" className="w-48">
-            <SelectValue placeholder="Select currency" />
+            <SelectValue placeholder={t("admin.tiers.selectCurrency")} />
           </SelectTrigger>
           <SelectContent>
             {SUPPORTED_CURRENCIES.map((c) => (
@@ -576,7 +582,7 @@ function TierForm({
       {/* Pricing */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="price_monthly">Monthly Price ({formData.currency})</Label>
+          <Label htmlFor="price_monthly">{t("admin.tiers.monthlyPrice")} ({formData.currency})</Label>
           <Input
             id="price_monthly"
             type="number"
@@ -587,7 +593,7 @@ function TierForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="price_yearly">Yearly Price ({formData.currency})</Label>
+          <Label htmlFor="price_yearly">{t("admin.tiers.yearlyPrice")} ({formData.currency})</Label>
           <Input
             id="price_yearly"
             type="number"
@@ -602,7 +608,7 @@ function TierForm({
       {/* Limits */}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="max_jobs">Max Jobs (-1 for unlimited)</Label>
+          <Label htmlFor="max_jobs">{t("admin.tiers.maxJobs")}</Label>
           <Input
             id="max_jobs"
             type="number"
@@ -613,7 +619,7 @@ function TierForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="max_users">Max Users (-1 for unlimited)</Label>
+          <Label htmlFor="max_users">{t("admin.tiers.maxUsers")}</Label>
           <Input
             id="max_users"
             type="number"
@@ -624,7 +630,7 @@ function TierForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="max_candidates">Max Candidates (-1 for unlimited)</Label>
+          <Label htmlFor="max_candidates">{t("admin.tiers.maxCandidates")}</Label>
           <Input
             id="max_candidates"
             type="number"
@@ -638,7 +644,7 @@ function TierForm({
 
       {/* Sort Order */}
       <div className="space-y-2">
-        <Label htmlFor="sort_order">Display Order</Label>
+        <Label htmlFor="sort_order">{t("admin.tiers.displayOrder")}</Label>
         <Input
           id="sort_order"
           type="number"
@@ -652,7 +658,7 @@ function TierForm({
 
       {/* Features */}
       <div className="space-y-3">
-        <Label>Features</Label>
+        <Label>{t("admin.tiers.features")}</Label>
         <div className="grid grid-cols-2 gap-3">
           {Object.entries(formData.features).map(([key, enabled]) => (
             <div

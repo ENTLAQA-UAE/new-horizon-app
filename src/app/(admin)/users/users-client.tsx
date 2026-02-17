@@ -53,6 +53,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useI18n } from "@/lib/i18n"
 
 interface User {
   id: string
@@ -77,15 +78,6 @@ interface Organization {
 interface UsersClientProps {
   initialUsers: User[]
   organizations: Organization[]
-}
-
-const roleLabels: Record<string, string> = {
-  super_admin: "Super Admin",
-  org_admin: "Org Admin",
-  hr_manager: "HR Manager",
-  recruiter: "Recruiter",
-  hiring_manager: "Department Manager",
-  interviewer: "Interviewer",
 }
 
 // Role colors - using brand-aware styling where possible
@@ -123,6 +115,28 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
   const [inviteLinkLoading, setInviteLinkLoading] = useState(false)
   const [newRole, setNewRole] = useState<string>("")
   const [selectedOrgId, setSelectedOrgId] = useState<string>("")
+  const { t } = useI18n()
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      super_admin: t("admin.users.superAdmin"),
+      org_admin: t("admin.users.orgAdmin"),
+      hr_manager: t("admin.users.hrManager"),
+      recruiter: t("admin.users.recruiter"),
+      hiring_manager: t("admin.users.deptManager"),
+      interviewer: t("admin.users.interviewer"),
+    }
+    return labels[role] || role
+  }
+
+  const roleEntries: [string, string][] = [
+    ["super_admin", t("admin.users.superAdmin")],
+    ["org_admin", t("admin.users.orgAdmin")],
+    ["hr_manager", t("admin.users.hrManager")],
+    ["recruiter", t("admin.users.recruiter")],
+    ["hiring_manager", t("admin.users.deptManager")],
+    ["interviewer", t("admin.users.interviewer")],
+  ]
 
   // Filter users
   const filteredUsers = users.filter((user) => {
@@ -165,12 +179,12 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     )
 
     if (error) {
-      toast.error("Failed to update user status")
+      toast.error(t("admin.common.error"))
     } else {
       setUsers(users.map((u) =>
         u.id === user.id ? { ...u, is_active: !u.is_active } : u
       ))
-      toast.success(`User ${!user.is_active ? "activated" : "deactivated"}`)
+      toast.success(!user.is_active ? t("admin.users.userActivated") : t("admin.users.userDeactivated"))
     }
     setIsLoading(false)
   }
@@ -187,9 +201,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
     if (error) {
       if (error.code === "23505") {
-        toast.error("User already has this role")
+        toast.error(t("admin.users.alreadyHasRole"))
       } else {
-        toast.error("Failed to add role")
+        toast.error(t("admin.common.error"))
       }
     } else {
       setUsers(users.map((u) =>
@@ -197,7 +211,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
           ? { ...u, roles: [...u.roles, newRole] }
           : u
       ))
-      toast.success("Role added successfully")
+      toast.success(t("admin.users.roleAdded"))
       setIsRoleDialogOpen(false)
       setNewRole("")
     }
@@ -213,14 +227,14 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     ])
 
     if (error) {
-      toast.error("Failed to remove role")
+      toast.error(t("admin.common.error"))
     } else {
       setUsers(users.map((u) =>
         u.id === user.id
           ? { ...u, roles: u.roles.filter((r) => r !== role) }
           : u
       ))
-      toast.success("Role removed successfully")
+      toast.success(t("admin.users.roleRemoved"))
     }
     setIsLoading(false)
   }
@@ -239,7 +253,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     )
 
     if (error) {
-      toast.error("Failed to assign organization")
+      toast.error(t("admin.common.error"))
     } else {
       const org = orgId ? organizations.find((o) => o.id === orgId) : null
       setUsers(users.map((u) =>
@@ -275,11 +289,11 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       if (result.success && result.inviteLink) {
         setGeneratedInviteLink(result.inviteLink)
       } else {
-        toast.error(result.error || "Failed to generate invite link")
+        toast.error(result.error || t("admin.common.error"))
         setIsInviteLinkDialogOpen(false)
       }
     } catch {
-      toast.error("Failed to generate invite link")
+      toast.error(t("admin.common.error"))
       setIsInviteLinkDialogOpen(false)
     } finally {
       setInviteLinkLoading(false)
@@ -294,7 +308,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
         user.email,
         user.phone || "",
         user.organizations?.name || "No organization",
-        user.roles.map((r) => roleLabels[r] || r).join("; "),
+        user.roles.map((r) => getRoleLabel(r)).join("; "),
         user.is_active ? "Active" : "Inactive",
         user.last_login_at ? new Date(user.last_login_at).toLocaleString() : "Never",
         user.created_at ? new Date(user.created_at).toLocaleDateString() : "",
@@ -310,7 +324,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
     a.download = `users-export-${new Date().toISOString().split("T")[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
-    toast.success("Users exported successfully")
+    toast.success(t("admin.users.exportSuccess"))
   }
 
   return (
@@ -318,14 +332,14 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.users.title")}</h2>
           <p className="text-muted-foreground">
-            Manage all users across the platform
+            {t("admin.users.subtitle")}
           </p>
         </div>
         <Button onClick={exportUsers}>
           <Download className="mr-2 h-4 w-4" />
-          Export CSV
+          {t("admin.users.exportCsv")}
         </Button>
       </div>
 
@@ -333,7 +347,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.users.totalUsers")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -343,7 +357,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.users.activeUsers")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -353,7 +367,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.users.superAdmins")}</CardTitle>
             <Shield className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -363,7 +377,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">With Organization</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.users.withOrg")}</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -375,7 +389,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t("admin.users.filters")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
@@ -383,7 +397,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or email..."
+                  placeholder={t("admin.users.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -393,16 +407,16 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by role" />
+                <SelectValue placeholder={t("admin.users.filterByRole")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="org_admin">Org Admin</SelectItem>
-                <SelectItem value="hr_manager">HR Manager</SelectItem>
-                <SelectItem value="recruiter">Recruiter</SelectItem>
-                <SelectItem value="hiring_manager">Department Manager</SelectItem>
-                <SelectItem value="interviewer">Interviewer</SelectItem>
+                <SelectItem value="all">{t("admin.users.allRoles")}</SelectItem>
+                <SelectItem value="super_admin">{t("admin.users.superAdmin")}</SelectItem>
+                <SelectItem value="org_admin">{t("admin.users.orgAdmin")}</SelectItem>
+                <SelectItem value="hr_manager">{t("admin.users.hrManager")}</SelectItem>
+                <SelectItem value="recruiter">{t("admin.users.recruiter")}</SelectItem>
+                <SelectItem value="hiring_manager">{t("admin.users.deptManager")}</SelectItem>
+                <SelectItem value="interviewer">{t("admin.users.interviewer")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -411,9 +425,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="all">{t("admin.users.allStatus")}</SelectItem>
+                <SelectItem value="active">{t("admin.users.active")}</SelectItem>
+                <SelectItem value="inactive">{t("admin.users.inactive")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -422,8 +436,8 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                 <SelectValue placeholder="Organization" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Organizations</SelectItem>
-                <SelectItem value="none">No Organization</SelectItem>
+                <SelectItem value="all">{t("admin.users.allOrgs")}</SelectItem>
+                <SelectItem value="none">{t("admin.users.noOrg")}</SelectItem>
                 {organizations.map((org) => (
                   <SelectItem key={org.id} value={org.id}>
                     {org.name}
@@ -438,29 +452,29 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users ({filteredUsers.length})</CardTitle>
+          <CardTitle>{`${t("admin.users.user")} (${filteredUsers.length})`}</CardTitle>
           <CardDescription>
-            All registered users on the platform
+            {t("admin.users.subtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Login</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("admin.users.user")}</TableHead>
+                <TableHead>{t("admin.users.organization")}</TableHead>
+                <TableHead>{t("admin.users.roles")}</TableHead>
+                <TableHead>{t("admin.users.status")}</TableHead>
+                <TableHead>{t("admin.users.lastLogin")}</TableHead>
+                <TableHead>{t("admin.users.joined")}</TableHead>
+                <TableHead className="text-right">{t("admin.users.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No users found
+                    {t("admin.users.noUsersFound")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -510,11 +524,11 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                               variant="secondary"
                               className={`${getRoleColor(role)} text-white text-xs`}
                             >
-                              {roleLabels[role] || role}
+                              {getRoleLabel(role)}
                             </Badge>
                           ))
                         ) : (
-                          <span className="text-muted-foreground text-sm">No roles</span>
+                          <span className="text-muted-foreground text-sm">{t("admin.users.noRolesAssigned")}</span>
                         )}
                       </div>
                     </TableCell>
@@ -525,13 +539,13 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                         ) : (
                           <XCircle className="h-3 w-3 mr-1" />
                         )}
-                        {user.is_active ? "Active" : "Inactive"}
+                        {user.is_active ? t("admin.users.active") : t("admin.users.inactive")}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {user.last_login_at
                         ? new Date(user.last_login_at).toLocaleDateString()
-                        : "Never"}
+                        : t("admin.users.never")}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {user.created_at
@@ -546,7 +560,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t("admin.users.actions")}</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => {
@@ -555,7 +569,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                             }}
                           >
                             <UserCog className="mr-2 h-4 w-4" />
-                            Manage Roles
+                            {t("admin.users.manageRoles")}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -565,23 +579,23 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                             }}
                           >
                             <Building2 className="mr-2 h-4 w-4" />
-                            Assign Organization
+                            {t("admin.users.assignOrg")}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => generateInviteLink(user)}>
                             <Link2 className="mr-2 h-4 w-4" />
-                            Generate Invite Link
+                            {t("admin.users.generateInvite")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => toggleUserStatus(user)}>
                             {user.is_active ? (
                               <>
                                 <XCircle className="mr-2 h-4 w-4" />
-                                Deactivate
+                                {t("admin.users.deactivate")}
                               </>
                             ) : (
                               <>
                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                Activate
+                                {t("admin.users.activate")}
                               </>
                             )}
                           </DropdownMenuItem>
@@ -600,7 +614,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Manage User Roles</DialogTitle>
+            <DialogTitle>{t("admin.users.manageUserRoles")}</DialogTitle>
             <DialogDescription>
               {selectedUser && `${selectedUser.first_name} ${selectedUser.last_name}`}
             </DialogDescription>
@@ -610,7 +624,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
             <div className="space-y-4">
               {/* Current Roles */}
               <div>
-                <Label>Current Roles</Label>
+                <Label>{t("admin.users.currentRoles")}</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedUser.roles.length > 0 ? (
                     selectedUser.roles.map((role) => (
@@ -620,29 +634,29 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                         className={`${getRoleColor(role)} text-white cursor-pointer`}
                         onClick={() => removeRole(selectedUser, role)}
                       >
-                        {roleLabels[role] || role}
+                        {getRoleLabel(role)}
                         <XCircle className="ml-1 h-3 w-3" />
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-sm text-muted-foreground">No roles assigned</span>
+                    <span className="text-sm text-muted-foreground">{t("admin.users.noRolesAssigned")}</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Click on a role to remove it
+                  {t("admin.users.clickToRemove")}
                 </p>
               </div>
 
               {/* Add Role */}
               <div>
-                <Label>Add Role</Label>
+                <Label>{t("admin.users.addRole")}</Label>
                 <div className="flex gap-2 mt-2">
                   <Select value={newRole} onValueChange={setNewRole}>
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select a role" />
+                      <SelectValue placeholder={t("admin.users.selectRole")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(roleLabels)
+                      {roleEntries
                         .filter(([key]) => !selectedUser.roles.includes(key))
                         .map(([key, label]) => (
                           <SelectItem key={key} value={key}>
@@ -652,7 +666,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                     </SelectContent>
                   </Select>
                   <Button onClick={addRole} disabled={!newRole || isLoading}>
-                    Add
+                    {t("admin.users.add")}
                   </Button>
                 </div>
               </div>
@@ -661,7 +675,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
-              Close
+              {t("admin.users.close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -671,9 +685,9 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
       <Dialog open={isOrgDialogOpen} onOpenChange={setIsOrgDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Assign Organization</DialogTitle>
+            <DialogTitle>{t("admin.users.assignOrgTitle")}</DialogTitle>
             <DialogDescription>
-              {selectedUser && `Assign ${selectedUser.first_name} ${selectedUser.last_name} to an organization`}
+              {selectedUser && t("admin.users.assignOrgTitle").replace("{name}", `${selectedUser.first_name} ${selectedUser.last_name}`)}
             </DialogDescription>
           </DialogHeader>
 
@@ -693,13 +707,13 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
               </div>
 
               <div className="space-y-2">
-                <Label>Organization</Label>
+                <Label>{t("admin.users.organization")}</Label>
                 <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an organization" />
+                    <SelectValue placeholder={t("admin.users.selectOrg")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No Organization</SelectItem>
+                    <SelectItem value="none">{t("admin.users.noOrg")}</SelectItem>
                     {organizations.map((org) => (
                       <SelectItem key={org.id} value={org.id}>
                         {org.name}
@@ -711,7 +725,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
               {selectedUser.organizations && selectedOrgId !== selectedUser.organizations.id && (
                 <p className="text-sm text-amber-600">
-                  This will remove the user from &quot;{selectedUser.organizations.name}&quot;
+                  {t("admin.users.removeFromOrg").replace("{orgName}", selectedUser.organizations.name)}
                 </p>
               )}
             </div>
@@ -719,10 +733,10 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOrgDialogOpen(false)}>
-              Cancel
+              {t("admin.users.cancel")}
             </Button>
             <Button onClick={assignOrganization} disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save"}
+              {isLoading ? t("admin.users.saving") : t("admin.users.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -734,7 +748,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-indigo-500" />
-              Invite Link for {selectedUser?.first_name} {selectedUser?.last_name}
+              {t("admin.users.inviteLinkFor").replace("{name}", `${selectedUser?.first_name} ${selectedUser?.last_name}`)}
             </DialogTitle>
             <DialogDescription>
               Share this link with <strong>{selectedUser?.email}</strong> so they can
@@ -746,11 +760,11 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
             {inviteLinkLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Generating invite link...</span>
+                <span className="ml-2 text-sm text-muted-foreground">{t("admin.users.generatingLink")}</span>
               </div>
             ) : generatedInviteLink ? (
               <div className="space-y-2">
-                <Label>Invite Link</Label>
+                <Label>{t("admin.users.inviteLink")}</Label>
                 <div className="flex gap-2">
                   <Input
                     readOnly
@@ -762,14 +776,14 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                     size="icon"
                     onClick={() => {
                       navigator.clipboard.writeText(generatedInviteLink)
-                      toast.success("Invite link copied to clipboard!")
+                      toast.success(t("admin.users.inviteCopied"))
                     }}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  This link expires after one use. The user will be directed to create their password.
+                  {t("admin.users.inviteLinkExpiry")}
                 </p>
               </div>
             ) : null}
@@ -782,7 +796,7 @@ export function UsersClient({ initialUsers, organizations }: UsersClientProps) {
                 setGeneratedInviteLink(null)
               }}
             >
-              Done
+              {t("admin.users.done")}
             </Button>
           </DialogFooter>
         </DialogContent>
