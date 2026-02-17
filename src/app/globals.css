@@ -31,7 +31,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -260,7 +260,7 @@ body {
    ============================================ */
 [dir="rtl"] {
   text-align: right;
-  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, sans-serif;
+  font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
 }
 
 [dir="rtl"] .rtl\:flip {
@@ -286,6 +286,158 @@ body {
 [dir="rtl"] .rtl\:rounded-l { border-radius: var(--radius) 0 0 var(--radius); }
 [dir="rtl"] .rtl\:rounded-r { border-radius: 0 var(--radius) var(--radius) 0; }
 [dir="rtl"] .sidebar { right: 0; left: auto; }
+
+/* --- RTL: Auto-flip spacing utilities (margin/padding left/right) --- */
+[dir="rtl"] [class*="ml-"] { margin-left: unset; }
+[dir="rtl"] [class*="mr-"] { margin-right: unset; }
+
+/* Convert margin-left/right to logical properties */
+[dir="rtl"] .ml-1 { margin-inline-start: 0.25rem; }
+[dir="rtl"] .ml-2 { margin-inline-start: 0.5rem; }
+[dir="rtl"] .ml-3 { margin-inline-start: 0.75rem; }
+[dir="rtl"] .ml-4 { margin-inline-start: 1rem; }
+[dir="rtl"] .ml-5 { margin-inline-start: 1.25rem; }
+[dir="rtl"] .ml-6 { margin-inline-start: 1.5rem; }
+[dir="rtl"] .ml-8 { margin-inline-start: 2rem; }
+[dir="rtl"] .ml-10 { margin-inline-start: 2.5rem; }
+[dir="rtl"] .ml-12 { margin-inline-start: 3rem; }
+[dir="rtl"] .ml-auto { margin-inline-start: auto; }
+[dir="rtl"] .mr-1 { margin-inline-end: 0.25rem; }
+[dir="rtl"] .mr-2 { margin-inline-end: 0.5rem; }
+[dir="rtl"] .mr-3 { margin-inline-end: 0.75rem; }
+[dir="rtl"] .mr-4 { margin-inline-end: 1rem; }
+[dir="rtl"] .mr-5 { margin-inline-end: 1.25rem; }
+[dir="rtl"] .mr-6 { margin-inline-end: 1.5rem; }
+[dir="rtl"] .mr-8 { margin-inline-end: 2rem; }
+[dir="rtl"] .mr-auto { margin-inline-end: auto; }
+
+/* Convert padding-left/right to logical properties */
+[dir="rtl"] .pl-1 { padding-left: unset; padding-inline-start: 0.25rem; }
+[dir="rtl"] .pl-2 { padding-left: unset; padding-inline-start: 0.5rem; }
+[dir="rtl"] .pl-3 { padding-left: unset; padding-inline-start: 0.75rem; }
+[dir="rtl"] .pl-4 { padding-left: unset; padding-inline-start: 1rem; }
+[dir="rtl"] .pl-5 { padding-left: unset; padding-inline-start: 1.25rem; }
+[dir="rtl"] .pl-6 { padding-left: unset; padding-inline-start: 1.5rem; }
+[dir="rtl"] .pl-8 { padding-left: unset; padding-inline-start: 2rem; }
+[dir="rtl"] .pl-10 { padding-left: unset; padding-inline-start: 2.5rem; }
+[dir="rtl"] .pl-11 { padding-left: unset; padding-inline-start: 2.75rem; }
+[dir="rtl"] .pr-1 { padding-right: unset; padding-inline-end: 0.25rem; }
+[dir="rtl"] .pr-2 { padding-right: unset; padding-inline-end: 0.5rem; }
+[dir="rtl"] .pr-3 { padding-right: unset; padding-inline-end: 0.75rem; }
+[dir="rtl"] .pr-4 { padding-right: unset; padding-inline-end: 1rem; }
+[dir="rtl"] .pr-5 { padding-right: unset; padding-inline-end: 1.25rem; }
+[dir="rtl"] .pr-6 { padding-right: unset; padding-inline-end: 1.5rem; }
+[dir="rtl"] .pr-8 { padding-right: unset; padding-inline-end: 2rem; }
+[dir="rtl"] .pr-11 { padding-right: unset; padding-inline-end: 2.75rem; }
+[dir="rtl"] .pr-12 { padding-right: unset; padding-inline-end: 3rem; }
+
+/* --- RTL: Auto-flip space-x gap direction --- */
+[dir="rtl"] .space-x-1 > :not(:last-child) { margin-right: 0; margin-left: 0.25rem; }
+[dir="rtl"] .space-x-2 > :not(:last-child) { margin-right: 0; margin-left: 0.5rem; }
+[dir="rtl"] .space-x-3 > :not(:last-child) { margin-right: 0; margin-left: 0.75rem; }
+[dir="rtl"] .space-x-4 > :not(:last-child) { margin-right: 0; margin-left: 1rem; }
+[dir="rtl"] .space-x-5 > :not(:last-child) { margin-right: 0; margin-left: 1.25rem; }
+[dir="rtl"] .space-x-6 > :not(:last-child) { margin-right: 0; margin-left: 1.5rem; }
+[dir="rtl"] .space-x-8 > :not(:last-child) { margin-right: 0; margin-left: 2rem; }
+[dir="rtl"] .-space-x-2 > :not(:last-child) { margin-right: 0; margin-left: -0.5rem; }
+[dir="rtl"] .-space-x-3 > :not(:last-child) { margin-right: 0; margin-left: -0.75rem; }
+[dir="rtl"] .-space-x-4 > :not(:last-child) { margin-right: 0; margin-left: -1rem; }
+
+/* --- RTL: Auto-flip absolute/fixed left/right positioning --- */
+[dir="rtl"] .left-0 { left: unset; right: 0; }
+[dir="rtl"] .left-1 { left: unset; right: 0.25rem; }
+[dir="rtl"] .left-2 { left: unset; right: 0.5rem; }
+[dir="rtl"] .left-3 { left: unset; right: 0.75rem; }
+[dir="rtl"] .left-4 { left: unset; right: 1rem; }
+[dir="rtl"] .right-0 { right: unset; left: 0; }
+[dir="rtl"] .right-1 { right: unset; left: 0.25rem; }
+[dir="rtl"] .right-2 { right: unset; left: 0.5rem; }
+[dir="rtl"] .right-3 { right: unset; left: 0.75rem; }
+[dir="rtl"] .right-4 { right: unset; left: 1rem; }
+
+/* --- RTL: Auto-flip text alignment --- */
+[dir="rtl"] .text-left { text-align: right; }
+[dir="rtl"] .text-right { text-align: left; }
+
+/* --- RTL: Auto-flip border-left/right --- */
+[dir="rtl"] .border-l { border-left: none; border-right-width: 1px; }
+[dir="rtl"] .border-l-2 { border-left: none; border-right-width: 2px; }
+[dir="rtl"] .border-l-4 { border-left: none; border-right-width: 4px; }
+[dir="rtl"] .border-r { border-right: none; border-left-width: 1px; }
+[dir="rtl"] .border-r-2 { border-right: none; border-left-width: 2px; }
+
+/* --- RTL: Auto-flip rounded corners --- */
+[dir="rtl"] .rounded-l { border-radius: 0 var(--radius) var(--radius) 0; }
+[dir="rtl"] .rounded-l-md { border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0; }
+[dir="rtl"] .rounded-l-lg { border-radius: 0 var(--radius) var(--radius) 0; }
+[dir="rtl"] .rounded-l-xl { border-radius: 0 calc(var(--radius) + 4px) calc(var(--radius) + 4px) 0; }
+[dir="rtl"] .rounded-r { border-radius: var(--radius) 0 0 var(--radius); }
+[dir="rtl"] .rounded-r-md { border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px); }
+[dir="rtl"] .rounded-r-lg { border-radius: var(--radius) 0 0 var(--radius); }
+[dir="rtl"] .rounded-r-xl { border-radius: calc(var(--radius) + 4px) 0 0 calc(var(--radius) + 4px); }
+
+/* --- RTL: Flip transform-origin --- */
+[dir="rtl"] .origin-top-left { transform-origin: top right; }
+[dir="rtl"] .origin-top-right { transform-origin: top left; }
+[dir="rtl"] .origin-bottom-left { transform-origin: bottom right; }
+[dir="rtl"] .origin-bottom-right { transform-origin: bottom left; }
+
+/* --- RTL: Flip translate-x animations --- */
+[dir="rtl"] .translate-x-full { transform: translateX(-100%); }
+[dir="rtl"] .-translate-x-full { transform: translateX(100%); }
+
+/* --- RTL: Auto-flip float --- */
+[dir="rtl"] .float-left { float: right; }
+[dir="rtl"] .float-right { float: left; }
+
+/* --- RTL: Ensure justify/items work correctly --- */
+[dir="rtl"] .justify-start { justify-content: flex-start; }
+[dir="rtl"] .justify-end { justify-content: flex-end; }
+
+/* --- RTL: ProseMirror editor fixes --- */
+[dir="rtl"] .ProseMirror ul,
+[dir="rtl"] .ProseMirror ol {
+  padding-left: 0;
+  padding-right: 1.5rem;
+}
+
+[dir="rtl"] .ProseMirror blockquote {
+  border-left: none;
+  border-right: 3px solid var(--border);
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+/* --- RTL: Modern table header text alignment --- */
+[dir="rtl"] .modern-table th {
+  text-align: right;
+}
+[dir="rtl"] .modern-table th:first-child {
+  border-top-left-radius: 0;
+  border-top-right-radius: 12px;
+}
+[dir="rtl"] .modern-table th:last-child {
+  border-top-right-radius: 0;
+  border-top-left-radius: 12px;
+}
+
+/* --- RTL: Command palette active indicator --- */
+[dir="rtl"] .command-palette-item[data-selected="true"] {
+  border-left: none;
+  border-right: 2px solid var(--brand-primary);
+}
+
+/* --- RTL: Notification dot --- */
+[dir="rtl"] .notification-dot::after {
+  right: unset;
+  left: 0;
+}
+
+/* --- RTL: Modern input floating label --- */
+[dir="rtl"] .modern-input-floating label {
+  left: unset;
+  right: 1rem;
+}
 
 /* ============================================
    ANIMATIONS

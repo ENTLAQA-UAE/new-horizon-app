@@ -135,7 +135,7 @@ export function Header({ title, titleAr, onMobileMenuToggle }: HeaderProps) {
             )}
           >
             <Search className="h-4 w-4" />
-            <span className="text-sm flex-1 text-left">{t("common.search")}...</span>
+            <span className="text-sm flex-1">{t("common.search")}...</span>
             <kbd className="pointer-events-none hidden h-6 select-none items-center gap-1 rounded-md border border-border bg-muted/50 px-2 font-mono text-[10px] font-medium sm:flex">
               <span className="text-xs">⌘</span>K
             </kbd>
