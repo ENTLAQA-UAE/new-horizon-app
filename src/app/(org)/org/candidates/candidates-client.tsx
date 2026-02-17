@@ -198,14 +198,30 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
     setResumeText("")
   }
 
-  // Open resume in new tab (like Google Drive - view & download from there)
-  const handleOpenResume = (resumeUrl: string) => {
+  // Open resume in new tab via signed Bunny CDN URL
+  const handleOpenResume = async (resumeUrl: string) => {
     if (!resumeUrl) {
       toast.error(t("candidates.messages.resumeNotAvailable"))
       return
     }
-    // Open the file directly in a new tab - user can view and download from there
-    window.open(resumeUrl, "_blank", "noopener,noreferrer")
+
+    try {
+      const response = await fetch("/api/documents/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storagePath: resumeUrl }),
+      })
+
+      if (!response.ok) {
+        toast.error(t("candidates.messages.resumeNotAvailable"))
+        return
+      }
+
+      const { signedUrl } = await response.json()
+      window.open(signedUrl, "_blank", "noopener,noreferrer")
+    } catch {
+      toast.error(t("candidates.messages.resumeNotAvailable"))
+    }
   }
 
   // CREATE
@@ -513,28 +529,26 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
   // Filter published jobs for apply dialog
   const publishedJobs = jobs.filter(j => j.status === "published" || j.status === "open")
 
-  // Resume upload handler
+  // Resume upload handler — uploads via server API route to Bunny Storage
   const uploadResume = async (file: File, candidateId: string): Promise<string | null> => {
     try {
-      const supabase = createClient()
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${candidateId}-${Date.now()}.${fileExt}`
-      const filePath = `${candidateId}/${fileName}`
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("candidateId", candidateId)
 
-      const { error: uploadError } = await supabase.storage
-        .from("resumes")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        })
+      const response = await fetch("/api/candidates/resume", {
+        method: "POST",
+        body: formData,
+      })
 
-      if (uploadError) {
-        console.error("Upload error:", uploadError)
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        console.error("Upload error:", error)
         return null
       }
 
-      const { data } = supabase.storage.from("resumes").getPublicUrl(filePath)
-      return data.publicUrl
+      const data = await response.json()
+      return data.storagePath
     } catch (error) {
       console.error("Resume upload failed:", error)
       return null
