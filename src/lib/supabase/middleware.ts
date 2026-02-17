@@ -218,6 +218,7 @@ export async function updateSession(request: NextRequest) {
     '/portal/auth',
     '/api/invites',
     '/api/careers',
+    '/api/auth/signup',          // Signup API (user doesn't exist yet)
     '/api/auth/forgot-password', // Password reset API endpoint
     '/api/auth/reset-password',  // Password reset confirmation endpoint
     '/api/offers/respond',       // Offer accept/decline API (token-based, no auth)
