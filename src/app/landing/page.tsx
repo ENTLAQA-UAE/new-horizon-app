@@ -1282,102 +1282,37 @@ export default function LandingPage() {
               <p className="text-lg text-white/70 max-w-2xl mx-auto mb-10">
                 {t(content.cta.subtitle, lang)}
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link
-                  href="/signup"
-                  className="px-8 py-3.5 text-base font-semibold bg-white text-[#1D4ED8] rounded-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
-                >
-                  {t(content.cta.cta, lang)}
-                  <ArrowIcon className="h-4 w-4" />
-                </Link>
-                <a
-                  href="mailto:sales@kawadir.io"
-                  className="px-8 py-3.5 text-base font-semibold rounded-xl border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 transition-all"
-                >
-                  {t(content.cta.demo, lang)}
-                </a>
-              </div>
+              <Link
+                href="/signup"
+                className="px-10 py-3.5 text-base font-semibold bg-white text-[#1D4ED8] rounded-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all inline-flex items-center gap-2"
+              >
+                {t(content.cta.cta, lang)}
+                <ArrowIcon className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════
-          FOOTER — Clean & Minimal
+          FOOTER — Compact
           ═══════════════════════════════════════════ */}
-      <footer className="relative bg-slate-950 text-white overflow-hidden">
-        {/* Gradient accent at top */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2563EB]/50 to-transparent" />
-
-        <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-8">
-          {/* Top section: brand + navigation + contact */}
-          <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-12">
-            {/* Brand */}
-            <div className="max-w-sm">
-              <div className="mb-4">
-                <KawadirLogo lang={lang} variant="white" />
-              </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                {t(content.footer.desc, lang)}
-              </p>
+      <footer className="bg-slate-950 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <KawadirLogo lang={lang} variant="white" />
+            <div className="flex items-center gap-6">
+              {[
+                { en: "Features", ar: "المميزات", href: "#features" },
+                { en: "Pricing", ar: "الأسعار", href: "#pricing" },
+                { en: "Contact", ar: "تواصل معنا", href: "#contact" },
+              ].map((link, i) => (
+                <a key={i} href={link.href} className="text-sm text-gray-500 hover:text-white transition-colors">
+                  {lang === "ar" ? link.ar : link.en}
+                </a>
+              ))}
             </div>
-
-            {/* Quick links — only real, linked pages */}
-            <div className="flex flex-wrap gap-x-10 gap-y-6">
-              <div>
-                <h4 className="font-semibold text-sm text-white mb-4">
-                  {t(content.footer.product, lang)}
-                </h4>
-                <div className="space-y-2.5">
-                  {[
-                    { en: "Features", ar: "المميزات", href: "#features" },
-                    { en: "Pricing", ar: "الأسعار", href: "#pricing" },
-                    { en: "How It Works", ar: "كيف يعمل", href: "#how-it-works" },
-                  ].map((link, i) => (
-                    <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
-                      {lang === "ar" ? link.ar : link.en}
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-sm text-white mb-4">
-                  {t(content.contact.label, lang)}
-                </h4>
-                <div className="space-y-2.5">
-                  <a href="mailto:info@kawadir.io" className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors">
-                    <Mail className="h-3.5 w-3.5" />
-                    info@kawadir.io
-                  </a>
-                  <a href="#contact" className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    {lang === "ar" ? "نموذج التواصل" : "Contact Form"}
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="border-t border-white/[0.06] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">{t(content.footer.copyright, lang)}</p>
-            <div className="flex items-center gap-3">
-              <a
-                href="mailto:info@kawadir.io"
-                aria-label="Email"
-                className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.1] transition-all"
-              >
-                <Mail className="h-4 w-4 text-gray-400" />
-              </a>
-              <a
-                href="#"
-                aria-label="Website"
-                className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.1] transition-all"
-              >
-                <Globe className="h-4 w-4 text-gray-400" />
-              </a>
-            </div>
+            <p className="text-xs text-gray-600">{t(content.footer.copyright, lang)}</p>
           </div>
         </div>
       </footer>
