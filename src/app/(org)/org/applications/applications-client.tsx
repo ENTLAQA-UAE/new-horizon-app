@@ -890,30 +890,14 @@ export function ApplicationsClient({
     }
   }
 
-  // Open resume/attachment in new tab via signed Bunny CDN URL
-  const handleOpenFile = async (fileUrl: string) => {
+  // Open resume/attachment in new tab (like Google Drive - view & download from there)
+  const handleOpenFile = (fileUrl: string) => {
     if (!fileUrl) {
       toast.error(t("applications.messages.fileNotAvailable"))
       return
     }
-
-    try {
-      const response = await fetch("/api/documents/signed-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storagePath: fileUrl }),
-      })
-
-      if (!response.ok) {
-        toast.error(t("applications.messages.fileNotAvailable"))
-        return
-      }
-
-      const { signedUrl } = await response.json()
-      window.open(signedUrl, "_blank", "noopener,noreferrer")
-    } catch {
-      toast.error(t("applications.messages.fileNotAvailable"))
-    }
+    // Open the file directly in a new tab - user can view and download from there
+    window.open(fileUrl, "_blank", "noopener,noreferrer")
   }
 
   // NOTES
