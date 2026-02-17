@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
         subscription_status,
         subscription_start_date,
         subscription_end_date,
+        billing_cycle,
         tier_id,
         max_jobs,
         max_candidates,
