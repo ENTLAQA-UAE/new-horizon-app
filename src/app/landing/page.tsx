@@ -840,41 +840,76 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          FEATURE GRID (smaller features)
+          FEATURE GRID (smaller features) — Premium Dark
           ═══════════════════════════════════════════ */}
-      <section className="bg-gray-50 py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-4 tracking-tight">
-            {lang === "ar" ? "وأكثر من ذلك..." : "And Much More..."}
-          </h2>
-          <p className="text-gray-500 text-lg text-center max-w-2xl mx-auto mb-16">
-            {lang === "ar"
-              ? "مجموعة شاملة من الأدوات لتحسين كل جانب من عملية التوظيف."
-              : "A comprehensive suite of tools to improve every aspect of your hiring process."}
-          </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {content.featureGrid.map((f, i) => (
-              <div
-                key={i}
-                className="bg-white p-6 rounded-2xl border border-gray-100 hover:border-[#2563EB]/10 hover:shadow-xl hover:shadow-[#2563EB]/10 hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="w-11 h-11 rounded-xl bg-[#2563EB]/6 flex items-center justify-center mb-4">
-                  <Icon name={f.icon} className="h-5 w-5 text-[#2563EB]" />
+      <section className="relative overflow-hidden py-28">
+        {/* Dark gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0B1437] to-slate-900" />
+        <div className="absolute inset-0">
+          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#2563EB]/8 blur-[120px]" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#3B82F6]/6 blur-[100px]" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#60A5FA] bg-white/5 border border-white/10 mb-4">
+              {lang === "ar" ? "المزيد من الأدوات" : "More Tools"}
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
+              {lang === "ar" ? "وأكثر من ذلك..." : "And Much More..."}
+            </h2>
+            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+              {lang === "ar"
+                ? "مجموعة شاملة من الأدوات لتحسين كل جانب من عملية التوظيف."
+                : "A comprehensive suite of tools to improve every aspect of your hiring process."}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {content.featureGrid.map((f, i) => {
+              const gradients = [
+                "from-[#2563EB]/20 to-[#3B82F6]/20",
+                "from-violet-500/20 to-purple-500/20",
+                "from-emerald-500/20 to-teal-500/20",
+                "from-amber-500/20 to-orange-500/20",
+                "from-pink-500/20 to-rose-500/20",
+                "from-cyan-500/20 to-sky-500/20",
+              ]
+              const iconColors = [
+                "text-[#60A5FA]",
+                "text-violet-400",
+                "text-emerald-400",
+                "text-amber-400",
+                "text-pink-400",
+                "text-cyan-400",
+              ]
+              return (
+                <div
+                  key={i}
+                  className="group relative rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1 transition-all duration-500"
+                >
+                  {/* Glow on hover */}
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradients[i]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                  <div className="relative">
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradients[i]} flex items-center justify-center mb-5`}>
+                      <Icon name={f.icon} className={`h-6 w-6 ${iconColors[i]}`} />
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-2">{t(f.title, lang)}</h3>
+                    <p className="text-white/40 text-sm leading-relaxed">{t(f.desc, lang)}</p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-bold mb-2">{t(f.title, lang)}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{t(f.desc, lang)}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════
-          HOW IT WORKS
+          HOW IT WORKS — Premium
           ═══════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-24">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-16">
+      <section id="how-it-works" className="py-28 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-20">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
               {t(content.howItWorks.label, lang)}
             </div>
@@ -886,28 +921,47 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {content.howItWorks.steps.map((step, i) => (
-              <div key={i} className="relative text-center">
-                {/* Connector line */}
-                {i < 2 && (
-                  <div
-                    className="hidden md:block absolute top-10 w-full h-[2px] bg-gradient-to-r from-[#2563EB]/20 to-[#60A5FA]/20"
-                    style={{ [isRtl ? "right" : "left"]: "60%" }}
-                  />
-                )}
-                <div className="relative z-10">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#2563EB] to-[#60A5FA] flex items-center justify-center mx-auto mb-6 shadow-xl shadow-[#2563EB]/20">
-                    <Icon name={step.icon} className="h-9 w-9 text-white" />
+          <div className="relative">
+            {/* Connector line behind cards */}
+            <div className="hidden md:block absolute top-24 left-[16.67%] right-[16.67%] h-[2px]">
+              <div className="h-full bg-gradient-to-r from-[#2563EB]/5 via-[#2563EB]/20 to-[#2563EB]/5 rounded-full" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[2px] w-1/3 bg-gradient-to-r from-[#2563EB]/40 to-[#60A5FA]/40 rounded-full blur-sm" />
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+              {content.howItWorks.steps.map((step, i) => {
+                const stepGradients = [
+                  { bg: "from-[#2563EB] to-[#3B82F6]", glow: "shadow-[#2563EB]/30" },
+                  { bg: "from-[#3B82F6] to-[#60A5FA]", glow: "shadow-[#3B82F6]/30" },
+                  { bg: "from-emerald-500 to-emerald-400", glow: "shadow-emerald-500/30" },
+                ]
+                return (
+                  <div key={i} className="relative group">
+                    <div className="text-center">
+                      {/* Step number + icon */}
+                      <div className="relative mx-auto mb-8 w-24 h-24">
+                        {/* Outer ring */}
+                        <div className="absolute inset-0 rounded-3xl border-2 border-dashed border-gray-200 group-hover:border-[#2563EB]/30 transition-colors duration-500 rotate-6" />
+                        {/* Main icon container */}
+                        <div className={`relative w-24 h-24 rounded-3xl bg-gradient-to-br ${stepGradients[i].bg} flex items-center justify-center shadow-2xl ${stepGradients[i].glow} group-hover:scale-105 group-hover:-rotate-3 transition-all duration-500`}>
+                          <Icon name={step.icon} className="h-10 w-10 text-white" />
+                        </div>
+                        {/* Step badge */}
+                        <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white shadow-lg border-2 border-gray-100 flex items-center justify-center">
+                          <span className="text-xs font-extrabold text-[#2563EB]">{step.step}</span>
+                        </div>
+                      </div>
+
+                      {/* Content card */}
+                      <div className="bg-gray-50/80 rounded-2xl p-6 border border-gray-100 group-hover:bg-white group-hover:shadow-xl group-hover:shadow-gray-200/50 group-hover:border-gray-200 transition-all duration-500">
+                        <h3 className="text-xl font-bold mb-3 text-gray-900">{t(step.title, lang)}</h3>
+                        <p className="text-gray-500 text-sm leading-relaxed">{t(step.desc, lang)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xs font-bold uppercase tracking-[0.15em] text-[#2563EB] mb-2">
-                    {lang === "ar" ? `الخطوة ${step.step}` : `Step ${step.step}`}
-                  </div>
-                  <h3 className="text-xl font-bold mb-3">{t(step.title, lang)}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{t(step.desc, lang)}</p>
-                </div>
-              </div>
-            ))}
+                )
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -999,117 +1053,165 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          FAQ
+          FAQ — Premium
           ═══════════════════════════════════════════ */}
-      <section id="faq" className="py-24">
-        <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-12 tracking-tight">
-            {t(content.faq.title, lang)}
-          </h2>
-          <div className="space-y-3">
-            {content.faq.items.map((item, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
-              >
-                <button
-                  className="w-full flex items-center justify-between p-5 text-start font-semibold hover:bg-gray-50 transition-colors"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+      <section id="faq" className="py-28 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
+              {lang === "ar" ? "الأسئلة الشائعة" : "FAQ"}
+            </div>
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
+              {t(content.faq.title, lang)}
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+              {lang === "ar"
+                ? "إجابات على الأسئلة الأكثر شيوعًا حول منصتنا."
+                : "Answers to the most common questions about our platform."}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {content.faq.items.map((item, i) => {
+              const isOpen = openFaq === i
+              return (
+                <div
+                  key={i}
+                  className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
+                    isOpen
+                      ? "bg-white shadow-xl shadow-[#2563EB]/5 border-[#2563EB]/20"
+                      : "bg-white border-gray-200 hover:border-gray-300"
+                  }`}
                 >
-                  <span className="text-[15px]">{t(item.q, lang)}</span>
-                  {openFaq === i ? (
-                    <ChevronUp className="h-5 w-5 text-gray-400 shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400 shrink-0" />
-                  )}
-                </button>
-                {openFaq === i && (
-                  <div className="px-5 pb-5 text-gray-500 text-sm leading-relaxed animate-fade-in">
-                    {t(item.a, lang)}
+                  <button
+                    className="w-full flex items-center gap-4 p-6 text-start"
+                    onClick={() => setOpenFaq(isOpen ? null : i)}
+                  >
+                    {/* Number badge */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm transition-colors duration-300 ${
+                      isOpen
+                        ? "bg-gradient-to-br from-[#2563EB] to-[#3B82F6] text-white"
+                        : "bg-gray-100 text-gray-400"
+                    }`}>
+                      {String(i + 1).padStart(2, "0")}
+                    </div>
+                    <span className={`flex-1 text-[15px] font-semibold transition-colors duration-300 ${
+                      isOpen ? "text-[#2563EB]" : "text-gray-900"
+                    }`}>
+                      {t(item.q, lang)}
+                    </span>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      isOpen ? "bg-[#2563EB]/10 rotate-180" : "bg-gray-100"
+                    }`}>
+                      <ChevronDown className={`h-4 w-4 transition-colors duration-300 ${
+                        isOpen ? "text-[#2563EB]" : "text-gray-400"
+                      }`} />
+                    </div>
+                  </button>
+                  <div className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-96" : "max-h-0"}`}>
+                    <div className={`px-6 pb-6 ${isRtl ? "pr-20" : "pl-20"}`}>
+                      <p className="text-gray-500 leading-relaxed">
+                        {t(item.a, lang)}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════
-          CONTACT US
+          CONTACT US — Premium Split Design
           ═══════════════════════════════════════════ */}
-      <section id="contact" className="bg-gray-50 py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
-              {t(content.contact.label, lang)}
-            </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
-              {t(content.contact.title, lang)}
-            </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-              {t(content.contact.subtitle, lang)}
-            </p>
-          </div>
+      <section id="contact" className="relative overflow-hidden py-28">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="relative rounded-3xl overflow-hidden">
+            <div className="grid lg:grid-cols-2">
+              {/* Left side — dark with contact info */}
+              <div className="relative p-10 md:p-14 bg-gradient-to-br from-slate-950 via-[#0B1437] to-[#1D4ED8]">
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute top-[-30%] right-[-20%] w-[400px] h-[400px] rounded-full bg-[#2563EB]/15 blur-[80px]" />
+                  <div className="absolute bottom-[-30%] left-[-20%] w-[300px] h-[300px] rounded-full bg-[#3B82F6]/10 blur-[60px]" />
+                </div>
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#60A5FA] bg-white/10 border border-white/10 mb-6">
+                    {t(content.contact.label, lang)}
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight">
+                    {t(content.contact.title, lang)}
+                  </h2>
+                  <p className="text-white/50 mb-10 leading-relaxed">
+                    {t(content.contact.subtitle, lang)}
+                  </p>
 
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Contact Info */}
-            <div className="space-y-6">
-              {content.contact.info.map((item, i) => (
-                <div key={i} className="flex items-start gap-4 bg-white rounded-2xl p-6 border border-gray-100">
-                  <div className="w-12 h-12 rounded-xl bg-[#2563EB]/6 flex items-center justify-center shrink-0">
-                    <Icon name={item.icon} className="h-6 w-6 text-[#2563EB]" />
+                  <div className="space-y-4">
+                    {content.contact.info.map((item, i) => (
+                      <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08] transition-colors">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2563EB]/30 to-[#3B82F6]/30 flex items-center justify-center shrink-0">
+                          <Icon name={item.icon} className="h-5 w-5 text-[#60A5FA]" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-white text-sm mb-0.5">{t(item.label, lang)}</h4>
+                          <p className="text-white/40 text-sm">
+                            {typeof item.value === "string" ? item.value : t(item.value, lang)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side — form */}
+              <div className="p-10 md:p-14 bg-white">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {lang === "ar" ? "أرسل لنا رسالة" : "Send Us a Message"}
+                </h3>
+                <p className="text-gray-400 text-sm mb-8">
+                  {lang === "ar" ? "سنعود إليك في غضون 24 ساعة." : "We'll get back to you within 24 hours."}
+                </p>
+                <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      {t(content.contact.nameField, lang)}
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 outline-none transition-all text-sm"
+                      placeholder={lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
+                    />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">{t(item.label, lang)}</h4>
-                    <p className="text-gray-500 text-sm">
-                      {typeof item.value === "string" ? item.value : t(item.value, lang)}
-                    </p>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      {t(content.contact.emailField, lang)}
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 outline-none transition-all text-sm"
+                      placeholder={lang === "ar" ? "أدخل بريدك الإلكتروني" : "Enter your email address"}
+                    />
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Contact Form */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t(content.contact.nameField, lang)}
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all text-sm"
-                    placeholder={lang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t(content.contact.emailField, lang)}
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all text-sm"
-                    placeholder={lang === "ar" ? "أدخل بريدك الإلكتروني" : "Enter your email address"}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t(content.contact.messageField, lang)}
-                  </label>
-                  <textarea
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 outline-none transition-all text-sm resize-none"
-                    placeholder={lang === "ar" ? "اكتب رسالتك هنا..." : "Write your message here..."}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 px-6 bg-gradient-to-r from-[#2563EB] to-[#60A5FA] text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-[#2563EB]/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  {t(content.contact.send, lang)}
-                </button>
-              </form>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      {t(content.contact.messageField, lang)}
+                    </label>
+                    <textarea
+                      rows={4}
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/10 outline-none transition-all text-sm resize-none"
+                      placeholder={lang === "ar" ? "اكتب رسالتك هنا..." : "Write your message here..."}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-4 px-6 bg-gradient-to-r from-[#2563EB] to-[#3B82F6] text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-[#2563EB]/25 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-base"
+                  >
+                    <Send className="h-4 w-4" />
+                    {t(content.contact.send, lang)}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -1155,34 +1257,55 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          FOOTER
+          FOOTER — Premium
           ═══════════════════════════════════════════ */}
-      <footer className="bg-slate-950 text-white">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid md:grid-cols-4 gap-12">
-            {/* Brand */}
-            <div className="md:col-span-1">
-              <div className="mb-4">
+      <footer className="relative bg-slate-950 text-white overflow-hidden">
+        {/* Subtle gradient accent at top */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2563EB]/50 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px] bg-gradient-to-r from-transparent via-[#60A5FA]/30 to-transparent blur-sm" />
+
+        <div className="relative max-w-7xl mx-auto px-6 pt-20 pb-8">
+          {/* Main footer grid */}
+          <div className="grid md:grid-cols-12 gap-12 mb-16">
+            {/* Brand — takes more space */}
+            <div className="md:col-span-4">
+              <div className="mb-5">
                 <KawadirLogo lang={lang} variant="white" />
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-gray-400 text-sm leading-relaxed mb-8 max-w-xs">
                 {t(content.footer.desc, lang)}
               </p>
+              {/* Social icons */}
+              <div className="flex items-center gap-3">
+                {[
+                  { icon: Mail, href: "mailto:info@kawadir.io", label: "Email" },
+                  { icon: Globe, href: "#", label: "Website" },
+                ].map((social, i) => (
+                  <a
+                    key={i}
+                    href={social.href}
+                    aria-label={social.label}
+                    className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.1] hover:border-white/[0.15] transition-all"
+                  >
+                    <social.icon className="h-4 w-4 text-gray-400" />
+                  </a>
+                ))}
+              </div>
             </div>
 
             {/* Product links */}
-            <div>
-              <h4 className="font-semibold text-sm uppercase tracking-wider text-gray-400 mb-4">
+            <div className="md:col-span-2 md:col-start-6">
+              <h4 className="font-semibold text-sm text-white mb-5">
                 {t(content.footer.product, lang)}
               </h4>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
                   { en: "Features", ar: "المميزات", href: "#features" },
                   { en: "Pricing", ar: "الأسعار", href: "#pricing" },
                   { en: "Integrations", ar: "التكاملات", href: "#" },
                   { en: "API", ar: "واجهة البرمجة", href: "#" },
                 ].map((link, i) => (
-                  <a key={i} href={link.href} className="block text-sm text-gray-400 hover:text-white transition-colors">
+                  <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
                     {lang === "ar" ? link.ar : link.en}
                   </a>
                 ))}
@@ -1190,18 +1313,18 @@ export default function LandingPage() {
             </div>
 
             {/* Company links */}
-            <div>
-              <h4 className="font-semibold text-sm uppercase tracking-wider text-gray-400 mb-4">
+            <div className="md:col-span-2">
+              <h4 className="font-semibold text-sm text-white mb-5">
                 {t(content.footer.company, lang)}
               </h4>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
                   { en: "About Us", ar: "عن كوادر", href: "#" },
                   { en: "Blog", ar: "المدونة", href: "#" },
                   { en: "Careers", ar: "وظائف", href: "#" },
                   { en: "Contact", ar: "تواصل معنا", href: "#contact" },
                 ].map((link, i) => (
-                  <a key={i} href={link.href} className="block text-sm text-gray-400 hover:text-white transition-colors">
+                  <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
                     {lang === "ar" ? link.ar : link.en}
                   </a>
                 ))}
@@ -1209,17 +1332,17 @@ export default function LandingPage() {
             </div>
 
             {/* Legal links */}
-            <div>
-              <h4 className="font-semibold text-sm uppercase tracking-wider text-gray-400 mb-4">
+            <div className="md:col-span-2">
+              <h4 className="font-semibold text-sm text-white mb-5">
                 {t(content.footer.legal, lang)}
               </h4>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {[
                   { en: "Privacy Policy", ar: "سياسة الخصوصية", href: "#" },
                   { en: "Terms of Service", ar: "شروط الخدمة", href: "#" },
                   { en: "Cookie Policy", ar: "سياسة ملفات الارتباط", href: "#" },
                 ].map((link, i) => (
-                  <a key={i} href={link.href} className="block text-sm text-gray-400 hover:text-white transition-colors">
+                  <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
                     {lang === "ar" ? link.ar : link.en}
                   </a>
                 ))}
@@ -1227,16 +1350,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500">{t(content.footer.copyright, lang)}</p>
-            <div className="flex items-center gap-6">
-              <a href="mailto:info@kawadir.io" className="text-gray-400 hover:text-white transition-colors">
-                <Mail className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <Globe className="h-5 w-5" />
-              </a>
-            </div>
+          {/* Bottom bar */}
+          <div className="border-t border-white/[0.06] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-600">{t(content.footer.copyright, lang)}</p>
+            <p className="text-xs text-gray-700">
+              {lang === "ar"
+                ? "صنع بحب في منطقة الشرق الأوسط وشمال أفريقيا"
+                : "Made with love in the MENA region"}
+            </p>
           </div>
         </div>
       </footer>
