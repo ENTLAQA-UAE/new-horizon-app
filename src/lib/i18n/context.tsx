@@ -36,8 +36,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       document.documentElement.lang = language
       // Update font family based on language
       document.body.style.fontFamily = language === "ar"
-        ? '"IBM Plex Sans Arabic", "Noto Sans Arabic", system-ui, -apple-system, sans-serif'
-        : 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        ? '"IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif'
+        : '"Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }
   }, [language, mounted])
 
