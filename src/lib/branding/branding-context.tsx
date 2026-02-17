@@ -19,8 +19,8 @@ const defaultBranding: BrandingConfig = {
   orgName: "Kawadir",
   orgNameAr: "كوادر",
   logoUrl: null,
-  primaryColor: "#2D4CFF",
-  secondaryColor: "#6B7FFF",
+  primaryColor: "#2563EB",
+  secondaryColor: "#3B82F6",
   accentColor: "#06b6d4", // Cyan
   isLoaded: false,
 }
@@ -68,8 +68,8 @@ export function BrandingProvider({ children }: BrandingProviderProps) {
       orgName: organization.name || "Kawadir",
       orgNameAr: organization.name_ar || "كوادر",
       logoUrl: organization.logo_url,
-      primaryColor: organization.primary_color || "#2D4CFF",
-      secondaryColor: organization.secondary_color || "#6B7FFF",
+      primaryColor: organization.primary_color || "#2563EB",
+      secondaryColor: organization.secondary_color || "#3B82F6",
       accentColor: "#06b6d4",
       isLoaded: true,
     }
