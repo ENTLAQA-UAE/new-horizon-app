@@ -10,6 +10,11 @@ import { AuthErrorDisplay } from "@/components/auth/auth-error"
 import { OnboardingGuideProvider, OnboardingGuideWidget } from "@/components/onboarding-guide"
 import { Loader2 } from "lucide-react"
 import { TrialBanner } from "@/components/org/trial-banner"
+import { SubscriptionGuardProvider } from "@/lib/subscription/subscription-context"
+import { SubscriptionAdminBanner } from "@/components/org/subscription-admin-banner"
+import { SubscriptionRestrictionModal } from "@/components/org/subscription-restriction-modal"
+import { SubscriptionContentGuard } from "@/components/org/subscription-content-guard"
+import { SubscriptionSidebarGuard } from "@/components/org/subscription-sidebar-guard"
 import { useState, useEffect } from "react"
 
 /**
@@ -112,25 +117,33 @@ function OrgLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <BrandingProvider>
       <I18nProvider>
-        <OnboardingGuideProvider>
-          <div className="flex h-screen overflow-hidden bg-background">
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              onCollapse={setSidebarCollapsed}
-              userRole={sidebarRole}
-            />
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <TrialBanner />
-              <Header />
-              <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
-                <div className="animate-fade-in-up">
-                  {children}
-                </div>
-              </main>
+        <SubscriptionGuardProvider>
+          <OnboardingGuideProvider>
+            <div className="flex h-screen overflow-hidden bg-background">
+              <SubscriptionSidebarGuard>
+                <Sidebar
+                  collapsed={sidebarCollapsed}
+                  onCollapse={setSidebarCollapsed}
+                  userRole={sidebarRole}
+                />
+              </SubscriptionSidebarGuard>
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <TrialBanner />
+                <SubscriptionAdminBanner />
+                <Header />
+                <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
+                  <SubscriptionContentGuard>
+                    <div className="animate-fade-in-up">
+                      {children}
+                    </div>
+                  </SubscriptionContentGuard>
+                </main>
+              </div>
+              <SubscriptionRestrictionModal />
+              <OnboardingGuideWidget />
             </div>
-            <OnboardingGuideWidget />
-          </div>
-        </OnboardingGuideProvider>
+          </OnboardingGuideProvider>
+        </SubscriptionGuardProvider>
       </I18nProvider>
     </BrandingProvider>
   )
