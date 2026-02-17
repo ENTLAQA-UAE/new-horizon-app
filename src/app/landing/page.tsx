@@ -547,13 +547,13 @@ export default function LandingPage() {
           NAVBAR
           ═══════════════════════════════════════════ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/landing" className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between" dir={isRtl ? "rtl" : "ltr"}>
+          {/* Logo — always at the start (right in RTL, left in LTR) */}
+          <Link href="/landing" className="flex items-center gap-2 shrink-0">
             <KawadirLogo lang={lang} />
           </Link>
 
-          {/* Nav Links — desktop */}
+          {/* Nav Links — desktop, centered */}
           <div className="hidden md:flex items-center gap-8">
             <a href="#" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               {t(content.nav.home, lang)}
@@ -569,8 +569,8 @@ export default function LandingPage() {
             </a>
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* End side — always at the end (left in RTL, right in LTR) */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => setLang(lang === "en" ? "ar" : "en")}
               className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
@@ -760,22 +760,40 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          STATS BAND — Animated Counting with Icons
+          STATS BAND — Premium with Individual Cards
           ═══════════════════════════════════════════ */}
-      <section className="bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] border-y border-[#2563EB]">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {content.stats.map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 mb-4">
-                  <Icon name={stat.icon} className="h-7 w-7 text-white" />
+      <section className="relative py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            {content.stats.map((stat, i) => {
+              const cardStyles = [
+                { bg: "from-[#2563EB] to-[#1D4ED8]", iconBg: "bg-white/20", shadow: "shadow-[#2563EB]/25" },
+                { bg: "from-violet-600 to-purple-700", iconBg: "bg-white/20", shadow: "shadow-violet-600/25" },
+                { bg: "from-emerald-500 to-teal-600", iconBg: "bg-white/20", shadow: "shadow-emerald-500/25" },
+                { bg: "from-amber-500 to-orange-600", iconBg: "bg-white/20", shadow: "shadow-amber-500/25" },
+              ]
+              const style = cardStyles[i]
+              return (
+                <div
+                  key={i}
+                  className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${style.bg} p-6 sm:p-8 shadow-xl ${style.shadow} hover:-translate-y-1 transition-all duration-300`}
+                >
+                  {/* Decorative circle */}
+                  <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 blur-md" />
+                  <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5 blur-sm" />
+
+                  <div className="relative">
+                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl ${style.iconBg} mb-4`}>
+                      <Icon name={stat.icon} className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="text-3xl sm:text-4xl font-extrabold text-white mb-1">
+                      <AnimatedCounter value={stat.numericValue} suffix={stat.suffix} />
+                    </div>
+                    <div className="text-white/70 font-medium text-sm">{t(stat.label, lang)}</div>
+                  </div>
                 </div>
-                <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-2">
-                  <AnimatedCounter value={stat.numericValue} suffix={stat.suffix} />
-                </div>
-                <div className="text-white/70 font-medium text-sm">{t(stat.label, lang)}</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -840,62 +858,51 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          FEATURE GRID (smaller features) — Premium Dark
+          FEATURE GRID (smaller features) — 3D Cards
           ═══════════════════════════════════════════ */}
-      <section className="relative overflow-hidden py-28">
-        {/* Dark gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0B1437] to-slate-900" />
-        <div className="absolute inset-0">
-          <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#2563EB]/8 blur-[120px]" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#3B82F6]/6 blur-[100px]" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-6">
+      <section className="py-28 bg-gradient-to-b from-gray-50 to-gray-100/50">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#60A5FA] bg-white/5 border border-white/10 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
               {lang === "ar" ? "المزيد من الأدوات" : "More Tools"}
             </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
               {lang === "ar" ? "وأكثر من ذلك..." : "And Much More..."}
             </h2>
-            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
               {lang === "ar"
                 ? "مجموعة شاملة من الأدوات لتحسين كل جانب من عملية التوظيف."
                 : "A comprehensive suite of tools to improve every aspect of your hiring process."}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {content.featureGrid.map((f, i) => {
-              const gradients = [
-                "from-[#2563EB]/20 to-[#3B82F6]/20",
-                "from-violet-500/20 to-purple-500/20",
-                "from-emerald-500/20 to-teal-500/20",
-                "from-amber-500/20 to-orange-500/20",
-                "from-pink-500/20 to-rose-500/20",
-                "from-cyan-500/20 to-sky-500/20",
+              const cardThemes = [
+                { gradient: "from-[#2563EB] to-[#1D4ED8]", iconBg: "bg-[#2563EB]", shadow: "shadow-[#2563EB]/20", lightBg: "bg-blue-50/50" },
+                { gradient: "from-violet-600 to-purple-700", iconBg: "bg-violet-600", shadow: "shadow-violet-600/20", lightBg: "bg-violet-50/50" },
+                { gradient: "from-emerald-500 to-teal-600", iconBg: "bg-emerald-500", shadow: "shadow-emerald-500/20", lightBg: "bg-emerald-50/50" },
+                { gradient: "from-amber-500 to-orange-600", iconBg: "bg-amber-500", shadow: "shadow-amber-500/20", lightBg: "bg-amber-50/50" },
+                { gradient: "from-pink-500 to-rose-600", iconBg: "bg-pink-500", shadow: "shadow-pink-500/20", lightBg: "bg-pink-50/50" },
+                { gradient: "from-cyan-500 to-sky-600", iconBg: "bg-cyan-500", shadow: "shadow-cyan-500/20", lightBg: "bg-cyan-50/50" },
               ]
-              const iconColors = [
-                "text-[#60A5FA]",
-                "text-violet-400",
-                "text-emerald-400",
-                "text-amber-400",
-                "text-pink-400",
-                "text-cyan-400",
-              ]
+              const theme = cardThemes[i]
               return (
                 <div
                   key={i}
-                  className="group relative rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm hover:bg-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1 transition-all duration-500"
+                  className={`group relative rounded-2xl bg-white p-7 border border-gray-200/80 shadow-lg ${theme.shadow} hover:shadow-2xl hover:-translate-y-2 transition-all duration-500`}
                 >
-                  {/* Glow on hover */}
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradients[i]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                  <div className="relative">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${gradients[i]} flex items-center justify-center mb-5`}>
-                      <Icon name={f.icon} className={`h-6 w-6 ${iconColors[i]}`} />
+                  {/* Colored accent line at top */}
+                  <div className={`absolute top-0 left-6 right-6 h-1 rounded-b-full bg-gradient-to-r ${theme.gradient} opacity-80`} />
+                  {/* Subtle colored background glow */}
+                  <div className={`absolute top-0 right-0 w-32 h-32 ${theme.lightBg} rounded-bl-[60px] -z-0`} />
+
+                  <div className="relative z-10">
+                    <div className={`w-14 h-14 rounded-2xl ${theme.iconBg} flex items-center justify-center mb-5 shadow-lg ${theme.shadow} group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon name={f.icon} className="h-7 w-7 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">{t(f.title, lang)}</h3>
-                    <p className="text-white/40 text-sm leading-relaxed">{t(f.desc, lang)}</p>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t(f.title, lang)}</h3>
+                    <p className="text-gray-500 text-sm leading-relaxed">{t(f.desc, lang)}</p>
                   </div>
                 </div>
               )
@@ -967,84 +974,99 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          PRICING
+          PRICING — Premium Dark
           ═══════════════════════════════════════════ */}
-      <section id="pricing" className="bg-gray-50 py-24">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="pricing" className="relative overflow-hidden py-28">
+        {/* Dark background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0B1437] to-slate-900" />
+        <div className="absolute inset-0">
+          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#2563EB]/8 blur-[120px]" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-violet-500/5 blur-[100px]" />
+        </div>
+
+        <div className="relative max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#2563EB] bg-[#2563EB]/6 mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-[#60A5FA] bg-white/5 border border-white/10 mb-4">
               {t(content.pricing.label, lang)}
             </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight">
+            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
               {t(content.pricing.title, lang)}
             </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+            <p className="text-lg text-white/50 max-w-2xl mx-auto">
               {t(content.pricing.subtitle, lang)}
             </p>
           </div>
 
           {tiersLoading ? (
             <div className="text-center py-16">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#2563EB]/20 border-t-[#2563EB]" />
-              <p className="text-gray-500 mt-4 text-sm">{t(content.pricing.loading, lang)}</p>
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#2563EB]/20 border-t-[#60A5FA]" />
+              <p className="text-white/40 mt-4 text-sm">{t(content.pricing.loading, lang)}</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6 items-start">
               {plans.map((plan, i) => (
                 <div
                   key={i}
-                  className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                  className={`relative rounded-3xl transition-all duration-500 ${
                     plan.highlighted
-                      ? "bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white shadow-2xl shadow-[#2563EB]/25 md:scale-105"
-                      : "bg-white border border-gray-200 hover:border-[#2563EB]/20 hover:shadow-xl"
+                      ? "bg-gradient-to-br from-[#2563EB] via-[#3B82F6] to-[#1D4ED8] shadow-2xl shadow-[#2563EB]/30 md:scale-[1.04] md:-translate-y-3 ring-1 ring-white/20"
+                      : "bg-white/[0.06] backdrop-blur-sm border border-white/[0.08] hover:bg-white/[0.1] hover:border-white/[0.15] hover:-translate-y-1"
                   }`}
                 >
                   {plan.highlighted && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-400 text-gray-900 shadow-lg shadow-amber-500/30">
                       <Star className="h-3.5 w-3.5" />
                       {t(content.pricing.popular, lang)}
                     </div>
                   )}
 
-                  <h3 className={`text-xl font-bold mb-2 ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
-                    {t(plan.name, lang)}
-                  </h3>
-                  <p className={`text-sm mb-6 ${plan.highlighted ? "text-white/70" : "text-gray-500"}`}>
-                    {t(plan.description, lang)}
-                  </p>
+                  <div className="p-8">
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      {t(plan.name, lang)}
+                    </h3>
+                    <p className={`text-sm mb-6 ${plan.highlighted ? "text-white/70" : "text-white/40"}`}>
+                      {t(plan.description, lang)}
+                    </p>
 
-                  <div className="mb-8">
-                    <span className={`text-4xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
-                      {t(plan.price, lang)}
-                    </span>
-                    {plan.period.en && (
-                      <span className={`text-sm ${plan.highlighted ? "text-white/60" : "text-gray-400"}`}>
-                        {t(plan.period, lang)}
+                    <div className="mb-8">
+                      <span className="text-5xl font-extrabold text-white">
+                        {t(plan.price, lang)}
                       </span>
-                    )}
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
-                      <li key={j} className="flex items-center gap-3">
-                        <Check className={`h-5 w-5 shrink-0 ${plan.highlighted ? "text-white/80" : "text-[#2563EB]"}`} />
-                        <span className={`text-sm ${plan.highlighted ? "text-white/90" : "text-gray-600"}`}>
-                          {feature}
+                      {plan.period.en && (
+                        <span className={`text-sm ${plan.highlighted ? "text-white/60" : "text-white/30"}`}>
+                          {t(plan.period, lang)}
                         </span>
-                      </li>
-                    ))}
-                  </ul>
+                      )}
+                    </div>
 
-                  <Link
-                    href="/signup"
-                    className={`block w-full text-center py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
-                      plan.highlighted
-                        ? "bg-white text-[#2563EB] hover:shadow-lg hover:-translate-y-0.5"
-                        : "bg-[#2563EB]/6 text-[#2563EB] hover:bg-[#2563EB]/10"
-                    }`}
-                  >
-                    {t(content.pricing.cta, lang)}
-                  </Link>
+                    <div className={`h-px mb-8 ${plan.highlighted ? "bg-white/20" : "bg-white/[0.06]"}`} />
+
+                    <ul className="space-y-3.5 mb-8">
+                      {(lang === "ar" ? plan.features.ar : plan.features.en).map((feature, j) => (
+                        <li key={j} className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                            plan.highlighted ? "bg-white/20" : "bg-[#2563EB]/20"
+                          }`}>
+                            <Check className={`h-3 w-3 ${plan.highlighted ? "text-white" : "text-[#60A5FA]"}`} />
+                          </div>
+                          <span className={`text-sm ${plan.highlighted ? "text-white/90" : "text-white/60"}`}>
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link
+                      href="/signup"
+                      className={`block w-full text-center py-3.5 px-6 rounded-xl text-sm font-semibold transition-all ${
+                        plan.highlighted
+                          ? "bg-white text-[#2563EB] hover:shadow-xl hover:shadow-white/20 hover:-translate-y-0.5"
+                          : "bg-white/[0.08] text-white border border-white/[0.1] hover:bg-white/[0.15] hover:border-white/[0.2]"
+                      }`}
+                    >
+                      {t(content.pricing.cta, lang)}
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1257,107 +1279,81 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          FOOTER — Premium
+          FOOTER — Clean & Minimal
           ═══════════════════════════════════════════ */}
       <footer className="relative bg-slate-950 text-white overflow-hidden">
-        {/* Subtle gradient accent at top */}
+        {/* Gradient accent at top */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2563EB]/50 to-transparent" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[1px] bg-gradient-to-r from-transparent via-[#60A5FA]/30 to-transparent blur-sm" />
 
-        <div className="relative max-w-7xl mx-auto px-6 pt-20 pb-8">
-          {/* Main footer grid */}
-          <div className="grid md:grid-cols-12 gap-12 mb-16">
-            {/* Brand — takes more space */}
-            <div className="md:col-span-4">
-              <div className="mb-5">
+        <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-8">
+          {/* Top section: brand + navigation + contact */}
+          <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-12">
+            {/* Brand */}
+            <div className="max-w-sm">
+              <div className="mb-4">
                 <KawadirLogo lang={lang} variant="white" />
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed mb-8 max-w-xs">
+              <p className="text-gray-400 text-sm leading-relaxed">
                 {t(content.footer.desc, lang)}
               </p>
-              {/* Social icons */}
-              <div className="flex items-center gap-3">
-                {[
-                  { icon: Mail, href: "mailto:info@kawadir.io", label: "Email" },
-                  { icon: Globe, href: "#", label: "Website" },
-                ].map((social, i) => (
-                  <a
-                    key={i}
-                    href={social.href}
-                    aria-label={social.label}
-                    className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.1] hover:border-white/[0.15] transition-all"
-                  >
-                    <social.icon className="h-4 w-4 text-gray-400" />
-                  </a>
-                ))}
-              </div>
             </div>
 
-            {/* Product links */}
-            <div className="md:col-span-2 md:col-start-6">
-              <h4 className="font-semibold text-sm text-white mb-5">
-                {t(content.footer.product, lang)}
-              </h4>
-              <div className="space-y-3">
-                {[
-                  { en: "Features", ar: "المميزات", href: "#features" },
-                  { en: "Pricing", ar: "الأسعار", href: "#pricing" },
-                  { en: "Integrations", ar: "التكاملات", href: "#" },
-                  { en: "API", ar: "واجهة البرمجة", href: "#" },
-                ].map((link, i) => (
-                  <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
-                    {lang === "ar" ? link.ar : link.en}
-                  </a>
-                ))}
+            {/* Quick links — only real, linked pages */}
+            <div className="flex flex-wrap gap-x-10 gap-y-6">
+              <div>
+                <h4 className="font-semibold text-sm text-white mb-4">
+                  {t(content.footer.product, lang)}
+                </h4>
+                <div className="space-y-2.5">
+                  {[
+                    { en: "Features", ar: "المميزات", href: "#features" },
+                    { en: "Pricing", ar: "الأسعار", href: "#pricing" },
+                    { en: "How It Works", ar: "كيف يعمل", href: "#how-it-works" },
+                  ].map((link, i) => (
+                    <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
+                      {lang === "ar" ? link.ar : link.en}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Company links */}
-            <div className="md:col-span-2">
-              <h4 className="font-semibold text-sm text-white mb-5">
-                {t(content.footer.company, lang)}
-              </h4>
-              <div className="space-y-3">
-                {[
-                  { en: "About Us", ar: "عن كوادر", href: "#" },
-                  { en: "Blog", ar: "المدونة", href: "#" },
-                  { en: "Careers", ar: "وظائف", href: "#" },
-                  { en: "Contact", ar: "تواصل معنا", href: "#contact" },
-                ].map((link, i) => (
-                  <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
-                    {lang === "ar" ? link.ar : link.en}
+              <div>
+                <h4 className="font-semibold text-sm text-white mb-4">
+                  {t(content.contact.label, lang)}
+                </h4>
+                <div className="space-y-2.5">
+                  <a href="mailto:info@kawadir.io" className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors">
+                    <Mail className="h-3.5 w-3.5" />
+                    info@kawadir.io
                   </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Legal links */}
-            <div className="md:col-span-2">
-              <h4 className="font-semibold text-sm text-white mb-5">
-                {t(content.footer.legal, lang)}
-              </h4>
-              <div className="space-y-3">
-                {[
-                  { en: "Privacy Policy", ar: "سياسة الخصوصية", href: "#" },
-                  { en: "Terms of Service", ar: "شروط الخدمة", href: "#" },
-                  { en: "Cookie Policy", ar: "سياسة ملفات الارتباط", href: "#" },
-                ].map((link, i) => (
-                  <a key={i} href={link.href} className="block text-sm text-gray-500 hover:text-white transition-colors">
-                    {lang === "ar" ? link.ar : link.en}
+                  <a href="#contact" className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {lang === "ar" ? "نموذج التواصل" : "Contact Form"}
                   </a>
-                ))}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-white/[0.06] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="border-t border-white/[0.06] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-sm text-gray-600">{t(content.footer.copyright, lang)}</p>
-            <p className="text-xs text-gray-700">
-              {lang === "ar"
-                ? "صنع بحب في منطقة الشرق الأوسط وشمال أفريقيا"
-                : "Made with love in the MENA region"}
-            </p>
+            <div className="flex items-center gap-3">
+              <a
+                href="mailto:info@kawadir.io"
+                aria-label="Email"
+                className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.1] transition-all"
+              >
+                <Mail className="h-4 w-4 text-gray-400" />
+              </a>
+              <a
+                href="#"
+                aria-label="Website"
+                className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.1] transition-all"
+              >
+                <Globe className="h-4 w-4 text-gray-400" />
+              </a>
+            </div>
           </div>
         </div>
       </footer>
