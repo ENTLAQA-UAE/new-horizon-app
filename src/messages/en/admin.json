@@ -321,7 +321,8 @@
     "cancel": "Cancel",
     "saveActivate": "Save & Activate",
     "saving": "Saving...",
-    "noOrgsFound": "No organizations found"
+    "noOrgsFound": "No organizations found",
+    "subscriptionUpdated": "Subscription updated for {orgName}"
   },
   "auditLogs": {
     "title": "Audit Logs",

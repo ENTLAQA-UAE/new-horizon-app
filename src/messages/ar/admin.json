@@ -321,7 +321,8 @@
     "cancel": "إلغاء",
     "saveActivate": "حفظ وتفعيل",
     "saving": "جارٍ الحفظ...",
-    "noOrgsFound": "لم يتم العثور على مؤسسات"
+    "noOrgsFound": "لم يتم العثور على مؤسسات",
+    "subscriptionUpdated": "تم تحديث اشتراك {orgName}"
   },
   "auditLogs": {
     "title": "سجل المراجعة",
