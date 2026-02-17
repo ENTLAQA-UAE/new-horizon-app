@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import {
   Loader2,
   ArrowRight,
+  ArrowLeft,
   Eye,
   EyeOff,
   CheckCircle2,
@@ -24,6 +25,7 @@ import {
   Mail,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 export interface OrgBranding {
   name: string
@@ -90,6 +92,9 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
   const [emailError, setEmailError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, language, setLanguage, isRTL } = useI18n()
+
+  const ArrowIcon = isRTL ? ArrowLeft : ArrowRight
 
   // Validate email on blur
   const validateEmail = (emailValue: string) => {
@@ -98,7 +103,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
       return true
     }
     if (!EMAIL_REGEX.test(emailValue)) {
-      setEmailError("Please enter a valid email address")
+      setEmailError(t("auth.login.invalidEmail"))
       return false
     }
     setEmailError(null)
@@ -110,16 +115,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
   }, [])
 
   // Clear in-memory token cache when landing on login page.
-  // This ensures stale tokens from a previous session don't interfere.
-  // Note: We do NOT clear localStorage or cookies here — the logout flow
-  // handles that. Clearing here would break the session redirect check below.
   useEffect(() => {
     clearTokenCache()
   }, [])
 
   // Redirect already-authenticated users away from login page.
-  // This is a client-side check (not middleware) to avoid redirect loops
-  // when layouts briefly detect unauthenticated state and push to /login.
   useEffect(() => {
     async function checkExistingSession() {
       try {
@@ -131,12 +131,10 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         const currentHost = window.location.hostname
         const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1'
 
-        // On an org subdomain, don't redirect — let the user re-login if needed
         if (!isLocalhost && currentHost.endsWith(`.${rootDomain}`) && currentHost !== rootDomain) {
           return
         }
 
-        // On main domain or localhost, redirect to home (middleware/RootRedirect handles the rest)
         window.location.href = '/'
       } catch {
         // Silently fail — just show the login form
@@ -162,7 +160,6 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
           }
           data.forEach((row) => {
             let val = row.value as string | null
-            // Strip extra quotes from previously double-encoded values
             if (typeof val === 'string' && val.length >= 2 && val.startsWith('"') && val.endsWith('"')) {
               try { val = JSON.parse(val) } catch { /* keep as-is */ }
             }
@@ -187,7 +184,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
   // If no initial branding was provided, try fetching from ?org= query param (fallback)
   useEffect(() => {
-    if (initialOrgBranding) return // Already have server-side branding
+    if (initialOrgBranding) return
 
     const orgSlugParam = searchParams.get("org")
     if (!orgSlugParam) return
@@ -222,14 +219,14 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
   // Dynamic page title based on org branding
   useEffect(() => {
     if (orgBranding?.name) {
-      document.title = `Login | ${orgBranding.name}`
+      document.title = `${t("auth.login.signIn")} | ${orgBranding.name}`
     } else {
-      document.title = "Login | Kawadir ATS"
+      document.title = `${t("auth.login.signIn")} | Kawadir ATS`
     }
     return () => {
       document.title = "Kawadir ATS"
     }
-  }, [orgBranding?.name])
+  }, [orgBranding?.name, t])
 
   // Dynamic favicon based on org logo
   useEffect(() => {
@@ -262,25 +259,22 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate email before submission
     if (!validateEmail(email)) {
       return
     }
 
     if (!password) {
-      toast.error("Please enter your password")
+      toast.error(t("auth.login.enterPassword"))
       return
     }
 
     setLoading(true)
 
-    // Retry configuration for network failures
     const maxRetries = 3
-    const retryDelays = [1000, 2000, 4000] // exponential backoff
+    const retryDelays = [1000, 2000, 4000]
 
     const attemptLogin = async (retryCount: number): Promise<boolean> => {
       try {
-        // Clear pending session from previous login attempt
         try {
           localStorage.removeItem('kawadir_pending_session')
         } catch (e) {
@@ -295,7 +289,6 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         })
 
         if (error) {
-          // Check if it's a network error that might benefit from retry
           const isNetworkError = error.message.toLowerCase().includes('network') ||
             error.message.toLowerCase().includes('fetch') ||
             error.message.toLowerCase().includes('timeout') ||
@@ -303,36 +296,31 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
           if (isNetworkError && retryCount < maxRetries) {
             console.log(`Login attempt ${retryCount + 1} failed with network error, retrying...`)
-            toast.error(`Connection issue. Retrying... (${retryCount + 1}/${maxRetries})`)
+            toast.error(`${t("auth.errors.networkError")} (${retryCount + 1}/${maxRetries})`)
             await new Promise(resolve => setTimeout(resolve, retryDelays[retryCount]))
             return attemptLogin(retryCount + 1)
           }
 
-          // Map common error messages to user-friendly messages
           let errorMessage = error.message
           if (error.message.includes("Invalid login credentials")) {
-            errorMessage = "Invalid email or password. Please try again."
+            errorMessage = t("auth.errors.invalidCredentials")
           } else if (error.message.includes("Email not confirmed")) {
-            errorMessage = "Please verify your email before logging in."
+            errorMessage = t("auth.errors.verificationRequired")
           } else if (error.message.includes("Too many requests")) {
-            errorMessage = "Too many login attempts. Please wait a moment and try again."
+            errorMessage = t("auth.errors.tooManyAttempts")
           }
 
           toast.error(errorMessage)
           return false
         }
 
-        // Verify we got a valid session
         if (!data.session || !data.user) {
-          toast.error("Login failed - no session created. Please try again.")
+          toast.error(t("auth.errors.serverError"))
           return false
         }
 
         console.log("Login successful for user:", data.user.id)
 
-        // CRITICAL: Save session to localStorage BEFORE any redirect.
-        // This prevents the race condition where AuthProvider can't find the session
-        // because Supabase hasn't persisted it yet when the new page loads.
         try {
           localStorage.setItem('kawadir_pending_session', JSON.stringify(data.session))
           console.log("Login: Session saved to localStorage for post-redirect pickup")
@@ -340,11 +328,8 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
           console.warn("Login: Could not save session to localStorage:", e)
         }
 
-        toast.success("Welcome back!")
+        toast.success(t("auth.login.welcomeToast"))
 
-        // Fetch user's role and org to redirect directly to the correct subdomain.
-        // Using window.location.href (full navigation) instead of router.push
-        // because cross-subdomain redirects fail with client-side navigation.
         try {
           const [roleResult, profileResult] = await Promise.all([
             supabase
@@ -367,14 +352,12 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
           const currentHost = window.location.hostname
           const isLocalhost = currentHost === 'localhost' || currentHost === '127.0.0.1'
 
-          // Detect if we're on an org subdomain (not main domain, not localhost)
           let currentSubdomain: string | null = null
           if (!isLocalhost && currentHost.endsWith(`.${rootDomain}`)) {
             currentSubdomain = currentHost.replace(`.${rootDomain}`, '')
           }
 
           if (role === 'super_admin') {
-            // Super admins should not log in from org subdomains
             if (currentSubdomain) {
               window.location.href = `${window.location.protocol}//${rootDomain}/admin`
             } else {
@@ -384,19 +367,15 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
           }
 
           if (userOrgSlug) {
-            // If on an org subdomain, validate the user belongs to THIS org
             if (currentSubdomain && currentSubdomain !== userOrgSlug) {
-              // User is logging into the wrong org subdomain — reject
               await supabase.auth.signOut()
               toast.error("This account is not associated with this organization.")
               return false
             }
 
-            // On correct subdomain or localhost → go to /org
             if (isLocalhost || currentSubdomain === userOrgSlug) {
               window.location.href = '/org'
             } else {
-              // On main domain (no subdomain) → redirect to user's org subdomain
               window.location.href = `${window.location.protocol}//${userOrgSlug}.${rootDomain}/org`
             }
             return true
@@ -405,13 +384,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
           console.warn('Login: Could not determine redirect destination, falling back', err)
         }
 
-        // Fallback: full page navigation to root (middleware will handle redirect)
         window.location.href = '/'
         return true
       } catch (err) {
         console.error("Login error:", err)
 
-        // Check if it's a network error that might benefit from retry
         const isNetworkError = err instanceof TypeError ||
           (err instanceof Error && (
             err.message.toLowerCase().includes('network') ||
@@ -421,12 +398,12 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
 
         if (isNetworkError && retryCount < maxRetries) {
           console.log(`Login attempt ${retryCount + 1} failed with error, retrying...`)
-          toast.error(`Connection issue. Retrying... (${retryCount + 1}/${maxRetries})`)
+          toast.error(`${t("auth.errors.networkError")} (${retryCount + 1}/${maxRetries})`)
           await new Promise(resolve => setTimeout(resolve, retryDelays[retryCount]))
           return attemptLogin(retryCount + 1)
         }
 
-        toast.error("Unable to connect. Please check your internet connection and try again.")
+        toast.error(t("auth.errors.networkError"))
         return false
       }
     }
@@ -439,11 +416,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
   }
 
   const features = [
-    { icon: Zap, text: "AI-powered candidate matching", delay: "0ms" },
-    { icon: Users, text: "Smart team collaboration", delay: "100ms" },
-    { icon: BarChart3, text: "Advanced analytics & insights", delay: "200ms" },
-    { icon: Shield, text: "Enterprise-grade security", delay: "300ms" },
-    { icon: Globe, text: "Multi-language support", delay: "400ms" },
+    { icon: Zap, text: t("auth.login.features.aiMatching"), delay: "0ms" },
+    { icon: Users, text: t("auth.login.features.teamCollab"), delay: "100ms" },
+    { icon: BarChart3, text: t("auth.login.features.analytics"), delay: "200ms" },
+    { icon: Shield, text: t("auth.login.features.security"), delay: "300ms" },
+    { icon: Globe, text: t("auth.login.features.multiLang"), delay: "400ms" },
   ]
 
   // Dynamic colors based on org branding — defaults match Kawadir blue
@@ -455,7 +432,23 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
   if (!mounted) return <LoginPageSkeleton />
 
   return (
-    <div className="min-h-screen flex bg-[#F8F9FC]">
+    <div className="min-h-screen flex bg-[#F8F9FC]" dir={isRTL ? "rtl" : "ltr"}>
+      {/* Language Switcher - Floating */}
+      <div className={cn(
+        "fixed top-4 z-50",
+        isRTL ? "left-4" : "right-4"
+      )}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+          className="h-10 w-10 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm"
+          title={language === "en" ? "العربية" : "English"}
+        >
+          <Globe className="h-5 w-5 text-gray-600" />
+        </Button>
+      </div>
+
       {/* Left Side - Login Form */}
       <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 py-8 sm:py-12 relative">
         {/* Subtle background mesh */}
@@ -505,10 +498,10 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             mounted && "animate-fade-in-up"
           )} style={{ animationDelay: "80ms" }}>
             <h2 className="text-[32px] font-bold tracking-tight text-[#1A1A2E] leading-tight">
-              Welcome back
+              {t("auth.login.welcomeBack")}
             </h2>
             <p className="text-[#616161] mt-2 text-[15px]">
-              Enter your credentials to access your dashboard
+              {t("auth.login.enterCredentials")}
             </p>
           </div>
 
@@ -529,14 +522,17 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-[13px] font-semibold text-[#2C2C2C] uppercase tracking-wider">
-                  Email
+                  {t("auth.login.email")}
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[#9E9E9E]" />
+                  <Mail className={cn(
+                    "absolute top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[#9E9E9E]",
+                    isRTL ? "right-3.5" : "left-3.5"
+                  )} />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="you@company.com"
+                    placeholder={t("auth.login.emailPlaceholder")}
                     value={email}
                     autoComplete="email"
                     onChange={(e) => {
@@ -546,9 +542,10 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                     required
                     disabled={loading}
                     className={cn(
-                      "h-12 pl-11 pr-4 rounded-xl border bg-white/80 text-[15px]",
+                      "h-12 rounded-xl border bg-white/80 text-[15px]",
                       "placeholder:text-[#9E9E9E] transition-all duration-200",
                       "focus:ring-2 focus:border-transparent focus:bg-white",
+                      isRTL ? "pr-11 pl-4" : "pl-11 pr-4",
                       emailError
                         ? "border-red-400 focus:ring-red-100"
                         : "border-[#E0E0E0] hover:border-[#9E9E9E]"
@@ -577,32 +574,36 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-[13px] font-semibold text-[#2C2C2C] uppercase tracking-wider">
-                    Password
+                    {t("auth.login.password")}
                   </Label>
                   <Link
                     href="/forgot-password"
                     className="text-[13px] font-medium transition-colors hover:opacity-80"
                     style={{ color: primaryColor }}
                   >
-                    Forgot?
+                    {t("auth.login.forgot")}
                   </Link>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[#9E9E9E]" />
+                  <Lock className={cn(
+                    "absolute top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[#9E9E9E]",
+                    isRTL ? "right-3.5" : "left-3.5"
+                  )} />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder={t("auth.login.passwordPlaceholder")}
                     value={password}
                     autoComplete="current-password"
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
                     className={cn(
-                      "h-12 pl-11 pr-12 rounded-xl border border-[#E0E0E0] bg-white/80 text-[15px]",
+                      "h-12 rounded-xl border border-[#E0E0E0] bg-white/80 text-[15px]",
                       "placeholder:text-[#9E9E9E] transition-all duration-200",
                       "focus:ring-2 focus:border-transparent focus:bg-white",
-                      "hover:border-[#9E9E9E]"
+                      "hover:border-[#9E9E9E]",
+                      isRTL ? "pr-11 pl-12" : "pl-11 pr-12"
                     )}
                     style={{
                       "--tw-ring-color": `${primaryColor}25`,
@@ -613,7 +614,10 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#616161] transition-colors"
+                    className={cn(
+                      "absolute top-1/2 -translate-y-1/2 text-[#9E9E9E] hover:text-[#616161] transition-colors",
+                      isRTL ? "left-3.5" : "right-3.5"
+                    )}
                   >
                     {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
                   </button>
@@ -639,8 +643,8 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    Sign in
-                    <ArrowRight className="h-4 w-4" />
+                    {t("auth.login.signIn")}
+                    <ArrowIcon className="h-4 w-4" />
                   </span>
                 )}
               </Button>
@@ -656,11 +660,11 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
             style={{ animationDelay: "320ms" }}
           >
             <p className="text-[13px] text-[#9E9E9E]">
-              Powered by{" "}
+              {t("auth.common.poweredBy")}{" "}
               <span className="font-semibold" style={{ color: primaryColor }}>
-                Kawadir
+                {t("auth.common.kawadir")}
               </span>
-              {" "}&middot;{" "}AI-Powered Recruitment
+              {" "}&middot;{" "}{t("auth.common.aiPoweredRecruitment")}
             </p>
           </div>
         </div>
@@ -727,7 +731,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
         {orgBranding ? (
           <div className="relative z-10" />
         ) : (
-          <div className="relative z-10 flex flex-col justify-center px-10 xl:px-16 text-white w-full">
+          <div className="relative z-10 flex flex-col justify-center px-10 xl:px-16 text-white w-full" dir="ltr">
             <div className="max-w-xl">
               {/* Logo watermark */}
               <div className={cn("mb-8", mounted && "animate-fade-in-up")}>
@@ -745,9 +749,9 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                 )}
                 style={{ animationDelay: "80ms" }}
               >
-                Smarter Hiring,
+                {t("auth.login.smarterHiring")}
                 <br />
-                <span className="text-white/85 font-light">Powered by AI.</span>
+                <span className="text-white/85 font-light">{t("auth.login.poweredByAI")}</span>
               </h2>
 
               <p
@@ -757,7 +761,7 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                 )}
                 style={{ animationDelay: "160ms" }}
               >
-                Transform your recruitment pipeline with intelligent automation and data-driven decisions.
+                {t("auth.login.transformPipeline")}
               </p>
 
               {/* Feature cards */}
@@ -791,9 +795,9 @@ function LoginPageInner({ initialOrgBranding }: LoginContentProps) {
                 style={{ animationDelay: "650ms" }}
               >
                 {[
-                  { value: "500+", label: "Companies" },
-                  { value: "50K+", label: "Candidates" },
-                  { value: "95%", label: "Satisfaction" },
+                  { value: "500+", label: t("auth.login.stats.companies") },
+                  { value: "50K+", label: t("auth.login.stats.candidates") },
+                  { value: "95%", label: t("auth.login.stats.satisfaction") },
                 ].map((stat) => (
                   <div key={stat.label}>
                     <div className="text-3xl xl:text-4xl font-bold tracking-tight">{stat.value}</div>

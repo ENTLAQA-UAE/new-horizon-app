@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -89,6 +90,7 @@ export function AuditLogsClient({
   const [entityFilter, setEntityFilter] = useState<string>("all")
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const { t } = useI18n()
 
   // Filter logs
   const filteredLogs = logs.filter((log) => {
@@ -140,7 +142,7 @@ export function AuditLogsClient({
     a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
-    toast.success("Audit logs exported successfully")
+    toast.success(t("admin.auditLogs.exportCsv"))
   }
 
   const formatAction = (action: string) => {
@@ -175,10 +177,10 @@ export function AuditLogsClient({
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
 
-    if (minutes < 1) return "Just now"
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    if (days < 7) return `${days}d ago`
+    if (minutes < 1) return t("admin.auditLogs.justNow")
+    if (minutes < 60) return t("admin.auditLogs.minutesAgo").replace("{count}", String(minutes))
+    if (hours < 24) return t("admin.auditLogs.hoursAgo").replace("{count}", String(hours))
+    if (days < 7) return t("admin.auditLogs.daysAgo").replace("{count}", String(days))
     return date.toLocaleDateString()
   }
 
@@ -187,14 +189,14 @@ export function AuditLogsClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Audit Logs</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.auditLogs.title")}</h2>
           <p className="text-muted-foreground">
-            Track all actions and changes across the platform
+            {t("admin.auditLogs.subtitle")}
           </p>
         </div>
         <Button onClick={exportLogs}>
           <Download className="mr-2 h-4 w-4" />
-          Export CSV
+          {t("admin.auditLogs.exportCsv")}
         </Button>
       </div>
 
@@ -202,7 +204,7 @@ export function AuditLogsClient({
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Logs</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.auditLogs.totalLogs")}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -212,7 +214,7 @@ export function AuditLogsClient({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.auditLogs.today")}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -222,7 +224,7 @@ export function AuditLogsClient({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Week</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("admin.auditLogs.thisWeek")}</CardTitle>
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -234,7 +236,7 @@ export function AuditLogsClient({
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t("admin.auditLogs.filters")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
@@ -242,7 +244,7 @@ export function AuditLogsClient({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by user, action, or entity..."
+                  placeholder={t("admin.auditLogs.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
@@ -252,10 +254,10 @@ export function AuditLogsClient({
 
             <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by action" />
+                <SelectValue placeholder={t("admin.auditLogs.filterByAction")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Actions</SelectItem>
+                <SelectItem value="all">{t("admin.auditLogs.allActions")}</SelectItem>
                 {actions.map((action) => (
                   <SelectItem key={action} value={action}>
                     {formatAction(action)}
@@ -266,10 +268,10 @@ export function AuditLogsClient({
 
             <Select value={entityFilter} onValueChange={setEntityFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by entity" />
+                <SelectValue placeholder={t("admin.auditLogs.filterByEntity")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Entities</SelectItem>
+                <SelectItem value="all">{t("admin.auditLogs.allEntities")}</SelectItem>
                 {entityTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {formatEntityType(type)}
@@ -284,27 +286,27 @@ export function AuditLogsClient({
       {/* Logs Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Activity Log ({filteredLogs.length})</CardTitle>
+          <CardTitle>{t("admin.auditLogs.activityLog")} ({filteredLogs.length})</CardTitle>
           <CardDescription>
-            Recent actions performed on the platform
+            {t("admin.auditLogs.activityLogDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead>{t("admin.auditLogs.timestamp")}</TableHead>
+                <TableHead>{t("admin.auditLogs.action")}</TableHead>
+                <TableHead>{t("admin.auditLogs.entity")}</TableHead>
+                <TableHead>{t("admin.auditLogs.ipAddress")}</TableHead>
+                <TableHead className="text-right">{t("admin.auditLogs.details")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLogs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No audit logs found
+                    {t("admin.auditLogs.noLogsFound")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -367,9 +369,9 @@ export function AuditLogsClient({
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Audit Log Details</DialogTitle>
+            <DialogTitle>{t("admin.auditLogs.auditLogDetails")}</DialogTitle>
             <DialogDescription>
-              Full details of the selected audit log entry
+              {t("admin.auditLogs.auditLogDetailsDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -378,7 +380,7 @@ export function AuditLogsClient({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Timestamp
+                    {t("admin.auditLogs.timestamp")}
                   </label>
                   <p className="mt-1">
                     {selectedLog.created_at
@@ -388,19 +390,19 @@ export function AuditLogsClient({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Action
+                    {t("admin.auditLogs.action")}
                   </label>
                   <p className="mt-1">{formatAction(selectedLog.action)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Entity Type
+                    {t("admin.auditLogs.entityType")}
                   </label>
                   <p className="mt-1">{formatEntityType(selectedLog.entity_type || "unknown")}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Entity ID
+                    {t("admin.auditLogs.entityId")}
                   </label>
                   <p className="mt-1 font-mono text-sm">
                     {selectedLog.entity_id || "—"}
@@ -408,7 +410,7 @@ export function AuditLogsClient({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    IP Address
+                    {t("admin.auditLogs.ipAddress")}
                   </label>
                   <p className="mt-1 font-mono text-sm">
                     {selectedLog.ip_address || "—"}
@@ -416,7 +418,7 @@ export function AuditLogsClient({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Log ID
+                    {t("admin.auditLogs.logId")}
                   </label>
                   <p className="mt-1 font-mono text-sm">{selectedLog.id}</p>
                 </div>
@@ -425,7 +427,7 @@ export function AuditLogsClient({
               {selectedLog.old_values && Object.keys(selectedLog.old_values as object).length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Previous Values
+                    {t("admin.auditLogs.previousValues")}
                   </label>
                   <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
                     {JSON.stringify(selectedLog.old_values, null, 2)}
@@ -436,7 +438,7 @@ export function AuditLogsClient({
               {selectedLog.new_values && Object.keys(selectedLog.new_values as object).length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    New Values
+                    {t("admin.auditLogs.newValues")}
                   </label>
                   <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
                     {JSON.stringify(selectedLog.new_values, null, 2)}
@@ -447,7 +449,7 @@ export function AuditLogsClient({
               {selectedLog.metadata && Object.keys(selectedLog.metadata as object).length > 0 && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Metadata
+                    {t("admin.auditLogs.metadata")}
                   </label>
                   <pre className="mt-1 p-3 bg-muted rounded-lg text-sm overflow-auto">
                     {JSON.stringify(selectedLog.metadata, null, 2)}

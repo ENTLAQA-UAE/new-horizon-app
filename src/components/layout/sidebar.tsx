@@ -536,8 +536,12 @@ export function Sidebar({ collapsed = false, onCollapse, userRole, mobileOpen = 
                 className="w-8 h-8 object-contain flex-shrink-0"
               />
               <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-semibold text-foreground">Powered by Kawadir</span>
-                <span className="text-[9px] text-muted-foreground">AI-Powered Recruitment</span>
+                <span className="text-[11px] font-semibold text-foreground">
+                  {language === "ar" ? "مدعوم بواسطة كوادر" : "Powered by Kawadir"}
+                </span>
+                <span className="text-[9px] text-muted-foreground">
+                  {language === "ar" ? "التوظيف بالذكاء الاصطناعي" : "AI-Powered Recruitment"}
+                </span>
               </div>
             </div>
           </div>
@@ -560,8 +564,8 @@ export function Sidebar({ collapsed = false, onCollapse, userRole, mobileOpen = 
       {/* Mobile: fixed overlay sidebar */}
       {mobileOpen && (
         <div className={cn(
-          "fixed inset-y-0 z-50 md:hidden animate-slide-in-from-left",
-          isRTL ? "right-0" : "left-0"
+          "fixed inset-y-0 z-50 md:hidden",
+          isRTL ? "right-0 animate-slide-in-from-right" : "left-0 animate-slide-in-from-left"
         )}>
           {sidebarContent}
         </div>

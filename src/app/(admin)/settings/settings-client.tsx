@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useI18n } from "@/lib/i18n"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -83,6 +84,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
     number_format: initialSettings.number_format || "1,234.56",
     week_start: initialSettings.week_start || "sunday",
   })
+  const { t } = useI18n()
 
   const handleSave = async () => {
     setIsLoading(true)
@@ -107,12 +109,12 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
       if (error) throw error
 
       setIsSaved(true)
-      toast.success("Settings saved successfully")
+      toast.success(t("admin.settings.savedSuccess"))
 
       setTimeout(() => setIsSaved(false), 3000)
     } catch (error) {
       console.error("Error saving settings:", error)
-      toast.error("Failed to save settings")
+      toast.error(t("admin.settings.saveFailed"))
     } finally {
       setIsLoading(false)
     }
@@ -128,9 +130,9 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Platform Settings</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.settings.title")}</h2>
           <p className="text-muted-foreground">
-            Configure global settings for the Kawadir ATS platform
+            {t("admin.settings.subtitle")}
           </p>
         </div>
         <Button onClick={handleSave} disabled={isLoading}>
@@ -141,7 +143,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          {isSaved ? "Saved" : "Save Changes"}
+          {isSaved ? t("admin.settings.saved") : t("admin.settings.saveChanges")}
         </Button>
       </div>
 
@@ -151,14 +153,14 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           <CardHeader>
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              <CardTitle>General Settings</CardTitle>
+              <CardTitle>{t("admin.settings.general")}</CardTitle>
             </div>
-            <CardDescription>Basic platform configuration</CardDescription>
+            <CardDescription>{t("admin.settings.generalDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="app_name">App Name (English)</Label>
+                <Label htmlFor="app_name">{t("admin.settings.appNameEn")}</Label>
                 <Input
                   id="app_name"
                   value={settings.app_name}
@@ -166,7 +168,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="app_name_ar">App Name (Arabic)</Label>
+                <Label htmlFor="app_name_ar">{t("admin.settings.appNameAr")}</Label>
                 <Input
                   id="app_name_ar"
                   value={settings.app_name_ar}
@@ -177,7 +179,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="support_email">Support Email</Label>
+              <Label htmlFor="support_email">{t("admin.settings.supportEmail")}</Label>
               <Input
                 id="support_email"
                 type="email"
@@ -188,7 +190,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Default Language</Label>
+                <Label>{t("admin.settings.defaultLanguage")}</Label>
                 <Select
                   value={settings.default_language}
                   onValueChange={(value) => updateSetting("default_language", value)}
@@ -207,7 +209,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Timezone</Label>
+                <Label>{t("admin.settings.timezone")}</Label>
                 <Select
                   value={settings.default_timezone}
                   onValueChange={(value) => updateSetting("default_timezone", value)}
@@ -244,14 +246,14 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           <CardHeader>
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              <CardTitle>Security</CardTitle>
+              <CardTitle>{t("admin.settings.security")}</CardTitle>
             </div>
-            <CardDescription>Authentication and security options</CardDescription>
+            <CardDescription>{t("admin.settings.securityDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="session_timeout">Session Timeout (minutes)</Label>
+                <Label htmlFor="session_timeout">{t("admin.settings.sessionTimeout")}</Label>
                 <Input
                   id="session_timeout"
                   type="number"
@@ -262,7 +264,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="max_login_attempts">Max Login Attempts</Label>
+                <Label htmlFor="max_login_attempts">{t("admin.settings.maxLoginAttempts")}</Label>
                 <Input
                   id="max_login_attempts"
                   type="number"
@@ -278,14 +280,14 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
 
             <div className="space-y-3">
               <ToggleOption
-                label="Enforce Strong Passwords"
-                description="Require complex passwords for all users"
+                label={t("admin.settings.enforceStrongPasswords")}
+                description={t("admin.settings.enforceStrongPasswordsDesc")}
                 enabled={settings.enforce_strong_password}
                 onChange={(enabled) => updateSetting("enforce_strong_password", enabled)}
               />
               <ToggleOption
-                label="Require Two-Factor Authentication"
-                description="Enforce 2FA for all admin accounts"
+                label={t("admin.settings.require2fa")}
+                description={t("admin.settings.require2faDesc")}
                 enabled={settings.require_2fa_admins}
                 onChange={(enabled) => updateSetting("require_2fa_admins", enabled)}
               />
@@ -298,9 +300,9 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           <CardHeader>
             <div className="flex items-center gap-2">
               <Languages className="h-5 w-5" />
-              <CardTitle>Localization</CardTitle>
+              <CardTitle>{t("admin.settings.localization")}</CardTitle>
             </div>
-            <CardDescription>Language and regional settings</CardDescription>
+            <CardDescription>{t("admin.settings.localizationDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
@@ -422,9 +424,9 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           <CardHeader>
             <div className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              <CardTitle>AI Configuration</CardTitle>
+              <CardTitle>{t("admin.settings.aiConfig")}</CardTitle>
             </div>
-            <CardDescription>AI settings are now configured per-organization</CardDescription>
+            <CardDescription>{t("admin.settings.aiConfigDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -443,14 +445,14 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              <CardTitle>Notifications</CardTitle>
+              <CardTitle>{t("admin.settings.notifications")}</CardTitle>
             </div>
-            <CardDescription>Email and notification settings</CardDescription>
+            <CardDescription>{t("admin.settings.notificationsDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ToggleOption
-              label="Email Notifications"
-              description="Send system alerts and updates via email"
+              label={t("admin.settings.emailNotifications")}
+              description={t("admin.settings.emailNotificationsDesc")}
               enabled={settings.email_notifications_enabled}
               onChange={(enabled) => updateSetting("email_notifications_enabled", enabled)}
             />
@@ -462,14 +464,14 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
           <CardHeader>
             <div className="flex items-center gap-2">
               <Key className="h-5 w-5" />
-              <CardTitle>System</CardTitle>
+              <CardTitle>{t("admin.settings.system")}</CardTitle>
             </div>
-            <CardDescription>System-wide configuration</CardDescription>
+            <CardDescription>{t("admin.settings.systemDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <ToggleOption
-              label="Maintenance Mode"
-              description="Put the platform in maintenance mode (only admins can access)"
+              label={t("admin.settings.maintenanceMode")}
+              description={t("admin.settings.maintenanceModeDesc")}
               enabled={settings.maintenance_mode}
               onChange={(enabled) => updateSetting("maintenance_mode", enabled)}
             />
@@ -481,7 +483,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                 <div className="flex items-center gap-3">
                   <Mail className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Email Service</p>
+                    <p className="font-medium">{t("admin.settings.emailService")}</p>
                     <p className="text-sm text-muted-foreground">Resend</p>
                   </div>
                 </div>
@@ -492,7 +494,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                 <div className="flex items-center gap-3">
                   <Database className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Database</p>
+                    <p className="font-medium">{t("admin.settings.database")}</p>
                     <p className="text-sm text-muted-foreground">Supabase PostgreSQL</p>
                   </div>
                 </div>
@@ -503,7 +505,7 @@ export function SettingsClient({ initialSettings, settingsRecords }: SettingsCli
                 <div className="flex items-center gap-3">
                   <Globe className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">CDN & Storage</p>
+                    <p className="font-medium">{t("admin.settings.cdnStorage")}</p>
                     <p className="text-sm text-muted-foreground">Supabase Storage</p>
                   </div>
                 </div>

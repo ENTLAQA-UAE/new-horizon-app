@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useI18n } from "@/lib/i18n"
 import { supabaseInsert, supabaseUpdate, supabaseDelete } from "@/lib/supabase/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -92,6 +93,8 @@ export function OrganizationsClient({
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [tierFilter, setTierFilter] = useState<string>("all")
 
+  const { t } = useI18n()
+
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -162,7 +165,7 @@ export function OrganizationsClient({
   // CREATE Organization
   const handleCreateOrganization = async () => {
     if (!newOrg.name || !newOrg.tier_id) {
-      toast.error("Please fill in all required fields")
+      toast.error(t("admin.organizations.fillRequired"))
       return
     }
 
@@ -194,7 +197,7 @@ export function OrganizationsClient({
 
       if (error) {
         if (error.code === "23505") {
-          toast.error("An organization with this name already exists")
+          toast.error(t("admin.organizations.nameExists"))
         } else {
           toast.error(error.message)
         }
@@ -244,7 +247,7 @@ export function OrganizationsClient({
             toast.warning("Organization created but admin setup failed. Assign admin manually from Users page.")
           }
         } else {
-          toast.success("Organization created successfully")
+          toast.success(t("admin.organizations.createdSuccess"))
         }
       }
       setIsCreateDialogOpen(false)
@@ -318,7 +321,7 @@ export function OrganizationsClient({
       )
       setIsEditDialogOpen(false)
       setSelectedOrg(null)
-      toast.success("Organization updated successfully")
+      toast.success(t("admin.organizations.updatedSuccess"))
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -382,7 +385,7 @@ export function OrganizationsClient({
       )
       setIsChangeTierDialogOpen(false)
       setSelectedOrg(null)
-      toast.success("Subscription tier updated successfully")
+      toast.success(t("admin.organizations.tierUpdatedSuccess"))
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -421,7 +424,7 @@ export function OrganizationsClient({
       setOrganizations(organizations.filter((org) => org.id !== selectedOrg.id))
       setIsDeleteDialogOpen(false)
       setSelectedOrg(null)
-      toast.success("Organization deleted successfully")
+      toast.success(t("admin.organizations.deletedSuccess"))
       router.refresh()
     } catch {
       toast.error("An unexpected error occurred")
@@ -464,29 +467,29 @@ export function OrganizationsClient({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Organizations</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.organizations.title")}</h2>
           <p className="text-muted-foreground">
-            Manage all organizations on the platform
+            {t("admin.organizations.subtitle")}
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add Organization
+              {t("admin.organizations.addOrg")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create New Organization</DialogTitle>
+              <DialogTitle>{t("admin.organizations.createNew")}</DialogTitle>
               <DialogDescription>
-                Add a new organization to the platform.
+                {t("admin.organizations.createNewDesc")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Organization Name (EN) *</Label>
+                  <Label htmlFor="name">{t("admin.organizations.orgNameEn")} *</Label>
                   <Input
                     id="name"
                     placeholder="Saudi Bank"
@@ -497,7 +500,7 @@ export function OrganizationsClient({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="name_ar">Organization Name (AR)</Label>
+                  <Label htmlFor="name_ar">{t("admin.organizations.orgNameAr")}</Label>
                   <Input
                     id="name_ar"
                     placeholder="البنك السعودي"
@@ -510,7 +513,7 @@ export function OrganizationsClient({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="admin_email">Admin Email</Label>
+                <Label htmlFor="admin_email">{t("admin.organizations.adminEmail")}</Label>
                 <Input
                   id="admin_email"
                   type="email"
@@ -523,7 +526,7 @@ export function OrganizationsClient({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Subscription Tier *</Label>
+                  <Label>{t("admin.organizations.subscriptionTier")} *</Label>
                   <Select
                     value={newOrg.tier_id}
                     onValueChange={(value) =>
@@ -531,7 +534,7 @@ export function OrganizationsClient({
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select tier" />
+                      <SelectValue placeholder={t("admin.organizations.selectTier")} />
                     </SelectTrigger>
                     <SelectContent>
                       {tiers.map((tier) => (
@@ -543,7 +546,7 @@ export function OrganizationsClient({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Data Residency</Label>
+                  <Label>{t("admin.organizations.dataResidency")}</Label>
                   <Select
                     value={newOrg.data_residency}
                     onValueChange={(value) =>
@@ -554,9 +557,9 @@ export function OrganizationsClient({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="mena">MENA Region</SelectItem>
-                      <SelectItem value="uae">UAE Only</SelectItem>
-                      <SelectItem value="ksa">KSA Only</SelectItem>
+                      <SelectItem value="mena">{t("admin.organizations.menaRegion")}</SelectItem>
+                      <SelectItem value="uae">{t("admin.organizations.uaeOnly")}</SelectItem>
+                      <SelectItem value="ksa">{t("admin.organizations.ksaOnly")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -567,11 +570,11 @@ export function OrganizationsClient({
                 variant="outline"
                 onClick={() => setIsCreateDialogOpen(false)}
               >
-                Cancel
+                {t("admin.organizations.cancel")}
               </Button>
               <Button onClick={handleCreateOrganization} disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Organization
+                {t("admin.organizations.createOrg")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -583,7 +586,7 @@ export function OrganizationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total
+              {t("admin.organizations.total")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -593,7 +596,7 @@ export function OrganizationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active
+              {t("admin.organizations.active")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -603,7 +606,7 @@ export function OrganizationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Trial
+              {t("admin.organizations.trial")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -613,7 +616,7 @@ export function OrganizationsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Suspended
+              {t("admin.organizations.suspended")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -627,7 +630,7 @@ export function OrganizationsClient({
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search organizations..."
+            placeholder={t("admin.organizations.searchOrgs")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -639,11 +642,11 @@ export function OrganizationsClient({
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="trial">Trial</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            <SelectItem value="all">{t("admin.organizations.allStatus")}</SelectItem>
+            <SelectItem value="active">{t("admin.organizations.active")}</SelectItem>
+            <SelectItem value="trial">{t("admin.organizations.trial")}</SelectItem>
+            <SelectItem value="suspended">{t("admin.organizations.suspended")}</SelectItem>
+            <SelectItem value="cancelled">{t("admin.organizations.cancelled")}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={tierFilter} onValueChange={setTierFilter}>
@@ -651,7 +654,7 @@ export function OrganizationsClient({
             <SelectValue placeholder="Tier" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Tiers</SelectItem>
+            <SelectItem value="all">{t("admin.organizations.allTiers")}</SelectItem>
             {tiers.map((tier) => (
               <SelectItem key={tier.id} value={tier.id}>
                 {tier.name}
@@ -666,12 +669,12 @@ export function OrganizationsClient({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Organization</TableHead>
-              <TableHead>Tier</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Limits</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("admin.organizations.organization")}</TableHead>
+              <TableHead>{t("admin.organizations.tier")}</TableHead>
+              <TableHead>{t("admin.organizations.status")}</TableHead>
+              <TableHead>{t("admin.organizations.limits")}</TableHead>
+              <TableHead>{t("admin.organizations.created")}</TableHead>
+              <TableHead className="text-right">{t("admin.organizations.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -679,7 +682,7 @@ export function OrganizationsClient({
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12">
                   <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">No organizations found</p>
+                  <p className="text-muted-foreground">{t("admin.organizations.noOrgsFound")}</p>
                 </TableCell>
               </TableRow>
             ) : (
@@ -745,7 +748,7 @@ export function OrganizationsClient({
                           }}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          {t("admin.organizations.viewDetails")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -754,7 +757,7 @@ export function OrganizationsClient({
                           }}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
-                          Edit
+                          {t("admin.organizations.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onSelect={(e) => {
@@ -763,7 +766,7 @@ export function OrganizationsClient({
                           }}
                         >
                           <ArrowUpDown className="mr-2 h-4 w-4" />
-                          Change Tier
+                          {t("admin.organizations.changeTier")}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {org.subscription_status === "active" && (
@@ -772,7 +775,7 @@ export function OrganizationsClient({
                             onSelect={() => handleStatusChange(org.id, "suspended")}
                           >
                             <RefreshCw className="mr-2 h-4 w-4" />
-                            Suspend
+                            {t("admin.organizations.suspend")}
                           </DropdownMenuItem>
                         )}
                         {org.subscription_status === "suspended" && (
@@ -781,7 +784,7 @@ export function OrganizationsClient({
                             onSelect={() => handleStatusChange(org.id, "active")}
                           >
                             <RefreshCw className="mr-2 h-4 w-4" />
-                            Reactivate
+                            {t("admin.organizations.reactivate")}
                           </DropdownMenuItem>
                         )}
                         {org.subscription_status === "trial" && (
@@ -790,7 +793,7 @@ export function OrganizationsClient({
                             onSelect={() => handleStatusChange(org.id, "active")}
                           >
                             <RefreshCw className="mr-2 h-4 w-4" />
-                            Activate
+                            {t("admin.organizations.activate")}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -801,7 +804,7 @@ export function OrganizationsClient({
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          {t("admin.organizations.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -817,15 +820,15 @@ export function OrganizationsClient({
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Organization</DialogTitle>
+            <DialogTitle>{t("admin.organizations.editOrg")}</DialogTitle>
             <DialogDescription>
-              Update organization details and settings.
+              {t("admin.organizations.editOrgDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_name">Organization Name (EN) *</Label>
+                <Label htmlFor="edit_name">{t("admin.organizations.orgNameEn")} *</Label>
                 <Input
                   id="edit_name"
                   value={editOrg.name}
@@ -835,7 +838,7 @@ export function OrganizationsClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_name_ar">Organization Name (AR)</Label>
+                <Label htmlFor="edit_name_ar">{t("admin.organizations.orgNameAr")}</Label>
                 <Input
                   id="edit_name_ar"
                   dir="rtl"
@@ -848,7 +851,7 @@ export function OrganizationsClient({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_slug">Slug</Label>
+                <Label htmlFor="edit_slug">{t("admin.organizations.slug")}</Label>
                 <Input
                   id="edit_slug"
                   value={editOrg.slug}
@@ -858,7 +861,7 @@ export function OrganizationsClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Data Residency</Label>
+                <Label>{t("admin.organizations.dataResidency")}</Label>
                 <Select
                   value={editOrg.data_residency}
                   onValueChange={(value) =>
@@ -869,9 +872,9 @@ export function OrganizationsClient({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mena">MENA Region</SelectItem>
-                    <SelectItem value="uae">UAE Only</SelectItem>
-                    <SelectItem value="ksa">KSA Only</SelectItem>
+                    <SelectItem value="mena">{t("admin.organizations.menaRegion")}</SelectItem>
+                    <SelectItem value="uae">{t("admin.organizations.uaeOnly")}</SelectItem>
+                    <SelectItem value="ksa">{t("admin.organizations.ksaOnly")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -879,7 +882,7 @@ export function OrganizationsClient({
             <Separator />
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_max_users">Max Users</Label>
+                <Label htmlFor="edit_max_users">{t("admin.organizations.maxUsers")}</Label>
                 <Input
                   id="edit_max_users"
                   type="number"
@@ -890,7 +893,7 @@ export function OrganizationsClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_max_jobs">Max Jobs</Label>
+                <Label htmlFor="edit_max_jobs">{t("admin.organizations.maxJobs")}</Label>
                 <Input
                   id="edit_max_jobs"
                   type="number"
@@ -901,7 +904,7 @@ export function OrganizationsClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit_max_candidates">Max Candidates</Label>
+                <Label htmlFor="edit_max_candidates">{t("admin.organizations.maxCandidates")}</Label>
                 <Input
                   id="edit_max_candidates"
                   type="number"
@@ -914,7 +917,7 @@ export function OrganizationsClient({
             </div>
             <Separator />
             <div className="space-y-3">
-              <Label>Compliance Settings</Label>
+              <Label>{t("admin.organizations.complianceSettings")}</Label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -925,7 +928,7 @@ export function OrganizationsClient({
                     }
                     className="rounded"
                   />
-                  <span className="text-sm">Saudization Tracking</span>
+                  <span className="text-sm">{t("admin.organizations.saudizationTracking")}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -936,7 +939,7 @@ export function OrganizationsClient({
                     }
                     className="rounded"
                   />
-                  <span className="text-sm">Emiratization Tracking</span>
+                  <span className="text-sm">{t("admin.organizations.emiratizationTracking")}</span>
                 </label>
               </div>
             </div>
@@ -946,11 +949,11 @@ export function OrganizationsClient({
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
             >
-              Cancel
+              {t("admin.organizations.cancel")}
             </Button>
             <Button onClick={handleEditOrganization} disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              {t("admin.organizations.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -960,22 +963,22 @@ export function OrganizationsClient({
       <Dialog open={isChangeTierDialogOpen} onOpenChange={setIsChangeTierDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Change Subscription Tier</DialogTitle>
+            <DialogTitle>{t("admin.organizations.changeTierTitle")}</DialogTitle>
             <DialogDescription>
-              {selectedOrg && `Update subscription tier for ${selectedOrg.name}`}
+              {selectedOrg && t("admin.organizations.changeTierDesc").replace("{orgName}", selectedOrg.name)}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {selectedOrg && (
               <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">Current Tier</p>
+                <p className="text-sm text-muted-foreground">{t("admin.organizations.currentTier")}</p>
                 <p className="font-medium">
-                  {selectedOrg.subscription_tiers?.name || "No tier assigned"}
+                  {selectedOrg.subscription_tiers?.name || t("admin.organizations.selectTier")}
                 </p>
               </div>
             )}
             <div className="space-y-2">
-              <Label>New Tier</Label>
+              <Label>{t("admin.organizations.newTier")}</Label>
               <Select value={newTierId} onValueChange={setNewTierId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select new tier" />
@@ -996,22 +999,22 @@ export function OrganizationsClient({
             </div>
             {newTierId && (
               <div className="p-3 bg-primary/10 rounded-lg">
-                <p className="text-sm font-medium">New tier limits:</p>
+                <p className="text-sm font-medium">{t("admin.organizations.newTierLimits")}</p>
                 {(() => {
                   const tier = tiers.find(t => t.id === newTierId)
                   return tier ? (
                     <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
                       <div>
-                        <p className="text-muted-foreground">Users</p>
-                        <p className="font-medium">{tier.max_users === -1 ? "Unlimited" : tier.max_users}</p>
+                        <p className="text-muted-foreground">{t("admin.organizations.users")}</p>
+                        <p className="font-medium">{tier.max_users === -1 ? t("admin.organizations.unlimited") : tier.max_users}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Jobs</p>
-                        <p className="font-medium">{tier.max_jobs === -1 ? "Unlimited" : tier.max_jobs}</p>
+                        <p className="text-muted-foreground">{t("admin.organizations.jobs")}</p>
+                        <p className="font-medium">{tier.max_jobs === -1 ? t("admin.organizations.unlimited") : tier.max_jobs}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Candidates</p>
-                        <p className="font-medium">{tier.max_candidates === -1 ? "Unlimited" : tier.max_candidates}</p>
+                        <p className="text-muted-foreground">{t("admin.organizations.candidates")}</p>
+                        <p className="font-medium">{tier.max_candidates === -1 ? t("admin.organizations.unlimited") : tier.max_candidates}</p>
                       </div>
                     </div>
                   ) : null
@@ -1024,11 +1027,11 @@ export function OrganizationsClient({
               variant="outline"
               onClick={() => setIsChangeTierDialogOpen(false)}
             >
-              Cancel
+              {t("admin.organizations.cancel")}
             </Button>
             <Button onClick={handleChangeTier} disabled={isLoading || !newTierId}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Tier
+              {t("admin.organizations.updateTier")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1038,7 +1041,7 @@ export function OrganizationsClient({
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Organization Details</DialogTitle>
+            <DialogTitle>{t("admin.organizations.orgDetails")}</DialogTitle>
           </DialogHeader>
           {selectedOrg && (
             <div className="space-y-4">
@@ -1057,22 +1060,22 @@ export function OrganizationsClient({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Globe className="h-4 w-4" /> Data Residency
+                    <Globe className="h-4 w-4" /> {t("admin.organizations.dataResidency")}
                   </p>
                   <p className="font-medium capitalize">{selectedOrg.data_residency || "MENA"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Subscription Tier</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.organizations.subscriptionTier")}</p>
                   <p className="font-medium">{selectedOrg.subscription_tiers?.name || "None"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.organizations.status")}</p>
                   <Badge className={cn("capitalize", statusStyles[selectedOrg.subscription_status || "trial"])}>
                     {selectedOrg.subscription_status || "trial"}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Monthly Price</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.organizations.monthlyPrice")}</p>
                   <p className="font-medium">
                     ${selectedOrg.subscription_tiers?.price_monthly || 0}/month
                   </p>
@@ -1082,22 +1085,22 @@ export function OrganizationsClient({
               <Separator />
 
               <div>
-                <p className="text-sm font-medium mb-2">Usage Limits</p>
+                <p className="text-sm font-medium mb-2">{t("admin.organizations.usageLimits")}</p>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-3 bg-muted rounded-lg text-center">
                     <Users className="h-5 w-5 mx-auto text-muted-foreground" />
                     <p className="text-2xl font-bold">{selectedOrg.max_users || 0}</p>
-                    <p className="text-xs text-muted-foreground">Max Users</p>
+                    <p className="text-xs text-muted-foreground">{t("admin.organizations.maxUsers")}</p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg text-center">
                     <Briefcase className="h-5 w-5 mx-auto text-muted-foreground" />
                     <p className="text-2xl font-bold">{selectedOrg.max_jobs || 0}</p>
-                    <p className="text-xs text-muted-foreground">Max Jobs</p>
+                    <p className="text-xs text-muted-foreground">{t("admin.organizations.maxJobs")}</p>
                   </div>
                   <div className="p-3 bg-muted rounded-lg text-center">
                     <Users className="h-5 w-5 mx-auto text-muted-foreground" />
                     <p className="text-2xl font-bold">{selectedOrg.max_candidates || 0}</p>
-                    <p className="text-xs text-muted-foreground">Max Candidates</p>
+                    <p className="text-xs text-muted-foreground">{t("admin.organizations.maxCandidates")}</p>
                   </div>
                 </div>
               </div>
@@ -1107,26 +1110,26 @@ export function OrganizationsClient({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-4 w-4" /> Subscription Start
+                    <Calendar className="h-4 w-4" /> {t("admin.organizations.subscriptionStart")}
                   </p>
                   <p>{selectedOrg.subscription_start_date || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-4 w-4" /> Subscription End
+                    <Calendar className="h-4 w-4" /> {t("admin.organizations.subscriptionEnd")}
                   </p>
                   <p>{selectedOrg.subscription_end_date || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Saudization</p>
-                  <p>{selectedOrg.saudization_enabled ? "Enabled" : "Disabled"}</p>
+                  <p className="text-muted-foreground">{t("admin.organizations.saudization")}</p>
+                  <p>{selectedOrg.saudization_enabled ? t("admin.organizations.enabled") : t("admin.organizations.disabled")}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Emiratization</p>
-                  <p>{selectedOrg.emiratization_enabled ? "Enabled" : "Disabled"}</p>
+                  <p className="text-muted-foreground">{t("admin.organizations.emiratization")}</p>
+                  <p>{selectedOrg.emiratization_enabled ? t("admin.organizations.enabled") : t("admin.organizations.disabled")}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Created</p>
+                  <p className="text-muted-foreground">{t("admin.organizations.created")}</p>
                   <p>{selectedOrg.created_at ? new Date(selectedOrg.created_at).toLocaleDateString() : "N/A"}</p>
                 </div>
               </div>
@@ -1134,14 +1137,14 @@ export function OrganizationsClient({
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-              Close
+              {t("admin.organizations.close")}
             </Button>
             <Button onClick={() => {
               setIsViewDialogOpen(false)
               if (selectedOrg) openEditDialog(selectedOrg)
             }}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t("admin.organizations.edit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1151,9 +1154,9 @@ export function OrganizationsClient({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Organization</DialogTitle>
+            <DialogTitle>{t("admin.organizations.deleteOrg")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this organization? This action cannot be undone.
+              {t("admin.organizations.deleteConfirm")}
             </DialogDescription>
           </DialogHeader>
           {selectedOrg && (
@@ -1163,7 +1166,7 @@ export function OrganizationsClient({
                 <p className="text-sm text-muted-foreground">{selectedOrg.slug}.kawadir.com</p>
               </div>
               <p className="text-sm text-muted-foreground mt-4">
-                All data associated with this organization including users, jobs, and candidates will be permanently deleted.
+                {t("admin.organizations.deleteWarning")}
               </p>
             </div>
           )}
@@ -1172,7 +1175,7 @@ export function OrganizationsClient({
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
             >
-              Cancel
+              {t("admin.organizations.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -1180,7 +1183,7 @@ export function OrganizationsClient({
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete Organization
+              {t("admin.organizations.deleteOrg")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1192,7 +1195,7 @@ export function OrganizationsClient({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-green-500" />
-              Admin Invite Link Generated
+              {t("admin.organizations.adminInviteGenerated")}
             </DialogTitle>
             <DialogDescription>
               Organization <strong>{inviteLinkOrgName}</strong> has been created and{" "}
@@ -1204,20 +1207,20 @@ export function OrganizationsClient({
             <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <CheckCircle className="h-4 w-4" />
-                <span>User created with email auto-confirmed</span>
+                <span>{t("admin.organizations.userCreatedConfirmed")}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <CheckCircle className="h-4 w-4" />
-                <span>Assigned as Org Admin</span>
+                <span>{t("admin.organizations.assignedOrgAdmin")}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <CheckCircle className="h-4 w-4" />
-                <span>Invite link generated</span>
+                <span>{t("admin.organizations.inviteLinkGenerated")}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Invite Link (share with the admin)</Label>
+              <Label>{t("admin.organizations.inviteLink")}</Label>
               <div className="flex gap-2">
                 <Input
                   readOnly
@@ -1238,7 +1241,7 @@ export function OrganizationsClient({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                This link directs the admin to create their password. It expires after one use.
+                {t("admin.organizations.inviteLinkExpiry")}
               </p>
             </div>
           </div>
@@ -1250,7 +1253,7 @@ export function OrganizationsClient({
                 setGeneratedInviteLink(null)
               }}
             >
-              Done
+              {t("admin.organizations.done")}
             </Button>
           </DialogFooter>
         </DialogContent>

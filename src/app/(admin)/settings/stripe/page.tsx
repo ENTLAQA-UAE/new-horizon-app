@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,6 +30,7 @@ export default function StripeSettingsPage() {
     stripe_publishable_key: "",
     stripe_webhook_secret: "",
   })
+  const { t } = useI18n()
 
   useEffect(() => {
     async function loadSettings() {
@@ -71,7 +73,7 @@ export default function StripeSettingsPage() {
 
   const handleSave = async () => {
     if (!settings.stripe_secret_key || !settings.stripe_publishable_key) {
-      toast.error("Secret Key and Publishable Key are required")
+      toast.error(t("admin.stripe.keysRequired"))
       return
     }
 
@@ -100,10 +102,10 @@ export default function StripeSettingsPage() {
       }
 
       setConnectionStatus("connected")
-      toast.success("Stripe settings saved successfully")
+      toast.success(t("admin.stripe.savedSuccess"))
     } catch (error) {
       console.error("Error saving Stripe settings:", error)
-      toast.error("Failed to save Stripe settings")
+      toast.error(t("admin.stripe.saveFailed"))
     } finally {
       setIsSaving(false)
     }
@@ -111,7 +113,7 @@ export default function StripeSettingsPage() {
 
   const handleTestConnection = async () => {
     if (!settings.stripe_secret_key) {
-      toast.error("Please enter a Secret Key first")
+      toast.error(t("admin.stripe.enterSecretFirst"))
       return
     }
 
@@ -125,14 +127,14 @@ export default function StripeSettingsPage() {
 
       if (response.ok) {
         setConnectionStatus("connected")
-        toast.success("Stripe connection successful!")
+        toast.success(t("admin.stripe.connectionSuccess"))
       } else {
         setConnectionStatus("error")
-        toast.error("Stripe connection failed. Check your API key.")
+        toast.error(t("admin.stripe.connectionFailed"))
       }
     } catch {
       setConnectionStatus("error")
-      toast.error("Failed to test connection")
+      toast.error(t("admin.stripe.testFailed"))
     } finally {
       setIsTesting(false)
     }
@@ -162,9 +164,9 @@ export default function StripeSettingsPage() {
           </Button>
         </Link>
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Stripe Integration</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("admin.stripe.title")}</h2>
           <p className="text-muted-foreground">
-            Configure Stripe payment processing for subscription billing
+            {t("admin.stripe.subtitle")}
           </p>
         </div>
       </div>
@@ -176,10 +178,10 @@ export default function StripeSettingsPage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
-                Connection Status
+                {t("admin.stripe.connectionStatus")}
               </CardTitle>
               <CardDescription>
-                Current Stripe API connection status
+                {t("admin.stripe.connectionStatusDesc")}
               </CardDescription>
             </div>
             <Badge
@@ -187,11 +189,11 @@ export default function StripeSettingsPage() {
               className="flex items-center gap-1"
             >
               {connectionStatus === "connected" ? (
-                <><CheckCircle2 className="h-3 w-3" /> Connected</>
+                <><CheckCircle2 className="h-3 w-3" /> {t("admin.stripe.connected")}</>
               ) : connectionStatus === "error" ? (
-                <><XCircle className="h-3 w-3" /> Error</>
+                <><XCircle className="h-3 w-3" /> {t("admin.stripe.error")}</>
               ) : (
-                "Not Configured"
+                t("admin.stripe.notConfigured")
               )}
             </Badge>
           </div>
@@ -201,15 +203,15 @@ export default function StripeSettingsPage() {
       {/* API Keys */}
       <Card>
         <CardHeader>
-          <CardTitle>API Keys</CardTitle>
+          <CardTitle>{t("admin.stripe.apiKeys")}</CardTitle>
           <CardDescription>
-            Enter your Stripe API keys. You can find these in your Stripe Dashboard under Developers &gt; API Keys.
+            {t("admin.stripe.apiKeysDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Publishable Key */}
           <div className="space-y-2">
-            <Label htmlFor="publishable_key">Publishable Key</Label>
+            <Label htmlFor="publishable_key">{t("admin.stripe.publishableKey")}</Label>
             <Input
               id="publishable_key"
               type="text"
@@ -217,16 +219,16 @@ export default function StripeSettingsPage() {
               onChange={(e) =>
                 setSettings({ ...settings, stripe_publishable_key: e.target.value })
               }
-              placeholder="pk_live_..."
+              placeholder={t("admin.stripe.publishableKeyPlaceholder")}
             />
             <p className="text-xs text-muted-foreground">
-              Used in the browser to create checkout sessions. Starts with pk_live_ or pk_test_
+              {t("admin.stripe.publishableKeyDesc")}
             </p>
           </div>
 
           {/* Secret Key */}
           <div className="space-y-2">
-            <Label htmlFor="secret_key">Secret Key</Label>
+            <Label htmlFor="secret_key">{t("admin.stripe.secretKey")}</Label>
             <div className="relative">
               <Input
                 id="secret_key"
@@ -235,7 +237,7 @@ export default function StripeSettingsPage() {
                 onChange={(e) =>
                   setSettings({ ...settings, stripe_secret_key: e.target.value })
                 }
-                placeholder="sk_live_..."
+                placeholder={t("admin.stripe.secretKeyPlaceholder")}
                 className="pr-10"
               />
               <Button
@@ -249,13 +251,13 @@ export default function StripeSettingsPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Used on the server to process payments. Starts with sk_live_ or sk_test_. Keep this secret!
+              {t("admin.stripe.secretKeyDesc")}
             </p>
           </div>
 
           {/* Webhook Secret */}
           <div className="space-y-2">
-            <Label htmlFor="webhook_secret">Webhook Signing Secret</Label>
+            <Label htmlFor="webhook_secret">{t("admin.stripe.webhookSecret")}</Label>
             <div className="relative">
               <Input
                 id="webhook_secret"
@@ -264,7 +266,7 @@ export default function StripeSettingsPage() {
                 onChange={(e) =>
                   setSettings({ ...settings, stripe_webhook_secret: e.target.value })
                 }
-                placeholder="whsec_..."
+                placeholder={t("admin.stripe.webhookSecretPlaceholder")}
                 className="pr-10"
               />
               <Button
@@ -278,7 +280,7 @@ export default function StripeSettingsPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Used to verify webhook events from Stripe. Found in Stripe Dashboard under Developers &gt; Webhooks.
+              {t("admin.stripe.webhookSecretDesc")}
             </p>
           </div>
         </CardContent>
@@ -288,59 +290,56 @@ export default function StripeSettingsPage() {
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Settings
+          {t("admin.stripe.saveSettings")}
         </Button>
         <Button variant="outline" onClick={handleTestConnection} disabled={isTesting}>
           {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Test Connection
+          {t("admin.stripe.testConnection")}
         </Button>
       </div>
 
       {/* Test Mode Guide */}
       <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
         <CardHeader>
-          <CardTitle className="text-base">Testing Payments</CardTitle>
+          <CardTitle className="text-base">{t("admin.stripe.testingPayments")}</CardTitle>
           <CardDescription>
-            How to test the payment flow before going live
+            {t("admin.stripe.testingPaymentsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div>
-            <p className="font-medium mb-1">1. Use Stripe test keys</p>
+            <p className="font-medium mb-1">{t("admin.stripe.step1Title")}</p>
             <p className="text-muted-foreground">
-              In your Stripe Dashboard, toggle to "Test mode" and copy the test API keys
-              (they start with <code className="bg-muted px-1 py-0.5 rounded text-xs">pk_test_</code> and <code className="bg-muted px-1 py-0.5 rounded text-xs">sk_test_</code>).
-              Paste them above and save.
+              {t("admin.stripe.step1Desc")}
             </p>
           </div>
           <div>
-            <p className="font-medium mb-1">2. Test card numbers</p>
+            <p className="font-medium mb-1">{t("admin.stripe.step2Title")}</p>
             <p className="text-muted-foreground">
-              Use these test cards on the checkout page:
+              {t("admin.stripe.step2Desc")}
             </p>
             <div className="mt-1.5 space-y-1 font-mono text-xs">
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                <span className="font-semibold text-green-700 dark:text-green-400">Success:</span>
+                <span className="font-semibold text-green-700 dark:text-green-400">{t("admin.stripe.success")}</span>
                 <span>4242 4242 4242 4242</span>
               </div>
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                <span className="font-semibold text-red-700 dark:text-red-400">Decline:</span>
+                <span className="font-semibold text-red-700 dark:text-red-400">{t("admin.stripe.decline")}</span>
                 <span>4000 0000 0000 0002</span>
               </div>
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                <span className="font-semibold text-blue-700 dark:text-blue-400">3D Secure:</span>
+                <span className="font-semibold text-blue-700 dark:text-blue-400">{t("admin.stripe.threeDSecure")}</span>
                 <span>4000 0025 0000 3155</span>
               </div>
             </div>
             <p className="text-muted-foreground mt-1.5">
-              Use any future expiry date, any 3-digit CVC, and any billing details.
+              {t("admin.stripe.step2Note")}
             </p>
           </div>
           <div>
-            <p className="font-medium mb-1">3. Switch to live when ready</p>
+            <p className="font-medium mb-1">{t("admin.stripe.step3Title")}</p>
             <p className="text-muted-foreground">
-              Replace test keys with live keys (<code className="bg-muted px-1 py-0.5 rounded text-xs">pk_live_</code> / <code className="bg-muted px-1 py-0.5 rounded text-xs">sk_live_</code>)
-              to start accepting real payments.
+              {t("admin.stripe.step3Desc")}
             </p>
           </div>
         </CardContent>

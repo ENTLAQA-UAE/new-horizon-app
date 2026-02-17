@@ -17,8 +17,10 @@ import {
   AlertCircle,
   Plus,
   UserPlus,
+  Globe,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface InviteInfo {
   id: string
@@ -29,14 +31,6 @@ interface InviteInfo {
     name: string
     logo_url: string | null
   }
-}
-
-const roleLabels: Record<string, string> = {
-  org_admin: "Admin",
-  hr_manager: "HR Manager",
-  recruiter: "Recruiter",
-  hiring_manager: "Department Manager",
-  interviewer: "Interviewer",
 }
 
 export default function SignupPage() {
@@ -84,6 +78,8 @@ function SignupPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const codeFromUrl = searchParams.get("code")
+  const { t, language, setLanguage, isRTL } = useI18n()
+  const getRoleLabel = (role: string) => t(`auth.signup.roleLabels.${role}`) || role
 
   // Mode: "create_org" or "join_org"
   const [mode, setMode] = useState<"create_org" | "join_org">(codeFromUrl ? "join_org" : "create_org")
@@ -279,7 +275,20 @@ function SignupPageContent() {
   const isJoinMode = mode === "join_org"
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4" dir={isRTL ? "rtl" : "ltr"}>
+      {/* Language Switcher - Floating */}
+      <div className={cn("fixed top-4 z-50", isRTL ? "left-4" : "right-4")}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLanguage(language === "en" ? "ar" : "en")}
+          className="h-10 w-10 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm"
+          title={language === "en" ? "العربية" : "English"}
+        >
+          <Globe className="h-5 w-5 text-gray-600" />
+        </Button>
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
@@ -304,18 +313,18 @@ function SignupPageContent() {
           </div>
           <CardTitle className="text-2xl font-bold">
             {isJoinMode && inviteInfo
-              ? `Join ${inviteInfo.organization.name}`
+              ? t("auth.signup.joinOrgName", { orgName: inviteInfo.organization.name })
               : isJoinMode
-                ? "Join an Organization"
-                : "Create Your Organization"
+                ? t("auth.signup.joinOrg")
+                : t("auth.signup.createYourOrg")
             }
           </CardTitle>
           <CardDescription>
             {isJoinMode && inviteInfo
-              ? `You've been invited as ${roleLabels[inviteInfo.role] || inviteInfo.role}`
+              ? t("auth.signup.invitedAs", { role: getRoleLabel(inviteInfo.role) })
               : isJoinMode
-                ? "Enter your invite code to join"
-                : "Set up your organization and admin account"
+                ? t("auth.signup.enterInviteToJoin")
+                : t("auth.signup.setupOrgAndAdmin")
             }
           </CardDescription>
         </CardHeader>
@@ -336,7 +345,7 @@ function SignupPageContent() {
               )}
             >
               <Plus className="h-4 w-4" />
-              New Organization
+              {t("auth.signup.newOrganization")}
             </button>
             <button
               type="button"
@@ -349,12 +358,12 @@ function SignupPageContent() {
               )}
             >
               <Users className="h-4 w-4" />
-              Join Existing
+              {t("auth.signup.joinExisting")}
             </button>
           </div>
           {hasInviteLink && (
             <p className="text-xs text-muted-foreground text-center mt-2">
-              You were invited to join an organization
+              {t("auth.signup.invitedToJoin")}
             </p>
           )}
         </div>
@@ -364,22 +373,22 @@ function SignupPageContent() {
             {/* Create Org: Organization Name */}
             {mode === "create_org" && (
               <div className="space-y-2">
-                <Label htmlFor="orgName">Organization Name</Label>
+                <Label htmlFor="orgName">{t("auth.signup.orgName")}</Label>
                 <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Building2 className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isRTL ? "right-3" : "left-3")} />
                   <Input
                     id="orgName"
-                    placeholder="Acme Corporation"
+                    placeholder={t("auth.signup.orgNamePlaceholder")}
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
-                    className="pl-9"
+                    className={isRTL ? "pr-9" : "pl-9"}
                     required
                     disabled={loading}
                   />
                 </div>
                 {orgSlug && (
                   <p className="text-xs text-muted-foreground">
-                    URL: <span className="font-mono text-foreground">{orgSlug}</span>.kawadir.com
+                    {t("auth.signup.orgUrl")}: <span className="font-mono text-foreground">{orgSlug}</span>.kawadir.com
                   </p>
                 )}
               </div>
@@ -388,16 +397,17 @@ function SignupPageContent() {
             {/* Join Org: Invite Code */}
             {mode === "join_org" && (
               <div className="space-y-2">
-                <Label htmlFor="inviteCode">Invite Code</Label>
+                <Label htmlFor="inviteCode">{t("auth.signup.inviteCode")}</Label>
                 <div className="relative">
-                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Users className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isRTL ? "right-3" : "left-3")} />
                   <Input
                     id="inviteCode"
-                    placeholder="Enter invite code (e.g., 2XEVN2HL)"
+                    placeholder={t("auth.signup.inviteCodePlaceholder")}
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     className={cn(
-                      "pl-9 font-mono uppercase",
+                      isRTL ? "pr-9" : "pl-9",
+                      "font-mono uppercase",
                       inviteInfo && "border-green-500 focus-visible:ring-green-500",
                       inviteError && "border-destructive focus-visible:ring-destructive"
                     )}
@@ -406,21 +416,21 @@ function SignupPageContent() {
                     required
                   />
                   {validatingInvite && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground", isRTL ? "left-3" : "right-3")} />
                   )}
                   {inviteInfo && !validatingInvite && (
-                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                    <CheckCircle2 className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-green-500", isRTL ? "left-3" : "right-3")} />
                   )}
                   {inviteError && !validatingInvite && (
-                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+                    <AlertCircle className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-destructive", isRTL ? "left-3" : "right-3")} />
                   )}
                 </div>
                 {inviteInfo && (
                   <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                     <CheckCircle2 className="h-3 w-3" />
-                    <span>Valid invite for {inviteInfo.organization.name}</span>
+                    <span>{t("auth.signup.validInviteFor", { orgName: inviteInfo.organization.name })}</span>
                     <Badge variant="secondary" className="text-xs">
-                      {roleLabels[inviteInfo.role] || inviteInfo.role}
+                      {getRoleLabel(inviteInfo.role)}
                     </Badge>
                   </div>
                 )}
@@ -436,7 +446,7 @@ function SignupPageContent() {
             {/* Shared Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName">{t("auth.signup.firstName")}</Label>
                 <Input
                   id="firstName"
                   placeholder="John"
@@ -448,7 +458,7 @@ function SignupPageContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">{t("auth.signup.lastName")}</Label>
                 <Input
                   id="lastName"
                   placeholder="Doe"
@@ -462,7 +472,7 @@ function SignupPageContent() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.signup.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -476,17 +486,17 @@ function SignupPageContent() {
               />
               {isJoinMode && inviteInfo && (
                 <p className="text-xs text-muted-foreground">
-                  Email is pre-filled from your invite
+                  {t("auth.signup.emailPreFilled")}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("auth.signup.password")}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Create a strong password"
+                placeholder={t("auth.signup.createStrongPassword")}
                 value={password}
                 autoComplete="new-password"
                 onChange={(e) => setPassword(e.target.value)}
@@ -503,18 +513,20 @@ function SignupPageContent() {
               className="w-full"
               disabled={loading || (isJoinMode && inviteCode.length > 0 && !inviteInfo)}
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === "create_org"
-                ? "Create Organization & Account"
-                : inviteInfo
-                  ? `Join ${inviteInfo.organization.name}`
-                  : "Join Organization"
+              {loading && <Loader2 className={cn("h-4 w-4 animate-spin", isRTL ? "ml-2" : "mr-2")} />}
+              {loading
+                ? t("auth.signup.creatingAccount")
+                : mode === "create_org"
+                  ? t("auth.signup.createOrgAndAccount")
+                  : inviteInfo
+                    ? t("auth.signup.joinOrgName", { orgName: inviteInfo.organization.name })
+                    : t("auth.signup.createAccount")
               }
             </Button>
             <p className="text-sm text-muted-foreground text-center">
-              Already have an account?{" "}
+              {t("auth.signup.haveAccount")}{" "}
               <Link href="/login" className="text-primary hover:underline">
-                Sign in
+                {t("auth.signup.signIn")}
               </Link>
             </p>
           </CardFooter>

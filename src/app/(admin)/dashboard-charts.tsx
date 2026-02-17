@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/lib/i18n"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   LineChart,
@@ -42,12 +43,14 @@ interface ChartData {
 }
 
 export function DashboardCharts({ data }: { data: ChartData }) {
+  const { t } = useI18n()
+
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Monthly Growth Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Monthly Growth</CardTitle>
+          <CardTitle className="text-lg">{t("admin.dashboard.monthlyGrowth")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -69,7 +72,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
                 stroke="#6366f1"
                 strokeWidth={2}
                 dot={{ fill: "#6366f1" }}
-                name="Organizations"
+                name={t("admin.dashboard.organizations")}
               />
               <Line
                 type="monotone"
@@ -77,7 +80,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
                 stroke="#8b5cf6"
                 strokeWidth={2}
                 dot={{ fill: "#8b5cf6" }}
-                name="Users"
+                name={t("admin.dashboard.users")}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -87,7 +90,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
       {/* Subscription Distribution Pie Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Subscription Distribution</CardTitle>
+          <CardTitle className="text-lg">{t("admin.dashboard.subscriptionDistribution")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -124,7 +127,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
       {/* Revenue by Tier Bar Chart */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Revenue by Tier</CardTitle>
+          <CardTitle className="text-lg">{t("admin.dashboard.revenueByTier")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -138,7 +141,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                 }}
-                formatter={(value: number) => [`$${value}`, "Revenue"]}
+                formatter={(value: number) => [`$${value}`, t("admin.dashboard.revenue")]}
               />
               <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -149,7 +152,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
       {/* Application Trends */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Application Trends</CardTitle>
+          <CardTitle className="text-lg">{t("admin.dashboard.applicationTrends")}</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -171,7 +174,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
                 stroke="#06b6d4"
                 strokeWidth={2}
                 dot={{ fill: "#06b6d4" }}
-                name="Applications"
+                name={t("admin.dashboard.applications")}
               />
               <Line
                 type="monotone"
@@ -179,7 +182,7 @@ export function DashboardCharts({ data }: { data: ChartData }) {
                 stroke="#22c55e"
                 strokeWidth={2}
                 dot={{ fill: "#22c55e" }}
-                name="Hires"
+                name={t("admin.dashboard.hires")}
               />
             </LineChart>
           </ResponsiveContainer>
