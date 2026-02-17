@@ -890,14 +890,13 @@ export function ApplicationsClient({
     }
   }
 
-  // Open resume/attachment in new tab (like Google Drive - view & download from there)
-  const handleOpenFile = (fileUrl: string) => {
-    if (!fileUrl) {
+  // Open resume/attachment via proxy URL (avoids exposing raw Supabase URLs)
+  const handleOpenFile = (fileId: string) => {
+    if (!fileId) {
       toast.error(t("applications.messages.fileNotAvailable"))
       return
     }
-    // Open the file directly in a new tab - user can view and download from there
-    window.open(fileUrl, "_blank", "noopener,noreferrer")
+    window.open(`/api/files/${fileId}`, "_blank", "noopener,noreferrer")
   }
 
   // NOTES
@@ -1164,7 +1163,7 @@ export function ApplicationsClient({
               {app.candidates?.resume_url && (
                 <DropdownMenuItem
                   onSelect={() => {
-                    handleOpenFile(app.candidates!.resume_url!)
+                    handleOpenFile(`resume-${app.candidate_id}`)
                   }}
                 >
                   <Download className="mr-2 h-4 w-4" />
@@ -1994,7 +1993,7 @@ export function ApplicationsClient({
                                 variant="ghost"
                                 size="icon"
                                 className="h-10 w-10 hover:bg-blue-100 dark:hover:bg-blue-900/50"
-                                onClick={() => handleOpenFile(selectedApplication.candidates!.resume_url!)}
+                                onClick={() => handleOpenFile(`resume-${selectedApplication.candidate_id}`)}
                               >
                                 <Download className="h-5 w-5 text-blue-600" />
                               </Button>
@@ -2017,7 +2016,7 @@ export function ApplicationsClient({
                                 variant="ghost"
                                 size="icon"
                                 className="h-10 w-10"
-                                onClick={() => window.open(attachment.file_url, "_blank")}
+                                onClick={() => window.open(`/api/files/att-${attachment.id}`, "_blank")}
                               >
                                 <Download className="h-5 w-5" />
                               </Button>

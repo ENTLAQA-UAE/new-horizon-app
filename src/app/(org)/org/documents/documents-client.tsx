@@ -181,13 +181,13 @@ export function DocumentsClient({
     return matchesSearch && matchesCandidate
   })
 
-  // Open document in new tab
+  // Open document via proxy URL (avoids exposing raw Supabase URLs)
   const handleOpenDocument = (doc: Document) => {
     if (!doc.file_url) {
       toast.error(t("documents.fileNotAvailable"))
       return
     }
-    window.open(doc.file_url, "_blank", "noopener,noreferrer")
+    window.open(`/api/files/${doc.id}`, "_blank", "noopener,noreferrer")
   }
 
   // Get unique candidates that have documents (for filter dropdown)

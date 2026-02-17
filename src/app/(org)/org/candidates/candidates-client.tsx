@@ -198,14 +198,13 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
     setResumeText("")
   }
 
-  // Open resume in new tab (like Google Drive - view & download from there)
-  const handleOpenResume = (resumeUrl: string) => {
-    if (!resumeUrl) {
+  // Open resume via proxy URL (avoids exposing raw Supabase URLs)
+  const handleOpenResume = (candidateId: string) => {
+    if (!candidateId) {
       toast.error(t("candidates.messages.resumeNotAvailable"))
       return
     }
-    // Open the file directly in a new tab - user can view and download from there
-    window.open(resumeUrl, "_blank", "noopener,noreferrer")
+    window.open(`/api/files/resume-${candidateId}`, "_blank", "noopener,noreferrer")
   }
 
   // CREATE
@@ -1119,7 +1118,7 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
                         </DropdownMenuItem>
                         {candidate.resume_url && (
                           <DropdownMenuItem
-                            onSelect={() => handleOpenResume(candidate.resume_url!)}
+                            onSelect={() => handleOpenResume(candidate.id)}
                           >
                             <ExternalLink className="mr-2 h-4 w-4" />
                             {t("candidates.actions.viewResume")}
