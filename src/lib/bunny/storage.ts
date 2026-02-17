@@ -18,7 +18,7 @@ export async function uploadFile(path: string, fileBuffer: Buffer): Promise<stri
       "Content-Type": "application/octet-stream",
       Checksum: checksum,
     },
-    body: new Blob([fileBuffer]),
+    body: new Blob([new Uint8Array(fileBuffer)]),
   })
 
   if (response.status !== 201) {
