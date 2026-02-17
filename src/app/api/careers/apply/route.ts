@@ -1,9 +1,11 @@
 // @ts-nocheck
 // Note: Jobs table columns not matching types
+import crypto from "crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
 import { notify } from "@/lib/notifications/send-notification"
 import { apiLimiter, getRateLimitKey, rateLimitResponse } from "@/lib/rate-limit"
+import { uploadFile } from "@/lib/bunny"
 
 // Ensure this runs on Node.js runtime (not Edge) for file uploads
 export const runtime = "nodejs"
@@ -143,31 +145,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upload resume
+    // Upload resume to Bunny Storage under tenant folder
     const fileExt = resumeFile.name.split(".").pop()
-    const fileName = `${candidateId}-${Date.now()}.${fileExt}`
-    const filePath = `${candidateId}/${fileName}`
+    const fileId = crypto.randomUUID()
+    const resumeStoragePath = `${job.org_id}/resumes/${candidateId}/${fileId}.${fileExt}`
 
-    const { error: uploadError } = await supabase.storage
-      .from("resumes")
-      .upload(filePath, resumeFile, {
-        cacheControl: "3600",
-        upsert: true,
-      })
-
-    if (uploadError) {
+    let resumeUrl: string | null = null
+    try {
+      const resumeBuffer = Buffer.from(await resumeFile.arrayBuffer())
+      await uploadFile(resumeStoragePath, resumeBuffer)
+      resumeUrl = resumeStoragePath
+    } catch (uploadError) {
       console.error("Resume upload error:", uploadError)
       // Continue without resume URL
     }
 
-    // Get resume URL
-    const { data: urlData } = supabase.storage
-      .from("resumes")
-      .getPublicUrl(filePath)
-
-    const resumeUrl = urlData?.publicUrl || null
-
-    // Update candidate with resume URL
+    // Update candidate with resume storage path
     if (resumeUrl) {
       await supabase
         .from("candidates")

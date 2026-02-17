@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/service"
+import { createTenantFolders } from "@/lib/bunny"
 
 /**
  * Signup API that handles both flows:
@@ -166,6 +167,14 @@ async function handleCreateOrg(
       { error: "Organization created but role assignment failed. Please contact support." },
       { status: 500 }
     )
+  }
+
+  // Create tenant folders in Bunny Storage for document storage
+  try {
+    await createTenantFolders(org.id)
+  } catch (bunnyError) {
+    console.error("Failed to create Bunny tenant folders:", bunnyError)
+    // Non-blocking: folders will be created on first upload if this fails
   }
 
   return NextResponse.json({

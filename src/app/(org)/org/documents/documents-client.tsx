@@ -278,14 +278,30 @@ export function DocumentsClient({
     return acc
   }, {} as Record<string, { job_title: string; documents: Document[] }>)
 
-  // Open document in new tab for viewing (like Google Drive)
-  const handleOpenDocument = (doc: Document) => {
+  // Open document in new tab via signed Bunny CDN URL
+  const handleOpenDocument = async (doc: Document) => {
     if (!doc.file_url) {
       toast.error(t("documents.fileNotAvailable"))
       return
     }
-    // Open the file directly in a new tab - user can view and download from there
-    window.open(doc.file_url, "_blank", "noopener,noreferrer")
+
+    try {
+      const response = await fetch("/api/documents/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storagePath: doc.file_url }),
+      })
+
+      if (!response.ok) {
+        toast.error(t("documents.fileNotAvailable"))
+        return
+      }
+
+      const { signedUrl } = await response.json()
+      window.open(signedUrl, "_blank", "noopener,noreferrer")
+    } catch {
+      toast.error(t("documents.fileNotAvailable"))
+    }
   }
 
   const stats = {
