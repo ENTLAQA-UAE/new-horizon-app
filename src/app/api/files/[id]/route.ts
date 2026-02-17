@@ -18,6 +18,24 @@ function parseSupabaseStorageUrl(url: string): { bucket: string; path: string } 
   }
 }
 
+// Infer content type from file extension
+function getContentType(fileName: string): string {
+  const ext = fileName.split(".").pop()?.toLowerCase()
+  const mimeTypes: Record<string, string> = {
+    pdf: "application/pdf",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+    gif: "image/gif",
+  }
+  return mimeTypes[ext || ""] || "application/octet-stream"
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -106,7 +124,8 @@ export async function GET(
       return NextResponse.json({ error: "Document not found" }, { status: 404 })
     }
 
-    // Try to generate a signed URL for better security, otherwise redirect to public URL
+    // Determine the download URL (signed for security, or fallback to public)
+    let downloadUrl = fileUrl
     const storageInfo = parseSupabaseStorageUrl(fileUrl)
     if (storageInfo) {
       const allowedBuckets = ["resumes", "documents", "attachments"]
@@ -116,13 +135,38 @@ export async function GET(
           .createSignedUrl(storageInfo.path, 300) // 5 minutes
 
         if (signedData?.signedUrl) {
-          return NextResponse.redirect(signedData.signedUrl)
+          downloadUrl = signedData.signedUrl
         }
       }
     }
 
-    // Fallback: redirect to the stored URL
-    return NextResponse.redirect(fileUrl)
+    // Proxy the file through our domain instead of redirecting to Supabase
+    const fileResponse = await fetch(downloadUrl)
+
+    if (!fileResponse.ok) {
+      return NextResponse.json(
+        { error: "Failed to fetch file" },
+        { status: fileResponse.status }
+      )
+    }
+
+    const fileBuffer = await fileResponse.arrayBuffer()
+    const contentType =
+      fileResponse.headers.get("content-type") || getContentType(fileName)
+
+    // Sanitize filename for Content-Disposition header
+    const safeName = fileName.replace(/[^\w\s.-]/g, "_")
+
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `inline; filename="${safeName}"`,
+        "Content-Length": String(fileBuffer.byteLength),
+        "Cache-Control": "private, max-age=300",
+        "X-Content-Type-Options": "nosniff",
+      },
+    })
   } catch (error) {
     console.error("Error in files GET:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
