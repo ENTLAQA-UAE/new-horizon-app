@@ -1,7 +1,5 @@
-import crypto from "crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { uploadFile, deleteFile } from "@/lib/bunny"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -77,24 +75,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File size must be less than 10MB" }, { status: 400 })
     }
 
-    // Upload file to Bunny Storage under tenant folder
+    // Upload file to Supabase Storage
     const fileExt = file.name.split(".").pop() || "pdf"
-    const fileId = crypto.randomUUID()
-    const storagePath = `${profile.org_id}/documents/${applicationId}/${fileId}-${documentType}.${fileExt}`
+    const fileName = `${profile.org_id}/${applicationId}/${Date.now()}-${name.replace(/[^a-zA-Z0-9]/g, "_")}.${fileExt}`
 
-    const fileBuffer = Buffer.from(await file.arrayBuffer())
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      })
 
-    try {
-      await uploadFile(storagePath, fileBuffer)
-    } catch (uploadError) {
-      console.error("Bunny Storage upload error:", uploadError)
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError)
       return NextResponse.json(
         { error: "Failed to upload file to storage" },
         { status: 500 }
       )
     }
 
-    // Create attachment record — store the Bunny storage path (not a public URL)
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("documents")
+      .getPublicUrl(fileName)
+
+    const fileUrl = urlData?.publicUrl
+
+    if (!fileUrl) {
+      return NextResponse.json(
+        { error: "Failed to get file URL" },
+        { status: 500 }
+      )
+    }
+
+    // Create attachment record
     const { data: attachment, error: insertError } = await supabase
       .from("application_attachments")
       .insert({
@@ -102,7 +116,7 @@ export async function POST(request: NextRequest) {
         uploaded_by: user.id,
         file_name: name,
         file_type: documentType,
-        file_url: storagePath,
+        file_url: fileUrl,
         file_size: file.size,
         mime_type: file.type,
         description: `${documentType.replace(/_/g, " ")} - Uploaded by recruiter`,
@@ -112,10 +126,8 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error("Database insert error:", insertError)
-      // Clean up the uploaded file from Bunny
-      await deleteFile(storagePath).catch((err) =>
-        console.error("Failed to clean up Bunny file:", err)
-      )
+      // Try to delete the uploaded file
+      await supabase.storage.from("documents").remove([fileName])
       return NextResponse.json(
         { error: "Failed to save document record" },
         { status: 500 }
