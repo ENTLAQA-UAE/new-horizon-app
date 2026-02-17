@@ -46,7 +46,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export type UserRole = "super_admin" | "org_admin" | "hr_manager" | "recruiter" | "hiring_manager" | "interviewer"
 
@@ -68,6 +68,8 @@ interface SidebarProps {
   collapsed?: boolean
   onCollapse?: (collapsed: boolean) => void
   userRole?: UserRole
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
 // Super Admin - Platform management only
@@ -254,7 +256,7 @@ function getSectionsForRole(role?: UserRole): NavSection[] {
   }
 }
 
-export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProps) {
+export function Sidebar({ collapsed = false, onCollapse, userRole, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const { language, isRTL } = useI18n()
   const branding = useBranding()
@@ -266,6 +268,14 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
   const ExpandIcon = isRTL ? ChevronLeft : ChevronRight
 
   const homeHref = userRole === "super_admin" ? "/" : "/org"
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    if (mobileOpen && onMobileClose) {
+      onMobileClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   // Collect all navigation hrefs to determine active state properly
   const allHrefs = sections.flatMap(section => section.links.map(link => link.href))
@@ -301,13 +311,17 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
     return collapsedSections[sectionTitle] ?? false
   }
 
-  return (
+  const sidebarContent = (
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex flex-col bg-card/95 backdrop-blur-xl transition-all duration-300 ease-out relative",
+          "flex flex-col bg-card/95 backdrop-blur-xl transition-all duration-300 ease-out relative h-full",
           isRTL ? "border-l border-border/50" : "border-r border-border/50",
-          collapsed ? "w-[72px]" : "w-[260px]"
+          // Desktop: normal sidebar width
+          "hidden md:flex",
+          collapsed ? "w-[72px]" : "w-[260px]",
+          // Mobile: full width when shown in overlay
+          mobileOpen && "!flex !w-[280px]"
         )}
       >
         {/* Subtle gradient overlay */}
@@ -318,13 +332,13 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
 
         {/* Logo Section */}
         <div className={cn(
-          "flex h-16 items-center gap-3 px-4 border-b border-border/50 relative",
-          collapsed ? "justify-center" : ""
+          "flex items-center gap-3 border-b border-border/50 relative",
+          collapsed ? "h-16 px-3 justify-center" : "h-20 px-5"
         )}>
           <Link
             href={homeHref}
             className={cn(
-              "flex items-center gap-3 group",
+              "flex items-center gap-3 group flex-1 min-w-0",
               collapsed ? "justify-center" : ""
             )}
           >
@@ -335,7 +349,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
                   alt={branding.orgName}
                   className={cn(
                     "object-contain transition-all duration-300 group-hover:scale-105",
-                    collapsed ? "h-11 w-11" : "h-12 max-w-[160px]"
+                    collapsed ? "h-10 w-10" : "h-14 max-w-[200px]"
                   )}
                 />
               </div>
@@ -345,7 +359,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
                 alt={language === "ar" ? branding.orgNameAr : branding.orgName}
                 className={cn(
                   "object-contain transition-all duration-300 group-hover:scale-105",
-                  collapsed ? "h-11 w-11" : "h-12 max-w-[160px]"
+                  collapsed ? "h-10 w-10" : "h-14 max-w-[200px]"
                 )}
               />
             )}
@@ -356,7 +370,7 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all ml-auto",
+                "h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all flex-shrink-0 ml-auto",
                 isRTL && "mr-auto ml-0"
               )}
               onClick={() => onCollapse(true)}
@@ -515,13 +529,13 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
         {/* Branding footer */}
         {!collapsed && (
           <div className="p-4 border-t border-border/50">
-            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-muted/30">
+            <div className="flex items-center gap-3 px-2 py-2.5 rounded-xl bg-muted/30">
               <img
                 src="/new-logo-light-final.PNG"
                 alt="Kawadir"
-                className="w-6 h-6 object-contain"
+                className="w-8 h-8 object-contain flex-shrink-0"
               />
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <span className="text-[11px] font-semibold text-foreground">Powered by Kawadir</span>
                 <span className="text-[9px] text-muted-foreground">AI-Powered Recruitment</span>
               </div>
@@ -530,5 +544,33 @@ export function Sidebar({ collapsed = false, onCollapse, userRole }: SidebarProp
         )}
       </aside>
     </TooltipProvider>
+  )
+
+  // On mobile, wrap sidebar in an overlay
+  return (
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
+      {/* Mobile: fixed overlay sidebar */}
+      {mobileOpen && (
+        <div className={cn(
+          "fixed inset-y-0 z-50 md:hidden animate-slide-in-from-left",
+          isRTL ? "right-0" : "left-0"
+        )}>
+          {sidebarContent}
+        </div>
+      )}
+
+      {/* Desktop: static sidebar */}
+      <div className="hidden md:flex h-full">
+        {sidebarContent}
+      </div>
+    </>
   )
 }
