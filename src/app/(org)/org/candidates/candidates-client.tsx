@@ -251,6 +251,16 @@ export function OrgCandidatesClient({ candidates: initialCandidates, jobs, organ
         if (resumeUrl) {
           await supabaseUpdate("candidates", { resume_url: resumeUrl }, { column: "id", value: data.id })
           data.resume_url = resumeUrl
+
+          // Also create a candidate_documents record so it appears on the Documents page
+          await supabaseInsert("candidate_documents", {
+            org_id: organizationId,
+            candidate_id: data.id,
+            file_name: `${formData.first_name} ${formData.last_name} - Resume`,
+            file_url: resumeUrl,
+            file_size: resumeFile.size,
+            mime_type: resumeFile.type,
+          })
         }
         setIsUploadingResume(false)
       }
