@@ -434,15 +434,17 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                           <h3 className="font-semibold text-base truncate">{jobTitle}</h3>
                           <Badge
                             variant={job.status === "open" || job.status === "published" ? "default" : "secondary"}
-                            className={cn("text-[10px] h-5", job.status === "closed" && "bg-muted text-muted-foreground")}
+                            className={cn("text-[10px] h-5", job.status === "closed" && "bg-muted text-muted-foreground", job.status === "pending_approval" && "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200")}
                           >
                             {job.status === "open" || job.status === "published"
                               ? language === "ar" ? "منشورة" : "Published"
-                              : job.status === "closed"
-                                ? language === "ar" ? "مغلقة" : "Closed"
-                                : job.status === "draft"
-                                  ? language === "ar" ? "مسودة" : "Draft"
-                                  : language === "ar" ? "متوقفة" : "Paused"}
+                              : job.status === "pending_approval"
+                                ? language === "ar" ? "بانتظار الموافقة" : "Pending Approval"
+                                : job.status === "closed"
+                                  ? language === "ar" ? "مغلقة" : "Closed"
+                                  : job.status === "draft"
+                                    ? language === "ar" ? "مسودة" : "Draft"
+                                    : language === "ar" ? "متوقفة" : "Paused"}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">

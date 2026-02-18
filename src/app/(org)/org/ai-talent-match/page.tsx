@@ -20,7 +20,7 @@ async function getJobs(orgId: string, departmentIds: string[] | null) {
       locations:location_id (id, city, city_ar, country, country_ar)
     `)
     .eq("org_id", orgId)
-    .in("status", ["draft", "published", "open", "paused", "closed", "filled"])
+    .in("status", ["draft", "pending_approval", "published", "open", "paused", "closed", "filled"])
     .order("created_at", { ascending: false })
 
   if (departmentIds) {
