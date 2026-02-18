@@ -17,7 +17,7 @@ async function getTiers(): Promise<Tier[]> {
       return []
     }
 
-    return data || []
+    return (data || []) as Tier[]
   } catch (err) {
     console.error("[landing] Unexpected error fetching tiers:", err)
     return []
