@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServiceClient } from "@/lib/supabase/server"
 
-export const revalidate = 300 // Cache for 5 minutes
+export const dynamic = "force-dynamic" // Always fetch fresh data so admin changes reflect immediately
 
 export async function GET() {
   try {
