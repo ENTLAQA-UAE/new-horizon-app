@@ -1463,7 +1463,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                         )}
                         <DropdownMenuSeparator />
                         {/* Role-based publish/approval actions */}
-                        {job.status === "draft" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
+                        {job.status === "draft" && (primaryRole === "hr_manager" || primaryRole === "super_admin" || primaryRole === "org_admin") && (
                           <DropdownMenuItem
                             onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
@@ -1481,7 +1481,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             {t("common.submit")}
                           </DropdownMenuItem>
                         )}
-                        {job.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
+                        {job.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin" || primaryRole === "org_admin") && (
                           <>
                             <DropdownMenuItem
                               onSelect={() => handleApproveJob(job.id)}
