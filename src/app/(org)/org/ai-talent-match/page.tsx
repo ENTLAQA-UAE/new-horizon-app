@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"
-import { AITalentMatchClient } from "./ai-talent-match-client"
+import { AITalentHubClient } from "./ai-talent-match-client"
 
-async function getJobs(orgId: string, departmentIds: string[] | null) {
+async function getOpenJobs(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
   let query = supabase
@@ -15,13 +15,17 @@ async function getJobs(orgId: string, departmentIds: string[] | null) {
       status,
       department_id,
       location_id,
+      description,
+      experience_level,
+      job_type,
+      published_at,
       created_at,
       departments:department_id (id, name, name_ar),
       locations:location_id (id, city, city_ar, country, country_ar)
     `)
     .eq("org_id", orgId)
-    .in("status", ["draft", "pending_approval", "published", "open", "paused", "closed", "filled"])
-    .order("created_at", { ascending: false })
+    .eq("status", "open")
+    .order("published_at", { ascending: false })
 
   if (departmentIds) {
     query = query.in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
@@ -29,29 +33,16 @@ async function getJobs(orgId: string, departmentIds: string[] | null) {
 
   const { data, error } = await query
   if (error) {
-    console.error("Error fetching jobs:", error)
+    console.error("Error fetching open jobs:", error)
     return []
   }
   return data || []
 }
 
-async function getAIScreenings(orgId: string, departmentIds: string[] | null) {
+async function getPoolRecommendations(orgId: string) {
   const supabase = await createClient()
 
-  // Get job IDs filtered by department if needed
-  let jobIds: string[] | null = null
-  if (departmentIds) {
-    const { data: deptJobs } = await supabase
-      .from("jobs")
-      .select("id")
-      .eq("org_id", orgId)
-      .in("department_id", departmentIds.length > 0 ? departmentIds : ["__none__"])
-
-    jobIds = deptJobs?.map((j) => j.id) || []
-    if (jobIds.length === 0) return []
-  }
-
-  let query = supabase
+  const { data, error } = await supabase
     .from("candidate_ai_screening")
     .select(`
       id,
@@ -69,6 +60,7 @@ async function getAIScreenings(orgId: string, departmentIds: string[] | null) {
       concerns,
       skill_gaps,
       screening_data,
+      source,
       created_at,
       updated_at,
       candidates:candidate_id (
@@ -81,62 +73,56 @@ async function getAIScreenings(orgId: string, departmentIds: string[] | null) {
         city,
         country,
         avatar_url,
-        resume_url
+        resume_url,
+        years_of_experience,
+        skills
       )
     `)
     .eq("org_id", orgId)
+    .eq("source", "talent_pool")
     .order("overall_score", { ascending: false })
 
-  if (jobIds) {
-    query = query.in("job_id", jobIds)
-  }
-
-  const { data, error } = await query
   if (error) {
-    console.error("Error fetching AI screenings:", error)
+    console.error("Error fetching pool recommendations:", error)
     return []
   }
   return data || []
 }
 
-async function getApplicationCounts(orgId: string) {
+async function getCandidatePoolCount(orgId: string) {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from("applications")
-    .select("job_id, id")
+  const { count, error } = await supabase
+    .from("candidates")
+    .select("id", { count: "exact", head: true })
     .eq("org_id", orgId)
+    .eq("is_blacklisted", false)
 
   if (error) {
-    console.error("Error fetching application counts:", error)
-    return {}
+    console.error("Error counting candidates:", error)
+    return 0
   }
-
-  const counts: Record<string, number> = {}
-  data?.forEach((app) => {
-    counts[app.job_id] = (counts[app.job_id] || 0) + 1
-  })
-  return counts
+  return count || 0
 }
 
-export default async function AITalentMatchPage() {
+export default async function AITalentHubPage() {
   const access = await getDepartmentAccess()
   if (!access) {
     redirect("/login")
   }
 
-  const [jobs, screenings, applicationCounts] = await Promise.all([
-    getJobs(access.orgId, access.departmentIds),
-    getAIScreenings(access.orgId, access.departmentIds),
-    getApplicationCounts(access.orgId),
+  const [jobs, recommendations, poolCount] = await Promise.all([
+    getOpenJobs(access.orgId, access.departmentIds),
+    getPoolRecommendations(access.orgId),
+    getCandidatePoolCount(access.orgId),
   ])
 
   return (
-    <AITalentMatchClient
+    <AITalentHubClient
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jobs={jobs as any}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      screenings={screenings as any}
-      applicationCounts={applicationCounts}
+      recommendations={recommendations as any}
+      candidatePoolCount={poolCount}
       organizationId={access.orgId}
     />
   )

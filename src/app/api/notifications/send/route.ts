@@ -1577,6 +1577,29 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "ai_talent_pool_matches": {
+        const talentJobDeptId = data.jobId ? await getJobDepartmentId(serviceClient, data.jobId) : null
+        const talentRecipients = await getTeamRecipients(serviceClient, orgId, ["hr_manager", "recruiter"], talentJobDeptId)
+
+        result = await notificationService.sendBatch({
+          recipients: talentRecipients,
+          channels: ["in_app"],
+          title: `AI Talent Hub: ${data.totalMatches} matches found`,
+          titleAr: `مركز المواهب الذكي: تم العثور على ${data.totalMatches} مرشح مطابق`,
+          body: `Found ${data.strongMatches} strong and ${data.goodMatches} good matches from the talent pool for "${data.jobTitle}"`,
+          bodyAr: `تم العثور على ${data.strongMatches} تطابق قوي و ${data.goodMatches} تطابق جيد من مجموعة المواهب لوظيفة "${data.jobTitle}"`,
+          data: {
+            type: "ai_talent_pool_matches",
+            jobId: data.jobId,
+            jobTitle: data.jobTitle,
+            strongMatches: data.strongMatches,
+            goodMatches: data.goodMatches,
+            action_url: `/org/ai-talent-match`,
+          },
+        })
+        break
+      }
+
       default:
         return NextResponse.json({ error: `Unknown event type: ${eventType}` }, { status: 400 })
     }
