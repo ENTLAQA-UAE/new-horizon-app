@@ -64,7 +64,7 @@ interface Job {
   published_at: string | null
   created_at: string
   departments: { id: string; name: string; name_ar: string | null } | null
-  locations: { id: string; city: string; city_ar: string | null; country: string; country_ar: string | null } | null
+  locations: { id: string; name: string; name_ar: string | null; city: string; country: string } | null
 }
 
 interface Candidate {
@@ -460,9 +460,9 @@ export function AITalentHubClient({ jobs, recommendations, candidatePoolCount, o
           const jobTitle = language === "ar" && job.title_ar ? job.title_ar : job.title
           const deptName = language === "ar" && job.departments?.name_ar ? job.departments.name_ar : job.departments?.name
           const locationText = job.locations
-            ? language === "ar" && job.locations.city_ar
-              ? `${job.locations.city_ar}, ${job.locations.country_ar}`
-              : `${job.locations.city}, ${job.locations.country}`
+            ? language === "ar" && job.locations.name_ar
+              ? job.locations.name_ar
+              : job.locations.name || `${job.locations.city}, ${job.locations.country}`
             : null
 
           const strongCount = allJobRecs.filter((r) => r.recommendation === "strong_match").length
