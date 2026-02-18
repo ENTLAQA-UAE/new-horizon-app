@@ -86,11 +86,40 @@ function ResetPasswordContent() {
     const handleAuthSession = async () => {
       const supabase = createClient()
 
-      // Method 1: OTP token in query params (from admin-generated invite links)
+      // Method 1a: Hashed token in query params (from custom password reset emails)
       const params = new URLSearchParams(window.location.search)
+      const tokenHash = params.get('token_hash')
+      const otpType = params.get('type')
+
+      if (tokenHash) {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: (otpType as 'recovery' | 'email') || 'recovery',
+          })
+
+          if (error) {
+            console.error('Token hash verification error:', error)
+            setSessionError(error.message)
+            return
+          }
+
+          if (data.session) {
+            setSessionReady(true)
+            window.history.replaceState(null, '', window.location.pathname)
+          } else {
+            setSessionError('Reset link has expired. Please request a new one.')
+          }
+        } catch (err: any) {
+          console.error('Failed to verify reset link:', err)
+          setSessionError(err.message || 'Failed to verify reset link')
+        }
+        return
+      }
+
+      // Method 1b: Raw OTP token in query params (from admin-generated invite links)
       const otpToken = params.get('token')
       const otpEmail = params.get('email')
-      const otpType = params.get('type')
 
       if (otpToken && otpEmail) {
         try {
@@ -108,7 +137,6 @@ function ResetPasswordContent() {
 
           if (data.session) {
             setSessionReady(true)
-            // Clean URL
             window.history.replaceState(null, '', window.location.pathname)
           } else {
             setSessionError('Invite link has expired. Please request a new one.')
