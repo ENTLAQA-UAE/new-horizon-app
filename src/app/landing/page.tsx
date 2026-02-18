@@ -340,12 +340,14 @@ interface Tier {
   max_jobs: number
   max_users: number
   max_candidates: number
-  features: Record<string, boolean> | null
+  features: Record<string, boolean | number> | null
   sort_order: number | null
 }
 
-/* Feature flag display labels (bilingual) */
+/* Feature flag display labels (bilingual)
+   Covers both admin-form keys (ai_resume_parsing …) and seed-data keys (ai_parsing …) */
 const featureLabels: Record<string, { en: string; ar: string }> = {
+  // Admin form keys
   ai_resume_parsing: { en: "AI Resume Parsing", ar: "تحليل السير الذاتية بالذكاء الاصطناعي" },
   ai_candidate_scoring: { en: "AI Candidate Scoring", ar: "تقييم المرشحين بالذكاء الاصطناعي" },
   custom_pipelines: { en: "Custom Pipelines", ar: "مسارات توظيف مخصصة" },
@@ -354,6 +356,13 @@ const featureLabels: Record<string, { en: string; ar: string }> = {
   white_label: { en: "White-label Solution", ar: "حل العلامة البيضاء" },
   priority_support: { en: "Priority Support", ar: "دعم ذو أولوية" },
   sso_integration: { en: "SSO Authentication", ar: "تسجيل دخول موحد SSO" },
+  // Seed-data / legacy keys
+  ai_parsing: { en: "AI Resume Parsing", ar: "تحليل السير الذاتية بالذكاء الاصطناعي" },
+  basic_analytics: { en: "Basic Analytics", ar: "تحليلات أساسية" },
+  email_templates: { en: "Email Templates", ar: "قوالب بريد إلكتروني" },
+  custom_workflows: { en: "Custom Workflows", ar: "سير عمل مخصصة" },
+  dedicated_support: { en: "Dedicated Support", ar: "دعم مخصص" },
+  sso: { en: "SSO Authentication", ar: "تسجيل دخول موحد SSO" },
 }
 
 function getCurrencySymbol(currency: string | null) {
@@ -376,8 +385,8 @@ function tiersToPlans(tiers: Tier[]) {
     const featuresEn: string[] = []
     const featuresAr: string[] = []
 
-    // Limits
-    if (tier.max_jobs >= 999999) {
+    // Limits (-1 or any negative value = unlimited)
+    if (tier.max_jobs < 0 || tier.max_jobs >= 999999) {
       featuresEn.push("Unlimited active jobs")
       featuresAr.push("وظائف نشطة غير محدودة")
     } else {
@@ -385,7 +394,7 @@ function tiersToPlans(tiers: Tier[]) {
       featuresAr.push(`حتى ${tier.max_jobs.toLocaleString()} وظائف نشطة`)
     }
 
-    if (tier.max_users >= 999999) {
+    if (tier.max_users < 0 || tier.max_users >= 999999) {
       featuresEn.push("Unlimited team members")
       featuresAr.push("أعضاء فريق غير محدودين")
     } else {
@@ -393,7 +402,7 @@ function tiersToPlans(tiers: Tier[]) {
       featuresAr.push(`${tier.max_users.toLocaleString()} أعضاء فريق`)
     }
 
-    if (tier.max_candidates >= 999999) {
+    if (tier.max_candidates < 0 || tier.max_candidates >= 999999) {
       featuresEn.push("Unlimited candidates")
       featuresAr.push("مرشحون غير محدودين")
     } else {
