@@ -16,6 +16,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -42,6 +44,9 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  UserPlus,
+  RefreshCw,
+  Database,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
@@ -53,6 +58,10 @@ interface Job {
   status: string
   department_id: string | null
   location_id: string | null
+  description: string | null
+  experience_level: string | null
+  job_type: string | null
+  published_at: string | null
   created_at: string
   departments: { id: string; name: string; name_ar: string | null } | null
   locations: { id: string; city: string; city_ar: string | null; country: string; country_ar: string | null } | null
@@ -69,9 +78,11 @@ interface Candidate {
   country: string | null
   avatar_url: string | null
   resume_url: string | null
+  years_of_experience: number | null
+  skills: string[] | null
 }
 
-interface AIScreening {
+interface PoolRecommendation {
   id: string
   job_id: string
   candidate_id: string
@@ -87,19 +98,20 @@ interface AIScreening {
   concerns: string[] | null
   skill_gaps: string[] | null
   screening_data: Record<string, unknown> | null
+  source: string | null
   created_at: string
   updated_at: string
   candidates: Candidate | null
 }
 
-interface AITalentMatchClientProps {
+interface AITalentHubClientProps {
   jobs: Job[]
-  screenings: AIScreening[]
-  applicationCounts: Record<string, number>
+  recommendations: PoolRecommendation[]
+  candidatePoolCount: number
   organizationId: string
 }
 
-type RecommendationLevel = "all" | "strong_match" | "good_match" | "potential_match" | "weak_match" | "not_recommended"
+type RecommendationLevel = "all" | "strong_match" | "good_match" | "potential_match" | "weak_match"
 
 const recommendationConfig: Record<string, { label: string; labelAr: string; color: string; bgColor: string; icon: typeof Star }> = {
   strong_match: {
@@ -130,60 +142,53 @@ const recommendationConfig: Record<string, { label: string; labelAr: string; col
     bgColor: "bg-orange-50 border-orange-200 dark:bg-orange-950/50 dark:border-orange-800",
     icon: AlertCircle,
   },
-  not_recommended: {
-    label: "Not Recommended",
-    labelAr: "غير موصى به",
-    color: "text-red-700 dark:text-red-400",
-    bgColor: "bg-red-50 border-red-200 dark:bg-red-950/50 dark:border-red-800",
-    icon: AlertCircle,
-  },
 }
 
 function getScoreColor(score: number): string {
   if (score >= 80) return "text-emerald-600 dark:text-emerald-400"
-  if (score >= 60) return "text-blue-600 dark:text-blue-400"
-  if (score >= 40) return "text-amber-600 dark:text-amber-400"
-  return "text-red-600 dark:text-red-400"
+  if (score >= 65) return "text-blue-600 dark:text-blue-400"
+  if (score >= 50) return "text-amber-600 dark:text-amber-400"
+  return "text-orange-600 dark:text-orange-400"
 }
 
 function getProgressColor(score: number): string {
   if (score >= 80) return "[&>div]:bg-emerald-500"
-  if (score >= 60) return "[&>div]:bg-blue-500"
-  if (score >= 40) return "[&>div]:bg-amber-500"
-  return "[&>div]:bg-red-500"
+  if (score >= 65) return "[&>div]:bg-blue-500"
+  if (score >= 50) return "[&>div]:bg-amber-500"
+  return "[&>div]:bg-orange-500"
 }
 
-export function AITalentMatchClient({ jobs, screenings, applicationCounts, organizationId }: AITalentMatchClientProps) {
+export function AITalentHubClient({ jobs, recommendations, candidatePoolCount, organizationId }: AITalentHubClientProps) {
   const router = useRouter()
   const { language, isRTL } = useI18n()
 
   const [searchQuery, setSearchQuery] = useState("")
   const [recommendationFilter, setRecommendationFilter] = useState<RecommendationLevel>("all")
   const [expandedJobs, setExpandedJobs] = useState<Record<string, boolean>>({})
-  const [selectedScreening, setSelectedScreening] = useState<AIScreening | null>(null)
+  const [selectedRec, setSelectedRec] = useState<PoolRecommendation | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [isRanking, setIsRanking] = useState<string | null>(null)
+  const [scanningJob, setScanningJob] = useState<string | null>(null)
+  const [applyingCandidate, setApplyingCandidate] = useState<string | null>(null)
 
-  // Group screenings by job
-  const screeningsByJob = useMemo(() => {
-    const grouped: Record<string, AIScreening[]> = {}
-    screenings.forEach((s) => {
-      if (!grouped[s.job_id]) grouped[s.job_id] = []
-      grouped[s.job_id].push(s)
+  // Group recommendations by job
+  const recsByJob = useMemo(() => {
+    const grouped: Record<string, PoolRecommendation[]> = {}
+    recommendations.forEach((r) => {
+      if (!grouped[r.job_id]) grouped[r.job_id] = []
+      grouped[r.job_id].push(r)
     })
     return grouped
-  }, [screenings])
+  }, [recommendations])
 
-  // Filter screenings
-  const filteredScreeningsByJob = useMemo(() => {
-    const filtered: Record<string, AIScreening[]> = {}
+  // Filter recommendations
+  const filteredRecsByJob = useMemo(() => {
+    const filtered: Record<string, PoolRecommendation[]> = {}
 
-    Object.entries(screeningsByJob).forEach(([jobId, jobScreenings]) => {
-      const filteredItems = jobScreenings.filter((s) => {
-        const candidate = s.candidates
+    Object.entries(recsByJob).forEach(([jobId, jobRecs]) => {
+      const filteredItems = jobRecs.filter((r) => {
+        const candidate = r.candidates
         if (!candidate) return false
 
-        // Search filter
         if (searchQuery) {
           const query = searchQuery.toLowerCase()
           const fullName = `${candidate.first_name} ${candidate.last_name}`.toLowerCase()
@@ -194,8 +199,7 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
           if (!matchesSearch) return false
         }
 
-        // Recommendation filter
-        if (recommendationFilter !== "all" && s.recommendation !== recommendationFilter) {
+        if (recommendationFilter !== "all" && r.recommendation !== recommendationFilter) {
           return false
         }
 
@@ -208,25 +212,24 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
     })
 
     return filtered
-  }, [screeningsByJob, searchQuery, recommendationFilter])
+  }, [recsByJob, searchQuery, recommendationFilter])
 
-  // Stats — only count screenings that have valid candidates (matching the displayed list)
+  // Stats
   const stats = useMemo(() => {
-    const validScreenings = screenings.filter((s) => s.candidates)
-    const total = validScreenings.length
-    const strong = validScreenings.filter((s) => s.recommendation === "strong_match").length
-    const good = validScreenings.filter((s) => s.recommendation === "good_match").length
-    const jobsWithValidScreenings = new Set(validScreenings.map((s) => s.job_id))
-    const jobsWithMatches = jobsWithValidScreenings.size
-    return { total, strong, good, jobsWithMatches }
-  }, [screenings])
+    const validRecs = recommendations.filter((r) => r.candidates)
+    const total = validRecs.length
+    const strong = validRecs.filter((r) => r.recommendation === "strong_match").length
+    const good = validRecs.filter((r) => r.recommendation === "good_match").length
+    const jobsWithRecs = new Set(validRecs.map((r) => r.job_id)).size
+    return { total, strong, good, jobsWithRecs }
+  }, [recommendations])
 
   const toggleJob = (jobId: string) => {
     setExpandedJobs((prev) => ({ ...prev, [jobId]: !prev[jobId] }))
   }
 
-  const handleViewDetail = (screening: AIScreening) => {
-    setSelectedScreening(screening)
+  const handleViewDetail = (rec: PoolRecommendation) => {
+    setSelectedRec(rec)
     setIsDetailOpen(true)
   }
 
@@ -238,10 +241,11 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
     window.open(`/api/files/resume-${candidateId}`, "_blank", "noopener,noreferrer")
   }
 
-  const handleRunAIRanking = async (jobId: string) => {
-    setIsRanking(jobId)
+  // Scan talent pool for a job
+  const handleScanPool = async (jobId: string) => {
+    setScanningJob(jobId)
     try {
-      const response = await fetch("/api/org/ai/rank-applicants", {
+      const response = await fetch("/api/org/ai/talent-pool-scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId }),
@@ -249,34 +253,87 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || "Failed to run AI ranking")
+        throw new Error(error.error || "Failed to scan talent pool")
+      }
+
+      const result = await response.json()
+      const { totalMatches, strongMatches, goodMatches } = result.data
+
+      if (totalMatches === 0) {
+        toast.info(
+          language === "ar"
+            ? "لم يتم العثور على مرشحين مطابقين في المجموعة"
+            : "No matching candidates found in the pool"
+        )
+      } else {
+        toast.success(
+          language === "ar"
+            ? `تم العثور على ${totalMatches} مرشح مطابق (${strongMatches} قوي، ${goodMatches} جيد)`
+            : `Found ${totalMatches} matches (${strongMatches} strong, ${goodMatches} good)`
+        )
+      }
+
+      router.refresh()
+    } catch (error) {
+      toast.error(
+        language === "ar"
+          ? "فشل في فحص مجموعة المواهب"
+          : error instanceof Error ? error.message : "Failed to scan talent pool"
+      )
+    } finally {
+      setScanningJob(null)
+    }
+  }
+
+  // Apply a pool candidate to a job
+  const handleApplyToJob = async (rec: PoolRecommendation) => {
+    if (!rec.candidates) return
+
+    const candidateKey = `${rec.candidate_id}-${rec.job_id}`
+    setApplyingCandidate(candidateKey)
+
+    try {
+      const response = await fetch("/api/org/ai/talent-pool-apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: rec.job_id,
+          candidateId: rec.candidate_id,
+          screeningId: rec.id,
+          orgId: organizationId,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to apply candidate")
       }
 
       toast.success(
         language === "ar"
-          ? "تم تحليل المرشحين بنجاح. يتم تحديث الصفحة..."
-          : "Candidates analyzed successfully. Refreshing..."
+          ? `تم تقديم ${rec.candidates.first_name} ${rec.candidates.last_name} للوظيفة`
+          : `${rec.candidates.first_name} ${rec.candidates.last_name} applied to job successfully`
       )
       router.refresh()
     } catch (error) {
       toast.error(
         language === "ar"
-          ? "فشل في تشغيل تحليل الذكاء الاصطناعي"
-          : error instanceof Error ? error.message : "Failed to run AI analysis"
+          ? "فشل في تقديم المرشح للوظيفة"
+          : error instanceof Error ? error.message : "Failed to apply candidate to job"
       )
     } finally {
-      setIsRanking(null)
+      setApplyingCandidate(null)
     }
   }
 
   // Screening data helpers
-  const getScreeningData = (screening: AIScreening) => {
-    const data = screening.screening_data as Record<string, unknown> | null
+  const getScreeningData = (rec: PoolRecommendation) => {
+    const data = rec.screening_data as Record<string, unknown> | null
     return {
-      summary: (data?.summary as string) || screening.screening_feedback || "",
+      summary: (data?.summary as string) || rec.screening_feedback || "",
       summaryAr: (data?.summaryAr as string) || "",
       skillAnalysis: data?.skillAnalysis as { matched?: { skill: string; proficiency: string }[]; missing?: { skill: string; importance: string }[]; additional?: string[] } | undefined,
-      experienceAnalysis: data?.experienceAnalysis as { yearsRelevant?: number; relevanceScore?: number; highlights?: string[]; concerns?: string[] } | undefined,
+      experienceAnalysis: data?.experienceAnalysis as { yearsRelevant?: number; relevanceScore?: number; highlights?: string[] } | undefined,
       interviewFocus: (data?.interviewFocus as string[]) || [],
     }
   }
@@ -291,12 +348,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {language === "ar" ? "مطابقة المواهب بالذكاء الاصطناعي" : "AI Talent Match"}
+              {language === "ar" ? "مركز المواهب الذكي" : "AI Talent Hub"}
             </h1>
             <p className="text-sm text-muted-foreground">
               {language === "ar"
-                ? "اكتشف أفضل المرشحين لوظائفك المفتوحة باستخدام تحليل الذكاء الاصطناعي"
-                : "Discover top candidates for your open positions with AI-powered analysis"}
+                ? "اكتشف المرشحين المناسبين من مجموعة المواهب الحالية لوظائفك المفتوحة"
+                : "Discover matching candidates from your existing talent pool for open positions"}
             </p>
           </div>
         </div>
@@ -307,13 +364,13 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
         <Card className="border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-950/50">
-                <Target className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-950/50">
+                <Database className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-2xl font-bold">{candidatePoolCount}</p>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" ? "إجمالي التحليلات" : "Total Analyzed"}
+                  {language === "ar" ? "مجموعة المواهب" : "Talent Pool"}
                 </p>
               </div>
             </div>
@@ -355,13 +412,13 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
         <Card className="border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-950/50">
-                <Briefcase className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-950/50">
+                <Briefcase className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stats.jobsWithMatches}</p>
+                <p className="text-2xl font-bold">{jobs.length}</p>
                 <p className="text-xs text-muted-foreground">
-                  {language === "ar" ? "وظائف بتوصيات" : "Jobs with Matches"}
+                  {language === "ar" ? "وظائف مفتوحة" : "Open Jobs"}
                 </p>
               </div>
             </div>
@@ -390,18 +447,16 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
             <SelectItem value="good_match">{language === "ar" ? "تطابق جيد" : "Good Match"}</SelectItem>
             <SelectItem value="potential_match">{language === "ar" ? "تطابق محتمل" : "Potential Match"}</SelectItem>
             <SelectItem value="weak_match">{language === "ar" ? "تطابق ضعيف" : "Weak Match"}</SelectItem>
-            <SelectItem value="not_recommended">{language === "ar" ? "غير موصى به" : "Not Recommended"}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Jobs with AI Matches */}
+      {/* Open Jobs with Pool Recommendations */}
       <div className="space-y-4">
         {jobs.map((job) => {
-          const jobScreenings = filteredScreeningsByJob[job.id] || []
-          const allJobScreenings = screeningsByJob[job.id] || []
+          const jobRecs = filteredRecsByJob[job.id] || []
+          const allJobRecs = recsByJob[job.id] || []
           const isExpanded = expandedJobs[job.id] ?? false
-          const appCount = applicationCounts[job.id] || 0
           const jobTitle = language === "ar" && job.title_ar ? job.title_ar : job.title
           const deptName = language === "ar" && job.departments?.name_ar ? job.departments.name_ar : job.departments?.name
           const locationText = job.locations
@@ -410,9 +465,9 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
               : `${job.locations.city}, ${job.locations.country}`
             : null
 
-          // Count recommendations for this job
-          const strongCount = allJobScreenings.filter((s) => s.recommendation === "strong_match").length
-          const goodCount = allJobScreenings.filter((s) => s.recommendation === "good_match").length
+          const strongCount = allJobRecs.filter((r) => r.recommendation === "strong_match").length
+          const goodCount = allJobRecs.filter((r) => r.recommendation === "good_match").length
+          const hasBeenScanned = allJobRecs.length > 0
 
           return (
             <Card key={job.id} className="border-border/50 overflow-hidden">
@@ -432,19 +487,8 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-base truncate">{jobTitle}</h3>
-                          <Badge
-                            variant={job.status === "open" || job.status === "published" ? "default" : "secondary"}
-                            className={cn("text-[10px] h-5", job.status === "closed" && "bg-muted text-muted-foreground", job.status === "pending_approval" && "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200")}
-                          >
-                            {job.status === "open" || job.status === "published"
-                              ? language === "ar" ? "منشورة" : "Published"
-                              : job.status === "pending_approval"
-                                ? language === "ar" ? "بانتظار الموافقة" : "Pending Approval"
-                                : job.status === "closed"
-                                  ? language === "ar" ? "مغلقة" : "Closed"
-                                  : job.status === "draft"
-                                    ? language === "ar" ? "مسودة" : "Draft"
-                                    : language === "ar" ? "متوقفة" : "Paused"}
+                          <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-400 dark:border-green-800 text-[10px] h-5">
+                            {language === "ar" ? "مفتوحة" : "Open"}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
@@ -455,10 +499,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                               {locationText}
                             </span>
                           )}
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {appCount} {language === "ar" ? "طلب" : appCount === 1 ? "applicant" : "applicants"}
-                          </span>
+                          {job.published_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {language === "ar" ? "نُشرت" : "Published"} {new Date(job.published_at).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -475,80 +521,93 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                           {goodCount} {language === "ar" ? "جيد" : "good"}
                         </Badge>
                       )}
-                      <Badge variant="outline" className="text-xs">
-                        {allJobScreenings.length} {language === "ar" ? "تحليل" : "analyzed"}
-                      </Badge>
+                      {hasBeenScanned ? (
+                        <Badge variant="outline" className="text-xs">
+                          {allJobRecs.length} {language === "ar" ? "توصية" : "recommended"}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          {language === "ar" ? "لم يتم الفحص" : "Not scanned"}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
               </button>
 
-              {/* Expanded Candidates */}
+              {/* Expanded Content */}
               {isExpanded && (
                 <CardContent className="p-0">
                   <Separator />
 
-                  {/* Run AI Ranking Button */}
-                  {appCount > 0 && (
-                    <div className={cn("px-4 py-3 bg-muted/20 border-b flex items-center justify-between")}>
-                      <span className="text-xs text-muted-foreground">
+                  {/* Scan / Rescan Button */}
+                  <div className={cn("px-4 py-3 bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/20 border-b flex items-center justify-between")}>
+                    <div>
+                      <span className="text-sm font-medium">
                         {language === "ar"
-                          ? `${appCount} مرشح متاح للتحليل`
-                          : `${appCount} candidates available for analysis`}
+                          ? `${candidatePoolCount} مرشح في المجموعة`
+                          : `${candidatePoolCount} candidates in talent pool`}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRunAIRanking(job.id)
-                        }}
-                        disabled={isRanking === job.id}
-                        className="h-8 text-xs gap-1.5"
-                      >
-                        {isRanking === job.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-3.5 w-3.5" />
-                        )}
-                        {language === "ar" ? "تشغيل تحليل AI" : "Run AI Analysis"}
-                      </Button>
-                    </div>
-                  )}
-
-                  {jobScreenings.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">
-                      <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">
-                        {allJobScreenings.length > 0
-                          ? language === "ar" ? "لا توجد نتائج تطابق الفلتر" : "No results match your filter"
-                          : language === "ar" ? "لم يتم تحليل مرشحين لهذه الوظيفة بعد" : "No candidates analyzed for this job yet"}
-                      </p>
-                      {allJobScreenings.length === 0 && appCount > 0 && (
-                        <p className="text-xs mt-1">
+                      {hasBeenScanned && (
+                        <p className="text-xs text-muted-foreground">
                           {language === "ar"
-                            ? "اضغط على \"تشغيل تحليل AI\" للبدء"
-                            : "Click \"Run AI Analysis\" to get started"}
+                            ? `آخر فحص: ${new Date(allJobRecs[0]?.created_at).toLocaleDateString()}`
+                            : `Last scanned: ${new Date(allJobRecs[0]?.created_at).toLocaleDateString()}`}
                         </p>
                       )}
                     </div>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleScanPool(job.id)
+                      }}
+                      disabled={scanningJob === job.id}
+                      className="gap-1.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                    >
+                      {scanningJob === job.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : hasBeenScanned ? (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {scanningJob === job.id
+                        ? language === "ar" ? "جاري الفحص..." : "Scanning..."
+                        : hasBeenScanned
+                          ? language === "ar" ? "إعادة الفحص" : "Rescan Pool"
+                          : language === "ar" ? "البحث عن مواهب" : "Find Matching Talent"}
+                    </Button>
+                  </div>
+
+                  {/* Recommendations List */}
+                  {jobRecs.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">
+                      <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">
+                        {hasBeenScanned
+                          ? language === "ar" ? "لا توجد نتائج تطابق الفلتر" : "No results match your filter"
+                          : language === "ar"
+                            ? "اضغط على \"البحث عن مواهب\" لفحص مجموعة المرشحين"
+                            : "Click \"Find Matching Talent\" to scan your candidate pool"}
+                      </p>
+                    </div>
                   ) : (
                     <div className="divide-y">
-                      {jobScreenings.map((screening) => {
-                        const candidate = screening.candidates
+                      {jobRecs.map((rec) => {
+                        const candidate = rec.candidates
                         if (!candidate) return null
 
-                        const score = screening.overall_score || 0
-                        const rec = screening.recommendation || "weak_match"
-                        const recConfig = recommendationConfig[rec] || recommendationConfig.weak_match
+                        const score = rec.overall_score || 0
+                        const recType = rec.recommendation || "weak_match"
+                        const recConfig = recommendationConfig[recType] || recommendationConfig.weak_match
                         const RecIcon = recConfig.icon
-                        const screeningData = getScreeningData(screening)
+                        const screeningData = getScreeningData(rec)
+                        const isAlreadyApplied = !!rec.application_id
+                        const candidateKey = `${rec.candidate_id}-${rec.job_id}`
 
                         return (
-                          <div
-                            key={screening.id}
-                            className="p-4 hover:bg-muted/20 transition-colors"
-                          >
+                          <div key={rec.id} className="p-4 hover:bg-muted/20 transition-colors">
                             <div className="flex items-start gap-4">
                               {/* Avatar */}
                               <div className="flex-shrink-0">
@@ -575,6 +634,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                                     <RecIcon className="h-3 w-3 mr-1" />
                                     {language === "ar" ? recConfig.labelAr : recConfig.label}
                                   </Badge>
+                                  {isAlreadyApplied && (
+                                    <Badge variant="outline" className="text-[10px] h-5 text-green-600 border-green-200">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      {language === "ar" ? "تم التقديم" : "Applied"}
+                                    </Badge>
+                                  )}
                                 </div>
 
                                 {candidate.current_title && (
@@ -594,6 +659,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                                       {[candidate.city, candidate.country].filter(Boolean).join(", ")}
                                     </span>
                                   )}
+                                  {candidate.years_of_experience && (
+                                    <span className="flex items-center gap-1">
+                                      <Briefcase className="h-3 w-3" />
+                                      {candidate.years_of_experience} {language === "ar" ? "سنوات" : "yrs"}
+                                    </span>
+                                  )}
                                 </div>
 
                                 {/* Summary */}
@@ -604,16 +675,16 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                                 )}
 
                                 {/* Strengths */}
-                                {screening.strengths && screening.strengths.length > 0 && (
+                                {rec.strengths && rec.strengths.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-2">
-                                    {(screening.strengths as string[]).slice(0, 3).map((s, i) => (
+                                    {(rec.strengths as string[]).slice(0, 3).map((s, i) => (
                                       <Badge key={i} variant="secondary" className="text-[10px] h-5 font-normal">
                                         {s}
                                       </Badge>
                                     ))}
-                                    {(screening.strengths as string[]).length > 3 && (
+                                    {(rec.strengths as string[]).length > 3 && (
                                       <Badge variant="secondary" className="text-[10px] h-5 font-normal">
-                                        +{(screening.strengths as string[]).length - 3}
+                                        +{(rec.strengths as string[]).length - 3}
                                       </Badge>
                                     )}
                                   </div>
@@ -622,7 +693,7 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
 
                               {/* Score & Actions */}
                               <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                                {/* Score Circle */}
+                                {/* Score */}
                                 <div className="text-center">
                                   <div className={cn("text-2xl font-bold", getScoreColor(score))}>
                                     {score}
@@ -634,24 +705,22 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
 
                                 {/* Score Breakdown Mini */}
                                 <div className="w-24 space-y-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] text-muted-foreground w-10 truncate">
-                                      {language === "ar" ? "مهارات" : "Skills"}
-                                    </span>
-                                    <Progress value={screening.skills_match_score || 0} className={cn("h-1.5 flex-1", getProgressColor(screening.skills_match_score || 0))} />
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] text-muted-foreground w-10 truncate">
-                                      {language === "ar" ? "خبرة" : "Exp"}
-                                    </span>
-                                    <Progress value={screening.experience_score || 0} className={cn("h-1.5 flex-1", getProgressColor(screening.experience_score || 0))} />
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[9px] text-muted-foreground w-10 truncate">
-                                      {language === "ar" ? "تعليم" : "Edu"}
-                                    </span>
-                                    <Progress value={screening.education_score || 0} className={cn("h-1.5 flex-1", getProgressColor(screening.education_score || 0))} />
-                                  </div>
+                                  {rec.skills_match_score != null && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[9px] text-muted-foreground w-10 truncate">
+                                        {language === "ar" ? "مهارات" : "Skills"}
+                                      </span>
+                                      <Progress value={rec.skills_match_score} className={cn("h-1.5 flex-1", getProgressColor(rec.skills_match_score))} />
+                                    </div>
+                                  )}
+                                  {rec.experience_score != null && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[9px] text-muted-foreground w-10 truncate">
+                                        {language === "ar" ? "خبرة" : "Exp"}
+                                      </span>
+                                      <Progress value={rec.experience_score} className={cn("h-1.5 flex-1", getProgressColor(rec.experience_score))} />
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Actions */}
@@ -660,7 +729,7 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                                     size="sm"
                                     variant="ghost"
                                     className="h-7 w-7 p-0"
-                                    onClick={() => handleViewDetail(screening)}
+                                    onClick={() => handleViewDetail(rec)}
                                     title={language === "ar" ? "عرض التفاصيل" : "View details"}
                                   >
                                     <Eye className="h-3.5 w-3.5" />
@@ -674,6 +743,23 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                                       title={language === "ar" ? "عرض السيرة الذاتية" : "View resume"}
                                     >
                                       <FileText className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                  {!isAlreadyApplied && (
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      className="h-7 px-2 text-xs gap-1"
+                                      onClick={() => handleApplyToJob(rec)}
+                                      disabled={applyingCandidate === candidateKey}
+                                      title={language === "ar" ? "تقديم للوظيفة" : "Apply to job"}
+                                    >
+                                      {applyingCandidate === candidateKey ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        <UserPlus className="h-3 w-3" />
+                                      )}
+                                      {language === "ar" ? "تقديم" : "Apply"}
                                     </Button>
                                   )}
                                 </div>
@@ -696,12 +782,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
             <CardContent className="p-12 text-center">
               <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
               <h3 className="text-lg font-medium mb-1">
-                {language === "ar" ? "لا توجد وظائف" : "No Jobs Found"}
+                {language === "ar" ? "لا توجد وظائف مفتوحة" : "No Open Jobs"}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {language === "ar"
-                  ? "أنشئ وانشر وظائف للبدء في مطابقة المواهب بالذكاء الاصطناعي"
-                  : "Create and publish jobs to start matching candidates with AI"}
+                  ? "انشر وظائف للبدء في اكتشاف المواهب من مجموعة المرشحين"
+                  : "Publish jobs to start discovering talent from your candidate pool"}
               </p>
             </CardContent>
           </Card>
@@ -711,14 +797,15 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
       {/* Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          {selectedScreening && selectedScreening.candidates && (() => {
-            const candidate = selectedScreening.candidates
-            const score = selectedScreening.overall_score || 0
-            const rec = selectedScreening.recommendation || "weak_match"
-            const recConfig = recommendationConfig[rec] || recommendationConfig.weak_match
+          {selectedRec && selectedRec.candidates && (() => {
+            const candidate = selectedRec.candidates
+            const score = selectedRec.overall_score || 0
+            const recType = selectedRec.recommendation || "weak_match"
+            const recConfig = recommendationConfig[recType] || recommendationConfig.weak_match
             const RecIcon = recConfig.icon
-            const data = getScreeningData(selectedScreening)
-            const job = jobs.find((j) => j.id === selectedScreening.job_id)
+            const data = getScreeningData(selectedRec)
+            const job = jobs.find((j) => j.id === selectedRec.job_id)
+            const isAlreadyApplied = !!selectedRec.application_id
 
             return (
               <>
@@ -740,6 +827,9 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                       )}
                     </div>
                   </DialogTitle>
+                  <DialogDescription>
+                    {language === "ar" ? "توصية من مجموعة المواهب" : "Talent Pool Recommendation"}
+                  </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-5 mt-2">
@@ -780,24 +870,26 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                   <Separator />
 
                   {/* Score Breakdown */}
-                  <div>
-                    <h4 className="font-medium text-sm mb-3">{language === "ar" ? "تفصيل النتيجة" : "Score Breakdown"}</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { label: language === "ar" ? "المهارات" : "Skills Match", score: selectedScreening.skills_match_score },
-                        { label: language === "ar" ? "الخبرة" : "Experience", score: selectedScreening.experience_score },
-                        { label: language === "ar" ? "التعليم" : "Education", score: selectedScreening.education_score },
-                      ].map((item) => (
-                        <div key={item.label} className="space-y-1.5">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">{item.label}</span>
-                            <span className={cn("font-medium", getScoreColor(item.score || 0))}>{item.score || 0}%</span>
+                  {(selectedRec.skills_match_score != null || selectedRec.experience_score != null || selectedRec.education_score != null) && (
+                    <div>
+                      <h4 className="font-medium text-sm mb-3">{language === "ar" ? "تفصيل النتيجة" : "Score Breakdown"}</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { label: language === "ar" ? "المهارات" : "Skills Match", score: selectedRec.skills_match_score },
+                          { label: language === "ar" ? "الخبرة" : "Experience", score: selectedRec.experience_score },
+                          { label: language === "ar" ? "التعليم" : "Education", score: selectedRec.education_score },
+                        ].filter(item => item.score != null).map((item) => (
+                          <div key={item.label} className="space-y-1.5">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{item.label}</span>
+                              <span className={cn("font-medium", getScoreColor(item.score || 0))}>{item.score}%</span>
+                            </div>
+                            <Progress value={item.score || 0} className={cn("h-2", getProgressColor(item.score || 0))} />
                           </div>
-                          <Progress value={item.score || 0} className={cn("h-2", getProgressColor(item.score || 0))} />
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* AI Summary */}
                   {data.summary && (
@@ -844,13 +936,13 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
 
                   {/* Strengths & Concerns */}
                   <div className="grid grid-cols-2 gap-4">
-                    {selectedScreening.strengths && (selectedScreening.strengths as string[]).length > 0 && (
+                    {selectedRec.strengths && (selectedRec.strengths as string[]).length > 0 && (
                       <div>
                         <h4 className="font-medium text-sm mb-2 text-emerald-600 dark:text-emerald-400">
                           {language === "ar" ? "نقاط القوة" : "Strengths"}
                         </h4>
                         <ul className="space-y-1">
-                          {(selectedScreening.strengths as string[]).map((s, i) => (
+                          {(selectedRec.strengths as string[]).map((s, i) => (
                             <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                               <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5 flex-shrink-0" />
                               {s}
@@ -859,13 +951,13 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                         </ul>
                       </div>
                     )}
-                    {selectedScreening.concerns && (selectedScreening.concerns as string[]).length > 0 && (
+                    {selectedRec.concerns && (selectedRec.concerns as string[]).length > 0 && (
                       <div>
                         <h4 className="font-medium text-sm mb-2 text-amber-600 dark:text-amber-400">
                           {language === "ar" ? "نقاط الملاحظة" : "Concerns"}
                         </h4>
                         <ul className="space-y-1">
-                          {(selectedScreening.concerns as string[]).map((s, i) => (
+                          {(selectedRec.concerns as string[]).map((s, i) => (
                             <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                               <AlertCircle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
                               {s}
@@ -904,18 +996,33 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                         {language === "ar" ? "عرض السيرة الذاتية" : "View Resume"}
                       </Button>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5"
-                      onClick={() => {
-                        setIsDetailOpen(false)
-                        router.push(`/org/applications?candidate=${candidate.id}`)
-                      }}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      {language === "ar" ? "عرض الطلب" : "View Application"}
-                    </Button>
+                    {!isAlreadyApplied ? (
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          handleApplyToJob(selectedRec)
+                          setIsDetailOpen(false)
+                        }}
+                        disabled={applyingCandidate === `${selectedRec.candidate_id}-${selectedRec.job_id}`}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        {language === "ar" ? "تقديم للوظيفة" : "Apply to Job"}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => {
+                          setIsDetailOpen(false)
+                          router.push(`/org/applications?candidate=${candidate.id}`)
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        {language === "ar" ? "عرض الطلب" : "View Application"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </>
