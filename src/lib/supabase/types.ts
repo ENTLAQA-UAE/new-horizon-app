@@ -3666,6 +3666,8 @@ export type Database = {
         | "interviewer"
       job_status:
         | "draft"
+        | "published"
+        | "pending_approval"
         | "open"
         | "paused"
         | "closed"
