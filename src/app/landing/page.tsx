@@ -784,9 +784,9 @@ export default function LandingPage() {
             {content.stats.map((stat, i) => {
               const cardStyles = [
                 { bg: "from-[#2563EB] to-[#1D4ED8]", iconBg: "bg-white/20", shadow: "shadow-[#2563EB]/25" },
-                { bg: "from-violet-600 to-purple-700", iconBg: "bg-white/20", shadow: "shadow-violet-600/25" },
-                { bg: "from-emerald-500 to-teal-600", iconBg: "bg-white/20", shadow: "shadow-emerald-500/25" },
-                { bg: "from-amber-500 to-orange-600", iconBg: "bg-white/20", shadow: "shadow-amber-500/25" },
+                { bg: "from-[#1D4ED8] to-[#1E40AF]", iconBg: "bg-white/20", shadow: "shadow-[#1D4ED8]/25" },
+                { bg: "from-[#3B82F6] to-[#2563EB]", iconBg: "bg-white/20", shadow: "shadow-[#3B82F6]/25" },
+                { bg: "from-[#1E40AF] to-[#1E3A8A]", iconBg: "bg-white/20", shadow: "shadow-[#1E40AF]/25" },
               ]
               const style = cardStyles[i]
               return (
@@ -896,11 +896,11 @@ export default function LandingPage() {
             {content.featureGrid.map((f, i) => {
               const cardThemes = [
                 { gradient: "from-[#2563EB] to-[#1D4ED8]", iconBg: "bg-[#2563EB]", shadow: "shadow-[#2563EB]/20", lightBg: "bg-blue-50/50" },
-                { gradient: "from-violet-600 to-purple-700", iconBg: "bg-violet-600", shadow: "shadow-violet-600/20", lightBg: "bg-violet-50/50" },
-                { gradient: "from-emerald-500 to-teal-600", iconBg: "bg-emerald-500", shadow: "shadow-emerald-500/20", lightBg: "bg-emerald-50/50" },
-                { gradient: "from-amber-500 to-orange-600", iconBg: "bg-amber-500", shadow: "shadow-amber-500/20", lightBg: "bg-amber-50/50" },
-                { gradient: "from-pink-500 to-rose-600", iconBg: "bg-pink-500", shadow: "shadow-pink-500/20", lightBg: "bg-pink-50/50" },
-                { gradient: "from-cyan-500 to-sky-600", iconBg: "bg-cyan-500", shadow: "shadow-cyan-500/20", lightBg: "bg-cyan-50/50" },
+                { gradient: "from-[#1D4ED8] to-[#1E40AF]", iconBg: "bg-[#1D4ED8]", shadow: "shadow-[#1D4ED8]/20", lightBg: "bg-blue-50/50" },
+                { gradient: "from-[#3B82F6] to-[#2563EB]", iconBg: "bg-[#3B82F6]", shadow: "shadow-[#3B82F6]/20", lightBg: "bg-blue-50/50" },
+                { gradient: "from-[#1E40AF] to-[#1E3A8A]", iconBg: "bg-[#1E40AF]", shadow: "shadow-[#1E40AF]/20", lightBg: "bg-blue-50/50" },
+                { gradient: "from-[#2563EB] to-[#3B82F6]", iconBg: "bg-[#2563EB]", shadow: "shadow-[#2563EB]/20", lightBg: "bg-blue-50/50" },
+                { gradient: "from-[#1D4ED8] to-[#2563EB]", iconBg: "bg-[#1D4ED8]", shadow: "shadow-[#1D4ED8]/20", lightBg: "bg-blue-50/50" },
               ]
               const theme = cardThemes[i]
               return (
@@ -956,7 +956,7 @@ export default function LandingPage() {
                 const stepGradients = [
                   { bg: "from-[#2563EB] to-[#3B82F6]", glow: "shadow-[#2563EB]/30" },
                   { bg: "from-[#3B82F6] to-[#60A5FA]", glow: "shadow-[#3B82F6]/30" },
-                  { bg: "from-emerald-500 to-emerald-400", glow: "shadow-emerald-500/30" },
+                  { bg: "from-[#1D4ED8] to-[#2563EB]", glow: "shadow-[#1D4ED8]/30" },
                 ]
                 return (
                   <div key={i} className="relative group">
@@ -997,7 +997,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0B1437] to-slate-900" />
         <div className="absolute inset-0">
           <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#2563EB]/8 blur-[120px]" />
-          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-violet-500/5 blur-[100px]" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#2563EB]/5 blur-[100px]" />
         </div>
 
         <div className="relative max-w-6xl mx-auto px-6">
@@ -1022,9 +1022,9 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-3 gap-6 items-start">
               {plans.map((plan, i) => {
                 const tierThemes = [
-                  { accent: "from-cyan-500 to-blue-500", accentSolid: "bg-cyan-500", checkBg: "bg-cyan-500/10", checkColor: "text-cyan-500", btnGradient: "from-cyan-500 to-blue-500", shadow: "shadow-cyan-500/20", ring: "ring-cyan-500/20" },
-                  { accent: "from-[#2563EB] to-[#7C3AED]", accentSolid: "bg-[#2563EB]", checkBg: "bg-[#2563EB]/10", checkColor: "text-[#2563EB]", btnGradient: "from-[#2563EB] to-[#7C3AED]", shadow: "shadow-[#2563EB]/25", ring: "ring-[#2563EB]/20" },
-                  { accent: "from-violet-600 to-purple-600", accentSolid: "bg-violet-600", checkBg: "bg-violet-500/10", checkColor: "text-violet-500", btnGradient: "from-violet-600 to-purple-600", shadow: "shadow-violet-600/20", ring: "ring-violet-500/20" },
+                  { accent: "from-[#3B82F6] to-[#2563EB]", accentSolid: "bg-[#3B82F6]", checkBg: "bg-[#3B82F6]/10", checkColor: "text-[#3B82F6]", btnGradient: "from-[#3B82F6] to-[#2563EB]", shadow: "shadow-[#3B82F6]/20", ring: "ring-[#3B82F6]/20" },
+                  { accent: "from-[#2563EB] to-[#1D4ED8]", accentSolid: "bg-[#2563EB]", checkBg: "bg-[#2563EB]/10", checkColor: "text-[#2563EB]", btnGradient: "from-[#2563EB] to-[#1D4ED8]", shadow: "shadow-[#2563EB]/25", ring: "ring-[#2563EB]/20" },
+                  { accent: "from-[#1D4ED8] to-[#1E40AF]", accentSolid: "bg-[#1D4ED8]", checkBg: "bg-[#1D4ED8]/10", checkColor: "text-[#1D4ED8]", btnGradient: "from-[#1D4ED8] to-[#1E40AF]", shadow: "shadow-[#1D4ED8]/20", ring: "ring-[#1D4ED8]/20" },
                 ]
                 const theme = tierThemes[i] || tierThemes[0]
 
