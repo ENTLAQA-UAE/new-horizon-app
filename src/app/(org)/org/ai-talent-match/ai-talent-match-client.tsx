@@ -210,14 +210,16 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
     return filtered
   }, [screeningsByJob, searchQuery, recommendationFilter])
 
-  // Stats
+  // Stats — only count screenings that have valid candidates (matching the displayed list)
   const stats = useMemo(() => {
-    const total = screenings.length
-    const strong = screenings.filter((s) => s.recommendation === "strong_match").length
-    const good = screenings.filter((s) => s.recommendation === "good_match").length
-    const jobsWithMatches = Object.keys(screeningsByJob).length
+    const validScreenings = screenings.filter((s) => s.candidates)
+    const total = validScreenings.length
+    const strong = validScreenings.filter((s) => s.recommendation === "strong_match").length
+    const good = validScreenings.filter((s) => s.recommendation === "good_match").length
+    const jobsWithValidScreenings = new Set(validScreenings.map((s) => s.job_id))
+    const jobsWithMatches = jobsWithValidScreenings.size
     return { total, strong, good, jobsWithMatches }
-  }, [screenings, screeningsByJob])
+  }, [screenings])
 
   const toggleJob = (jobId: string) => {
     setExpandedJobs((prev) => ({ ...prev, [jobId]: !prev[jobId] }))
