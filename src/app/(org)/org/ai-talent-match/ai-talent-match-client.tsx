@@ -430,10 +430,15 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-base truncate">{jobTitle}</h3>
-                          <Badge variant={job.status === "open" ? "default" : "secondary"} className="text-[10px] h-5">
+                          <Badge
+                            variant={job.status === "open" ? "default" : "secondary"}
+                            className={cn("text-[10px] h-5", job.status === "closed" && "bg-muted text-muted-foreground")}
+                          >
                             {job.status === "open"
                               ? language === "ar" ? "مفتوحة" : "Open"
-                              : language === "ar" ? "متوقفة" : "Paused"}
+                              : job.status === "closed"
+                                ? language === "ar" ? "مغلقة" : "Closed"
+                                : language === "ar" ? "متوقفة" : "Paused"}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
@@ -685,12 +690,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
             <CardContent className="p-12 text-center">
               <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
               <h3 className="text-lg font-medium mb-1">
-                {language === "ar" ? "لا توجد وظائف مفتوحة" : "No Open Jobs"}
+                {language === "ar" ? "لا توجد وظائف" : "No Jobs Found"}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {language === "ar"
-                  ? "انشر وظائف للبدء في مطابقة المواهب بالذكاء الاصطناعي"
-                  : "Publish jobs to start matching candidates with AI"}
+                  ? "أنشئ وانشر وظائف للبدء في مطابقة المواهب بالذكاء الاصطناعي"
+                  : "Create and publish jobs to start matching candidates with AI"}
               </p>
             </CardContent>
           </Card>

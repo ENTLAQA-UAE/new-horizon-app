@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { AITalentMatchClient } from "./ai-talent-match-client"
 
-async function getOpenJobs(orgId: string, departmentIds: string[] | null) {
+async function getJobs(orgId: string, departmentIds: string[] | null) {
   const supabase = await createClient()
 
   let query = supabase
@@ -20,7 +20,7 @@ async function getOpenJobs(orgId: string, departmentIds: string[] | null) {
       locations:location_id (id, city, city_ar, country, country_ar)
     `)
     .eq("org_id", orgId)
-    .in("status", ["open", "paused"])
+    .in("status", ["open", "paused", "closed"])
     .order("created_at", { ascending: false })
 
   if (departmentIds) {
@@ -125,7 +125,7 @@ export default async function AITalentMatchPage() {
   }
 
   const [jobs, screenings, applicationCounts] = await Promise.all([
-    getOpenJobs(access.orgId, access.departmentIds),
+    getJobs(access.orgId, access.departmentIds),
     getAIScreenings(access.orgId, access.departmentIds),
     getApplicationCounts(access.orgId),
   ])
