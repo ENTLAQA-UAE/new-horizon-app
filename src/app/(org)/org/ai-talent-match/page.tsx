@@ -21,7 +21,7 @@ async function getOpenJobs(orgId: string, departmentIds: string[] | null) {
       published_at,
       created_at,
       departments:department_id (id, name, name_ar),
-      locations:location_id (id, city, city_ar, country, country_ar)
+      locations:location_id (id, name, name_ar, city, country)
     `)
     .eq("org_id", orgId)
     .eq("status", "open")
