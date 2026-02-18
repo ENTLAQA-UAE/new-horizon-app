@@ -51,6 +51,11 @@ export type NotificationEventCode =
   | "requisition_created"
   | "requisition_approved"
   | "requisition_rejected"
+  // Split events (internal team side)
+  | "candidate_stage_moved_internal"
+  | "interview_scheduled_internal"
+  | "interview_cancelled_internal"
+  | "offer_sent_internal"
 
 export interface NotificationRecipient {
   userId?: string // For in-app notifications
@@ -762,6 +767,32 @@ function getInAppNotificationContent(
       message: `Your requisition for ${jobTitle} has been rejected`,
       link: "/org/requisitions",
     },
+
+    // Split events (internal team side)
+    candidate_stage_moved_internal: {
+      type: "application_status_changed",
+      title: "Stage Update",
+      message: `${candidateName} moved to ${variables.stage_name || "a new stage"} for ${jobTitle}`,
+      link: options.applicationId ? `/org/applications?id=${options.applicationId}` : "/org/applications",
+    },
+    interview_scheduled_internal: {
+      type: "interview_scheduled",
+      title: "Interview Scheduled",
+      message: `Interview scheduled with ${candidateName} for ${jobTitle} on ${variables.interview_date || "upcoming date"}`,
+      link: options.interviewId ? `/org/interviews?id=${options.interviewId}` : "/org/interviews",
+    },
+    interview_cancelled_internal: {
+      type: "interview_scheduled",
+      title: "Interview Cancelled",
+      message: `Interview with ${candidateName} for ${jobTitle} has been cancelled`,
+      link: options.interviewId ? `/org/interviews?id=${options.interviewId}` : "/org/interviews",
+    },
+    offer_sent_internal: {
+      type: "offer_sent",
+      title: "Offer Sent",
+      message: `An offer has been sent to ${candidateName} for ${jobTitle}`,
+      link: options.applicationId ? `/org/applications?id=${options.applicationId}` : "/org/applications",
+    },
   }
 
   return contentMap[eventCode] || {
@@ -1139,24 +1170,30 @@ function getFallbackEmailTemplate(
     },
 
     candidate_disqualified: {
-      subject: `Update on your application for {{job_title}} at ${orgName}`,
+      subject: `Candidate disqualified: {{candidate_name}} for {{job_title}}`,
       body_html: wrapEmail(`
         <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
-          Application Update
+          Candidate Disqualified
         </h1>
         <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-          Hi {{candidate_name}},
+          <strong>{{candidate_name}}</strong> has been disqualified from the <strong>{{job_title}}</strong> position.
         </p>
-        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-          Thank you for your interest in the <strong>{{job_title}}</strong> position at <strong>${orgName}</strong>.
-        </p>
-        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-          After reviewing your application, we've decided not to move forward at this time. We encourage you to apply for other positions that match your skills and experience.
-        </p>
-        <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-          We wish you the best in your job search.
-        </p>
-      `, `Application update at ${orgName}`),
+        <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #991b1b;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0 0 4px; color: #991b1b;">💼 Position: <strong>{{job_title}}</strong></p>
+          <p style="margin: 0 0 4px; color: #991b1b;">📝 Reason: <strong>{{disqualification_reason}}</strong></p>
+          <p style="margin: 0; color: #991b1b;">👤 Disqualified by: <strong>{{disqualified_by}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
+              <a href="{{application_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Application
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Candidate disqualified: {{candidate_name}}`),
     },
 
     // Interview Notifications
@@ -1546,6 +1583,104 @@ function getFallbackEmailTemplate(
           Please contact your manager for more details or to discuss next steps.
         </p>
       `, `Requisition rejected: {{job_title}}`),
+    },
+
+    // Split events - Internal team side (fallback templates if admin enables email)
+    candidate_stage_moved_internal: {
+      subject: `Candidate stage update: {{candidate_name}} → {{stage_name}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Candidate Stage Update
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          <strong>{{candidate_name}}</strong> has been moved to a new stage for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #4b5563;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">💼 Position: <strong>{{job_title}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">📋 New Stage: <strong>{{stage_name}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Application
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Stage update: {{candidate_name}}`),
+    },
+
+    interview_scheduled_internal: {
+      subject: `Interview scheduled: {{candidate_name}} for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Interview Scheduled
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          An interview has been scheduled with <strong>{{candidate_name}}</strong> for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #4b5563;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">📅 Date: <strong>{{interview_date}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">🕐 Time: <strong>{{interview_time}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">📍 Type: <strong>{{interview_type}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">🎤 Interviewer: <strong>{{interviewer_name}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Interview
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Interview scheduled: {{candidate_name}}`),
+    },
+
+    interview_cancelled_internal: {
+      subject: `Interview cancelled: {{candidate_name}} for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Interview Cancelled
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          The interview with <strong>{{candidate_name}}</strong> for the <strong>{{job_title}}</strong> position has been cancelled.
+        </p>
+        <div style="background-color: #fef2f2; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #991b1b;">❌ Status: <strong>Cancelled</strong></p>
+          <p style="margin: 0 0 4px; color: #991b1b;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0; color: #991b1b;">💼 Position: <strong>{{job_title}}</strong></p>
+        </div>
+      `, `Interview cancelled: {{candidate_name}}`),
+    },
+
+    offer_sent_internal: {
+      subject: `Offer sent to {{candidate_name}} for {{job_title}}`,
+      body_html: wrapEmail(`
+        <h1 style="margin: 0 0 24px; color: #111827; font-size: 24px; font-weight: 600;">
+          Offer Sent
+        </h1>
+        <p style="margin: 0 0 16px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+          An offer has been sent to <strong>{{candidate_name}}</strong> for the <strong>{{job_title}}</strong> position.
+        </p>
+        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #4b5563;">👤 Candidate: <strong>{{candidate_name}}</strong></p>
+          <p style="margin: 0 0 4px; color: #4b5563;">💼 Position: <strong>{{job_title}}</strong></p>
+          <p style="margin: 0; color: #4b5563;">👤 Sent by: <strong>{{sent_by}}</strong></p>
+        </div>
+        <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background-color: ${buttonColor}; border-radius: 8px;">
+              <a href="{{action_url}}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">
+                View Offer
+              </a>
+            </td>
+          </tr>
+        </table>
+      `, `Offer sent: {{candidate_name}}`),
     },
   }
 

@@ -149,14 +149,20 @@ export const eventAudienceMap: Record<string, NotificationAudience> = {
   requisition_approved: 'internal',
   requisition_rejected: 'internal',
 
+  // Internal notifications for split events (team side)
+  candidate_stage_moved_internal: 'internal',
+  interview_scheduled_internal: 'internal',
+  interview_cancelled_internal: 'internal',
+  offer_sent_internal: 'internal',
+
   // Candidate notifications (for external candidates)
-  password_reset: 'candidate',
+  password_reset: 'internal',
   interview_scheduled: 'candidate',
   interview_reminder: 'candidate',
   interview_cancelled: 'candidate',
   interview_rescheduled: 'candidate',
   candidate_stage_moved: 'candidate',
-  candidate_disqualified: 'candidate',
+  candidate_disqualified: 'internal',
   candidate_rejection: 'candidate',
   offer_sent: 'candidate',
 }
