@@ -291,12 +291,12 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
-              {language === "ar" ? "مطابقة المواهب بالذكاء الاصطناعي" : "AI Talent Match"}
+              {language === "ar" ? "مركز المواهب الذكي" : "AI Talent Hub"}
             </h1>
             <p className="text-sm text-muted-foreground">
               {language === "ar"
-                ? "اكتشف أفضل المرشحين لوظائفك المفتوحة باستخدام تحليل الذكاء الاصطناعي"
-                : "Discover top candidates for your open positions with AI-powered analysis"}
+                ? "اكتشف وحلل أفضل المواهب لوظائفك باستخدام الذكاء الاصطناعي"
+                : "Discover and analyze top talent for your positions with AI-powered insights"}
             </p>
           </div>
         </div>
@@ -700,8 +700,8 @@ export function AITalentMatchClient({ jobs, screenings, applicationCounts, organ
               </h3>
               <p className="text-sm text-muted-foreground">
                 {language === "ar"
-                  ? "أنشئ وانشر وظائف للبدء في مطابقة المواهب بالذكاء الاصطناعي"
-                  : "Create and publish jobs to start matching candidates with AI"}
+                  ? "أنشئ وانشر وظائف للبدء في تحليل المواهب بالذكاء الاصطناعي"
+                  : "Create and publish jobs to start analyzing talent with AI"}
               </p>
             </CardContent>
           </Card>
