@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface Notification {
   id: string
@@ -94,7 +95,9 @@ export function NotificationBell() {
         body: JSON.stringify({ action: "mark_read", notificationId }),
       })
       if (!response.ok) {
-        console.error("Failed to mark notification as read:", response.status)
+        const data = await response.json().catch(() => ({}))
+        console.error("Failed to mark notification as read:", response.status, data)
+        toast.error(data.error || "Failed to mark notification as read")
         return
       }
       setNotifications((prev) =>
@@ -105,6 +108,7 @@ export function NotificationBell() {
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (error) {
       console.error("Failed to mark notification as read:", error)
+      toast.error("Failed to mark notification as read")
     }
   }
 
@@ -116,7 +120,9 @@ export function NotificationBell() {
         body: JSON.stringify({ action: "mark_all_read" }),
       })
       if (!response.ok) {
-        console.error("Failed to mark all as read:", response.status)
+        const data = await response.json().catch(() => ({}))
+        console.error("Failed to mark all as read:", response.status, data)
+        toast.error(data.error || "Failed to mark all notifications as read")
         return
       }
       setNotifications((prev) =>
@@ -125,6 +131,7 @@ export function NotificationBell() {
       setUnreadCount(0)
     } catch (error) {
       console.error("Failed to mark all as read:", error)
+      toast.error("Failed to mark all notifications as read")
     }
   }
 
