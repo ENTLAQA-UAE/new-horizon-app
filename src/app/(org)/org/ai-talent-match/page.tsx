@@ -42,7 +42,8 @@ async function getOpenJobs(orgId: string, departmentIds: string[] | null) {
 async function getPoolRecommendations(orgId: string) {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from("candidate_ai_screening")
     .select(`
       id,
