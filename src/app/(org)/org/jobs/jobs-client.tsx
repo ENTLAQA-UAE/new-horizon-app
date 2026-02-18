@@ -484,7 +484,8 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         salary_currency: formData.salary_currency,
         is_remote: formData.is_remote,
         closing_date: formData.closing_date || null,
-        status: "draft",
+        status: primaryRole === "hr_manager" ? "open" : "draft",
+        ...(primaryRole === "hr_manager" ? { published_at: new Date().toISOString() } : {}),
       })
 
       if (error) {
@@ -496,7 +497,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
         setJobs([data, ...jobs])
         setIsCreateDialogOpen(false)
         resetForm()
-        toast.success(t("jobs.messages.created"))
+        toast.success(primaryRole === "hr_manager" ? t("jobs.messages.published") : t("jobs.messages.created"))
       }
     } catch {
       toast.error(t("errors.general.unexpectedError"))
@@ -1463,7 +1464,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                         )}
                         <DropdownMenuSeparator />
                         {/* Role-based publish/approval actions */}
-                        {job.status === "draft" && (primaryRole === "hr_manager" || primaryRole === "super_admin" || primaryRole === "org_admin") && (
+                        {job.status === "draft" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
                           <DropdownMenuItem
                             onSelect={() => handleStatusChange(job.id, "open")}
                             className="text-green-600"
@@ -1481,7 +1482,7 @@ ${generatedData.benefitsAr.map((b) => `<li>${b}</li>`).join("\n")}
                             {t("common.submit")}
                           </DropdownMenuItem>
                         )}
-                        {job.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin" || primaryRole === "org_admin") && (
+                        {job.status === "pending_approval" && (primaryRole === "hr_manager" || primaryRole === "super_admin") && (
                           <>
                             <DropdownMenuItem
                               onSelect={() => handleApproveJob(job.id)}
