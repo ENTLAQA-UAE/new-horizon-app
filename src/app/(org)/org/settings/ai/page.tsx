@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AISettingsClient } from "./ai-settings-client"
+import { toAIConfigView } from "@/lib/transforms/ai-config"
 
 export default async function AISettingsPage() {
   const supabase = await createClient()
@@ -66,7 +67,7 @@ export default async function AISettingsPage() {
     <AISettingsClient
       orgId={orgId}
       orgName={org?.name || "Organization"}
-      aiConfigs={aiConfigs || []}
+      aiConfigs={(aiConfigs || []).map(toAIConfigView)}
     />
   )
 }

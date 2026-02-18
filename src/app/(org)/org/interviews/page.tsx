@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getDepartmentAccess } from "@/lib/auth/get-department-access"
 import { InterviewsClient } from "./interviews-client"
+import { toMeetingProviderView } from "@/lib/transforms/integration"
 
 export default async function InterviewsPage() {
   const access = await getDepartmentAccess()
@@ -124,8 +125,9 @@ export default async function InterviewsPage() {
     : { data: [] }
 
   // Determine default meeting provider
-  const defaultProvider = meetingIntegrations?.find(i => i.is_default_meeting_provider)?.provider ||
-                          meetingIntegrations?.[0]?.provider || null
+  const meetingProviderViews = (meetingIntegrations || []).map(toMeetingProviderView)
+  const defaultProvider = meetingProviderViews.find(i => i.isDefaultMeetingProvider)?.provider ||
+                          meetingProviderViews[0]?.provider || null
 
   return (
     <InterviewsClient
@@ -140,7 +142,7 @@ export default async function InterviewsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       scorecardTemplates={(scorecardTemplates || []) as any}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      meetingProviders={(meetingIntegrations || []) as any}
+      meetingProviders={meetingProviderViews as any}
       defaultMeetingProvider={defaultProvider}
     />
   )

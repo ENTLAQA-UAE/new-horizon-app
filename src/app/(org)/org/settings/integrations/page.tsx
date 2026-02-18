@@ -1,8 +1,7 @@
-// @ts-nocheck
-// Note: Type mismatch between Supabase Json type and Integration interface
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { IntegrationsSettingsClient } from "./integrations-settings-client"
+import { toIntegrationView } from "@/lib/transforms/integration"
 
 export default async function IntegrationsSettingsPage() {
   const supabase = await createClient()
@@ -68,7 +67,7 @@ export default async function IntegrationsSettingsPage() {
     <IntegrationsSettingsClient
       orgId={orgId}
       orgName={org?.name || "Organization"}
-      integrations={integrations || []}
+      integrations={(integrations || []).map(toIntegrationView)}
     />
   )
 }

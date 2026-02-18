@@ -34,22 +34,12 @@ import {
   ChevronUp,
   Info,
 } from "lucide-react"
-
-interface Integration {
-  id: string
-  provider: string
-  is_enabled: boolean
-  is_configured: boolean
-  is_verified: boolean
-  is_default_meeting_provider: boolean
-  provider_metadata: Record<string, unknown> | null
-  verified_at: string | null
-}
+import { IntegrationView } from "@/lib/transforms/integration"
 
 interface IntegrationsSettingsClientProps {
   orgId: string
   orgName: string
-  integrations: Integration[]
+  integrations: IntegrationView[]
 }
 
 const PROVIDER_CONFIG = {
@@ -305,9 +295,9 @@ export function IntegrationsSettingsClient({
                 const config = PROVIDER_CONFIG[provider]
                 const integration = getIntegration(provider)
                 const Icon = config.icon
-                const isEnabled = integration?.is_enabled ?? false
-                const isConfigured = integration?.is_configured ?? false
-                const isVerified = integration?.is_verified ?? false
+                const isEnabled = integration?.isEnabled ?? false
+                const isConfigured = integration?.isConfigured ?? false
+                const isVerified = integration?.isVerified ?? false
 
                 return (
                   <div
@@ -340,7 +330,7 @@ export function IntegrationsSettingsClient({
                               Verified
                             </Badge>
                           )}
-                          {integration?.is_default_meeting_provider && (
+                          {integration?.isDefaultMeetingProvider && (
                             <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
                               <Star className="h-3 w-3 mr-1" />
                               Default
@@ -348,9 +338,9 @@ export function IntegrationsSettingsClient({
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{config.description}</p>
-                        {integration?.provider_metadata?.email && (
+                        {integration?.providerMetadata?.email && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Connected: {String(integration.provider_metadata.email)}
+                            Connected: {String(integration.providerMetadata.email)}
                           </p>
                         )}
                       </div>
@@ -370,7 +360,7 @@ export function IntegrationsSettingsClient({
                       </div>
 
                       {/* Set as Default button */}
-                      {isEnabled && isVerified && !integration?.is_default_meeting_provider && (
+                      {isEnabled && isVerified && !integration?.isDefaultMeetingProvider && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -168,9 +168,7 @@ interface ScorecardTemplate {
 
 interface MeetingProvider {
   provider: string
-  is_enabled: boolean
-  is_verified: boolean
-  is_default_meeting_provider: boolean
+  isDefaultMeetingProvider: boolean
 }
 
 interface InterviewsClientProps {
@@ -263,7 +261,7 @@ export function InterviewsClient({
   const [generatedQuestions, setGeneratedQuestions] = useState<string[]>([])
 
   // Available meeting providers
-  const availableProviders = meetingProviders.filter(p => p.is_enabled && p.is_verified)
+  const availableProviders = meetingProviders
   const hasVideoProviders = availableProviders.length > 0
 
   // External guest email input state
@@ -1422,7 +1420,7 @@ export function InterviewsClient({
                               <div className="flex items-center gap-2">
                                 <span>{meetingProviderInfo[provider.provider]?.icon}</span>
                                 <span>{meetingProviderInfo[provider.provider]?.name || provider.provider}</span>
-                                {provider.is_default_meeting_provider && (
+                                {provider.isDefaultMeetingProvider && (
                                   <Badge variant="secondary" className="ml-2 text-xs">{t("interviews.form.default")}</Badge>
                                 )}
                               </div>

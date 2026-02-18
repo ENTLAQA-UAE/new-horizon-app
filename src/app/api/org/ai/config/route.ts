@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getOrgAIConfigs, getAllAIProviderInfos } from "@/lib/ai/org-ai-config"
+import { getAllAIProviderInfos } from "@/lib/ai/org-ai-config"
+import { toAIConfigView } from "@/lib/transforms/ai-config"
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -42,8 +43,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get AI configurations for the org
-    const configs = await getOrgAIConfigs(supabase, orgId)
+    // Get AI configurations for the org — query DB directly, transform with shared function
+    const { data: rawConfigs, error: configError } = await supabase
+      .from("organization_ai_config")
+      .select("*")
+      .eq("org_id", orgId)
+
+    if (configError) {
+      console.error("Error fetching AI configs:", configError)
+    }
+
+    const configs = (rawConfigs || []).map(toAIConfigView)
 
     // Get provider info for setup guides
     const providerInfos = getAllAIProviderInfos()
