@@ -128,40 +128,49 @@ export async function getUserNotifications(
 export async function markNotificationAsRead(
   supabase: SupabaseClient,
   notificationId: string,
-  userId?: string
-): Promise<void> {
-  let query = supabase
+  userId: string
+): Promise<{ updated: boolean }> {
+  const { data, error } = await supabase
     .from("notifications")
     .update({ is_read: true, read_at: new Date().toISOString() })
     .eq("id", notificationId)
-
-  // When userId is provided, scope the update to the user's own notifications
-  if (userId) {
-    query = query.eq("user_id", userId)
-  }
-
-  const { error } = await query
+    .eq("user_id", userId)
+    .select("id")
 
   if (error) {
-    console.error("Failed to mark notification as read:", error)
+    console.error("[markNotificationAsRead] Failed:", {
+      error: error.message,
+      code: error.code,
+      notificationId,
+      userId,
+    })
     throw new Error(`Failed to mark notification as read: ${error.message}`)
   }
+
+  return { updated: (data?.length ?? 0) > 0 }
 }
 
 export async function markAllNotificationsAsRead(
   supabase: SupabaseClient,
   userId: string
-): Promise<void> {
-  const { error } = await supabase
+): Promise<{ updatedCount: number }> {
+  const { data, error } = await supabase
     .from("notifications")
     .update({ is_read: true, read_at: new Date().toISOString() })
     .eq("user_id", userId)
     .eq("is_read", false)
+    .select("id")
 
   if (error) {
-    console.error("Failed to mark all notifications as read:", error)
+    console.error("[markAllNotificationsAsRead] Failed:", {
+      error: error.message,
+      code: error.code,
+      userId,
+    })
     throw new Error(`Failed to mark all notifications as read: ${error.message}`)
   }
+
+  return { updatedCount: data?.length ?? 0 }
 }
 
 export async function getUnreadCount(
