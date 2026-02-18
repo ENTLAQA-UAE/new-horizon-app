@@ -206,7 +206,21 @@ export function AISettingsClient({
       const response = await fetch(`/api/org/ai/config?orgId=${orgId}`)
       if (response.ok) {
         const data = await response.json()
-        setConfigs(data.configs || [])
+        // API returns camelCase (AIProviderStatus), but component uses snake_case (AIConfig)
+        // Map the response to match the expected interface
+        const mapped = (data.configs || []).map((c: Record<string, unknown>) => ({
+          id: c.id || "",
+          provider: c.provider || "",
+          is_enabled: c.isEnabled ?? c.is_enabled ?? false,
+          is_configured: c.isConfigured ?? c.is_configured ?? false,
+          is_verified: c.isVerified ?? c.is_verified ?? false,
+          is_default_provider: c.isDefault ?? c.is_default_provider ?? false,
+          settings: c.settings ?? null,
+          provider_metadata: c.providerMetadata ?? c.provider_metadata ?? null,
+          verified_at: c.verifiedAt ?? c.verified_at ?? null,
+          last_used_at: c.lastUsed ?? c.last_used_at ?? null,
+        }))
+        setConfigs(mapped)
       }
     } catch (error) {
       console.error("Failed to fetch AI configs:", error)
