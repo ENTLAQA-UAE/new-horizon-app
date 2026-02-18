@@ -236,14 +236,12 @@ export async function POST(request: NextRequest) {
 
         const candidate = application.candidates as any
         const job = application.jobs as any
+        const candidateFullName = `${candidate.first_name} ${candidate.last_name}`
 
-        // Build recipients list starting with candidate
-        const interviewRecipients: NotificationRecipient[] = [
-          { email: candidate.email, name: `${candidate.first_name} ${candidate.last_name}` },
-        ]
-
-        // Get interviewer details (with both userId and email for dual-channel)
+        // Get interviewer details
         let interviewerName = "The hiring team"
+        const interviewTeamRecipients: NotificationRecipient[] = []
+
         if (data.interviewerIds?.length > 0) {
           const { data: interviewers } = await serviceClient
             .from("profiles")
@@ -252,9 +250,8 @@ export async function POST(request: NextRequest) {
 
           if (interviewers && interviewers.length > 0) {
             interviewerName = interviewers.map(i => getFullName(i) || i.email).join(", ")
-            // Add interviewers with both userId and email
             interviewers.forEach(i => {
-              interviewRecipients.push({
+              interviewTeamRecipients.push({
                 userId: i.id,
                 email: i.email,
                 name: getFullName(i) || i.email,
@@ -263,38 +260,52 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Add external guests to recipients (email-only, no userId)
-        if (data.externalGuests?.length > 0) {
-          data.externalGuests.forEach((email: string) => {
-            interviewRecipients.push({
-              email: email,
-              name: email, // Use email as name for external guests
-            })
-          })
-        }
-
         // Determine location - use meeting link for video, physical location for in-person
         const interviewLocation = data.meetingLink || data.location || "To be confirmed"
 
-        result = await sendNotification(serviceClient, {
+        const sharedInterviewVars = {
+          candidate_name: candidateFullName,
+          job_title: job.title,
+          interview_date: data.interviewDate,
+          interview_time: data.interviewTime,
+          interview_type: data.interviewType,
+          interviewer_name: interviewerName,
+          interviewers: interviewerName,
+          meeting_link: data.meetingLink || "",
+          location: interviewLocation,
+        }
+
+        // 1. Candidate email
+        const candidateRecipients: NotificationRecipient[] = [
+          { email: candidate.email, name: candidateFullName },
+        ]
+        // Add external guests (email-only, no userId)
+        if (data.externalGuests?.length > 0) {
+          data.externalGuests.forEach((email: string) => {
+            candidateRecipients.push({ email, name: email })
+          })
+        }
+
+        await sendNotification(serviceClient, {
           eventCode: "interview_scheduled",
           orgId,
-          recipients: interviewRecipients,
-          variables: {
-            candidate_name: `${candidate.first_name} ${candidate.last_name}`,
-            receiver_name: `${candidate.first_name} ${candidate.last_name}`,
-            job_title: job.title,
-            interview_date: data.interviewDate,
-            interview_time: data.interviewTime,
-            interview_type: data.interviewType,
-            interviewer_name: interviewerName,
-            interviewers: interviewerName, // For email template compatibility
-            meeting_link: data.meetingLink || "",
-            location: interviewLocation, // For email template - shows meeting link or physical location
-          },
+          recipients: candidateRecipients,
+          variables: { ...sharedInterviewVars, receiver_name: candidateFullName },
           interviewId: data.interviewId,
           applicationId: data.applicationId,
         })
+
+        // 2. Team in-app notification
+        if (interviewTeamRecipients.length > 0) {
+          result = await sendNotification(serviceClient, {
+            eventCode: "interview_scheduled_internal",
+            orgId,
+            recipients: interviewTeamRecipients,
+            variables: { ...sharedInterviewVars, action_url: `/org/interviews?id=${data.interviewId}` },
+            interviewId: data.interviewId,
+            applicationId: data.applicationId,
+          })
+        }
         break
       }
 
@@ -321,69 +332,61 @@ export async function POST(request: NextRequest) {
         const app = interview.applications as any
         const candidate = app.candidates
         const job = app.jobs
+        const cancelCandidateName = `${candidate.first_name} ${candidate.last_name}`
 
-        // Start with candidate recipient (email-only for email channel)
-        const cancelRecipients: NotificationRecipient[] = [
-          { email: candidate.email, name: `${candidate.first_name} ${candidate.last_name}` },
-        ]
+        // Get canceller name
+        const { data: canceller } = await serviceClient
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single()
 
-        // Add interviewers so they get in-app notifications (they have userId)
-        const interviewerIds = (interview.interviewer_ids as string[]) || []
-        if (interviewerIds.length > 0) {
-          const { data: interviewers } = await serviceClient
-            .from("profiles")
-            .select("id, first_name, last_name, email")
-            .in("id", interviewerIds)
-
-          if (interviewers) {
-            interviewers.forEach(i => {
-              cancelRecipients.push({
-                userId: i.id,
-                email: i.email,
-                name: getFullName(i) || i.email,
-              })
-            })
-          }
+        const cancelVars = {
+          candidate_name: cancelCandidateName,
+          job_title: job.title,
         }
 
-        result = await sendNotification(serviceClient, {
+        // 1. Candidate email
+        await sendNotification(serviceClient, {
           eventCode: "interview_cancelled",
           orgId,
-          recipients: cancelRecipients,
-          variables: {
-            candidate_name: `${candidate.first_name} ${candidate.last_name}`,
-            job_title: job.title,
-          },
+          recipients: [{ email: candidate.email, name: cancelCandidateName }],
+          variables: cancelVars,
           interviewId: data.interviewId,
           applicationId: app.id,
         })
+
+        // 2. Team in-app notification (interviewers)
+        const cancelInterviewerIds = (interview.interviewer_ids as string[]) || []
+        if (cancelInterviewerIds.length > 0) {
+          const { data: cancelInterviewers } = await serviceClient
+            .from("profiles")
+            .select("id, first_name, last_name, email")
+            .in("id", cancelInterviewerIds)
+
+          if (cancelInterviewers && cancelInterviewers.length > 0) {
+            result = await sendNotification(serviceClient, {
+              eventCode: "interview_cancelled_internal",
+              orgId,
+              recipients: cancelInterviewers.map(i => ({
+                userId: i.id,
+                email: i.email,
+                name: getFullName(i) || i.email,
+              })),
+              variables: {
+                ...cancelVars,
+                cancelled_by: getFullName(canceller) || "A team member",
+                action_url: `/org/interviews?id=${data.interviewId}`,
+              },
+              interviewId: data.interviewId,
+              applicationId: app.id,
+            })
+          }
+        }
         break
       }
 
       case "offer_sent": {
-        // Start with candidate recipient
-        const offerRecipients: NotificationRecipient[] = [
-          { email: data.candidateEmail, name: data.candidateName },
-        ]
-
-        // Add team members with both userId and email for dual-channel delivery
-        if (data.teamUserIds && data.teamUserIds.length > 0) {
-          const { data: teamProfiles } = await serviceClient
-            .from("profiles")
-            .select("id, first_name, last_name, email")
-            .in("id", data.teamUserIds)
-
-          if (teamProfiles) {
-            teamProfiles.forEach(p => {
-              offerRecipients.push({
-                userId: p.id,
-                email: p.email,
-                name: getFullName(p) || p.email,
-              })
-            })
-          }
-        }
-
         // Fetch offer template if offerId is provided
         let emailHtmlOverride: string | undefined
         let emailSubjectOverride: string | undefined
@@ -511,10 +514,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        result = await sendNotification(serviceClient, {
+        // 1. Candidate email (with offer letter template)
+        await sendNotification(serviceClient, {
           eventCode: "offer_sent",
           orgId,
-          recipients: offerRecipients,
+          recipients: [{ email: data.candidateEmail, name: data.candidateName }],
           variables: {
             candidate_name: data.candidateName,
             receiver_name: data.candidateName,
@@ -527,6 +531,40 @@ export async function POST(request: NextRequest) {
           emailHtmlOverride,
           emailSubjectOverride,
         })
+
+        // 2. Team in-app notification
+        if (data.teamUserIds && data.teamUserIds.length > 0) {
+          const { data: teamProfiles } = await serviceClient
+            .from("profiles")
+            .select("id, first_name, last_name, email")
+            .in("id", data.teamUserIds)
+
+          if (teamProfiles && teamProfiles.length > 0) {
+            // Get sender name
+            const { data: sender } = await serviceClient
+              .from("profiles")
+              .select("first_name, last_name")
+              .eq("id", user.id)
+              .single()
+
+            result = await sendNotification(serviceClient, {
+              eventCode: "offer_sent_internal",
+              orgId,
+              recipients: teamProfiles.map(p => ({
+                userId: p.id,
+                email: p.email,
+                name: getFullName(p) || p.email,
+              })),
+              variables: {
+                candidate_name: data.candidateName,
+                job_title: data.jobTitle,
+                sent_by: getFullName(sender) || "A team member",
+                action_url: data.applicationId ? `/org/applications?id=${data.applicationId}` : "/org/applications",
+              },
+              applicationId: data.applicationId,
+            })
+          }
+        }
         break
       }
 
@@ -730,28 +768,39 @@ export async function POST(request: NextRequest) {
       }
 
       case "candidate_stage_moved": {
-        // Candidate recipient (email-only, for email channel)
-        const stageRecipients: NotificationRecipient[] = [
-          { email: data.candidateEmail, name: data.candidateName },
-        ]
+        const stageVars = {
+          candidate_name: data.candidateName,
+          job_title: data.jobTitle,
+          stage_name: data.stageName,
+        }
 
-        // Add hiring team so they get in-app notifications
+        // 1. Candidate email
+        await sendNotification(serviceClient, {
+          eventCode: "candidate_stage_moved",
+          orgId,
+          recipients: [{ email: data.candidateEmail, name: data.candidateName }],
+          variables: stageVars,
+          applicationId: data.applicationId,
+        })
+
+        // 2. Team in-app notification
         const stageDeptId = data.applicationId ? await getApplicationDepartmentId(serviceClient, data.applicationId) : null
         const stageTeamRecipients = await getTeamRecipients(
           serviceClient, orgId, ["hr_manager", "hiring_manager", "recruiter"], stageDeptId
         )
 
-        result = await sendNotification(serviceClient, {
-          eventCode: "candidate_stage_moved",
-          orgId,
-          recipients: [...stageRecipients, ...stageTeamRecipients],
-          variables: {
-            candidate_name: data.candidateName,
-            job_title: data.jobTitle,
-            stage_name: data.stageName,
-          },
-          applicationId: data.applicationId,
-        })
+        if (stageTeamRecipients.length > 0) {
+          result = await sendNotification(serviceClient, {
+            eventCode: "candidate_stage_moved_internal",
+            orgId,
+            recipients: stageTeamRecipients,
+            variables: {
+              ...stageVars,
+              action_url: data.applicationId ? `/org/applications?id=${data.applicationId}` : "/org/applications",
+            },
+            applicationId: data.applicationId,
+          })
+        }
         break
       }
 
