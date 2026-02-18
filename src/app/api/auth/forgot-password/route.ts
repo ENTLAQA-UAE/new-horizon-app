@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     const hashedToken = linkData.properties?.hashed_token
     if (hashedToken) {
       const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
-      resetUrl = `${productionUrl}/reset-password?token=${encodeURIComponent(hashedToken)}&email=${encodeURIComponent(authUser.email!)}&type=recovery`
+      resetUrl = `${productionUrl}/reset-password?token_hash=${encodeURIComponent(hashedToken)}&email=${encodeURIComponent(authUser.email!)}&type=recovery`
     } else {
       // Fallback: fix localhost URLs in the action_link
       const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
