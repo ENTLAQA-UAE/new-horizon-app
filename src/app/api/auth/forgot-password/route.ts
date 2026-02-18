@@ -90,25 +90,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // CRITICAL: Fix localhost URLs in reset link
-    // Supabase's generateLink uses the Site URL from dashboard which may be misconfigured
-    // We must replace localhost with the actual production URL
-    const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+    // CRITICAL: Build a direct app URL instead of using Supabase's action_link.
+    //
+    // The action_link goes through Supabase's auth server (/auth/v1/verify) which
+    // redirects to the Supabase "Site URL" on error (e.g. expired token).
+    // If the Site URL in the Supabase dashboard is misconfigured (e.g. www.kawadir.io
+    // instead of the app URL), users see errors on the wrong domain.
+    //
+    // By sending a direct URL with the OTP token as query params, the reset-password
+    // page handles token verification client-side via supabase.auth.verifyOtp(),
+    // completely bypassing Supabase's redirect flow.
+    const hashedToken = linkData.properties?.hashed_token
+    if (hashedToken) {
+      const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+      resetUrl = `${productionUrl}/reset-password?token=${encodeURIComponent(hashedToken)}&email=${encodeURIComponent(authUser.email!)}&type=recovery`
+    } else {
+      // Fallback: fix localhost URLs in the action_link
+      const productionUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
 
-    // Check if URL contains localhost and needs to be replaced
-    if (resetUrl.includes("localhost")) {
-      console.log("[Password Reset] Original URL contains localhost, replacing...")
-      console.log("[Password Reset] Original:", resetUrl.substring(0, 50) + "...")
-
-      // Replace localhost:PORT with production URL
-      resetUrl = resetUrl.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
-
-      console.log("[Password Reset] Fixed:", resetUrl.substring(0, 50) + "...")
-    }
-
-    // Also fix if URL uses 127.0.0.1
-    if (resetUrl.includes("127.0.0.1")) {
-      resetUrl = resetUrl.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
+      if (resetUrl.includes("localhost")) {
+        resetUrl = resetUrl.replace(/https?:\/\/localhost(:\d+)?/gi, productionUrl)
+      }
+      if (resetUrl.includes("127.0.0.1")) {
+        resetUrl = resetUrl.replace(/https?:\/\/127\.0\.0\.1(:\d+)?/gi, productionUrl)
+      }
     }
 
     const userName = (profile?.first_name && profile?.last_name
