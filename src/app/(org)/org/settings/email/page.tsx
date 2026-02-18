@@ -14,6 +14,7 @@ import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { EmailSettingsClient } from './email-settings-client'
+import { toEmailConfigView, toDomainRecordView } from '@/lib/transforms/email-config'
 
 export const metadata: Metadata = {
   title: 'Email Settings | Kawadir ATS',
@@ -85,8 +86,8 @@ export default async function EmailSettingsPage() {
 
       <EmailSettingsClient
         orgId={profile.org_id}
-        initialConfig={emailConfig}
-        domainRecords={domainRecords || []}
+        initialConfig={emailConfig ? toEmailConfigView(emailConfig) : null}
+        domainRecords={(domainRecords || []).map(toDomainRecordView)}
       />
     </div>
   )

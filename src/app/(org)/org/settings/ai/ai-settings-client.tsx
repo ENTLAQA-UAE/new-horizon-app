@@ -50,27 +50,12 @@ import {
   Copy,
 } from "lucide-react"
 import { KawadirIcon } from "@/components/ui/kawadir-icon"
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type JsonValue = string | number | boolean | null | { [key: string]: any } | any[]
-
-interface AIConfig {
-  id: string
-  provider: string
-  is_enabled: boolean
-  is_configured: boolean
-  is_verified: boolean
-  is_default_provider: boolean
-  settings: JsonValue | null
-  provider_metadata: JsonValue | null
-  verified_at: string | null
-  last_used_at: string | null
-}
+import { AIConfigView, toAIConfigView } from "@/lib/transforms/ai-config"
 
 interface AISettingsClientProps {
   orgId: string
   orgName: string
-  aiConfigs: AIConfig[]
+  aiConfigs: AIConfigView[]
 }
 
 const AI_PROVIDER_CONFIG = {
@@ -188,7 +173,7 @@ export function AISettingsClient({
   orgName,
   aiConfigs: initialConfigs,
 }: AISettingsClientProps) {
-  const [configs, setConfigs] = useState<AIConfig[]>(initialConfigs)
+  const [configs, setConfigs] = useState<AIConfigView[]>(initialConfigs)
   const [configDialogOpen, setConfigDialogOpen] = useState(false)
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -200,27 +185,13 @@ export function AISettingsClient({
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
 
-  // Fetch configs from API
+  // Fetch configs from API — uses same transform as SSR, so output is always consistent
   const fetchConfigs = async () => {
     try {
       const response = await fetch(`/api/org/ai/config?orgId=${orgId}`)
       if (response.ok) {
         const data = await response.json()
-        // API returns camelCase (AIProviderStatus), but component uses snake_case (AIConfig)
-        // Map the response to match the expected interface
-        const mapped = (data.configs || []).map((c: Record<string, unknown>) => ({
-          id: c.id || "",
-          provider: c.provider || "",
-          is_enabled: c.isEnabled ?? c.is_enabled ?? false,
-          is_configured: c.isConfigured ?? c.is_configured ?? false,
-          is_verified: c.isVerified ?? c.is_verified ?? false,
-          is_default_provider: c.isDefault ?? c.is_default_provider ?? false,
-          settings: c.settings ?? null,
-          provider_metadata: c.providerMetadata ?? c.provider_metadata ?? null,
-          verified_at: c.verifiedAt ?? c.verified_at ?? null,
-          last_used_at: c.lastUsed ?? c.last_used_at ?? null,
-        }))
-        setConfigs(mapped)
+        setConfigs((data.configs || []).map(toAIConfigView))
       }
     } catch (error) {
       console.error("Failed to fetch AI configs:", error)
@@ -373,7 +344,7 @@ export function AISettingsClient({
   const handleToggleProvider = async (provider: AIProvider, enabled: boolean) => {
     const config = getConfig(provider)
 
-    if (enabled && !config?.is_verified) {
+    if (enabled && !config?.isVerified) {
       toast.error("Please configure and verify credentials first")
       return
     }
@@ -456,7 +427,7 @@ export function AISettingsClient({
     ? AI_PROVIDER_CONFIG[selectedProvider]
     : null
 
-  const hasAnyAIEnabled = configs.some((c) => c.is_enabled && c.is_verified)
+  const hasAnyAIEnabled = configs.some((c) => c.isEnabled && c.isVerified)
 
   return (
     <div className="space-y-6">
@@ -526,10 +497,10 @@ export function AISettingsClient({
             const config = AI_PROVIDER_CONFIG[provider]
             const aiConfig = getConfig(provider)
             const Icon = config.icon
-            const isEnabled = aiConfig?.is_enabled ?? false
-            const isConfigured = aiConfig?.is_configured ?? false
-            const isVerified = aiConfig?.is_verified ?? false
-            const isDefault = aiConfig?.is_default_provider ?? false
+            const isEnabled = aiConfig?.isEnabled ?? false
+            const isConfigured = aiConfig?.isConfigured ?? false
+            const isVerified = aiConfig?.isVerified ?? false
+            const isDefault = aiConfig?.isDefaultProvider ?? false
 
             return (
               <div

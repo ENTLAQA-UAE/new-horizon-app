@@ -47,57 +47,12 @@ import {
   Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-type EmailProvider = 'resend' | 'smtp' | 'sendgrid' | 'mailgun'
-
-interface EmailConfig {
-  id?: string
-  org_id: string
-  email_provider: EmailProvider
-  api_key_encrypted?: string
-  sendgrid_api_key_encrypted?: string
-  mailgun_api_key_encrypted?: string
-  from_email: string
-  from_name: string
-  reply_to_email?: string
-  smtp_host?: string
-  smtp_port?: number
-  smtp_username?: string
-  smtp_password_encrypted?: string
-  smtp_encryption?: string
-  mailgun_domain?: string
-  mailgun_region?: string
-  imap_enabled?: boolean
-  imap_host?: string
-  imap_port?: number
-  imap_username?: string
-  imap_encryption?: string
-  imap_mailbox?: string
-  track_opens?: boolean
-  track_clicks?: boolean
-  domain?: string
-  domain_verified?: boolean
-  spf_verified?: boolean
-  dkim_verified?: boolean
-  dmarc_verified?: boolean
-  is_enabled?: boolean
-  is_verified?: boolean
-  is_configured?: boolean
-}
-
-interface DomainRecord {
-  id: string
-  record_type: string
-  record_name: string
-  record_value: string
-  is_verified: boolean
-  last_checked_at?: string
-}
+import { EmailConfigView, DomainRecordView, EmailProvider } from '@/lib/transforms/email-config'
 
 interface Props {
   orgId: string
-  initialConfig: EmailConfig | null
-  domainRecords: DomainRecord[]
+  initialConfig: EmailConfigView | null
+  domainRecords: DomainRecordView[]
 }
 
 export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initialRecords }: Props) {
@@ -111,44 +66,44 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Form state
-  const [provider, setProvider] = useState<EmailProvider>(initialConfig?.email_provider || 'resend')
+  const [provider, setProvider] = useState<EmailProvider>(initialConfig?.emailProvider || 'resend')
   const [apiKey, setApiKey] = useState('')
-  const [fromEmail, setFromEmail] = useState(initialConfig?.from_email || '')
-  const [fromName, setFromName] = useState(initialConfig?.from_name || '')
-  const [replyTo, setReplyTo] = useState(initialConfig?.reply_to_email || '')
+  const [fromEmail, setFromEmail] = useState(initialConfig?.fromEmail || '')
+  const [fromName, setFromName] = useState(initialConfig?.fromName || '')
+  const [replyTo, setReplyTo] = useState(initialConfig?.replyToEmail || '')
   const [showApiKey, setShowApiKey] = useState(false)
 
   // SMTP settings
-  const [smtpHost, setSmtpHost] = useState(initialConfig?.smtp_host || '')
-  const [smtpPort, setSmtpPort] = useState(initialConfig?.smtp_port?.toString() || '587')
-  const [smtpUsername, setSmtpUsername] = useState(initialConfig?.smtp_username || '')
+  const [smtpHost, setSmtpHost] = useState(initialConfig?.smtpHost || '')
+  const [smtpPort, setSmtpPort] = useState(initialConfig?.smtpPort?.toString() || '587')
+  const [smtpUsername, setSmtpUsername] = useState(initialConfig?.smtpUsername || '')
   const [smtpPassword, setSmtpPassword] = useState('')
-  const [smtpEncryption, setSmtpEncryption] = useState(initialConfig?.smtp_encryption || 'tls')
+  const [smtpEncryption, setSmtpEncryption] = useState(initialConfig?.smtpEncryption || 'tls')
 
   // Mailgun settings
   const [mailgunDomain, setMailgunDomain] = useState('')
   const [mailgunRegion, setMailgunRegion] = useState<'us' | 'eu'>('us')
 
   // IMAP settings
-  const [imapEnabled, setImapEnabled] = useState(initialConfig?.imap_enabled || false)
-  const [imapHost, setImapHost] = useState(initialConfig?.imap_host || '')
-  const [imapPort, setImapPort] = useState(initialConfig?.imap_port?.toString() || '993')
-  const [imapUsername, setImapUsername] = useState(initialConfig?.imap_username || '')
+  const [imapEnabled, setImapEnabled] = useState(initialConfig?.imapEnabled || false)
+  const [imapHost, setImapHost] = useState(initialConfig?.imapHost || '')
+  const [imapPort, setImapPort] = useState(initialConfig?.imapPort?.toString() || '993')
+  const [imapUsername, setImapUsername] = useState(initialConfig?.imapUsername || '')
   const [imapPassword, setImapPassword] = useState('')
-  const [imapEncryption, setImapEncryption] = useState(initialConfig?.imap_encryption || 'ssl')
-  const [imapMailbox, setImapMailbox] = useState(initialConfig?.imap_mailbox || 'INBOX')
+  const [imapEncryption, setImapEncryption] = useState(initialConfig?.imapEncryption || 'ssl')
+  const [imapMailbox, setImapMailbox] = useState(initialConfig?.imapMailbox || 'INBOX')
 
   // Tracking settings
-  const [trackOpens, setTrackOpens] = useState(initialConfig?.track_opens ?? true)
-  const [trackClicks, setTrackClicks] = useState(initialConfig?.track_clicks ?? true)
+  const [trackOpens, setTrackOpens] = useState(initialConfig?.trackOpens ?? true)
+  const [trackClicks, setTrackClicks] = useState(initialConfig?.trackClicks ?? true)
 
   // Domain verification
   const [domain, setDomain] = useState(initialConfig?.domain || '')
-  const [domainRecords, setDomainRecords] = useState<DomainRecord[]>(initialRecords)
+  const [domainRecords, setDomainRecords] = useState<DomainRecordView[]>(initialRecords)
   const [verifyingDomain, setVerifyingDomain] = useState(false)
 
   // Email enabled
-  const [isEnabled, setIsEnabled] = useState(initialConfig?.is_enabled || false)
+  const [isEnabled, setIsEnabled] = useState(initialConfig?.isEnabled || false)
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
@@ -352,10 +307,10 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
 
       setDomainRecords(data.records?.map((r: { type: string; name: string; value: string }) => ({
         id: r.name,
-        record_type: r.type,
-        record_name: r.name,
-        record_value: r.value,
-        is_verified: false,
+        recordType: r.type,
+        recordName: r.name,
+        recordValue: r.value,
+        isVerified: false,
       })) || [])
 
       showMessage('success', 'Domain set. Add the DNS records shown below.')
@@ -406,27 +361,27 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
       {/* Status Banner */}
       <Card className={cn(
         'border-l-4',
-        isEnabled && initialConfig?.is_verified
+        isEnabled && initialConfig?.isVerified
           ? 'border-l-green-500 bg-green-50'
           : 'border-l-yellow-500 bg-yellow-50'
       )}>
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {isEnabled && initialConfig?.is_verified ? (
+              {isEnabled && initialConfig?.isVerified ? (
                 <CheckCircle className="h-5 w-5 text-green-600" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-yellow-600" />
               )}
               <div>
                 <p className="font-medium">
-                  {isEnabled && initialConfig?.is_verified
+                  {isEnabled && initialConfig?.isVerified
                     ? 'Email is configured and active'
                     : 'Email requires configuration'}
                 </p>
                 <p className="text-sm text-gray-600">
-                  {isEnabled && initialConfig?.is_verified
-                    ? `Sending via ${provider.toUpperCase()} from ${initialConfig?.from_email}`
+                  {isEnabled && initialConfig?.isVerified
+                    ? `Sending via ${provider.toUpperCase()} from ${initialConfig?.fromEmail}`
                     : 'Complete the setup to enable email sending'}
                 </p>
               </div>
@@ -439,7 +394,7 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
                 id="email-enabled"
                 checked={isEnabled}
                 onCheckedChange={handleToggleEnabled}
-                disabled={loading || !initialConfig?.is_verified}
+                disabled={loading || !initialConfig?.isVerified}
               />
             </div>
           </div>
@@ -506,7 +461,7 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
                       type={showApiKey ? 'text' : 'password'}
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      placeholder={initialConfig?.api_key_encrypted ? '••••••••••••' : 'Enter API key'}
+                      placeholder={initialConfig?.apiKeyEncrypted ? '••••••••••••' : 'Enter API key'}
                     />
                     <button
                       type="button"
@@ -798,30 +753,30 @@ export function EmailSettingsClient({ orgId, initialConfig, domainRecords: initi
                         key={record.id}
                         className={cn(
                           'p-4 rounded-lg border',
-                          record.is_verified ? 'bg-green-50 border-green-200' : 'bg-gray-50'
+                          record.isVerified ? 'bg-green-50 border-green-200' : 'bg-gray-50'
                         )}
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant={record.is_verified ? 'default' : 'secondary'}>
-                                {record.record_type}
+                              <Badge variant={record.isVerified ? 'default' : 'secondary'}>
+                                {record.recordType}
                               </Badge>
-                              {record.is_verified ? (
+                              {record.isVerified ? (
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                               ) : (
                                 <XCircle className="h-4 w-4 text-gray-400" />
                               )}
                             </div>
-                            <p className="text-sm font-medium">{record.record_name}</p>
+                            <p className="text-sm font-medium">{record.recordName}</p>
                             <p className="text-xs text-gray-600 font-mono break-all">
-                              {record.record_value}
+                              {record.recordValue}
                             </p>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => copyToClipboard(record.record_value)}
+                            onClick={() => copyToClipboard(record.recordValue)}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
