@@ -36,6 +36,7 @@ import {
   Bell,
   ChevronDown,
   Globe,
+  Sparkles,
 } from "lucide-react"
 import { KawadirIcon } from "@/components/ui/kawadir-icon"
 import { Button } from "@/components/ui/button"
@@ -145,6 +146,7 @@ const hrManagerSections: NavSection[] = [
       { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
       { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
       { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
+      { href: "/org/ai-talent-match", label: "AI Talent Match", labelAr: "مطابقة المواهب", icon: Sparkles },
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
       { href: "/org/scorecards", label: "Scorecards", labelAr: "بطاقات التقييم", icon: ClipboardList },
       { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
@@ -184,6 +186,7 @@ const recruiterSections: NavSection[] = [
       { href: "/org/jobs", label: "Jobs", labelAr: "الوظائف", icon: Briefcase },
       { href: "/org/candidates", label: "Candidates", labelAr: "المرشحين", icon: UserSearch },
       { href: "/org/applications", label: "Applications", labelAr: "الطلبات", icon: FileText },
+      { href: "/org/ai-talent-match", label: "AI Talent Match", labelAr: "مطابقة المواهب", icon: Sparkles },
       { href: "/org/interviews", label: "Interviews", labelAr: "المقابلات", icon: CalendarDays },
       { href: "/org/offers", label: "Offers", labelAr: "العروض", icon: Gift },
     ],
