@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 import {
   getUserNotifications,
   markNotificationAsRead,
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Use user-scoped client only for auth verification
     const supabase = await createClient()
 
     const {
@@ -61,13 +62,18 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { action, notificationId } = body
 
+    // Use service client for mutations to bypass RLS policies on the
+    // notifications table. The user_id filter in the service functions
+    // ensures users can only modify their own notifications.
+    const serviceClient = createServiceClient()
+
     if (action === "mark_read" && notificationId) {
-      await markNotificationAsRead(supabase, notificationId)
+      await markNotificationAsRead(serviceClient, notificationId, user.id)
       return NextResponse.json({ success: true })
     }
 
     if (action === "mark_all_read") {
-      await markAllNotificationsAsRead(supabase, user.id)
+      await markAllNotificationsAsRead(serviceClient, user.id)
       return NextResponse.json({ success: true })
     }
 
