@@ -116,8 +116,8 @@ export default function DomainSettingsPage() {
   const handleToggleSubdomain = async (enabled: boolean) => {
     const subdomain = subdomainInput.trim().toLowerCase()
 
-    // When enabling with a different name, require availability check first
-    if (enabled && subdomain !== config?.slug && !subdomainAvailability.available) {
+    // Require availability check before enabling
+    if (enabled && !subdomainAvailability.available) {
       toast.error("Please check subdomain availability first")
       return
     }
@@ -342,7 +342,7 @@ export default function DomainSettingsPage() {
                 disabled={
                   isTogglingSubdomain ||
                   !subdomainInput.trim() ||
-                  (subdomainInput !== config.slug && !subdomainAvailability.available)
+                  !subdomainAvailability.available
                 }
                 className="w-full"
               >
