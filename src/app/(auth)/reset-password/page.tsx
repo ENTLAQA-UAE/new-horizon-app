@@ -120,8 +120,23 @@ function ResetPasswordContent() {
         return
       }
 
-      // Method 2: Hash fragment with tokens (from Supabase email redirects)
+      // Method 2a: Hash fragment with error (from Supabase redirect on expired/invalid token)
       const hash = window.location.hash
+      if (hash && hash.includes('error=')) {
+        const hashParams = new URLSearchParams(hash.substring(1))
+        const errorCode = hashParams.get('error_code') || hashParams.get('error')
+        const errorDesc = hashParams.get('error_description')?.replace(/\+/g, ' ')
+
+        if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
+          setSessionError(errorDesc || 'Your password reset link has expired. Please request a new one.')
+        } else {
+          setSessionError(errorDesc || 'An error occurred with your reset link. Please request a new one.')
+        }
+        window.history.replaceState(null, '', window.location.pathname)
+        return
+      }
+
+      // Method 2b: Hash fragment with tokens (from Supabase email redirects)
       if (hash && hash.includes('access_token')) {
         const hashParams = new URLSearchParams(hash.substring(1))
         const accessToken = hashParams.get('access_token')
