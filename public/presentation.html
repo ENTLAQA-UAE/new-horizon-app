@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kawadir - AI-Powered Recruitment Platform</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Cairo:wght@400;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4F46E5;
+      --primary-light: #818CF8;
+      --primary-dark: #3730A3;
+      --accent: #F97316;
+      --accent-light: #FB923C;
+      --surface: #FFFFFF;
+      --surface-alt: #F8FAFC;
+      --text: #1E293B;
+      --text-secondary: #64748B;
+      --border: #E2E8F0;
+      --success: #10B981;
+      --gradient-1: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+      --gradient-2: linear-gradient(135deg, #0EA5E9 0%, #6366F1 100%);
+      --gradient-3: linear-gradient(135deg, #F97316 0%, #EF4444 100%);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+      --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
+      --radius: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0F172A;
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ─── Slide Container ─── */
+    .slides-wrapper {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+      padding: 40px;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: all;
+      z-index: 10;
+    }
+
+    /* ─── Title Slide ─── */
+    .slide-title {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #1a1a3e 100%);
+      flex-direction: column;
+      gap: 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-title::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 40%, rgba(79,70,229,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 60%, rgba(236,72,153,0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 50% 80%, rgba(249,115,22,0.08) 0%, transparent 40%);
+      animation: bgShift 15s ease-in-out infinite;
+    }
+
+    @keyframes bgShift {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(-2%, 1%) rotate(1deg); }
+      66% { transform: translate(1%, -1%) rotate(-0.5deg); }
+    }
+
+    .slide-title .content-wrapper {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 100px;
+      padding: 12px 28px;
+      backdrop-filter: blur(20px);
+    }
+
+    .logo-badge img {
+      height: 48px;
+      filter: brightness(1.1);
+    }
+
+    .logo-badge .divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .logo-badge span {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .title-main {
+      font-size: clamp(36px, 5vw, 72px);
+      font-weight: 800;
+      line-height: 1.1;
+      color: white;
+      max-width: 900px;
+    }
+
+    .title-main .highlight {
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .title-sub {
+      font-size: clamp(16px, 2vw, 22px);
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+      max-width: 650px;
+      line-height: 1.6;
+    }
+
+    .title-badges {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .title-badges .badge {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 100px;
+      padding: 8px 20px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .title-badges .badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .start-btn {
+      margin-top: 16px;
+      background: var(--gradient-1);
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      border-radius: 100px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 24px rgba(79,70,229,0.4);
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(79,70,229,0.5);
+    }
+
+    .start-btn svg { transition: transform 0.3s ease; }
+    .start-btn:hover svg { transform: translateX(4px); }
+
+    /* ─── Feature Slides ─── */
+    .slide-feature {
+      background: linear-gradient(180deg, #0F172A 0%, #1a1f3a 100%);
+      flex-direction: column;
+      padding: 30px 60px;
+      gap: 0;
+    }
+
+    .slide-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+
+    .slide-number {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-light);
+      background: rgba(79,70,229,0.15);
+      border: 1px solid rgba(79,70,229,0.25);
+      padding: 6px 16px;
+      border-radius: 100px;
+      letter-spacing: 1px;
+    }
+
+    .slide-nav-info {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 500;
+    }
+
+    .feature-content {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      min-height: 0;
+    }
+
+    .feature-text {
+      flex: 0 0 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .feature-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+    }
+
+    .feature-desc {
+      font-size: 15px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.7;
+    }
+
+    .feature-highlights {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .feature-highlights li {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      font-weight: 500;
+    }
+
+    .feature-highlights li .check {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      background: rgba(16,185,129,0.15);
+      border: 1px solid rgba(16,185,129,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--success);
+      flex-shrink: 0;
+    }
+
+    .feature-screenshot {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .screenshot-frame {
+      width: 100%;
+      max-height: 100%;
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-xl), 0 0 80px rgba(79,70,229,0.1);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .screenshot-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+      max-height: calc(100vh - 180px);
+      object-fit: contain;
+    }
+
+    .screenshot-browser-bar {
+      background: #1E293B;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .browser-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .browser-dot.red { background: #EF4444; }
+    .browser-dot.yellow { background: #F59E0B; }
+    .browser-dot.green { background: #10B981; }
+
+    .browser-url {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 5px 14px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-left: 8px;
+      font-family: 'Inter', monospace;
+    }
+
+    /* ─── Closing Slide ─── */
+    .slide-closing {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #1a1a3e 100%);
+      flex-direction: column;
+      gap: 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-closing::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 60% 30%, rgba(79,70,229,0.12) 0%, transparent 50%),
+                  radial-gradient(circle at 30% 70%, rgba(249,115,22,0.08) 0%, transparent 40%);
+      animation: bgShift 15s ease-in-out infinite;
+    }
+
+    .slide-closing .content-wrapper {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .closing-title {
+      font-size: clamp(32px, 4vw, 56px);
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+    }
+
+    .closing-sub {
+      font-size: 18px;
+      color: rgba(255,255,255,0.5);
+      max-width: 500px;
+      line-height: 1.6;
+    }
+
+    .closing-stats {
+      display: flex;
+      gap: 48px;
+      margin-top: 16px;
+    }
+
+    .closing-stat {
+      text-align: center;
+    }
+
+    .closing-stat .num {
+      font-size: 42px;
+      font-weight: 800;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .closing-stat .label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .contact-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .contact-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.7);
+      padding: 12px 28px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .contact-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .contact-btn.primary {
+      background: var(--gradient-1);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 24px rgba(79,70,229,0.4);
+    }
+
+    .contact-btn.primary:hover {
+      box-shadow: 0 8px 32px rgba(79,70,229,0.5);
+      transform: translateY(-2px);
+    }
+
+    /* ─── Navigation ─── */
+    .nav-controls {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 100;
+      background: rgba(15,23,42,0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      padding: 8px 12px;
+    }
+
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 18px;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .progress-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: var(--primary-light);
+      box-shadow: 0 0 8px rgba(129,140,248,0.5);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    .progress-dot:hover:not(.active) {
+      background: rgba(255,255,255,0.35);
+    }
+
+    /* ─── Keyboard Hint ─── */
+    .keyboard-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: rgba(255,255,255,0.2);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 1;
+      transition: opacity 1s ease;
+    }
+
+    .keyboard-hint.hidden { opacity: 0; }
+
+    .key {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'Inter', monospace;
+      font-size: 11px;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 900px) {
+      .feature-content {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .feature-text {
+        flex: none;
+        width: 100%;
+      }
+      .slide-feature {
+        padding: 20px 24px;
+      }
+      .feature-title { font-size: 22px; }
+      .closing-stats { gap: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="slides-wrapper" id="slidesWrapper">
+
+  <!-- ════════════════════ SLIDE 0: TITLE ════════════════════ -->
+  <div class="slide slide-title active" data-index="0">
+    <div class="content-wrapper">
+      <div class="logo-badge">
+        <img src="new-logo-light-final.PNG" alt="Kawadir" />
+        <div class="divider"></div>
+        <span>Product Overview</span>
+      </div>
+
+      <h1 class="title-main">
+        The <span class="highlight">AI-Powered</span><br>
+        Recruitment Platform
+      </h1>
+
+      <p class="title-sub">
+        Streamline your entire hiring process — from job posting to offer management — with intelligent automation and beautiful design.
+      </p>
+
+      <div class="title-badges">
+        <div class="badge"><div class="dot" style="background:#10B981"></div> Next.js &amp; React</div>
+        <div class="badge"><div class="dot" style="background:#818CF8"></div> AI-Powered Matching</div>
+        <div class="badge"><div class="dot" style="background:#F97316"></div> Full Arabic RTL</div>
+        <div class="badge"><div class="dot" style="background:#EC4899"></div> Enterprise SaaS</div>
+      </div>
+
+      <button class="start-btn" onclick="goToSlide(1)">
+        Explore Features
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 1: Dashboard ════════════════════ -->
+  <div class="slide slide-feature" data-index="1">
+    <div class="slide-header">
+      <div class="slide-number">01 / 12</div>
+      <div class="slide-nav-info">Dashboard &amp; Analytics</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(79,70,229,0.15);color:#818CF8;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <h2 class="feature-title">Dashboard &amp; Analytics</h2>
+        <p class="feature-desc">Real-time insights into your entire hiring performance at a glance.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Monthly hires &amp; application targets</li>
+          <li><span class="check">&#10003;</span> Interview pipeline tracking</li>
+          <li><span class="check">&#10003;</span> Applications trend charts</li>
+          <li><span class="check">&#10003;</span> Quality of hire metrics</li>
+          <li><span class="check">&#10003;</span> Quick insights &amp; hiring velocity</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/dashboard</div>
+          </div>
+          <img src="01- Dashboard & analytics.png" alt="Dashboard & Analytics" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 2: Jobs Management ════════════════════ -->
+  <div class="slide slide-feature" data-index="2">
+    <div class="slide-header">
+      <div class="slide-number">02 / 12</div>
+      <div class="slide-nav-info">Jobs Management</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:#10B981;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+        </div>
+        <h2 class="feature-title">Jobs Management</h2>
+        <p class="feature-desc">Create, publish, and manage all job openings from one centralized view.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Job status tracking (Published, Draft, Closed)</li>
+          <li><span class="check">&#10003;</span> Department &amp; location filters</li>
+          <li><span class="check">&#10003;</span> Salary range configuration</li>
+          <li><span class="check">&#10003;</span> Employment type management</li>
+          <li><span class="check">&#10003;</span> Quick actions per job listing</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/jobs</div>
+          </div>
+          <img src="02- Jobs Management.png" alt="Jobs Management" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 3: Candidate Management ════════════════════ -->
+  <div class="slide slide-feature" data-index="3">
+    <div class="slide-header">
+      <div class="slide-number">03 / 12</div>
+      <div class="slide-nav-info">Candidate Management</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(236,72,153,0.15);color:#EC4899;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h2 class="feature-title">Candidate Management</h2>
+        <p class="feature-desc">Manage your talent pool with powerful filtering and status tracking.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Candidate status pipeline (New, Screening, Hired)</li>
+          <li><span class="check">&#10003;</span> Contact &amp; experience details</li>
+          <li><span class="check">&#10003;</span> Source tracking (Career Page, LinkedIn)</li>
+          <li><span class="check">&#10003;</span> Advanced search &amp; filtering</li>
+          <li><span class="check">&#10003;</span> Quick add candidate action</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/candidates</div>
+          </div>
+          <img src="03- Candidate Management.png" alt="Candidate Management" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 4: Applications ════════════════════ -->
+  <div class="slide slide-feature" data-index="4">
+    <div class="slide-header">
+      <div class="slide-number">04 / 12</div>
+      <div class="slide-nav-info">Applications Pipeline</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(249,115,22,0.15);color:#F97316;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <h2 class="feature-title">Applications Pipeline</h2>
+        <p class="feature-desc">Track and manage candidate applications through your hiring pipeline with Kanban and list views.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Drag-and-drop Kanban board</li>
+          <li><span class="check">&#10003;</span> Stage-based pipeline (Applied, Screening, Hired)</li>
+          <li><span class="check">&#10003;</span> Pipeline &amp; List view toggle</li>
+          <li><span class="check">&#10003;</span> Application progress tracking</li>
+          <li><span class="check">&#10003;</span> Per-job pipeline filtering</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/applications</div>
+          </div>
+          <img src="04- Applications.png" alt="Applications Pipeline" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 5: Interviews ════════════════════ -->
+  <div class="slide slide-feature" data-index="5">
+    <div class="slide-header">
+      <div class="slide-number">05 / 12</div>
+      <div class="slide-nav-info">Interview Scheduling</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(14,165,233,0.15);color:#0EA5E9;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <h2 class="feature-title">Interview Scheduling</h2>
+        <p class="feature-desc">Schedule and manage candidate interviews with status tracking and calendar integration.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Interview cards with status badges</li>
+          <li><span class="check">&#10003;</span> Upcoming &amp; past interview tabs</li>
+          <li><span class="check">&#10003;</span> Scheduled, Cancelled, Completed states</li>
+          <li><span class="check">&#10003;</span> Duration &amp; time configuration</li>
+          <li><span class="check">&#10003;</span> Multi-interviewer support</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/interviews</div>
+          </div>
+          <img src="05- Interview.png" alt="Interview Scheduling" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 6: Scorecards ════════════════════ -->
+  <div class="slide slide-feature" data-index="6">
+    <div class="slide-header">
+      <div class="slide-number">06 / 12</div>
+      <div class="slide-nav-info">Scorecards</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(245,158,11,0.15);color:#F59E0B;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+        </div>
+        <h2 class="feature-title">Scorecards</h2>
+        <p class="feature-desc">Structured candidate evaluation with criteria-based scoring and interviewer recommendations.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Multi-criteria scoring (1-5 stars)</li>
+          <li><span class="check">&#10003;</span> Overall score calculation</li>
+          <li><span class="check">&#10003;</span> Interviewer recommendation (Yes/No)</li>
+          <li><span class="check">&#10003;</span> Notes per evaluation criteria</li>
+          <li><span class="check">&#10003;</span> Customizable scorecard templates</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/scorecards</div>
+          </div>
+          <img src="06- Scorecards.png" alt="Scorecards" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 7: AI Talent Hub ════════════════════ -->
+  <div class="slide slide-feature" data-index="7">
+    <div class="slide-header">
+      <div class="slide-number">07 / 12</div>
+      <div class="slide-nav-info">AI Talent Hub</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(124,58,237,0.15);color:#7C3AED;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4c0 1.95-1.4 3.58-3.25 3.93L12 22l-.75-12.07A4.001 4.001 0 0112 2z"/><path d="M8 8a4 4 0 016.93-2.74"/><path d="M16 8a4 4 0 00-6.93-2.74"/></svg>
+        </div>
+        <h2 class="feature-title">AI Talent Hub</h2>
+        <p class="feature-desc">Discover matching candidates from your existing talent pool using AI-powered intelligence.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> AI-powered candidate matching</li>
+          <li><span class="check">&#10003;</span> Strong &amp; good match scoring</li>
+          <li><span class="check">&#10003;</span> Per-job talent scanning</li>
+          <li><span class="check">&#10003;</span> Talent pool overview metrics</li>
+          <li><span class="check">&#10003;</span> One-click "Find Matching Talent"</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/ai-talent-hub</div>
+          </div>
+          <img src="07- AI Talent Hub.png" alt="AI Talent Hub" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 8: Offers ════════════════════ -->
+  <div class="slide slide-feature" data-index="8">
+    <div class="slide-header">
+      <div class="slide-number">08 / 12</div>
+      <div class="slide-nav-info">Offer Management</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(239,68,68,0.15);color:#EF4444;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+        </div>
+        <h2 class="feature-title">Offer Management</h2>
+        <p class="feature-desc">Create and manage job offers with detailed compensation, employment terms, and bilingual support.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Structured offer creation form</li>
+          <li><span class="check">&#10003;</span> Bilingual job titles (EN/AR)</li>
+          <li><span class="check">&#10003;</span> Salary, currency &amp; pay period</li>
+          <li><span class="check">&#10003;</span> Employment details &amp; probation</li>
+          <li><span class="check">&#10003;</span> Offer template support</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/offers</div>
+          </div>
+          <img src="08- Offers.png" alt="Offer Management" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 9: Pipeline ════════════════════ -->
+  <div class="slide slide-feature" data-index="9">
+    <div class="slide-header">
+      <div class="slide-number">09 / 12</div>
+      <div class="slide-nav-info">Hiring Pipelines</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:#6366F1;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+        </div>
+        <h2 class="feature-title">Hiring Pipelines</h2>
+        <p class="feature-desc">Create and manage custom hiring pipelines with configurable stages, approvals, and automations.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Custom pipeline creation</li>
+          <li><span class="check">&#10003;</span> Configurable stages (Applied, Hired, Rejected)</li>
+          <li><span class="check">&#10003;</span> System &amp; custom stage types</li>
+          <li><span class="check">&#10003;</span> Default pipeline assignment</li>
+          <li><span class="check">&#10003;</span> Active pipeline tracking</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/pipelines</div>
+          </div>
+          <img src="09- Pipeline.png" alt="Hiring Pipelines" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 10: Arabic RTL ════════════════════ -->
+  <div class="slide slide-feature" data-index="10">
+    <div class="slide-header">
+      <div class="slide-number">10 / 12</div>
+      <div class="slide-nav-info">Arabic RTL Support</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(249,115,22,0.15);color:#F97316;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        </div>
+        <h2 class="feature-title">Arabic RTL Support</h2>
+        <p class="feature-desc">Full right-to-left Arabic interface with complete localization for the MENA region.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Complete Arabic translation</li>
+          <li><span class="check">&#10003;</span> RTL layout mirroring</li>
+          <li><span class="check">&#10003;</span> Arabic typography (Cairo font)</li>
+          <li><span class="check">&#10003;</span> Localized dashboard &amp; navigation</li>
+          <li><span class="check">&#10003;</span> Seamless EN/AR language switching</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/ar/dashboard</div>
+          </div>
+          <img src="10- Arabic RTL.png" alt="Arabic RTL Support" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 11: Career Page ════════════════════ -->
+  <div class="slide slide-feature" data-index="11">
+    <div class="slide-header">
+      <div class="slide-number">11 / 12</div>
+      <div class="slide-nav-info">Career Page Builder</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.15);color:#10B981;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        </div>
+        <h2 class="feature-title">Career Page Builder</h2>
+        <p class="feature-desc">Build stunning, branded career pages with a drag-and-drop section builder — no code required.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Drag-and-drop section ordering</li>
+          <li><span class="check">&#10003;</span> Hero banner, About Us, Values sections</li>
+          <li><span class="check">&#10003;</span> Benefits &amp; Perks showcase</li>
+          <li><span class="check">&#10003;</span> Auto-populated job listings</li>
+          <li><span class="check">&#10003;</span> Live preview &amp; publish controls</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/career-page</div>
+          </div>
+          <img src="11- Career Page.png" alt="Career Page Builder" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 12: Branding ════════════════════ -->
+  <div class="slide slide-feature" data-index="12">
+    <div class="slide-header">
+      <div class="slide-number">12 / 12</div>
+      <div class="slide-nav-info">Branding &amp; Customization</div>
+    </div>
+    <div class="feature-content">
+      <div class="feature-text">
+        <div class="feature-icon" style="background:rgba(236,72,153,0.15);color:#EC4899;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12c0 1.82.487 3.53 1.338 5H6.5a2.5 2.5 0 000 5H12z"/></svg>
+        </div>
+        <h2 class="feature-title">Branding &amp; Customization</h2>
+        <p class="feature-desc">Customize your organization's appearance and identity with full white-label branding controls.</p>
+        <ul class="feature-highlights">
+          <li><span class="check">&#10003;</span> Company info (EN &amp; AR)</li>
+          <li><span class="check">&#10003;</span> Logo &amp; favicon upload</li>
+          <li><span class="check">&#10003;</span> Custom login page image</li>
+          <li><span class="check">&#10003;</span> Tagline customization</li>
+          <li><span class="check">&#10003;</span> Live login page preview</li>
+        </ul>
+      </div>
+      <div class="feature-screenshot">
+        <div class="screenshot-frame">
+          <div class="screenshot-browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">app.kawadir.com/branding</div>
+          </div>
+          <img src="12- Branding.png" alt="Branding & Customization" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ SLIDE 13: CLOSING ════════════════════ -->
+  <div class="slide slide-closing" data-index="13">
+    <div class="content-wrapper">
+      <div class="logo-badge">
+        <img src="new-logo-light-final.PNG" alt="Kawadir" />
+      </div>
+
+      <h2 class="closing-title">
+        Ready to Transform<br>Your Hiring?
+      </h2>
+
+      <p class="closing-sub">
+        Join organizations across the MENA region using Kawadir to hire smarter, faster, and fairer.
+      </p>
+
+      <div class="closing-stats">
+        <div class="closing-stat">
+          <div class="num">12+</div>
+          <div class="label">Core Modules</div>
+        </div>
+        <div class="closing-stat">
+          <div class="num">AI</div>
+          <div class="label">Powered Matching</div>
+        </div>
+        <div class="closing-stat">
+          <div class="num">EN/AR</div>
+          <div class="label">Bilingual Support</div>
+        </div>
+        <div class="closing-stat">
+          <div class="num">SaaS</div>
+          <div class="label">Multi-Tenant</div>
+        </div>
+      </div>
+
+      <div class="contact-row">
+        <button class="contact-btn" onclick="goToSlide(0)">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+          Replay
+        </button>
+        <a class="contact-btn primary" href="mailto:info@kawadir.com">
+          Get in Touch
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── Navigation ─── -->
+<div class="nav-controls">
+  <button class="nav-btn" id="prevBtn" onclick="prevSlide()">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+  </button>
+  <div class="progress-dots" id="progressDots"></div>
+  <button class="nav-btn" id="nextBtn" onclick="nextSlide()">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,6 15,12 9,18"/></svg>
+  </button>
+</div>
+
+<div class="keyboard-hint" id="keyboardHint">
+  Use <span class="key">&larr;</span> <span class="key">&rarr;</span> arrow keys to navigate
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let currentSlide = 0;
+
+  // Build progress dots
+  const dotsContainer = document.getElementById('progressDots');
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    dotsContainer.appendChild(dot);
+  }
+
+  function updateSlide() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === currentSlide));
+    const dots = dotsContainer.querySelectorAll('.progress-dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    document.getElementById('prevBtn').disabled = currentSlide === 0;
+    document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+  }
+
+  function goToSlide(index) {
+    if (index >= 0 && index < totalSlides) {
+      currentSlide = index;
+      updateSlide();
+    }
+  }
+
+  function nextSlide() { goToSlide(currentSlide + 1); }
+  function prevSlide() { goToSlide(currentSlide - 1); }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); goToSlide(0); }
+    if (e.key === 'End') { e.preventDefault(); goToSlide(totalSlides - 1); }
+
+    // Hide hint after first keypress
+    document.getElementById('keyboardHint').classList.add('hidden');
+  });
+
+  // Hide hint after 5 seconds
+  setTimeout(() => {
+    document.getElementById('keyboardHint').classList.add('hidden');
+  }, 5000);
+</script>
+
+</body>
+</html>
