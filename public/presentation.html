@@ -10,20 +10,20 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --primary: #4F46E5;
-      --primary-light: #818CF8;
-      --primary-dark: #3730A3;
-      --accent: #F97316;
-      --accent-light: #FB923C;
+      --primary: #2563EB;
+      --primary-light: #60A5FA;
+      --primary-dark: #1D4ED8;
+      --accent: #06B6D4;
+      --accent-light: #22D3EE;
       --surface: #FFFFFF;
       --surface-alt: #F8FAFC;
-      --text: #1E293B;
+      --text: #0F172A;
       --text-secondary: #64748B;
       --border: #E2E8F0;
       --success: #10B981;
-      --gradient-1: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
-      --gradient-2: linear-gradient(135deg, #0EA5E9 0%, #6366F1 100%);
-      --gradient-3: linear-gradient(135deg, #F97316 0%, #EF4444 100%);
+      --gradient-1: linear-gradient(135deg, #2563EB 0%, #1D4ED8 50%, #0EA5E9 100%);
+      --gradient-2: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%);
+      --gradient-3: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
       --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
       --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
@@ -90,9 +90,9 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle at 30% 40%, rgba(79,70,229,0.15) 0%, transparent 50%),
-                  radial-gradient(circle at 70% 60%, rgba(236,72,153,0.1) 0%, transparent 50%),
-                  radial-gradient(circle at 50% 80%, rgba(249,115,22,0.08) 0%, transparent 40%);
+      background: radial-gradient(circle at 30% 40%, rgba(37,99,235,0.2) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 60%, rgba(14,165,233,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 50% 80%, rgba(6,182,212,0.1) 0%, transparent 40%);
       animation: bgShift 15s ease-in-out infinite;
     }
 
@@ -205,12 +205,12 @@
       align-items: center;
       gap: 10px;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 24px rgba(79,70,229,0.4);
+      box-shadow: 0 4px 24px rgba(37,99,235,0.4);
     }
 
     .start-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(79,70,229,0.5);
+      box-shadow: 0 8px 32px rgba(37,99,235,0.5);
     }
 
     .start-btn svg { transition: transform 0.3s ease; }
@@ -237,8 +237,8 @@
       font-size: 13px;
       font-weight: 600;
       color: var(--primary-light);
-      background: rgba(79,70,229,0.15);
-      border: 1px solid rgba(79,70,229,0.25);
+      background: rgba(37,99,235,0.15);
+      border: 1px solid rgba(37,99,235,0.25);
       padding: 6px 16px;
       border-radius: 100px;
       letter-spacing: 1px;
@@ -336,7 +336,7 @@
       position: relative;
       border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: var(--shadow-xl), 0 0 80px rgba(79,70,229,0.1);
+      box-shadow: var(--shadow-xl), 0 0 80px rgba(37,99,235,0.15);
       border: 1px solid rgba(255,255,255,0.08);
     }
 
@@ -395,8 +395,8 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle at 60% 30%, rgba(79,70,229,0.12) 0%, transparent 50%),
-                  radial-gradient(circle at 30% 70%, rgba(249,115,22,0.08) 0%, transparent 40%);
+      background: radial-gradient(circle at 60% 30%, rgba(37,99,235,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 30% 70%, rgba(14,165,233,0.1) 0%, transparent 40%);
       animation: bgShift 15s ease-in-out infinite;
     }
 
@@ -481,11 +481,11 @@
       background: var(--gradient-1);
       border-color: transparent;
       color: white;
-      box-shadow: 0 4px 24px rgba(79,70,229,0.4);
+      box-shadow: 0 4px 24px rgba(37,99,235,0.4);
     }
 
     .contact-btn.primary:hover {
-      box-shadow: 0 8px 32px rgba(79,70,229,0.5);
+      box-shadow: 0 8px 32px rgba(37,99,235,0.5);
       transform: translateY(-2px);
     }
 
@@ -549,7 +549,7 @@
 
     .progress-dot.active {
       background: var(--primary-light);
-      box-shadow: 0 0 8px rgba(129,140,248,0.5);
+      box-shadow: 0 0 8px rgba(96,165,250,0.5);
       width: 24px;
       border-radius: 4px;
     }
@@ -627,9 +627,9 @@
 
       <div class="title-badges">
         <div class="badge"><div class="dot" style="background:#10B981"></div> Next.js &amp; React</div>
-        <div class="badge"><div class="dot" style="background:#818CF8"></div> AI-Powered Matching</div>
+        <div class="badge"><div class="dot" style="background:#60A5FA"></div> AI-Powered Matching</div>
         <div class="badge"><div class="dot" style="background:#F97316"></div> Full Arabic RTL</div>
-        <div class="badge"><div class="dot" style="background:#EC4899"></div> Enterprise SaaS</div>
+        <div class="badge"><div class="dot" style="background:#0EA5E9"></div> Enterprise SaaS</div>
       </div>
 
       <button class="start-btn" onclick="goToSlide(1)">
@@ -647,7 +647,7 @@
     </div>
     <div class="feature-content">
       <div class="feature-text">
-        <div class="feature-icon" style="background:rgba(79,70,229,0.15);color:#818CF8;">
+        <div class="feature-icon" style="background:rgba(37,99,235,0.15);color:#60A5FA;">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         </div>
         <h2 class="feature-title">Dashboard &amp; Analytics</h2>
@@ -668,7 +668,7 @@
             <div class="browser-dot green"></div>
             <div class="browser-url">app.kawadir.com/dashboard</div>
           </div>
-          <img src="01- Dashboard & analytics.png" alt="Dashboard & Analytics" />
+          <img src="01- Dashboard &amp; analytics.png" alt="Dashboard &amp; Analytics" />
         </div>
       </div>
     </div>
@@ -717,7 +717,7 @@
     </div>
     <div class="feature-content">
       <div class="feature-text">
-        <div class="feature-icon" style="background:rgba(236,72,153,0.15);color:#EC4899;">
+        <div class="feature-icon" style="background:rgba(14,165,233,0.15);color:#0EA5E9;">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         </div>
         <h2 class="feature-title">Candidate Management</h2>
@@ -857,7 +857,7 @@
     </div>
     <div class="feature-content">
       <div class="feature-text">
-        <div class="feature-icon" style="background:rgba(124,58,237,0.15);color:#7C3AED;">
+        <div class="feature-icon" style="background:rgba(37,99,235,0.15);color:#3B82F6;">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4c0 1.95-1.4 3.58-3.25 3.93L12 22l-.75-12.07A4.001 4.001 0 0112 2z"/><path d="M8 8a4 4 0 016.93-2.74"/><path d="M16 8a4 4 0 00-6.93-2.74"/></svg>
         </div>
         <h2 class="feature-title">AI Talent Hub</h2>
@@ -927,7 +927,7 @@
     </div>
     <div class="feature-content">
       <div class="feature-text">
-        <div class="feature-icon" style="background:rgba(99,102,241,0.15);color:#6366F1;">
+        <div class="feature-icon" style="background:rgba(37,99,235,0.15);color:#2563EB;">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
         </div>
         <h2 class="feature-title">Hiring Pipelines</h2>
@@ -1032,7 +1032,7 @@
     </div>
     <div class="feature-content">
       <div class="feature-text">
-        <div class="feature-icon" style="background:rgba(236,72,153,0.15);color:#EC4899;">
+        <div class="feature-icon" style="background:rgba(6,182,212,0.15);color:#06B6D4;">
           <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12c0 1.82.487 3.53 1.338 5H6.5a2.5 2.5 0 000 5H12z"/></svg>
         </div>
         <h2 class="feature-title">Branding &amp; Customization</h2>
@@ -1053,7 +1053,7 @@
             <div class="browser-dot green"></div>
             <div class="browser-url">app.kawadir.com/branding</div>
           </div>
-          <img src="12- Branding.png" alt="Branding & Customization" />
+          <img src="12- Branding.png" alt="Branding &amp; Customization" />
         </div>
       </div>
     </div>
